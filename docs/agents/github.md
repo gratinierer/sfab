@@ -12,7 +12,7 @@ Used for:
 
 ## Repo
 
-- **Repo**: `gratinierer/sfa`
+- **Repo**: `gratinierer/sfab`
 
 ## Numbering and references
 
