@@ -273,7 +273,8 @@ budget. The metric updates daily, so a flood can overshoot by a day or two. The 
 clears it once the bucket drops below 80 GiB, also a config value, and the gap stops
 `birth` flipping on and off around the ceiling. Unlike a restart, this is automatic,
 because storage only drops if someone deleted data, and the ceiling still applies if a
-flood returns.
+flood returns. If the metric has no datapoint, as on a new bucket, the function leaves the
+pause as it is, logs this, and continues with the budget check.
 
 The runtime config is a standard Parameter Store parameter, `/sfab/runtime`, holding
 `required_bits` and `birth_paused`. Standard parameters and their API calls are free, and
@@ -395,7 +396,14 @@ leak.
      is 0.
   3. Confirm the email arrives.
   4. Follow the restart procedure, and confirm the smoke script passes again.
-  5. Repeat for the `birth` pause, using a temporarily low ceiling.
+- A `birth` pause drill on the deployed API, because the pause starts from the daily
+  schedule and gives `503`, not from the stop topic with `403`. Invoke the function by hand
+  with a test event carrying a simulated bucket size:
+  1. Above the ceiling: within about a minute `birth` returns `503`, `self` still works,
+     and the email arrives.
+  2. Below 80 GiB: `birth` works again, and the email arrives.
+- A metric check about two days after first deploy: the function's logs show that the daily
+  run read a real `BucketSizeBytes` value, with `StorageType=StandardStorage`.
 
 The drill starts at SNS, so it doesn't prove that AWS Budgets itself sends the alert.
 Testing that would mean really spending up to the budget, and this story accepts the gap.
@@ -412,7 +420,8 @@ replaces the isolation that per-route IAM roles would have given.
 - `cdk deploy` is run manually, against a single environment. The alert email address is
   passed as a CDK context value or environment variable at deploy time, and is never
   committed.
-- **Done** means deployed, smoke-tested and with the kill switch drill passed.
+- **Done** means deployed, smoke-tested, and with the kill switch drill, the `birth` pause
+  drill and the metric check passed, so plan on about two days after first deploy.
   Announcing the API publicly is a separate decision, and can't happen until
   `issues/03-legal-check-before-announcing.md` is closed.
 
