@@ -298,8 +298,10 @@ The function is a second Rust binary in the `/lambda/` Cargo workspace, using th
 build and toolchain as the API Lambda.
 
 Re-enabling is manual, and must first raise the budget limit for the rest of the
-month, or the next daily check stops the API again. The limit goes back to $30 at the
-start of the next month. A restart also puts the API Lambda's reserved concurrency back
+month, or the next daily check stops the API again. On the first daily run of each month
+(UTC), if the limit is above the base value, $30 as a config value, the function sets it
+back and emails the owner. Spend starts from $0 each month, so this can't trigger a stop,
+and a stop from the previous month stays until the owner restarts. A restart also puts the API Lambda's reserved concurrency back
 to 5. This function needs permissions the API Lambda must never
 have, so it is separate from the single API Lambda.
 
@@ -309,7 +311,9 @@ Constraints this creates:
   also change this mechanism.
 - The stop is applied outside CloudFormation. A `cdk deploy` while stopped could
   reopen the API, so the restart procedure must be documented, including the budget
-  limit change and its reset.
+  limit change.
+- The budget limit is also changed outside CloudFormation, so editing the budget in the CDK
+  could reset it to the template's value.
 
 ### Estimated worst cases
 
@@ -345,6 +349,7 @@ The owner gets an email:
 
 - when the budget reaches 50%, directly from the budget's own email notification
 - when the kill switch fires, or the storage ceiling pauses or resumes `birth`
+- when the budget limit is reset at the start of a month
 - when the kill switch function itself fails
 - when a CloudWatch alarm sees sustained high request volume
 
@@ -396,7 +401,8 @@ leak.
   it stays out of the smoke script.
 - Rust unit tests for the kill switch's decisions: stop at the budget limit, pause
   `birth` above the ceiling, clear the pause below the lower threshold, and leave it alone
-  in between.
+  in between. Also: reset the budget limit on the month's first run, leave it alone at or
+  below the base value, and never let a failed reset block the spend check.
 - CDK assertion tests for the SNS topic policy, the 50% alert not targeting the stop
   topic, the daily schedule, the budget's `IncludeCredit` setting, and permissions that keep the kill switch's rights out of the
   API Lambda.
