@@ -400,7 +400,6 @@ These could not be confirmed from AWS documentation:
   conflict, and AWS doesn't say. If they are billed, a flood keeps costing money while
   stopped, and flipping the WAF default action to Block may be a cheaper addition.
   `issues/02-measure-rejected-request-billing.md` measures this.
-- Whether Python 3.14 in the devcontainer works with the CDK's `jsii` runtime.
 
 ## Deferred
 
