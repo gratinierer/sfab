@@ -264,9 +264,11 @@ prices are from memory.
 | **All routes together** | **$475** |
 | Fixed baseline for WAF, included above | $6 plus $0.60 per million requests |
 
-All routes together spend $30 in about 2 days, and billing data updates about daily,
-so the real overshoot could be another day's spend, about $15. The $30 budget is a
-stop for a sustained attack. It doesn't mean the API can absorb one.
+All routes together spend $30 in about 2 days. AWS Budgets updates every 8-12 hours, and
+there is a further billing delay of unstated length, so the kill switch's overshoot has no
+documented upper bound. About a day's spend, roughly $15, is a planning estimate and not
+a guarantee. The $30 budget is a stop for a sustained attack. It doesn't mean the API can
+absorb one.
 
 ## Operations
 
@@ -357,8 +359,6 @@ replaces the isolation that per-route IAM roles would have given.
 
 These could not be confirmed from AWS documentation:
 
-- How quickly AWS Budgets data updates, which determines how far spending can
-  overshoot before the kill switch fires.
 - Whether API Gateway bills requests that are throttled or rejected with `403`
   while disabled. The only source found is an unofficial re:Post answer saying they
   are billed. If so, a flood keeps costing money while stopped, and flipping the WAF
