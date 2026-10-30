@@ -28,6 +28,31 @@ The API is served from the default `execute-api` URL on stage `v1`, for example
 
 Errors use `application/problem+json`, from both the Lambda and API Gateway.
 
+### Wire contract
+
+- **`reclaim` credential:** `Authorization: Bearer <uuid>.<recovery>`, the same header
+  as other authenticated routes, so the logging rule covers it.
+- **Encoding:** `claim` and `recovery` are base64url without padding.
+- **Proof header:** `Birth-Proof: <unix-ts>:<nonce>`.
+- **Body hash:** lowercase hex SHA-256 of the raw request bytes.
+- **UUID:** a version 8 UUID from the first bytes of the solution hash, with the version
+  bits set.
+
+| Status | Meaning |
+|---|---|
+| `201` | `birth` succeeded |
+| `200` | `evolve`, `self`, `reclaim` or `openapi.yaml` succeeded |
+| `400` | Malformed request, bad proof or stale timestamp; proof failures include `required_bits` and the server's current time |
+| `401` | Missing or wrong credentials, including an expired recovery code; an unknown UUID gets the same response, so UUIDs can't be probed |
+| `404` | Valid claim with no identity |
+| `409` | `birth` replay |
+| `413` | `whoiam` over the byte limit |
+| `429` | Throttled |
+| `503` | `birth` paused by the storage ceiling |
+
+If a `birth` response is lost, a retry gets `409` and the first secrets are gone. The
+agent solves again and gets a new identity, which leaves one orphaned identity in storage.
+
 ### Identity fields
 
 - `name`: required, 1 to 128 characters, not unique, purely self-description.
