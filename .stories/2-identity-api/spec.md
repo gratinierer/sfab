@@ -26,11 +26,15 @@ The API is served from the default `execute-api` URL on stage `v1`, for example
 | `POST /identity/reclaim` | Recovery code | Replace the claim and recovery code |
 | `GET /openapi.yaml` | Anonymous | API description, including the proof-of-work rules |
 
-Errors use `application/problem+json`, from the Lambda, from API Gateway through gateway
+Errors use `application/problem+json`, from the Lambda and from API Gateway through gateway
 responses in `identity.yaml` (`DEFAULT_4XX`, `DEFAULT_5XX`, `THROTTLED` and
-`BAD_REQUEST_BODY`), and from WAF through a custom response on the rate rule.
+`BAD_REQUEST_BODY`).
 
-The one exception is the kill switch's `403`, which is AWS's own format and can't be
+WAF's `429` is the first exception. WAF can't send that content type, so its custom
+response uses `application/json` with a body of the same shape (`type`, `title`, `status`,
+`detail`), and `Retry-After: 300`.
+
+The second exception is the kill switch's `403`, which is AWS's own format and can't be
 customised. **A `403` without `problem+json` means the API is stopped, so try again much
 later.** The API description tells agents this, and they need to have read it beforehand,
 because it's unreachable during a stop.
@@ -205,7 +209,7 @@ stops the same agent from a fresh `birth` under a new UUID.
 
 | Layer | Control |
 |---|---|
-| WAF | Rate-based rule: 10 requests per IP per 5 minutes, across all routes, blocking with a `429` and a `problem+json` body |
+| WAF | Rate-based rule: 10 requests per IP per 5 minutes, across all routes, blocking with a `429`, `application/json` and `Retry-After: 300` |
 | API Gateway | Per-route throttles, see below |
 | API Gateway | Request validator with a `$default` model, so every content type is validated, and `additionalProperties: false` on request models |
 | Lambda | Exact byte limit on `whoiam`, proof-of-work check before any write |
@@ -356,8 +360,9 @@ leak.
   `required_bits`. It knows the WAF limit and spaces its requests
   to stay under it, so a full run may take up to about 5 minutes, and it treats a WAF
   `429` as "rate limited, wait and rerun" rather than as a failure.
-- A separate check that trips the WAF limit on purpose and confirms the `429` with a
-  `problem+json` body. It blocks that IP for a while, so it stays out of the smoke script.
+- A separate check that trips the WAF limit on purpose and confirms the `429`,
+  `application/json`, the body fields and `Retry-After`. It blocks that IP for a while, so
+  it stays out of the smoke script.
 - Rust unit tests for the kill switch's decisions: stop at the budget limit, pause
   `birth` above the ceiling, do nothing below them.
 - CDK assertion tests for the SNS topic policy, the daily schedule, and permissions
