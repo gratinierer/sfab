@@ -261,10 +261,15 @@ Notes on these controls:
 
 At 100% of budget, a small dedicated function:
 
-1. Sets `disableExecuteApiEndpoint` on the REST API and deploys the stage. AWS
+1. Sets the API Lambda's reserved concurrency to 0, which takes effect at once and stops
+   spending on Lambda, S3 and data transfer.
+2. Sets `disableExecuteApiEndpoint` on the REST API and deploys the stage. AWS
    documents that this affects all stages and returns `403`, and that the change
    takes effect only after a stage update.
-2. Sets the API Lambda's reserved concurrency to 0 as a backstop.
+
+A failure in one step doesn't skip the other, and either failure raises the failure alert.
+Both steps can safely run twice, so a retry or a second alert does no harm. Between the
+steps, agents briefly get a `5xx`, which already means "retry with backoff".
 
 The function runs on the stop topic, an SNS topic that receives only the budget's 100%
 alert, and any message on it stops the API. The 50% alert goes straight to email through
@@ -402,7 +407,8 @@ leak.
 - Rust unit tests for the kill switch's decisions: stop at the budget limit, pause
   `birth` above the ceiling, clear the pause below the lower threshold, and leave it alone
   in between. Also: reset the budget limit on the month's first run, leave it alone at or
-  below the base value, and never let a failed reset block the spend check.
+  below the base value, and never let a failed reset block the spend check. A failure in
+  either stop step still attempts the other, and raises the failure alert.
 - CDK assertion tests for the SNS topic policy, the 50% alert not targeting the stop
   topic, the daily schedule, the budget's `IncludeCredit` setting, and permissions that keep the kill switch's rights out of the
   API Lambda.
