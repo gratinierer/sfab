@@ -14,12 +14,17 @@ as described in `spec.md` "Architecture". Filed from review finding R12.
   `SpecRestApi` doesn't build from code, so later `identity.yaml` edits might never reach
   the stage. Pass the OpenAPI definition to `addToLogicalId()` on the deployment, as the
   CDK docs recommend. This hasn't been tested on a real deploy.
+- **CloudWatch role for access logs:** API Gateway needs an account-level IAM role before
+  it can write access logs, and CDK's default depends on the
+  `@aws-cdk/aws-apigateway:disableCloudWatchRole` flag. Set `cloudWatchRole` to true
+  explicitly, or a first deploy on a fresh account can fail. The role is account-wide,
+  which is fine in this dedicated account. Filed from review finding R20.
 
 ## Done when
 
-- Every route reaches the API Lambda after a first deploy.
+- Every route reaches the API Lambda after a first deploy on a fresh account.
 - An edit to `identity.yaml` reaches the `v1` stage on the next `cdk deploy`.
-- A CDK assertion test covers the invoke permission.
+- CDK assertion tests cover the invoke permission and the CloudWatch role.
 
 ## Sources
 
