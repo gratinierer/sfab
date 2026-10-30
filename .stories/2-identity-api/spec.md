@@ -322,8 +322,10 @@ steps can safely run twice, so a retry or a second alert does no harm. While the
 propagate, agents may briefly get a `5xx`, which already means "retry with backoff".
 
 The function runs on the stop topic, an SNS topic that receives only the budget's 100%
-alert, and any message on it stops the API. The 50% alert goes straight to email through
-the budget's own notification, so it can't stop anything. The function also runs once a
+alert, and any message on it stops the API. A second SNS topic, the alerts topic, is the only
+thing the owner's email subscribes to. It gets the 50% alert and every email the kill switch
+sends, so the 50% alert can't stop anything, and the budget holds no email address, so
+changing `alert_email` never touches it. The function also runs once a
 day on a schedule, at 12:00 UTC, when
 it reads actual spend through the Budgets API and stops the API if spend is at or
 above the limit. The schedule is needed because AWS sends an actual-spend alert only
@@ -429,7 +431,7 @@ makes no availability promise.**
 
 The owner gets an email:
 
-- when the budget reaches 50%, directly from the budget's own email notification
+- when the budget reaches 50%
 - when the kill switch fires, or the storage ceiling pauses or resumes `birth`
 - when the budget limit is reset at the start of a month
 - when the kill switch function itself fails
@@ -511,7 +513,7 @@ leak.
 - Parser tests: synth rejects a missing value and `CHANGE_ME`, and the example file and the
   test fixture hold the same keys.
 - CDK assertion tests for the email subscription,
-  the SNS topic policy, the 50% alert not targeting the stop
+  both SNS topic policies, the 50% alert targeting the alerts topic and not the stop
   topic, the daily schedule, the budget's `IncludeCredit` setting, and permissions that keep the kill switch's rights out of the
   API Lambda.
 - A kill switch drill on the deployed API, before any agents depend on it, and again
@@ -565,8 +567,8 @@ replaces the isolation that per-route IAM roles would have given.
   code, where they're reviewed. Real secrets don't belong in it, with `origin_key` as a named
   exception: it can't read or change any identity, and it's rotated by editing and
   redeploying. Changing `alert_email`
-  replaces the SNS subscription, and AWS sends no alerts until the new confirmation link is
-  clicked.
+  replaces the alerts topic's subscription, and AWS sends no alerts until the new confirmation
+  link is clicked.
 - **Done** means deployed, smoke-tested, and with the kill switch drill, the `birth` pause
   drill, the takedown check and the metric check passed, so plan on about two days after first deploy.
   Announcing the API publicly is a separate decision, and can't happen until
