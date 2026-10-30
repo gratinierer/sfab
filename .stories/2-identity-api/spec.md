@@ -105,8 +105,8 @@ The client finds a nonce where
 sends the timestamp and nonce in a request header, because the hash covers the
 body.
 
-- N is an environment variable on the API Lambda, starting around 20, so it can be
-  raised during an attack with no rebuild. The API description explains the rule and
+- N is `required_bits` in the runtime config (see "Kill switch"), starting around 20, so
+  it can be raised during an attack with no rebuild. The API description explains the rule and
   gives the usual value only as a hint: "N is usually 20. If your proof is rejected, the
   `400` tells you the current value in `required_bits`." So a birth normally takes one
   request, and two when N has been raised.
@@ -266,14 +266,23 @@ above the limit. The schedule is needed because AWS sends an actual-spend alert 
 once per budget period, so the alert can't fire again after a same-month restart.
 
 The daily run also reads the identities bucket's size from the CloudWatch
-`BucketSizeBytes` metric. Above 100 GiB, a config value, it pauses `birth` through a
-flag on the API Lambda, and every other route keeps working. The kill switch can't
+`BucketSizeBytes` metric. Above 100 GiB, a config value, it pauses `birth` by setting
+`birth_paused` in the runtime config, and every other route keeps working. The kill switch can't
 stop charges for data already stored, so this keeps storage alone from exceeding the
 budget. The metric updates daily, so a flood can overshoot by a day or two. The daily run
-clears the flag once the bucket drops below 80 GiB, also a config value, and the gap stops
+clears it once the bucket drops below 80 GiB, also a config value, and the gap stops
 `birth` flipping on and off around the ceiling. Unlike a restart, this is automatic,
 because storage only drops if someone deleted data, and the ceiling still applies if a
 flood returns.
+
+The runtime config is a standard Parameter Store parameter, `/sfab/runtime`, holding
+`required_bits` and `birth_paused`. Standard parameters and their API calls are free, and
+its version history shows when a value changed. The CDK must not create its value, or a
+deploy could reset it. A missing or unreadable parameter means `required_bits` of 20 and
+not paused, and the kill switch creates it on first write. The API Lambda can only read
+it, at most once per minute per instance and cached, so a change takes effect within about
+a minute. The kill switch and the owner can write it, and the kill switch needs no write
+access to the claims bucket.
 
 The function is a second Rust binary in the `/lambda/` Cargo workspace, using the same
 build and toolchain as the API Lambda.
