@@ -438,9 +438,10 @@ The runbook after a stop:
 
 1. Look at API Gateway's access logs and WAF's metrics to see what happened. The Free plan has
    no CloudFront or WAF logs, so upgrade to Pro if the attack needs them.
-2. Block the offending IPs or ranges in WAF, if that would help. A distributed attack
-   won't stop for a few blocked ranges, so restarting can simply burn more budget, and
-   staying down until the attack ends is a valid choice.
+2. If you need to see who's attacking, upgrade to Pro for WAF logs, with `Authorization` as a
+   redacted field. The rate rule already blocks per IP, and a distributed attack won't stop
+   for a few blocked ranges, so restarting can simply burn more budget, and staying down until
+   the attack ends is a valid choice.
 3. Raise the budget limit and restart, as described under "Kill switch".
 4. Run the bulk cleanup described under "Storage", if the flood stored data. `birth`
    resumes by itself about a day later, because the metric updates daily.
@@ -457,6 +458,10 @@ budget repeatedly.
 - Access logs are minimal and exclude the `Authorization` header.
 - Lambda logs errors and metadata only.
 - Retention is 14 days.
+- There are no WAF logs, and `SampledRequestsEnabled` is false on the web ACL and its rules,
+  because AWS's samples return each header's name and value for 3 hours, which could expose
+  live claims. Blocked traffic is free, and WAF's metrics still give blocked counts. If Pro
+  adds WAF logs later, `Authorization` must be a redacted field.
 
 Logs cost money during a flood, and they are the most likely place for a claim to
 leak.
@@ -471,7 +476,7 @@ leak.
 - Contract tests checking handlers against `openapi/identity.yaml`, and failing if the
   public copy contains `x-amazon-`, `arn:aws`, the origin key, or anything that looks like an
   account ID, or if it has no `info.contact`.
-- CDK assertion tests for throttles, WAF, public-access blocks, bucket removal policies, the
+- CDK assertion tests for throttles, WAF with sampling off, public-access blocks, bucket removal policies, the
   `REGIONAL` endpoint type, the distribution's cache and origin request policies, the API key
   required on every method, the plan subscription, and the domain guards: nothing registered
   with `register_domain` false, and stack deletion leaving the domain alone.
