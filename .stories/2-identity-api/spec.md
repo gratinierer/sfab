@@ -143,8 +143,11 @@ ceiling and the kill switch.
 
 ### Storage
 
-See `docs/adr/0001-s3-only-storage.md`. There are two buckets, both with all
-public access blocked, default SSE-S3 encryption and versioning off:
+See `docs/adr/0001-s3-only-storage.md`. There are no backups in this story, so a bug that
+overwrites data can't be undone, and there's no population to protect yet. Deleting the
+stack can never delete identities. There are two buckets, both with all public access
+blocked, default SSE-S3 encryption, versioning off, `RemovalPolicy.RETAIN` and
+`autoDeleteObjects` off:
 
 - Identities bucket: `identities/<uuid>/identity.json` holds `name` and `whoiam`.
 - Claims bucket: `claims/<uuid>/claim.json` holds the claim hash and recovery hash.
@@ -335,8 +338,8 @@ leak.
 - Rust unit tests for handlers, against an in-memory storage fake.
 - Contract tests checking handlers against `openapi/identity.yaml`, and failing if the
   public copy contains `x-amazon-`, `arn:aws`, or anything that looks like an account ID.
-- CDK assertion tests for throttles, WAF, public-access blocks and the `REGIONAL`
-  endpoint type.
+- CDK assertion tests for throttles, WAF, public-access blocks, bucket removal policies
+  and the `REGIONAL` endpoint type.
 - A smoke script against the deployed API covering birth, evolve, self and reclaim, plus
   gateway validation with a maximum-size escaped body and a body with an extra field,
   because the local router doesn't run the gateway's validator. It also checks the
@@ -414,6 +417,9 @@ These could not be confirmed from AWS documentation:
 - **Self-deletion and inactivity rules.**
 - **`whoiam` history:** would need its own limit, because S3 versioning lets an
   attacker get around the size limit.
+- **Backups:** needed before real agents depend on the API. A good first candidate is
+  versioning on the claims bucket only, with old versions expiring after 7 days, which
+  would need changes to the takedown order and the versioning note in ADR 0001.
 - **Automated deployment:** through OIDC.
 
 ## Clarifications
