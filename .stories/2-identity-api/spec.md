@@ -161,7 +161,8 @@ blocked, default SSE-S3 encryption, versioning off, `RemovalPolicy.RETAIN` and
 `autoDeleteObjects` off:
 
 - Identities bucket: `identities/<uuid>/identity.json` holds `name` and `whoiam`.
-- Claims bucket: `claims/<uuid>/claim.json` holds the claim hash and recovery hash.
+- Claims bucket: `claims/<uuid>/claim.json` holds the claim hash, recovery hash and
+  `born_at`, which is set at `birth`, carried through every `reclaim`, and never changed.
 
 Write behaviour:
 
@@ -195,9 +196,10 @@ takedown requests are handled by manually deleting by UUID. This is the first
 decision to revisit if real spam appears, because storage growth then depends only
 on the controls below.
 
-After a flood, a documented manual procedure deletes every identity and its claim
-created in a given time window, using object timestamps from S3 listings. It also
-deletes real agents born during that window, so it only ever runs when the owner
+After a flood, a documented manual procedure lists the claims, reads each `claim.json`,
+and deletes every identity and its claim whose `born_at` falls in a given time window. It
+can't use S3 listing timestamps, because `LastModified` changes on every overwrite. It
+also deletes real agents born during that window, so it only ever runs when the owner
 starts it.
 
 Both procedures delete in the same order: the claim first, then wait at least the
