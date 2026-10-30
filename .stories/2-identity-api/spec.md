@@ -202,7 +202,8 @@ others can read it, and encrypted content can't be inspected. This risk is accep
 private storage with no content scanning, because the 32 KB limit, the `self` throttle and
 the WAF limit make it a poor file host. Abuse reports reach the owner through a contact
 published in the API description's `info.contact`, and are handled by the takedown
-procedure below. See `issues/03-legal-check-before-announcing.md`.
+procedure below. The legal check is tracked in
+[gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3).
 
 Identities live indefinitely. There is no expiry and no delete endpoint. Abuse and
 takedown requests are handled by manually deleting by UUID. This is the first
@@ -395,7 +396,8 @@ leak.
   window: it closes on first use of each new secret and after 7 days, and a retry inside it
   returns the same secrets. A fixed solution must also give an exact expected UUID.
 - Contract tests checking handlers against `openapi/identity.yaml`, and failing if the
-  public copy contains `x-amazon-`, `arn:aws`, or anything that looks like an account ID.
+  public copy contains `x-amazon-`, `arn:aws`, or anything that looks like an account ID,
+  or if it has no `info.contact`.
 - CDK assertion tests for throttles, WAF, public-access blocks, bucket removal policies
   and the `REGIONAL` endpoint type.
 - A smoke script against the deployed API covering birth, evolve, self and reclaim, plus
@@ -449,7 +451,9 @@ replaces the isolation that per-route IAM roles would have given.
   all tests.
 - `cdk deploy` is run manually, against a single environment.
 - **Local config:** `sfab.config.toml` at the repo root holds private per-owner values,
-  starting with `account_id` and `alert_email`. It's listed in `.gitignore`, and
+  starting with `account_id`, `alert_email` and `abuse_contact`. The build step puts
+  `abuse_contact` into the public description's `info.contact`, so that address is
+  published, and the API can't go live without one. It's listed in `.gitignore`, and
   `sfab.config.example.toml` is committed with dummy values and comments. `cdk synth` parses
   it through one small parser that later artifacts can reuse, and fails with a clear message
   that names any missing or placeholder value, or a missing file, so a deploy can't silently
@@ -462,7 +466,7 @@ replaces the isolation that per-route IAM roles would have given.
 - **Done** means deployed, smoke-tested, and with the kill switch drill, the `birth` pause
   drill and the metric check passed, so plan on about two days after first deploy.
   Announcing the API publicly is a separate decision, and can't happen until
-  `issues/03-legal-check-before-announcing.md` is closed.
+  [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) is closed.
 
 ## Prerequisites
 
@@ -470,7 +474,8 @@ replaces the isolation that per-route IAM roles would have given.
   plan account closes when its credits run out or after six months, and AWS deletes its
   data 90 days later, which would end every identity. Sign-up credits still apply on the
   Paid plan, and charges beyond them go to the owner's card. This container has no AWS
-  credentials, so at first deploy the owner fills in `sfab.config.toml`, runs `aws login` and `cdk bootstrap`, and confirms the SNS email
+  credentials, so at first deploy the owner fills in `sfab.config.toml`, including an
+  address they're happy to publish as `abuse_contact`, runs `aws login` and `cdk bootstrap`, and confirms the SNS email
   subscription, because AWS sends no alerts until its confirmation link is clicked.
 - A Lambda concurrency quota of at least 105 on that account. AWS requires 100 units to
   stay unreserved, so a new account with a lower quota needs an increase, or the deploy
@@ -493,7 +498,7 @@ These could not be confirmed from AWS documentation:
   rather than the API Gateway cache, which is billed by the hour even when idle.
   Cache keys must never let a private response reach someone else. Hosting anonymous
   public content can bring takedown duties, so get legal advice before launch, on top of
-  the check for private storage in `issues/03-legal-check-before-announcing.md`.
+  the check for private storage in [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3).
 - **Guardians:** other agents vouch for recovery, k of n.
 - **Ed25519 credentials:** a second credential type, where we hold no secret.
 - **Verified contact email:** dropped from phase 1 because of GDPR, SES and takeover
