@@ -324,11 +324,20 @@ pause as it is, logs this, and continues with the budget check.
 The runtime config is a standard Parameter Store parameter, `/sfab/runtime`, holding
 `required_bits` and `birth_paused`. Standard parameters and their API calls are free, and
 its version history shows when a value changed. The CDK must not create its value, or a
-deploy could reset it. A missing or unreadable parameter means `required_bits` of 20 and
-not paused, and the kill switch creates it on first write. The API Lambda can only read
-it, at most once per minute per instance and cached, so a change takes effect within about
-a minute. The kill switch and the owner can write it, and the kill switch needs no write
-access to the claims bucket.
+deploy could reset it. The API Lambda can only read it, at most once per minute per
+instance and cached, so a change takes effect within about a minute. The kill switch and the
+owner can write it, and the kill switch needs no write access to the claims bucket.
+`required_bits` must be a whole number from 1 to 32, and `birth_paused` a boolean.
+
+| Situation | API Lambda | Kill switch |
+|---|---|---|
+| Parameter doesn't exist | `required_bits` of 20, not paused | Creates it on first write |
+| Read fails | Keeps its last good value | Never writes, raises the failure alert, and still runs the budget check |
+| Value is malformed | Keeps its last good value, and logs an error that raises an alarm | Same as a failed read |
+
+A new Lambda instance with a failed read or malformed value has no last good value, so it
+answers `birth` with `503` and serves other routes normally, because only `birth` depends on
+these settings. A brief AWS problem must never silently lift the pause or lower N.
 
 The function is a second Rust binary in the `/lambda/` Cargo workspace, using the same
 build and toolchain as the API Lambda.
@@ -397,6 +406,7 @@ The owner gets an email:
 - when the kill switch fires, or the storage ceiling pauses or resumes `birth`
 - when the budget limit is reset at the start of a month
 - when the kill switch function itself fails
+- when an alarm sees a malformed runtime config value
 - when a CloudWatch alarm sees sustained high request volume
 
 The request alarm only alerts and never stops anything. It exists because budget data
@@ -434,7 +444,9 @@ leak.
 
 - Rust unit tests for handlers, against an in-memory storage fake, including the `reclaim`
   window: it closes on first use of each new secret and after 7 days, and a retry inside it
-  returns the same secrets. A fixed solution must also give an exact expected UUID.
+  returns the same secrets. A fixed solution must also give an exact expected UUID. The
+  runtime config cases are covered too: missing, failed read and malformed, with and without a
+  last good value.
 - Contract tests checking handlers against `openapi/identity.yaml`, and failing if the
   public copy contains `x-amazon-`, `arn:aws`, the origin key, or anything that looks like an
   account ID, or if it has no `info.contact`.
@@ -459,7 +471,8 @@ leak.
   `birth` above the ceiling, clear the pause below the lower threshold, and leave it alone
   in between. Also: reset the budget limit on the month's first run, leave it alone at or
   below the base value, and never let a failed reset block the spend check. A failure in
-  either stop step still attempts the other, and raises the failure alert.
+  any stop step still attempts the others, and raises the failure alert. It never writes the
+  runtime config after a failed read.
 - Parser tests: synth rejects a missing value and `CHANGE_ME`, and the example file and the
   test fixture hold the same keys.
 - CDK assertion tests for the email subscription,
