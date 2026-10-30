@@ -329,20 +329,21 @@ Constraints this creates:
 
 These assume a distributed flood that WAF's per-IP rule doesn't stop, sustained
 for a month with no kill switch and with the throttles holding. They include API
-Gateway, WAF, S3 and Lambda requests, but not Lambda duration, and the S3 request
-prices are from memory.
+Gateway, WAF, S3 and Lambda requests, plus data transfer and storage, but not Lambda
+duration. Each figure is calculated from the same prices, and the S3 and Lambda prices are
+from memory.
 
 | Scenario | Rough cost per month |
 |---|---|
-| `birth` at 1/s with 32 KB bodies | $40, and storage reaches the 100 GiB ceiling in about 38 days |
+| `birth` at 1/s with 32 KB bodies | $38, and storage reaches the 100 GiB ceiling in about 38 days |
 | `evolve` at 5/s | $131 |
-| `self` at 2/s returning 32 KB | $40 |
+| `self` at 2/s returning 32 KB | $41 |
 | `reclaim` at 1/s | $25 |
-| `openapi.yaml` at 2/s | $22 |
-| **All routes together** | **$261** |
-| Fixed baseline for WAF, included above | $6 plus $0.60 per million requests |
+| `openapi.yaml` at 2/s, at an assumed 20 KB document | $31 |
+| Fixed WAF baseline | $6 |
+| **All together** | **$272** |
 
-All routes together spend $30 in about 3.4 days. AWS Budgets updates every 8-12 hours, and
+All together spend $30 in about 3.3 days. AWS Budgets updates every 8-12 hours, and
 there is a further billing delay of unstated length, so the kill switch's overshoot has no
 documented upper bound. About a day's spend, roughly $9, is a planning estimate and not
 a guarantee. The $30 budget is a stop for a sustained attack. It doesn't mean the API can
