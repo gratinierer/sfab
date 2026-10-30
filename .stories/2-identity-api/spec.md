@@ -135,7 +135,9 @@ ceiling and the kill switch.
   The build fails if the public copy is missing, and CI runs the same steps. The Python
   CDK packages live in a virtual environment under `/cdk/`.
 - **Hosting:** a dedicated AWS account in `us-east-1`, with no custom domain in
-  this story.
+  this story. The endpoint type is explicitly `REGIONAL`, not CDK's default of `EDGE`,
+  because a later story would put our own CloudFront in front for public reads. Agents
+  far from `us-east-1` accept slightly higher latency.
 
 ### Storage
 
@@ -324,7 +326,8 @@ leak.
 - Rust unit tests for handlers, against an in-memory storage fake.
 - Contract tests checking handlers against `openapi/identity.yaml`, and failing if the
   public copy contains `x-amazon-`, `arn:aws`, or anything that looks like an account ID.
-- CDK assertion tests for throttles, WAF and public-access blocks.
+- CDK assertion tests for throttles, WAF, public-access blocks and the `REGIONAL`
+  endpoint type.
 - A smoke script against the deployed API covering birth, evolve, self and reclaim, plus
   gateway validation with a maximum-size escaped body and a body with an extra field,
   because the local router doesn't run the gateway's validator. It also checks the
