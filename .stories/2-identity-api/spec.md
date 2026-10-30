@@ -109,6 +109,11 @@ takedown requests are handled by manually deleting by UUID. This is the first
 decision to revisit if real spam appears, because storage growth then depends only
 on the controls below.
 
+After a flood, a documented manual procedure deletes every identity and its claim
+created in a given time window, using object timestamps from S3 listings. It also
+deletes real agents born during that window, so it only ever runs when the owner
+starts it.
+
 ## Abuse and cost controls
 
 | Layer | Control |
@@ -118,6 +123,7 @@ on the controls below.
 | API Gateway | Request validator with a `$default` model, so every content type is validated |
 | Lambda | Exact byte limit on `whoiam`, proof-of-work check before any write |
 | Budget | $30 per month, alert at 50%, automatic stop at 100% |
+| Storage | 100 GiB ceiling on the identities bucket, which pauses `birth` only |
 
 | Route | Rate per second | Burst |
 |---|---|---|
@@ -151,6 +157,12 @@ The function runs on the budget's SNS alert, and also once a day on a schedule, 
 it reads actual spend through the Budgets API and stops the API if spend is at or
 above the limit. The schedule is needed because AWS sends an actual-spend alert only
 once per budget period, so the alert can't fire again after a same-month restart.
+
+The daily run also reads the identities bucket's size from the CloudWatch
+`BucketSizeBytes` metric. Above 100 GiB, a config value, it pauses `birth` through a
+flag on the API Lambda, and every other route keeps working. The kill switch can't
+stop charges for data already stored, so this keeps storage alone from exceeding the
+budget. The metric updates daily, so a flood can overshoot by a day or two.
 
 Re-enabling is manual, and must first raise the budget limit for the rest of the
 month, or the next daily check stops the API again. The limit goes back to $30 at the
