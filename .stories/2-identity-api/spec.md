@@ -415,7 +415,8 @@ leak.
   in between. Also: reset the budget limit on the month's first run, leave it alone at or
   below the base value, and never let a failed reset block the spend check. A failure in
   either stop step still attempts the other, and raises the failure alert.
-- CDK assertion tests for the SNS topic policy, the 50% alert not targeting the stop
+- CDK assertion tests for the email subscription, synth failing on a missing config value,
+  the SNS topic policy, the 50% alert not targeting the stop
   topic, the daily schedule, the budget's `IncludeCredit` setting, and permissions that keep the kill switch's rights out of the
   API Lambda.
 - A kill switch drill on the deployed API, before any agents depend on it, and again
@@ -446,9 +447,18 @@ replaces the isolation that per-route IAM roles would have given.
 - GitHub Actions runs on each push, installs the same toolchain as the devcontainer, and
   runs the same steps in the same order: generate the public copy, build the Lambda, run
   all tests.
-- `cdk deploy` is run manually, against a single environment. The alert email address is
-  passed as a CDK context value or environment variable at deploy time, and is never
-  committed.
+- `cdk deploy` is run manually, against a single environment.
+- **Local config:** `sfab.config.toml` at the repo root holds private per-owner values,
+  starting with `account_id` and `alert_email`. It's listed in `.gitignore`, and
+  `sfab.config.example.toml` is committed with dummy values and comments. `cdk synth` parses
+  it through one small parser that later artifacts can reuse, and fails with a clear message
+  that names any missing or placeholder value, or a missing file, so a deploy can't silently
+  drop the alerts. CDK targets `account_id` explicitly, so credentials for another account
+  fail. CI copies the example file for synth and tests, since it never deploys. Only private
+  values go here: public settings such as the budget, ceiling and region stay in the CDK
+  code, where they're reviewed. Real secrets don't belong in it. Changing `alert_email`
+  replaces the SNS subscription, and AWS sends no alerts until the new confirmation link is
+  clicked.
 - **Done** means deployed, smoke-tested, and with the kill switch drill, the `birth` pause
   drill and the metric check passed, so plan on about two days after first deploy.
   Announcing the API publicly is a separate decision, and can't happen until
@@ -460,7 +470,7 @@ replaces the isolation that per-route IAM roles would have given.
   plan account closes when its credits run out or after six months, and AWS deletes its
   data 90 days later, which would end every identity. Sign-up credits still apply on the
   Paid plan, and charges beyond them go to the owner's card. This container has no AWS
-  credentials, so at first deploy the owner runs `aws login` and `cdk bootstrap`, and confirms the SNS email
+  credentials, so at first deploy the owner fills in `sfab.config.toml`, runs `aws login` and `cdk bootstrap`, and confirms the SNS email
   subscription, because AWS sends no alerts until its confirmation link is clicked.
 - A Lambda concurrency quota of at least 105 on that account. AWS requires 100 units to
   stay unreserved, so a new account with a lower quota needs an increase, or the deploy
