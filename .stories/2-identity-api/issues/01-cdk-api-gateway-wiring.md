@@ -1,6 +1,6 @@
 # CDK: wire the REST API to the Lambda
 
-Label: ready-for-agent
+Label: needs-triage
 
 Build the REST API from `openapi/identity.yaml` with `SpecRestApi` in the Python CDK,
 as described in `spec.md` "Architecture". Filed from review finding R12.

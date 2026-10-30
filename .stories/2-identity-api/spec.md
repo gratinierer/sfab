@@ -427,8 +427,6 @@ replaces the isolation that per-route IAM roles would have given.
 
 ## Prerequisites
 
-- [gratinierer/agentic_containers#2](https://github.com/gratinierer/agentic_containers/issues/2):
-  the devcontainer has no Rust toolchain, `cargo-lambda`, Zig or `uv`.
 - A dedicated AWS account in `us-east-1`, on the **Paid plan** before first deploy. A Free
   plan account closes when its credits run out or after six months, and AWS deletes its
   data 90 days later, which would end every identity. Sign-up credits still apply on the

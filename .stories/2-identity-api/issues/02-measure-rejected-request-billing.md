@@ -3,6 +3,9 @@
 Label: ready-for-human
 Blocked by: 01
 
+`Blocked by` is provisional until the story is sliced: this also needs the WAF and the kill
+switch, which no ticket builds yet.
+
 AWS doesn't say whether API Gateway bills REST API requests that are throttled, or
 rejected with `403` while the default endpoint is disabled. Unofficial sources conflict.
 Nor is it stated whether WAF keeps charging about $0.60 per million during a stop. Filed
