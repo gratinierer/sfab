@@ -55,12 +55,12 @@ because it's unreachable during a stop.
 |---|---|
 | `201` | `birth` succeeded |
 | `200` | `evolve`, `self`, `reclaim` or `openapi.yaml` succeeded |
-| `400` | Malformed request, bad proof or stale timestamp; proof failures include `required_bits` and the server's current time |
+| `400` | Malformed request, `whoiam` over the limit whether caught by the gateway or the Lambda, bad proof or stale timestamp; proof failures include `required_bits` and the server's current time |
 | `401` | Missing or wrong credentials, including an expired recovery code; an unknown UUID gets the same response, so UUIDs can't be probed |
 | `404` | Valid claim with no identity |
 | `409` | `birth` replay |
-| `413` | `whoiam` over the byte limit |
 | `403` | The API is stopped by the kill switch, in AWS's own format |
+| `413` | AWS's own response for a body over 10 MB |
 | `429` | Throttled by the gateway or blocked by the WAF rate rule, so back off |
 | `503` | `birth` paused by the storage ceiling |
 | Other `5xx` | Includes the Lambda being over its concurrency limit, so retry with backoff |
@@ -235,7 +235,7 @@ Notes on these controls:
 - **Validator limit:** `maxLength` counts characters, not bytes, and a character written
   as a JSON `\uXXXX` escape takes 6 bytes, so bodies up to about 200 KB pass the gateway.
   That stays below Lambda's 6 MB request limit, so every body that passes validation
-  reaches the handler, which enforces the exact limit and returns `413`. This depends on
+  reaches the handler, which enforces the exact limit and returns `400`. This depends on
   the `$default` model working through OpenAPI import, which must be tested during
   implementation.
 - **Throttles are not hard limits:** AWS describes usage plan throttles as
