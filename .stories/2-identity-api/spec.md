@@ -360,9 +360,10 @@ replaces the isolation that per-route IAM roles would have given.
 These could not be confirmed from AWS documentation:
 
 - Whether API Gateway bills requests that are throttled or rejected with `403`
-  while disabled. The only source found is an unofficial re:Post answer saying they
-  are billed. If so, a flood keeps costing money while stopped, and flipping the WAF
-  default action to Block may be a cheaper addition.
+  while disabled, and whether WAF keeps charging during a stop. Unofficial sources
+  conflict, and AWS doesn't say. If they are billed, a flood keeps costing money while
+  stopped, and flipping the WAF default action to Block may be a cheaper addition.
+  `issues/02-measure-rejected-request-billing.md` measures this.
 - Whether Python 3.14 in the devcontainer works with the CDK's `jsii` runtime.
 
 ## Deferred
