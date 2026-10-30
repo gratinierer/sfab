@@ -49,8 +49,10 @@ unreachable during a stop.
   document, because a required parameter would be rejected at the gateway, where N is
   unknown. The Lambda enforces it.
 - **Body hash:** lowercase hex SHA-256 of the raw request bytes.
-- **UUID:** a version 8 UUID from the first bytes of the solution hash, with the version
-  bits set.
+- **UUID:** a version 8 UUID from the last 16 bytes of the solution hash, with both the
+  version and the RFC 9562 variant bits set. The first bytes hold the proof-of-work zeros,
+  so they aren't used. That leaves 122 random bits regardless of N, and reveals nothing
+  about the difficulty.
 
 | Status | Meaning |
 |---|---|
@@ -391,7 +393,7 @@ leak.
 
 - Rust unit tests for handlers, against an in-memory storage fake, including the `reclaim`
   window: it closes on first use of each new secret and after 7 days, and a retry inside it
-  returns the same secrets.
+  returns the same secrets. A fixed solution must also give an exact expected UUID.
 - Contract tests checking handlers against `openapi/identity.yaml`, and failing if the
   public copy contains `x-amazon-`, `arn:aws`, or anything that looks like an account ID.
 - CDK assertion tests for throttles, WAF, public-access blocks, bucket removal policies
