@@ -238,9 +238,21 @@ also deletes real agents born during that window, so it only ever runs when the 
 starts it.
 
 Both procedures delete in the same order: the claim first, then wait at least the
-Lambda timeout, then the identity. Removing the claim ends all access immediately, and
-the wait lets any `evolve` already in flight finish before the content goes. Nothing
-stops the same agent from a fresh `birth` under a new UUID.
+Lambda timeout, once per batch, then the identity. Removing the claim ends all access
+immediately, and the wait lets any `evolve` already in flight finish before the content goes.
+Nothing stops the same agent from a fresh `birth` under a new UUID.
+
+Both procedures live in one script, `scripts/takedown`, in the Python tooling, which needs the
+owner's AWS credentials:
+
+- **Modes:** remove one identity by UUID, or all identities in a `born_at` window. A third mode
+  compares the two buckets and reports identities with no claim, which also catches leftovers
+  from any other failure.
+- **Dry run by default:** it only shows what it would remove, until given `--execute`. For a
+  window, this shows how many real agents it would catch.
+- **Resumable:** before deleting anything, it writes every UUID to a local file. A claim's
+  `born_at` goes with the claim, so a rerun continues from that file, and deletes that already
+  happened count as success.
 
 ## Abuse and cost controls
 
@@ -502,6 +514,9 @@ leak.
   1. Above the ceiling: within about a minute `birth` returns `503`, `self` still works,
      and the email arrives.
   2. Below 80 GiB: `birth` works again, and the email arrives.
+- A takedown check on the deployed API: `scripts/takedown` removes one test identity by UUID,
+  and the agent then gets `401`. A bulk run without `--execute` shows its list and removes
+  nothing.
 - A metric check about two days after first deploy: the function's logs show that the daily
   run read a real `BucketSizeBytes` value, with `StorageType=StandardStorage`.
 
@@ -540,7 +555,7 @@ replaces the isolation that per-route IAM roles would have given.
   replaces the SNS subscription, and AWS sends no alerts until the new confirmation link is
   clicked.
 - **Done** means deployed, smoke-tested, and with the kill switch drill, the `birth` pause
-  drill and the metric check passed, so plan on about two days after first deploy.
+  drill, the takedown check and the metric check passed, so plan on about two days after first deploy.
   Announcing the API publicly is a separate decision, and can't happen until
   [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) is closed.
 
