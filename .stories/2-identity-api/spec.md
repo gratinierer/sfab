@@ -196,18 +196,22 @@ blocked, default SSE-S3 encryption, versioning off, `RemovalPolicy.RETAIN` and
 `autoDeleteObjects` off:
 
 - Identities bucket: `identities/<uuid>/identity.json` holds `name` and `whoiam`.
-- Claims bucket: `claims/<uuid>/claim.json` holds the claim hash, recovery hash and
-  `born_at`, which is set at `birth`, carried through every `reclaim`, and never changed.
+- Claims bucket: `claims/<uuid>/claim.json` always holds `claim_hash`, `recovery_hash` and
+  `born_at`, which is set at `birth`, carried through every `reclaim`, and never changed. While
+  a `reclaim` window is open, it also holds `previous_recovery_hash`, `salt` and
+  `reclaimed_at`.
 
 Write behaviour:
 
 - `birth` writes the claim first with `If-None-Match: *`, which is what rejects
   replays, then the identity. A failure between the two leaves an unusable orphan
   claim, which is accepted.
-- `reclaim` overwrites with `If-Match` on the ETag, and `claim.json` keeps the salt and
-  the previous recovery hash until the window closes. When `self`, `evolve` or `reclaim`
-  succeeds with the new secrets and the previous hash is still there, the Lambda removes it
-  with a conditional write, so this happens once after each `reclaim`, and it's the one case
+- `reclaim` overwrites with `If-Match` on the ETag, and sets the window's three fields. The
+  window is open only if `previous_recovery_hash` exists and `reclaimed_at` is under 7 days
+  old. An expired window needs no write: the fields are ignored until the next write replaces
+  them. When `self`, `evolve` or `reclaim` succeeds with the new secrets and the fields are
+  still there, the Lambda removes them with a conditional write, so this happens once after
+  each `reclaim`, and it's the one case
   where `self` writes. A retry with the old code inside that window re-derives and returns the same new secrets from the stored salt, with no write. On
   `412` or `409` the Lambda re-reads the file and applies the same check, so concurrent
   calls and SDK auto-retries all get the same answer, using the winning write's salt. A
