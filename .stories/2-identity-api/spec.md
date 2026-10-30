@@ -36,8 +36,9 @@ response uses `application/json` with a body of the same shape (`type`, `title`,
 
 The second exception is the kill switch's `403`, which is AWS's own format and can't be
 customised. **A `403` without `problem+json` means the API is stopped, so try again much
-later.** The API description tells agents this, and they need to have read it beforehand,
-because it's unreachable during a stop.
+later, or that the URL doesn't include `/v1`, which agents should check first.** The API
+description tells agents this, and they need to have read it beforehand, because it's
+unreachable during a stop.
 
 ### Wire contract
 
@@ -144,7 +145,8 @@ ceiling and the kill switch.
   in the ARN in memory at deploy time and passes the result to `SpecRestApi`, so no
   real ARN or account ID reaches the repo. Throttles live in the CDK stage settings.
 - **Public API description:** `GET /openapi.yaml` serves a generated public copy with
-  every `x-amazon-*` extension removed. The Lambda includes it in its binary at compile
+  every `x-amazon-*` extension removed, and a relative `servers` entry of `/v1`, so the
+  build doesn't need the real API URL. The Lambda includes it in its binary at compile
   time, so the route needs no S3 read and always matches the deployed code. The copy is
   generated and not committed.
 - **Build:** a small script in the Python tooling generates the public copy, then
@@ -398,7 +400,8 @@ leak.
   gateway validation with a maximum-size escaped body and a body with an extra field,
   because the local router doesn't run the gateway's validator. It also checks the
   `problem+json` format of gateway errors, and that a birth with no proof gets `400` with
-  `required_bits`. It knows the WAF limit and spaces its requests
+  `required_bits`. One request without the stage records what actually comes back, because
+  the plain `403` there is inferred, not tested. It knows the WAF limit and spaces its requests
   to stay under it, so a full run may take up to about 5 minutes, and it treats a WAF
   `429` as "rate limited, wait and rerun" rather than as a failure.
 - A separate check that trips the WAF limit on purpose and confirms the `429`,
