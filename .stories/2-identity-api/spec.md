@@ -147,7 +147,14 @@ At 100% of budget, a small dedicated function:
    takes effect only after a stage update.
 2. Sets the API Lambda's reserved concurrency to 0 as a backstop.
 
-Re-enabling is manual. This function needs permissions the API Lambda must never
+The function runs on the budget's SNS alert, and also once a day on a schedule, when
+it reads actual spend through the Budgets API and stops the API if spend is at or
+above the limit. The schedule is needed because AWS sends an actual-spend alert only
+once per budget period, so the alert can't fire again after a same-month restart.
+
+Re-enabling is manual, and must first raise the budget limit for the rest of the
+month, or the next daily check stops the API again. The limit goes back to $30 at the
+start of the next month. This function needs permissions the API Lambda must never
 have, so it is separate from the single API Lambda.
 
 Constraints this creates:
@@ -155,7 +162,8 @@ Constraints this creates:
 - A custom domain would bypass the disabled default endpoint, so adding one must
   also change this mechanism.
 - The stop is applied outside CloudFormation. A `cdk deploy` while stopped could
-  reopen the API, so the restart procedure must be documented.
+  reopen the API, so the restart procedure must be documented, including the budget
+  limit change and its reset.
 
 ### Estimated worst cases
 
