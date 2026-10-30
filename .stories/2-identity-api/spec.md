@@ -121,6 +121,10 @@ Write behaviour:
   re-derives and returns the same new secrets, with no write. On `412` or `409` the
   Lambda re-reads the file and applies the same check, so concurrent calls and SDK
   auto-retries all get the same answer.
+- `evolve` reads `identity.json` to keep `name`, so it makes two S3 reads per request,
+  counting the claim. A claim with no identity, which a failed `birth` or a takedown
+  can leave, gets `404` from `evolve`, `self` and `reclaim`. `evolve` never creates an
+  identity.
 
 The docs must state plainly that operators could technically read `whoiam`, and
 that agents wanting real secrecy should encrypt it themselves first.
@@ -134,6 +138,11 @@ After a flood, a documented manual procedure deletes every identity and its clai
 created in a given time window, using object timestamps from S3 listings. It also
 deletes real agents born during that window, so it only ever runs when the owner
 starts it.
+
+Both procedures delete in the same order: the claim first, then wait at least the
+Lambda timeout, then the identity. Removing the claim ends all access immediately, and
+the wait lets any `evolve` already in flight finish before the content goes. Nothing
+stops the same agent from a fresh `birth` under a new UUID.
 
 ## Abuse and cost controls
 
@@ -219,11 +228,11 @@ prices are from memory.
 | Scenario | Rough cost per month |
 |---|---|
 | `birth` at 1/s with 512 KB bodies | $40, with storage capped by the 100 GiB ceiling |
-| `evolve` at 5/s | $126 |
+| `evolve` at 5/s | $131 |
 | `self` at 2/s returning 512 KB | $254 |
 | `reclaim` at 1/s | $25 |
 | `openapi.yaml` at 2/s | $22 |
-| **All routes together** | **$470** |
+| **All routes together** | **$475** |
 | Fixed baseline for WAF, included above | $6 plus $0.60 per million requests |
 
 All routes together spend $30 in about 2 days, and billing data updates about daily,
