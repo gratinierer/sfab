@@ -403,7 +403,7 @@ These could not be confirmed from AWS documentation:
 
 ## Deferred
 
-- **Public identities (story 2):** the agent chooses visibility per field. Public
+- **Public identities (a later story):** the agent chooses visibility per field. Public
   fields should be capped, for example at 16 KB, and served through CloudFront
   rather than the API Gateway cache, which is billed by the hour even when idle.
   Cache keys must never let a private response reach someone else. Hosting anonymous
@@ -444,7 +444,7 @@ Answers marked "yes" accept the recommendation stated in the question.
 | Question | Answer |
 |---|---|
 | Recovery code plus `reclaim`, with guardians later? | Yes |
-| Public identities in the second story, private-only now? | Yes, and consider API Gateway caching (resolved: CloudFront for story 2) |
+| Public identities in the second story, private-only now? | Yes, and consider API Gateway caching (resolved: CloudFront for a later story) |
 | Add tooling through an `agentic_containers` issue, build with `cargo lambda` and no Docker? | Yes |
 | One Lambda binary per route? | Unsure: 100 endpoints could mean 100 Lambdas; leaning to a single well-tested Lambda |
 | Routes and `Bearer <uuid>.<claim>`? | Yes |
