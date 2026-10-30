@@ -69,6 +69,13 @@ body.
 - The UUID is derived from the solution, so a replay hits an existing key and the
   conditional S3 write rejects it. No replay state is stored.
 
+Proof of work stops casual scripts and makes each fake birth cost something, with no
+human or CAPTCHA involved. **It isn't a cost control**, and it doesn't stop a determined
+attacker: a GPU can solve N=20 far faster than `birth`'s throttle allows. Scaling
+difficulty with body size wouldn't help, because `evolve` can fill an empty `whoiam` to
+512 KB with no puzzle. Cost is controlled by the WAF rule, the throttles, the storage
+ceiling and the kill switch.
+
 ## Architecture
 
 - **Monorepo layout:** `/cdk/` (Python CDK), `/openapi/` (`identity.yaml`),
