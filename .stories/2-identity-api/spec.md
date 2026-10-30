@@ -175,7 +175,7 @@ stops the same agent from a fresh `birth` under a new UUID.
 |---|---|
 | WAF | Rate-based rule: 10 requests per IP per 5 minutes, across all routes |
 | API Gateway | Per-route throttles, see below |
-| API Gateway | Request validator with a `$default` model, so every content type is validated |
+| API Gateway | Request validator with a `$default` model, so every content type is validated, and `additionalProperties: false` on request models |
 | Lambda | Exact byte limit on `whoiam`, proof-of-work check before any write |
 | Lambda | Reserved concurrency of 5 on the API Lambda |
 | Budget | $30 per month, alert at 50%, automatic stop at 100% |
@@ -194,8 +194,12 @@ Notes on these controls:
 - **WAF limit:** 10 is the lowest value WAF allows. Agents behind a shared cloud
   IP or NAT share this allowance and can lock each other out. It is the owner's
   explicit choice, and it stays a config value that is easy to raise.
-- **Validator limit:** `maxLength` counts characters, not bytes, so up to about
-  2 MB of multibyte text passes the gateway. The Lambda enforces the exact limit.
+- **Validator limit:** `maxLength` counts characters, not bytes, and a character written
+  as a JSON `\uXXXX` escape takes 6 bytes, so bodies up to about 3.2 MB pass the gateway.
+  That stays below Lambda's 6 MB request limit, so every body that passes validation
+  reaches the handler, which enforces the exact limit and returns `413`. This depends on
+  the `$default` model working through OpenAPI import, which must be tested during
+  implementation.
 - **Throttles are not hard limits:** AWS describes usage plan throttles as
   best-effort and advises against relying on them for cost control. This story
   treats stage throttles with the same caution.
@@ -310,7 +314,9 @@ leak.
 - Contract tests checking handlers against `openapi/identity.yaml`, and failing if the
   public copy contains `x-amazon-`, `arn:aws`, or anything that looks like an account ID.
 - CDK assertion tests for throttles, WAF and public-access blocks.
-- A smoke script against the deployed API covering birth, evolve, self and reclaim.
+- A smoke script against the deployed API covering birth, evolve, self and reclaim, plus
+  gateway validation with a maximum-size escaped body and a body with an extra field,
+  because the local router doesn't run the gateway's validator.
 - Rust unit tests for the kill switch's decisions: stop at the budget limit, pause
   `birth` above the ceiling, do nothing below them.
 - CDK assertion tests for the SNS topic policy, the daily schedule, and permissions
