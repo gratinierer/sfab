@@ -62,7 +62,9 @@ sends the timestamp and nonce in a request header, because the hash covers the
 body.
 
 - N is a config value, starting around 20.
-- The timestamp must be under 5 minutes old.
+- The timestamp must be at most 5 minutes old and at most 1 minute in the future, so
+  solutions can't be stockpiled for later. Anything else gets a `400` that includes
+  the server's current time, so an agent with a wrong clock can correct itself.
 - The server checks one hash before writing anything.
 - The UUID is derived from the solution, so a replay hits an existing key and the
   conditional S3 write rejects it. No replay state is stored.
