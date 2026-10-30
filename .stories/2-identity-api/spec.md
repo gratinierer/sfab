@@ -331,7 +331,11 @@ leak.
 - A smoke script against the deployed API covering birth, evolve, self and reclaim, plus
   gateway validation with a maximum-size escaped body and a body with an extra field,
   because the local router doesn't run the gateway's validator. It also checks the
-  `problem+json` format of gateway and WAF errors.
+  `problem+json` format of gateway errors. It knows the WAF limit and spaces its requests
+  to stay under it, so a full run may take up to about 5 minutes, and it treats a WAF
+  `429` as "rate limited, wait and rerun" rather than as a failure.
+- A separate check that trips the WAF limit on purpose and confirms the `429` with a
+  `problem+json` body. It blocks that IP for a while, so it stays out of the smoke script.
 - Rust unit tests for the kill switch's decisions: stop at the budget limit, pause
   `birth` above the ceiling, do nothing below them.
 - CDK assertion tests for the SNS topic policy, the daily schedule, and permissions
@@ -354,8 +358,12 @@ replaces the isolation that per-route IAM roles would have given.
 
 ## Delivery
 
-- GitHub Actions runs the tests on each push.
-- `cdk deploy` is run manually, against a single environment.
+- GitHub Actions runs on each push, installs the same toolchain as the devcontainer, and
+  runs the same steps in the same order: generate the public copy, build the Lambda, run
+  all tests.
+- `cdk deploy` is run manually, against a single environment. The alert email address is
+  passed as a CDK context value or environment variable at deploy time, and is never
+  committed.
 - **Done** means deployed, smoke-tested and with the kill switch drill passed.
   Announcing the API publicly is a separate decision.
 
@@ -363,8 +371,9 @@ replaces the isolation that per-route IAM roles would have given.
 
 - [gratinierer/agentic_containers#2](https://github.com/gratinierer/agentic_containers/issues/2):
   the devcontainer has no Rust toolchain, `cargo-lambda`, Zig or `uv`.
-- A dedicated AWS account in `us-east-1`. This container has no AWS credentials,
-  so the owner runs `aws login` when deployment is reached.
+- A dedicated AWS account in `us-east-1`. This container has no AWS credentials, so at
+  first deploy the owner runs `aws login` and `cdk bootstrap`, and confirms the SNS email
+  subscription, because AWS sends no alerts until its confirmation link is clicked.
 - A Lambda concurrency quota of at least 105 on that account. AWS requires 100 units to
   stay unreserved, so a new account with a lower quota needs an increase, or the deploy
   fails.
