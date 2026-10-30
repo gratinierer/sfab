@@ -153,9 +153,11 @@ ceiling and the kill switch.
   generated and not committed.
 - **Build:** a small script in the Python tooling generates the public copy, then
   `cargo lambda build` produces the arm64 binary before `cdk deploy`, with no Docker.
-  The build fails if the public copy is missing, and CI runs the same steps. The generate
-  step also records a hash of `identity.yaml` next to the built Lambda, and `cdk synth` fails
-  if it no longer matches, so a stale description can't be deployed. A single `deploy`
+  The build fails if the public copy is missing, and CI runs the same steps. After a
+  successful build, a stamp next to the binary records a hash of every input to the public
+  copy, currently `identity.yaml` and `abuse_contact`. `cdk synth` recomputes the hash from
+  the current files, and fails if it differs or the stamp is missing, so a stale
+  description can't be deployed even with a bare `cdk deploy`. A single `deploy`
   script runs generate, build and `cdk deploy` in order. The Python CDK packages live in a
   virtual environment under `/cdk/`.
 - **Hosting:** a dedicated AWS account in `us-east-1`, with no custom domain in
