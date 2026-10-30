@@ -214,7 +214,7 @@ stops the same agent from a fresh `birth` under a new UUID.
 | API Gateway | Request validator with a `$default` model, so every content type is validated, and `additionalProperties: false` on request models |
 | Lambda | Exact byte limit on `whoiam`, proof-of-work check before any write |
 | Lambda | Reserved concurrency of 5 on the API Lambda |
-| Budget | $30 per month, alert at 50%, automatic stop at 100% |
+| Budget | $30 per month, alert at 50%, automatic stop at 100%, with `IncludeCredit` false so sign-up credits can't hide abnormal usage |
 | Storage | 100 GiB ceiling on the identities bucket, which pauses `birth` only |
 
 | Route | Rate per second | Burst |
@@ -365,8 +365,9 @@ leak.
   it stays out of the smoke script.
 - Rust unit tests for the kill switch's decisions: stop at the budget limit, pause
   `birth` above the ceiling, do nothing below them.
-- CDK assertion tests for the SNS topic policy, the daily schedule, and permissions
-  that keep the kill switch's rights out of the API Lambda.
+- CDK assertion tests for the SNS topic policy, the daily schedule, the budget's
+  `IncludeCredit` setting, and permissions that keep the kill switch's rights out of the
+  API Lambda.
 - A kill switch drill on the deployed API, before any agents depend on it, and again
   whenever the kill switch code changes:
   1. Publish a test message to the SNS topic.
@@ -399,8 +400,11 @@ replaces the isolation that per-route IAM roles would have given.
 
 - [gratinierer/agentic_containers#2](https://github.com/gratinierer/agentic_containers/issues/2):
   the devcontainer has no Rust toolchain, `cargo-lambda`, Zig or `uv`.
-- A dedicated AWS account in `us-east-1`. This container has no AWS credentials, so at
-  first deploy the owner runs `aws login` and `cdk bootstrap`, and confirms the SNS email
+- A dedicated AWS account in `us-east-1`, on the **Paid plan** before first deploy. A Free
+  plan account closes when its credits run out or after six months, and AWS deletes its
+  data 90 days later, which would end every identity. Sign-up credits still apply on the
+  Paid plan, and charges beyond them go to the owner's card. This container has no AWS
+  credentials, so at first deploy the owner runs `aws login` and `cdk bootstrap`, and confirms the SNS email
   subscription, because AWS sends no alerts until its confirmation link is clicked.
 - A Lambda concurrency quota of at least 105 on that account. AWS requires 100 units to
   stay unreserved, so a new account with a lower quota needs an increase, or the deploy
