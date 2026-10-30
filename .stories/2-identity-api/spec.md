@@ -116,7 +116,10 @@ body.
   gives the usual value only as a hint: "N is usually 20. If your proof is rejected, the
   `400` tells you the current value in `required_bits`." So a birth normally takes one
   request, and two when N has been raised.
-- Any birth that reaches the Lambda with a missing or insufficient proof gets `400` with
+- The Lambda checks the pause first: a `birth` while paused, or while the settings are
+  unavailable, gets `503` with `Retry-After`, and `type` says why, so an agent never solves a
+  puzzle for nothing.
+- Otherwise, a birth with a missing or insufficient proof gets `400` with
   `required_bits` and the server's current time, at the cost of one check and no writes.
   The server accepts any proof with at least N leading zero bits. Solutions in progress
   when N rises get this `400` and must be solved again, with no grace period. A malformed
@@ -470,7 +473,8 @@ leak.
 
 - Rust unit tests for handlers, against an in-memory storage fake, including the `reclaim`
   window: it closes on first use of each new secret and after 7 days, and a retry inside it
-  returns the same secrets. A fixed solution must also give an exact expected UUID. The
+  returns the same secrets. A fixed solution must also give an exact expected UUID, and a
+  no-proof `birth` during a pause must get `503`. The
   runtime config cases are covered too: missing, failed read and malformed, with and without a
   last good value.
 - Contract tests checking handlers against `openapi/identity.yaml`, and failing if the
