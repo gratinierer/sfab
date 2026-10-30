@@ -305,7 +305,7 @@ propagate, agents may briefly get a `5xx`, which already means "retry with backo
 The function runs on the stop topic, an SNS topic that receives only the budget's 100%
 alert, and any message on it stops the API. The 50% alert goes straight to email through
 the budget's own notification, so it can't stop anything. The function also runs once a
-day on a schedule, when
+day on a schedule, at 12:00 UTC, when
 it reads actual spend through the Budgets API and stops the API if spend is at or
 above the limit. The schedule is needed because AWS sends an actual-spend alert only
 once per budget period, so the alert can't fire again after a same-month restart.
@@ -345,8 +345,11 @@ build and toolchain as the API Lambda.
 Re-enabling is manual, and must first raise the budget limit for the rest of the
 month, or the next daily check stops the API again. On the first daily run of each month
 (UTC), if the limit is above the base value, $30 as a config value, the function sets it
-back and emails the owner. Spend starts from $0 each month, so this can't trigger a stop,
-and a stop from the previous month stays until the owner restarts. A restart also puts the API Lambda's reserved concurrency back
+back and emails the owner. That run always skips its spend check, because AWS updates budgets only
+every 8-12 hours and doesn't document what `ActualSpend` shows just after a month rolls over.
+A stale figure compared with the lowered limit could otherwise stop a healthy API. The storage
+check still runs, and the budget's 100% alert still works, since it's the first of the new
+period. A stop from the previous month stays until the owner restarts. A restart also puts the API Lambda's reserved concurrency back
 to 5. This function needs permissions the API Lambda must never
 have, so it is separate from the single API Lambda.
 
@@ -469,8 +472,8 @@ leak.
   blocks that IP for a while, so it stays out of the smoke script.
 - Rust unit tests for the kill switch's decisions: stop at the budget limit, pause
   `birth` above the ceiling, clear the pause below the lower threshold, and leave it alone
-  in between. Also: reset the budget limit on the month's first run, leave it alone at or
-  below the base value, and never let a failed reset block the spend check. A failure in
+  in between. Also: reset the budget limit on the month's first run without stopping the API,
+  even with last month's high spend, leave it alone at or below the base value, and never let a failed reset block the spend check. A failure in
   any stop step still attempts the others, and raises the failure alert. It never writes the
   runtime config after a failed read.
 - Parser tests: synth rejects a missing value and `CHANGE_ME`, and the example file and the
