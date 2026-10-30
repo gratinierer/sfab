@@ -420,7 +420,9 @@ leak.
   in between. Also: reset the budget limit on the month's first run, leave it alone at or
   below the base value, and never let a failed reset block the spend check. A failure in
   either stop step still attempts the other, and raises the failure alert.
-- CDK assertion tests for the email subscription, synth failing on a missing config value,
+- Parser tests: synth rejects a missing value and `CHANGE_ME`, and the example file and the
+  test fixture hold the same keys.
+- CDK assertion tests for the email subscription,
   the SNS topic policy, the 50% alert not targeting the stop
   topic, the daily schedule, the budget's `IncludeCredit` setting, and permissions that keep the kill switch's rights out of the
   API Lambda.
@@ -450,18 +452,22 @@ replaces the isolation that per-route IAM roles would have given.
 ## Delivery
 
 - GitHub Actions runs on each push, installs the same toolchain as the devcontainer, and
-  runs the same steps in the same order: generate the public copy, build the Lambda, run
-  all tests.
+  runs the same steps in the same order, using the test fixture for config: generate the
+  public copy, build the Lambda, run all tests.
 - `cdk deploy` is run manually, against a single environment.
 - **Local config:** `sfab.config.toml` at the repo root holds private per-owner values,
   starting with `account_id`, `alert_email` and `abuse_contact`. The build step puts
   `abuse_contact` into the public description's `info.contact`, so that address is
   published, and the API can't go live without one. It's listed in `.gitignore`, and
-  `sfab.config.example.toml` is committed with dummy values and comments. `cdk synth` parses
-  it through one small parser that later artifacts can reuse, and fails with a clear message
-  that names any missing or placeholder value, or a missing file, so a deploy can't silently
-  drop the alerts. CDK targets `account_id` explicitly, so credentials for another account
-  fail. CI copies the example file for synth and tests, since it never deploys. Only private
+  `sfab.config.example.toml` is committed with `CHANGE_ME` for every value and comments.
+  `cdk synth` parses it through one small parser that later artifacts can reuse, and fails
+  with a clear message that names any missing value, any `CHANGE_ME`, or a missing file, so
+  a copied example or a forgotten value can't silently drop the alerts. CDK targets
+  `account_id` explicitly, so credentials for another account fail. CI instead points the
+  parser at a committed fixture, `cdk/tests/fixtures/sfab.config.test.toml`, through an
+  `SFAB_CONFIG` environment variable, with account `000000000000` and `.invalid` email
+  addresses. That account doesn't exist, so the fixture can't deploy, and the `deploy` script
+  refuses to run with `SFAB_CONFIG` set. Only private
   values go here: public settings such as the budget, ceiling and region stay in the CDK
   code, where they're reviewed. Real secrets don't belong in it. Changing `alert_email`
   replaces the SNS subscription, and AWS sends no alerts until the new confirmation link is
