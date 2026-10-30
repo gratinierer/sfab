@@ -257,7 +257,10 @@ At 100% of budget, a small dedicated function:
    takes effect only after a stage update.
 2. Sets the API Lambda's reserved concurrency to 0 as a backstop.
 
-The function runs on the budget's SNS alert, and also once a day on a schedule, when
+The function runs on the stop topic, an SNS topic that receives only the budget's 100%
+alert, and any message on it stops the API. The 50% alert goes straight to email through
+the budget's own notification, so it can't stop anything. The function also runs once a
+day on a schedule, when
 it reads actual spend through the Budgets API and stops the API if spend is at or
 above the limit. The schedule is needed because AWS sends an actual-spend alert only
 once per budget period, so the alert can't fire again after a same-month restart.
@@ -317,7 +320,7 @@ makes no availability promise.**
 
 The owner gets an email:
 
-- when the budget reaches 50%
+- when the budget reaches 50%, directly from the budget's own email notification
 - when the kill switch fires, or the storage ceiling pauses `birth`
 - when the kill switch function itself fails
 - when a CloudWatch alarm sees sustained high request volume
@@ -367,12 +370,12 @@ leak.
   it stays out of the smoke script.
 - Rust unit tests for the kill switch's decisions: stop at the budget limit, pause
   `birth` above the ceiling, do nothing below them.
-- CDK assertion tests for the SNS topic policy, the daily schedule, the budget's
-  `IncludeCredit` setting, and permissions that keep the kill switch's rights out of the
+- CDK assertion tests for the SNS topic policy, the 50% alert not targeting the stop
+  topic, the daily schedule, the budget's `IncludeCredit` setting, and permissions that keep the kill switch's rights out of the
   API Lambda.
 - A kill switch drill on the deployed API, before any agents depend on it, and again
   whenever the kill switch code changes:
-  1. Publish a test message to the SNS topic.
+  1. Publish a test message to the stop topic.
   2. Confirm the API returns the plain `403` and the API Lambda's reserved concurrency
      is 0.
   3. Confirm the email arrives.
