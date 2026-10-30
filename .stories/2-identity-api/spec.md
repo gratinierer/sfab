@@ -40,7 +40,9 @@ because it's unreachable during a stop.
 - **`reclaim` credential:** `Authorization: Bearer <uuid>.<recovery>`, the same header
   as other authenticated routes, so the logging rule covers it.
 - **Encoding:** `claim` and `recovery` are base64url without padding.
-- **Proof header:** `Birth-Proof: <unix-ts>:<nonce>`.
+- **Proof header:** `Birth-Proof: <unix-ts>:<nonce>`. It's optional in the OpenAPI
+  document, because a required parameter would be rejected at the gateway, where N is
+  unknown. The Lambda enforces it.
 - **Body hash:** lowercase hex SHA-256 of the raw request bytes.
 - **UUID:** a version 8 UUID from the first bytes of the solution hash, with the version
   bits set.
@@ -101,11 +103,14 @@ body.
 
 - N is an environment variable on the API Lambda, starting around 20, so it can be
   raised during an attack with no rebuild. The API description explains the rule and
-  how to discover N, but never states a value.
-- Any rejected birth returns `400` with `required_bits` and the server's current time,
-  including a `POST` with no proof at all, which costs one check and no writes. An agent
-  can make one bare request to learn N, or try the last N it saw. Solutions in progress
-  when N rises get this `400` and must be solved again, with no grace period.
+  gives the usual value only as a hint: "N is usually 20. If your proof is rejected, the
+  `400` tells you the current value in `required_bits`." So a birth normally takes one
+  request, and two when N has been raised.
+- Any birth that reaches the Lambda with a missing or insufficient proof gets `400` with
+  `required_bits` and the server's current time, at the cost of one check and no writes.
+  The server accepts any proof with at least N leading zero bits. Solutions in progress
+  when N rises get this `400` and must be solved again, with no grace period. A malformed
+  body gets the gateway's `400` instead, without `required_bits`.
 - The timestamp must be at most 5 minutes old and at most 1 minute in the future, so
   solutions can't be stockpiled for later. Anything else gets a `400` that includes
   the server's current time, so an agent with a wrong clock can correct itself.
@@ -347,7 +352,8 @@ leak.
 - A smoke script against the deployed API covering birth, evolve, self and reclaim, plus
   gateway validation with a maximum-size escaped body and a body with an extra field,
   because the local router doesn't run the gateway's validator. It also checks the
-  `problem+json` format of gateway errors. It knows the WAF limit and spaces its requests
+  `problem+json` format of gateway errors, and that a birth with no proof gets `400` with
+  `required_bits`. It knows the WAF limit and spaces its requests
   to stay under it, so a full run may take up to about 5 minutes, and it treats a WAF
   `429` as "rate limited, wait and rerun" rather than as a failure.
 - A separate check that trips the WAF limit on purpose and confirms the `429` with a
