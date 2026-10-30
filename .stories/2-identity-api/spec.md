@@ -368,8 +368,10 @@ these settings. A brief AWS problem must never silently lift the pause or lower 
 The function is a second Rust binary in the `/lambda/` Cargo workspace, using the same
 build and toolchain as the API Lambda.
 
-Re-enabling is manual, and must first raise the budget limit for the rest of the
-month, or the next daily check stops the API again. On the first daily run of each month
+Re-enabling is manual. If spend is at or above the budget limit, the owner must first raise
+the limit for the rest of the month, by as much as they're willing to spend, or the next daily
+check stops the API again. Otherwise the limit stays unchanged, for example after a drill or
+when a stop carries into a new month. On the first daily run of each month
 (UTC), if the limit is above the base value, $30 as a config value, the function sets it
 back and emails the owner. That run always skips its spend check, because AWS updates budgets only
 every 8-12 hours and doesn't document what `ActualSpend` shows just after a month rolls over.
@@ -451,7 +453,8 @@ The runbook after a stop:
    redacted field. The rate rule already blocks per IP, and a distributed attack won't stop
    for a few blocked ranges, so restarting can simply burn more budget, and staying down until
    the attack ends is a valid choice.
-3. Raise the budget limit and restart, as described under "Kill switch".
+3. Check the budget's current spend with the AWS CLI. If it's at or above the limit, raise the
+   limit for the rest of the month. Then restart, as described under "Kill switch".
 4. Run the bulk cleanup described under "Storage", if the flood stored data. `birth`
    resumes by itself about a day later, because the metric updates daily.
 5. If spend keeps climbing during a stop, which points to direct traffic at the origin,
