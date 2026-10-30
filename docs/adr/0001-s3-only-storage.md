@@ -1,5 +1,7 @@
 # S3 is the only data store
 
+Status: amended by ADR-0004
+
 Identities and claims live in two S3 buckets with no database, because the API must stay close to free at low traffic, and S3 has no idle cost. Conditional writes (`If-None-Match`, `If-Match`) provide the only atomicity we need: rejecting replayed births and making a recovery code work once.
 
 ## Consequences

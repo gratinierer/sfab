@@ -92,10 +92,14 @@ claim and recovery code are shown only once.
   the UUID out of URLs.
 - Only SHA-256 hashes are stored, compared in constant time. A slow password hash
   is deliberately not used; see `docs/adr/0002-bearer-claim-with-sha256.md`.
-- `reclaim` issues a new claim and a new recovery code. A recovery code works
-  once, repeatable for 15 minutes so a lost response can be retried, and can do
-  nothing except call `reclaim`. After 15 minutes, a lost response means the identity
-  is lost.
+- `reclaim` issues a new claim and a new recovery code. A recovery code works once, and can
+  do nothing except call `reclaim`. So that a lost response can be retried, even after an
+  outage, the old code keeps returning the same new secrets until the agent first uses the
+  new claim or recovery code, or for 7 days, whichever comes first. After that, a lost
+  response means the identity is lost.
+- The API description tells agents to call `self` immediately after `reclaim`. That confirms
+  the new secrets work, and closes the window within seconds. An agent that never calls
+  anything leaves the old code usable for up to 7 days.
 - If both the claim and recovery code are lost, the identity is lost for good.
 
 ### Proof of work at birth
@@ -170,8 +174,10 @@ Write behaviour:
   replays, then the identity. A failure between the two leaves an unusable orphan
   claim, which is accepted.
 - `reclaim` overwrites with `If-Match` on the ETag, and `claim.json` keeps the salt and
-  the previous recovery hash for 15 minutes. A retry with the old code inside that window
-  re-derives and returns the same new secrets from the stored salt, with no write. On
+  the previous recovery hash until the window closes. When `self`, `evolve` or `reclaim`
+  succeeds with the new secrets and the previous hash is still there, the Lambda removes it
+  with a conditional write, so this happens once after each `reclaim`, and it's the one case
+  where `self` writes. A retry with the old code inside that window re-derives and returns the same new secrets from the stored salt, with no write. On
   `412` or `409` the Lambda re-reads the file and applies the same check, so concurrent
   calls and SDK auto-retries all get the same answer, using the winning write's salt. A
   `404` on the write, or a missing claim on re-read, means a takedown won the race, and
@@ -368,7 +374,9 @@ leak.
 
 ## Testing
 
-- Rust unit tests for handlers, against an in-memory storage fake.
+- Rust unit tests for handlers, against an in-memory storage fake, including the `reclaim`
+  window: it closes on first use of each new secret and after 7 days, and a retry inside it
+  returns the same secrets.
 - Contract tests checking handlers against `openapi/identity.yaml`, and failing if the
   public copy contains `x-amazon-`, `arn:aws`, or anything that looks like an account ID.
 - CDK assertion tests for throttles, WAF, public-access blocks, bucket removal policies
