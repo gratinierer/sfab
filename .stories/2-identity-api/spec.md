@@ -269,7 +269,11 @@ The daily run also reads the identities bucket's size from the CloudWatch
 `BucketSizeBytes` metric. Above 100 GiB, a config value, it pauses `birth` through a
 flag on the API Lambda, and every other route keeps working. The kill switch can't
 stop charges for data already stored, so this keeps storage alone from exceeding the
-budget. The metric updates daily, so a flood can overshoot by a day or two.
+budget. The metric updates daily, so a flood can overshoot by a day or two. The daily run
+clears the flag once the bucket drops below 80 GiB, also a config value, and the gap stops
+`birth` flipping on and off around the ceiling. Unlike a restart, this is automatic,
+because storage only drops if someone deleted data, and the ceiling still applies if a
+flood returns.
 
 The function is a second Rust binary in the `/lambda/` Cargo workspace, using the same
 build and toolchain as the API Lambda.
@@ -321,7 +325,7 @@ makes no availability promise.**
 The owner gets an email:
 
 - when the budget reaches 50%, directly from the budget's own email notification
-- when the kill switch fires, or the storage ceiling pauses `birth`
+- when the kill switch fires, or the storage ceiling pauses or resumes `birth`
 - when the kill switch function itself fails
 - when a CloudWatch alarm sees sustained high request volume
 
@@ -336,7 +340,8 @@ The runbook after a stop:
    won't stop for a few blocked ranges, so restarting can simply burn more budget, and
    staying down until the attack ends is a valid choice.
 3. Raise the budget limit and restart, as described under "Kill switch".
-4. Run the bulk cleanup described under "Storage", if the flood stored data.
+4. Run the bulk cleanup described under "Storage", if the flood stored data. `birth`
+   resumes by itself about a day later, because the metric updates daily.
 
 Restarting is never automatic, because that would let an attacker burn through the
 budget repeatedly.
@@ -369,7 +374,8 @@ leak.
   `application/json`, the body fields and `Retry-After`. It blocks that IP for a while, so
   it stays out of the smoke script.
 - Rust unit tests for the kill switch's decisions: stop at the budget limit, pause
-  `birth` above the ceiling, do nothing below them.
+  `birth` above the ceiling, clear the pause below the lower threshold, and leave it alone
+  in between.
 - CDK assertion tests for the SNS topic policy, the 50% alert not targeting the stop
   topic, the daily schedule, the budget's `IncludeCredit` setting, and permissions that keep the kill switch's rights out of the
   API Lambda.
