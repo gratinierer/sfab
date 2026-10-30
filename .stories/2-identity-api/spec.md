@@ -149,8 +149,11 @@ ceiling and the kill switch.
   generated and not committed.
 - **Build:** a small script in the Python tooling generates the public copy, then
   `cargo lambda build` produces the arm64 binary before `cdk deploy`, with no Docker.
-  The build fails if the public copy is missing, and CI runs the same steps. The Python
-  CDK packages live in a virtual environment under `/cdk/`.
+  The build fails if the public copy is missing, and CI runs the same steps. The generate
+  step also records a hash of `identity.yaml` next to the built Lambda, and `cdk synth` fails
+  if it no longer matches, so a stale description can't be deployed. A single `deploy`
+  script runs generate, build and `cdk deploy` in order. The Python CDK packages live in a
+  virtual environment under `/cdk/`.
 - **Hosting:** a dedicated AWS account in `us-east-1`, with no custom domain in
   this story. The endpoint type is explicitly `REGIONAL`, not CDK's default of `EDGE`,
   because a later story would put our own CloudFront in front for public reads. Agents
