@@ -401,12 +401,13 @@ leak.
   because the local router doesn't run the gateway's validator. It also checks the
   `problem+json` format of gateway errors, and that a birth with no proof gets `400` with
   `required_bits`. One request without the stage records what actually comes back, because
-  the plain `403` there is inferred, not tested. It knows the WAF limit and spaces its requests
-  to stay under it, so a full run may take up to about 5 minutes, and it treats a WAF
-  `429` as "rate limited, wait and rerun" rather than as a failure.
-- A separate check that trips the WAF limit on purpose and confirms the `429`,
-  `application/json`, the body fields and `Retry-After`. It blocks that IP for a while, so
-  it stays out of the smoke script.
+  the plain `403` there is inferred, not tested. It sends about 13 requests, one every 35
+  seconds to stay safely under the WAF limit, which isn't precise, so a run takes about 8
+  minutes. It treats a WAF `429` as "rate limited, wait and rerun" rather than as a failure.
+- A separate abuse check that sends a quick burst of `birth` requests with no proof. The
+  first ones confirm the gateway's `THROTTLED` `429` with `problem+json`. Continuing past 10
+  requests confirms WAF's `429`, `application/json`, the body fields and `Retry-After`. It
+  blocks that IP for a while, so it stays out of the smoke script.
 - Rust unit tests for the kill switch's decisions: stop at the budget limit, pause
   `birth` above the ceiling, clear the pause below the lower threshold, and leave it alone
   in between. Also: reset the budget limit on the month's first run, leave it alone at or
