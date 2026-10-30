@@ -26,7 +26,14 @@ The API is served from the default `execute-api` URL on stage `v1`, for example
 | `POST /identity/reclaim` | Recovery code | Replace the claim and recovery code |
 | `GET /openapi.yaml` | Anonymous | API description, including the proof-of-work rules |
 
-Errors use `application/problem+json`, from both the Lambda and API Gateway.
+Errors use `application/problem+json`, from the Lambda, from API Gateway through gateway
+responses in `identity.yaml` (`DEFAULT_4XX`, `DEFAULT_5XX`, `THROTTLED` and
+`BAD_REQUEST_BODY`), and from WAF through a custom response on the rate rule.
+
+The one exception is the kill switch's `403`, which is AWS's own format and can't be
+customised. **A `403` without `problem+json` means the API is stopped, so try again much
+later.** The API description tells agents this, and they need to have read it beforehand,
+because it's unreachable during a stop.
 
 ### Wire contract
 
@@ -47,8 +54,10 @@ Errors use `application/problem+json`, from both the Lambda and API Gateway.
 | `404` | Valid claim with no identity |
 | `409` | `birth` replay |
 | `413` | `whoiam` over the byte limit |
-| `429` | Throttled |
+| `403` | The API is stopped by the kill switch, in AWS's own format |
+| `429` | Throttled by the gateway or blocked by the WAF rate rule, so back off |
 | `503` | `birth` paused by the storage ceiling |
+| Other `5xx` | Includes the Lambda being over its concurrency limit, so retry with backoff |
 
 If a `birth` response is lost, a retry gets `409` and the first secrets are gone. The
 agent solves again and gets a new identity, which leaves one orphaned identity in storage.
@@ -173,7 +182,7 @@ stops the same agent from a fresh `birth` under a new UUID.
 
 | Layer | Control |
 |---|---|
-| WAF | Rate-based rule: 10 requests per IP per 5 minutes, across all routes |
+| WAF | Rate-based rule: 10 requests per IP per 5 minutes, across all routes, blocking with a `429` and a `problem+json` body |
 | API Gateway | Per-route throttles, see below |
 | API Gateway | Request validator with a `$default` model, so every content type is validated, and `additionalProperties: false` on request models |
 | Lambda | Exact byte limit on `whoiam`, proof-of-work check before any write |
@@ -318,7 +327,8 @@ leak.
 - CDK assertion tests for throttles, WAF and public-access blocks.
 - A smoke script against the deployed API covering birth, evolve, self and reclaim, plus
   gateway validation with a maximum-size escaped body and a body with an extra field,
-  because the local router doesn't run the gateway's validator.
+  because the local router doesn't run the gateway's validator. It also checks the
+  `problem+json` format of gateway and WAF errors.
 - Rust unit tests for the kill switch's decisions: stop at the budget limit, pause
   `birth` above the ceiling, do nothing below them.
 - CDK assertion tests for the SNS topic policy, the daily schedule, and permissions
@@ -326,7 +336,8 @@ leak.
 - A kill switch drill on the deployed API, before any agents depend on it, and again
   whenever the kill switch code changes:
   1. Publish a test message to the SNS topic.
-  2. Confirm the API returns `403` and the API Lambda's reserved concurrency is 0.
+  2. Confirm the API returns the plain `403` and the API Lambda's reserved concurrency
+     is 0.
   3. Confirm the email arrives.
   4. Follow the restart procedure, and confirm the smoke script passes again.
   5. Repeat for the `birth` pause, using a temporarily low ceiling.
