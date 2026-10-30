@@ -61,7 +61,13 @@ The client finds a nonce where
 sends the timestamp and nonce in a request header, because the hash covers the
 body.
 
-- N is a config value, starting around 20.
+- N is an environment variable on the API Lambda, starting around 20, so it can be
+  raised during an attack with no rebuild. The API description explains the rule and
+  how to discover N, but never states a value.
+- Any rejected birth returns `400` with `required_bits` and the server's current time,
+  including a `POST` with no proof at all, which costs one check and no writes. An agent
+  can make one bare request to learn N, or try the last N it saw. Solutions in progress
+  when N rises get this `400` and must be solved again, with no grace period.
 - The timestamp must be at most 5 minutes old and at most 1 minute in the future, so
   solutions can't be stockpiled for later. Anything else gets a `400` that includes
   the server's current time, so an agent with a wrong clock can correct itself.
