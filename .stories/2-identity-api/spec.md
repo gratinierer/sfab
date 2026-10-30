@@ -10,13 +10,17 @@ create an identity through a public API, keep it private, change it, read it
 back, and recover access to it.
 
 The API must stay easy for an agent to use with no human in the loop, and an
-attack must not produce an uncontrolled AWS bill. When those priorities
-collide, **the bill comes first and availability second**.
+attack must not produce an uncontrolled AWS bill from anything the API processes. When
+those priorities collide, **the bill comes first and availability second**. A flood blocked
+at CloudFront's WAF costs nothing. What can still cost money is traffic spread over enough
+IPs to stay under the per-IP limit, and direct requests to the origin if its URL leaks. The
+owner accepts this remaining risk; see "Estimated worst cases".
 
 ## API
 
-The API is served from the default `execute-api` URL on stage `v1`, for example
-`/v1/identity/birth`.
+The API is served through CloudFront at `https://api.<domain_name>`, on stage `v1`, for
+example `https://api.<domain_name>/v1/identity/birth`. `domain_name` comes from the local
+config.
 
 | Route | Auth | Purpose |
 |---|---|---|
@@ -30,15 +34,11 @@ Errors use `application/problem+json`, from the Lambda and from API Gateway thro
 responses in `identity.yaml` (`DEFAULT_4XX`, `DEFAULT_5XX`, `THROTTLED` and
 `BAD_REQUEST_BODY`).
 
-WAF's `429` is the first exception. WAF can't send that content type, so its custom
-response uses `application/json` with a body of the same shape (`type`, `title`, `status`,
-`detail`), and `Retry-After: 300`.
-
-The second exception is the kill switch's `403`, which is AWS's own format and can't be
-customised. **A `403` without `problem+json` means the API is stopped, so try again much
-later, or that the URL doesn't include `/v1`, which agents should check first.** The API
-description tells agents this, and they need to have read it beforehand, because it's
-unreachable during a stop.
+WAF's responses are the one exception. WAF can't send that content type, so its custom
+responses use `application/json` with a body of the same shape (`type`, `title`, `status`,
+`detail`). That covers the rate limit's `429` with `Retry-After: 300`, a path outside `/v1/`
+getting `404`, and **the kill switch's `503` with `Retry-After`, whose `type` says the API is
+stopped**. All API responses also send `Cache-Control: no-store`.
 
 ### Wire contract
 
@@ -60,12 +60,11 @@ unreachable during a stop.
 | `200` | `evolve`, `self`, `reclaim` or `openapi.yaml` succeeded |
 | `400` | Malformed request, `whoiam` over the limit whether caught by the gateway or the Lambda, bad proof or stale timestamp; proof failures include `required_bits` and the server's current time |
 | `401` | Missing or wrong credentials, including an expired recovery code; an unknown UUID gets the same response, so UUIDs can't be probed |
-| `404` | Valid claim with no identity |
+| `404` | Valid claim with no identity, or a path outside `/v1/` |
 | `409` | `birth` replay |
-| `403` | The API is stopped by the kill switch, in AWS's own format |
 | `413` | AWS's own response for a body over 10 MB |
 | `429` | Throttled by the gateway or blocked by the WAF rate rule, so back off |
-| `503` | `birth` paused by the storage ceiling |
+| `503` | `birth` paused by the storage ceiling, or the whole API stopped by the kill switch; `type` says which |
 | Other `5xx` | Includes the Lambda being over its concurrency limit, so retry with backoff |
 
 If a `birth` response is lost, a retry gets `409` and the first secrets are gone. The
@@ -140,8 +139,30 @@ ceiling and the kill switch.
 
 - **Monorepo layout:** `/cdk/` (Python CDK), `/openapi/` (`identity.yaml`),
   `/lambda/` (Cargo workspace).
-- **Request path:** API Gateway REST API, then one Rust Lambda on arm64 with an
-  internal `axum` router, then S3. See `docs/adr/0003-single-lambda.md`.
+- **Request path:** CloudFront with WAF, then an API Gateway REST API, then one Rust Lambda
+  on arm64 with an internal `axum` router, then S3. See `docs/adr/0003-single-lambda.md` and
+  `docs/adr/0005-cloudfront-front-door.md`.
+- **Front door:** one CloudFront distribution on the Free flat-rate plan, with 1 million
+  requests and 100 GB per month, no overage charges, and WAF included. It uses the managed
+  `CachingDisabled` and `AllViewerExceptHostHeader` policies, so nothing is cached and
+  `Authorization` reaches the origin on every method. The plan is subscribed through
+  `AWS::PricingPlanManager::Subscription`. Pro at $15 per month is the first upgrade, for
+  CloudFront and WAF logs or if the Free plan can't take these policies.
+- **Origin key:** CloudFront adds a secret API key header, and API Gateway requires it on
+  every method, so a request straight to `execute-api` is rejected before the Lambda runs.
+  CloudFront overwrites a viewer's header of the same name. This only proves a request came
+  through CloudFront, and isn't how agents authenticate.
+- **Domain:** the stack registers `domain_name` through a custom resource, only when
+  `register_domain` is true. It first checks whether the account already owns the domain,
+  refuses any price above `max_price`, keeps WHOIS privacy and auto-renew on, and does nothing
+  on stack deletion or rollback, so the domain is never lost. A first deploy may run long or
+  time out, because registration can take days and needs an email confirmation; rerunning
+  `cdk deploy` is the recovery. Buying through the console is the documented fallback, which
+  the "already owned" check picks up. The helper is a small Python function, an exception for
+  deploy-time code. It also creates the TLS certificate, which must be in `us-east-1`, and the
+  `api.` DNS record. Contact details appear in the CloudFormation template and `cdk.out`,
+  readable only within this dedicated account, and `cdk.out` is gitignored. Registrations and
+  renewals are non-refundable.
 - **OpenAPI is the single source:** `openapi/identity.yaml` includes the AWS
   extensions and validators, with only a placeholder for the Lambda ARN. The CDK fills
   in the ARN in memory at deploy time and passes the result to `SpecRestApi`, so no
@@ -160,10 +181,8 @@ ceiling and the kill switch.
   description can't be deployed even with a bare `cdk deploy`. A single `deploy`
   script runs generate, build and `cdk deploy` in order. The Python CDK packages live in a
   virtual environment under `/cdk/`.
-- **Hosting:** a dedicated AWS account in `us-east-1`, with no custom domain in
-  this story. The endpoint type is explicitly `REGIONAL`, not CDK's default of `EDGE`,
-  because a later story would put our own CloudFront in front for public reads. Agents
-  far from `us-east-1` accept slightly higher latency.
+- **Hosting:** a dedicated AWS account in `us-east-1`. The API Gateway endpoint type is
+  explicitly `REGIONAL`, not CDK's default of `EDGE`, because our own CloudFront is in front.
 
 ### Storage
 
@@ -227,12 +246,14 @@ stops the same agent from a fresh `birth` under a new UUID.
 
 | Layer | Control |
 |---|---|
-| WAF | Rate-based rule: 10 requests per IP per 5 minutes, across all routes, blocking with a `429`, `application/json` and `Retry-After: 300` |
+| CloudFront WAF | Rate-based rule: 10 requests per IP per 5 minutes, across all routes, blocking with a `429`, `application/json` and `Retry-After: 300` |
+| CloudFront WAF | A rule returning a JSON `404` for any path outside `/v1/`, so wrong paths never reach API Gateway. Free plan allows 5 rules in total |
+| API Gateway | The origin key, required on every method |
 | API Gateway | Per-route throttles, see below |
 | API Gateway | Request validator with a `$default` model, so every content type is validated, and `additionalProperties: false` on request models |
 | Lambda | Exact byte limit on `whoiam`, proof-of-work check before any write |
 | Lambda | Reserved concurrency of 5 on the API Lambda |
-| Budget | $30 per month, alert at 50%, automatic stop at 100%, with `IncludeCredit` false so sign-up credits can't hide abnormal usage |
+| Budget | $30 per month, alert at 50%, automatic stop at 100%, with `IncludeCredit` false so sign-up credits can't hide abnormal usage, and domain registration charges excluded so a purchase or renewal can't use up the budget |
 | Storage | 100 GiB ceiling on the identities bucket, which pauses `birth` only |
 
 | Route | Rate per second | Burst |
@@ -268,15 +289,18 @@ Notes on these controls:
 
 At 100% of budget, a small dedicated function:
 
-1. Sets the API Lambda's reserved concurrency to 0, which takes effect at once and stops
+1. Flips the CloudFront WAF's default action to Block, returning the `503`. Blocked requests
+   are free on the flat-rate plan and don't count against its allowance, so a stop costs
+   nothing per request.
+2. Sets the API Lambda's reserved concurrency to 0, which takes effect at once and stops
    spending on Lambda, S3 and data transfer.
-2. Sets `disableExecuteApiEndpoint` on the REST API and deploys the stage. AWS
-   documents that this affects all stages and returns `403`, and that the change
-   takes effect only after a stage update.
+3. Sets `disableExecuteApiEndpoint` on the REST API and deploys the stage, which also closes
+   direct access to the origin. AWS documents that this affects all stages and returns
+   `403`, and that the change takes effect only after a stage update.
 
-A failure in one step doesn't skip the other, and either failure raises the failure alert.
-Both steps can safely run twice, so a retry or a second alert does no harm. Between the
-steps, agents briefly get a `5xx`, which already means "retry with backoff".
+A failure in one step doesn't skip the others, and any failure raises the failure alert. All
+steps can safely run twice, so a retry or a second alert does no harm. While the steps
+propagate, agents may briefly get a `5xx`, which already means "retry with backoff".
 
 The function runs on the stop topic, an SNS topic that receives only the budget's 100%
 alert, and any message on it stops the API. The 50% alert goes straight to email through
@@ -319,9 +343,8 @@ have, so it is separate from the single API Lambda.
 
 Constraints this creates:
 
-- A custom domain would bypass the disabled default endpoint, so adding one must
-  also change this mechanism.
-- The stop is applied outside CloudFormation. A `cdk deploy` while stopped could
+- The stop, including the WAF default action, is applied outside CloudFormation. A
+  `cdk deploy` while stopped could
   reopen the API, so the restart procedure must be documented, including the budget
   limit change.
 - The budget limit is also changed outside CloudFormation, so editing the budget in the CDK
@@ -329,27 +352,37 @@ Constraints this creates:
 
 ### Estimated worst cases
 
-These assume a distributed flood that WAF's per-IP rule doesn't stop, sustained
-for a month with no kill switch and with the throttles holding. They include API
-Gateway, WAF, S3 and Lambda requests, plus data transfer and storage, but not Lambda
-duration. Each figure is calculated from the same prices, and the S3 and Lambda prices are
-from memory.
+These assume a distributed flood that WAF's per-IP rule doesn't stop, sustained for a month
+with no kill switch and with the throttles holding. They include API Gateway, S3 and Lambda
+requests, and storage, but not Lambda duration. WAF, CloudFront and data transfer are covered
+by the flat-rate plan. Each figure is calculated from the same prices, and the S3 and Lambda
+prices are from memory. Domain charges are excluded.
 
 | Scenario | Rough cost per month |
 |---|---|
-| `birth` at 1/s with 32 KB bodies | $38, and storage reaches the 100 GiB ceiling in about 38 days |
-| `evolve` at 5/s | $131 |
-| `self` at 2/s returning 32 KB | $41 |
-| `reclaim` at 1/s | $25 |
-| `openapi.yaml` at 2/s, at an assumed 20 KB document | $31 |
-| Fixed WAF baseline | $6 |
-| **All together** | **$272** |
+| `birth` at 1/s with 32 KB bodies | $36, and storage reaches the 100 GiB ceiling in about 38 days |
+| `evolve` at 5/s | $123 |
+| `self` at 2/s returning 32 KB | $23 |
+| `reclaim` at 1/s | $24 |
+| `openapi.yaml` at 2/s | $19 |
+| **All together** | **$225** |
 
-All together spend $30 in about 3.3 days. AWS Budgets updates every 8-12 hours, and
+All together spend $30 in about 4 days. AWS Budgets updates every 8-12 hours, and
 there is a further billing delay of unstated length, so the kill switch's overshoot has no
-documented upper bound. About a day's spend, roughly $9, is a planning estimate and not
+documented upper bound. About a day's spend, roughly $8, is a planning estimate and not
 a guarantee. The $30 budget is a stop for a sustained attack. It doesn't mean the API can
 absorb one.
+
+Floods outside that table:
+
+| Flood | Cost |
+|---|---|
+| Blocked by CloudFront's WAF, including during a stop | $0, and it doesn't count against the plan's allowance |
+| Spread over enough IPs to stay under the WAF limit | Reaches API Gateway; 1,000 requests per second would need about 30,000 IPs. Beyond the throttles it could cost about $302 per day if throttled requests are billed, which `issues/02-measure-rejected-request-billing.md` measures |
+| Straight to `execute-api`, if the origin's URL leaks | Skips CloudFront and its free blocking; the origin key rejects them, and the same billing question applies |
+
+Traffic that passes WAF never costs CloudFront overage, but sustained excess over the plan's
+allowance might slow delivery. The owner accepts these remaining risks.
 
 ## Operations
 
@@ -372,13 +405,17 @@ during implementation.
 
 The runbook after a stop:
 
-1. Look at the access logs to see what happened.
+1. Look at API Gateway's access logs and WAF's metrics to see what happened. The Free plan has
+   no CloudFront or WAF logs, so upgrade to Pro if the attack needs them.
 2. Block the offending IPs or ranges in WAF, if that would help. A distributed attack
    won't stop for a few blocked ranges, so restarting can simply burn more budget, and
    staying down until the attack ends is a valid choice.
 3. Raise the budget limit and restart, as described under "Kill switch".
 4. Run the bulk cleanup described under "Storage", if the flood stored data. `birth`
    resumes by itself about a day later, because the metric updates daily.
+5. If spend keeps climbing during a stop, which points to direct traffic at the origin,
+   contact AWS Support, and as a last resort delete the API and deploy a new one. Agents keep
+   their URL, because it belongs to CloudFront, and S3 data is unaffected.
 
 Restarting is never automatic, because that would let an attacker burn through the
 budget repeatedly.
@@ -399,16 +436,19 @@ leak.
   window: it closes on first use of each new secret and after 7 days, and a retry inside it
   returns the same secrets. A fixed solution must also give an exact expected UUID.
 - Contract tests checking handlers against `openapi/identity.yaml`, and failing if the
-  public copy contains `x-amazon-`, `arn:aws`, or anything that looks like an account ID,
-  or if it has no `info.contact`.
-- CDK assertion tests for throttles, WAF, public-access blocks, bucket removal policies
-  and the `REGIONAL` endpoint type.
+  public copy contains `x-amazon-`, `arn:aws`, the origin key, or anything that looks like an
+  account ID, or if it has no `info.contact`.
+- CDK assertion tests for throttles, WAF, public-access blocks, bucket removal policies, the
+  `REGIONAL` endpoint type, the distribution's cache and origin request policies, the API key
+  required on every method, the plan subscription, and the domain guards: nothing registered
+  with `register_domain` false, and stack deletion leaving the domain alone.
 - A smoke script against the deployed API covering birth, evolve, self and reclaim, plus
   gateway validation with a maximum-size escaped body and a body with an extra field,
   because the local router doesn't run the gateway's validator. It also checks the
   `problem+json` format of gateway errors, and that a birth with no proof gets `400` with
-  `required_bits`. One request without the stage records what actually comes back, because
-  the plain `403` there is inferred, not tested. It sends about 13 requests, one every 35
+  `required_bits`. `self` proves `Authorization` reaches the origin, a path outside `/v1/`
+  must get WAF's JSON `404`, and a request straight to `execute-api` must be rejected. It
+  sends about 13 requests, one every 35
   seconds to stay safely under the WAF limit, which isn't precise, so a run takes about 8
   minutes. It treats a WAF `429` as "rate limited, wait and rerun" rather than as a failure.
 - A separate abuse check that sends a quick burst of `birth` requests with no proof. The
@@ -429,12 +469,12 @@ leak.
 - A kill switch drill on the deployed API, before any agents depend on it, and again
   whenever the kill switch code changes:
   1. Publish a test message to the stop topic.
-  2. Confirm the API returns the plain `403` and the API Lambda's reserved concurrency
-     is 0.
+  2. Confirm the API returns the `503` with `Retry-After` through CloudFront, the API Lambda's
+     reserved concurrency is 0, and `execute-api` returns `403`.
   3. Confirm the email arrives.
   4. Follow the restart procedure, and confirm the smoke script passes again.
 - A `birth` pause drill on the deployed API, because the pause starts from the daily
-  schedule and gives `503`, not from the stop topic with `403`. Invoke the function by hand
+  schedule, not from the stop topic, and affects `birth` only. Invoke the function by hand
   with a test event carrying a simulated bucket size:
   1. Above the ceiling: within about a minute `birth` returns `503`, `self` still works,
      and the email arrives.
@@ -456,7 +496,9 @@ replaces the isolation that per-route IAM roles would have given.
   public copy, build the Lambda, run all tests.
 - `cdk deploy` is run manually, against a single environment.
 - **Local config:** `sfab.config.toml` at the repo root holds private per-owner values,
-  starting with `account_id`, `alert_email` and `abuse_contact`. The build step puts
+  starting with `account_id`, `alert_email`, `abuse_contact`, `domain_name`,
+  `register_domain` (false by default), `max_price`, the domain contact details and
+  `origin_key`. The build step puts
   `abuse_contact` into the public description's `info.contact`, so that address is
   published, and the API can't go live without one. It's listed in `.gitignore`, and
   `sfab.config.example.toml` is committed with `CHANGE_ME` for every value and comments.
@@ -465,11 +507,13 @@ replaces the isolation that per-route IAM roles would have given.
   a copied example or a forgotten value can't silently drop the alerts. CDK targets
   `account_id` explicitly, so credentials for another account fail. CI instead points the
   parser at a committed fixture, `cdk/tests/fixtures/sfab.config.test.toml`, through an
-  `SFAB_CONFIG` environment variable, with account `000000000000` and `.invalid` email
-  addresses. That account doesn't exist, so the fixture can't deploy, and the `deploy` script
+  `SFAB_CONFIG` environment variable, with account `000000000000`, `.invalid` email
+  addresses and `register_domain` false, so tests can never buy anything. That account doesn't exist, so the fixture can't deploy, and the `deploy` script
   refuses to run with `SFAB_CONFIG` set. Only private
   values go here: public settings such as the budget, ceiling and region stay in the CDK
-  code, where they're reviewed. Real secrets don't belong in it. Changing `alert_email`
+  code, where they're reviewed. Real secrets don't belong in it, with `origin_key` as a named
+  exception: it can't read or change any identity, and it's rotated by editing and
+  redeploying. Changing `alert_email`
   replaces the SNS subscription, and AWS sends no alerts until the new confirmation link is
   clicked.
 - **Done** means deployed, smoke-tested, and with the kill switch drill, the `birth` pause
@@ -479,9 +523,13 @@ replaces the isolation that per-route IAM roles would have given.
 
 ## Prerequisites
 
+- A decision on `domain_name`. The real API can't deploy without it, because synth rejects
+  `CHANGE_ME`, which guarantees that agents never learn a temporary URL. The name isn't
+  decided yet, and `sfab.dev`, `sfab.com` and `sfab.net` appear taken.
 - A dedicated AWS account in `us-east-1`, on the **Paid plan** before first deploy. A Free
   plan account closes when its credits run out or after six months, and AWS deletes its
-  data 90 days later, which would end every identity. Sign-up credits still apply on the
+  data 90 days later, which would end every identity. AWS also says "Free Tier accounts
+  cannot use CloudFront Flat-Rate Plans". Sign-up credits still apply on the
   Paid plan, and charges beyond them go to the owner's card. This container has no AWS
   credentials, so at first deploy the owner fills in `sfab.config.toml`, including an
   address they're happy to publish as `abuse_contact`, runs `aws login` and `cdk bootstrap`, and confirms the SNS email
@@ -494,17 +542,22 @@ replaces the isolation that per-route IAM roles would have given.
 
 These could not be confirmed from AWS documentation:
 
-- Whether API Gateway bills requests that are throttled or rejected with `403`
-  while disabled, and whether WAF keeps charging during a stop. Unofficial sources
-  conflict, and AWS doesn't say. If they are billed, a flood keeps costing money while
-  stopped, and flipping the WAF default action to Block may be a cheaper addition.
+- Whether API Gateway bills requests it rejects, by throttle, missing origin key or disabled
+  endpoint. Unofficial sources conflict, and AWS doesn't say. It only matters for traffic that
+  gets past CloudFront's WAF or goes straight to the origin.
   `issues/02-measure-rejected-request-billing.md` measures this.
+- Whether the managed `CachingDisabled` and `AllViewerExceptHostHeader` policies work on the
+  Free plan. AWS's preconfigured API Gateway origin uses them, and the plan only excludes
+  "custom caching rules", so this is very likely. `issues/01-cdk-api-gateway-wiring.md` proves
+  it on the first deploy, and Pro is the fallback.
+- The exact billing filter that excludes domain charges from the budget.
 
 ## Deferred
 
 - **Public identities (a later story):** the agent chooses visibility per field. Public
-  fields should be capped, for example at 16 KB, and served through CloudFront
-  rather than the API Gateway cache, which is billed by the hour even when idle.
+  fields should be capped, for example at 16 KB, and can be cached on the existing
+  CloudFront distribution, which may need the Business plan for custom caching rules, rather
+  than the API Gateway cache, which is billed by the hour even when idle.
   Cache keys must never let a private response reach someone else. Hosting anonymous
   public content can bring takedown duties, so get legal advice before launch, on top of
   the check for private storage in [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3).
@@ -581,6 +634,13 @@ Answers marked "yes" accept the recommendation stated in the question.
 | Question | Answer |
 |---|---|
 | Is 512 KB right for `whoiam`, or should it be 64 KB? | Owner chose 32 KB |
+| Accept the cost of a large flood, or evaluate CloudFront? | Owner asked to evaluate it, then to add it |
+| CloudFront in this story, Free flat-rate plan, origin key, no caching? | Yes |
+| Public URL on `*.cloudfront.net`? | No: the owner wants a domain registered through AWS and CDK |
+| Domain in a separate stack? | No: in the same stack, with guards; the name goes in the config and is decided later |
+| WAF on CloudFront only, a stop through WAF with `503`, a JSON `404` outside `/v1/`, `origin_key` in the config? | Yes |
+| A throwaway test deploy first? | Dropped once AWS's docs answered most of it; issue 01 proves the rest |
+| `register_domain` false by default, rerun to recover, Python helper, domain charges outside the budget, WHOIS privacy and auto-renew on, contact details visible in the template, `domain_name` required for the real deploy? | Yes |
 
 ### Original idea
 

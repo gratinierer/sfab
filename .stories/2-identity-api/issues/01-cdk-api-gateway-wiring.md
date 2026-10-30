@@ -1,9 +1,10 @@
-# CDK: wire the REST API to the Lambda
+# CDK: wire CloudFront, the REST API and the Lambda
 
 Label: needs-triage
 
-Build the REST API from `openapi/identity.yaml` with `SpecRestApi` in the Python CDK,
-as described in `spec.md` "Architecture". Filed from review finding R12.
+Build the REST API from `openapi/identity.yaml` with `SpecRestApi` in the Python CDK, behind a
+CloudFront distribution, as described in `spec.md` "Architecture". Filed from review finding
+R12.
 
 ## Traps to handle
 
@@ -25,8 +26,19 @@ as described in `spec.md` "Architecture". Filed from review finding R12.
 - Every route reaches the API Lambda after a first deploy on a fresh account.
 - An edit to `identity.yaml` reaches the `v1` stage on the next `cdk deploy`.
 - CDK assertion tests cover the invoke permission and the CloudWatch role.
+- On the first deploy through CloudFront, these are proven. AWS's docs support each, but none
+  is tested, and the second isn't stated outright:
+  - `GET /v1/identity/self` receives `Authorization` at the origin.
+  - `CachingDisabled` and `AllViewerExceptHostHeader` are accepted on the Free flat-rate plan.
+    If not, move to Pro at $15 per month, and update `spec.md`.
+  - The plan subscribes through `AWS::PricingPlanManager::Subscription`.
+  - The WAF returns the `503` with a JSON body when its default action is Block.
 
 ## Sources
 
+- <https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/add-origin-custom-headers.html>
+- <https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/template-preconfigured-origin-settings.html>
+- <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-pricingplanmanager-subscription.html>
+- <https://docs.aws.amazon.com/waf/latest/developerguide/customizing-the-response-status-codes.html>
 - <https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_apigateway-readme.html>
 - <https://github.com/aws/aws-cdk/blob/main/packages/aws-cdk-lib/aws-apigateway/lib/restapi.ts>

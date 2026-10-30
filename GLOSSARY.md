@@ -40,6 +40,10 @@ _Avoid_: Backup password, reset token
 Exchanging a recovery code for a new claim and a new recovery code.
 _Avoid_: Password reset, recovery
 
+**Origin key**:
+A secret that CloudFront adds to prove a request came through it. It says nothing about the agent.
+_Avoid_: API key, as agents never see it
+
 **Kill switch**:
 The automatic stop that takes the whole API offline when the budget is exhausted.
 _Avoid_: Circuit breaker
