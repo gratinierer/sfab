@@ -83,11 +83,17 @@ ceiling and the kill switch.
 - **Request path:** API Gateway REST API, then one Rust Lambda on arm64 with an
   internal `axum` router, then S3. See `docs/adr/0003-single-lambda.md`.
 - **OpenAPI is the single source:** `openapi/identity.yaml` includes the AWS
-  extensions and validators. The CDK fills in the Lambda ARN and passes the result
-  to `SpecRestApi`. Throttles live in the CDK stage settings.
-- **Build:** `cargo lambda build` produces the arm64 binary before `cdk deploy`,
-  with no Docker. The Python CDK packages live in a virtual environment under
-  `/cdk/`.
+  extensions and validators, with only a placeholder for the Lambda ARN. The CDK fills
+  in the ARN in memory at deploy time and passes the result to `SpecRestApi`, so no
+  real ARN or account ID reaches the repo. Throttles live in the CDK stage settings.
+- **Public API description:** `GET /openapi.yaml` serves a generated public copy with
+  every `x-amazon-*` extension removed. The Lambda includes it in its binary at compile
+  time, so the route needs no S3 read and always matches the deployed code. The copy is
+  generated and not committed.
+- **Build:** a small script in the Python tooling generates the public copy, then
+  `cargo lambda build` produces the arm64 binary before `cdk deploy`, with no Docker.
+  The build fails if the public copy is missing, and CI runs the same steps. The Python
+  CDK packages live in a virtual environment under `/cdk/`.
 - **Hosting:** a dedicated AWS account in `us-east-1`, with no custom domain in
   this story.
 
@@ -261,7 +267,8 @@ leak.
 ## Testing
 
 - Rust unit tests for handlers, against an in-memory storage fake.
-- Contract tests checking handlers against `openapi/identity.yaml`.
+- Contract tests checking handlers against `openapi/identity.yaml`, and failing if the
+  public copy contains `x-amazon-`, `arn:aws`, or anything that looks like an account ID.
 - CDK assertion tests for throttles, WAF and public-access blocks.
 - A smoke script against the deployed API covering birth, evolve, self and reclaim.
 - Rust unit tests for the kill switch's decisions: stop at the budget limit, pause
