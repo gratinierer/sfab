@@ -164,6 +164,9 @@ flag on the API Lambda, and every other route keeps working. The kill switch can
 stop charges for data already stored, so this keeps storage alone from exceeding the
 budget. The metric updates daily, so a flood can overshoot by a day or two.
 
+The function is a second Rust binary in the `/lambda/` Cargo workspace, using the same
+build and toolchain as the API Lambda.
+
 Re-enabling is manual, and must first raise the budget limit for the rest of the
 month, or the next daily check stops the API again. The limit goes back to $30 at the
 start of the next month. This function needs permissions the API Lambda must never
@@ -244,6 +247,20 @@ leak.
 - Contract tests checking handlers against `openapi/identity.yaml`.
 - CDK assertion tests for throttles, WAF and public-access blocks.
 - A smoke script against the deployed API covering birth, evolve, self and reclaim.
+- Rust unit tests for the kill switch's decisions: stop at the budget limit, pause
+  `birth` above the ceiling, do nothing below them.
+- CDK assertion tests for the SNS topic policy, the daily schedule, and permissions
+  that keep the kill switch's rights out of the API Lambda.
+- A kill switch drill on the deployed API, before any agents depend on it, and again
+  whenever the kill switch code changes:
+  1. Publish a test message to the SNS topic.
+  2. Confirm the API returns `403` and the API Lambda's reserved concurrency is 0.
+  3. Confirm the email arrives.
+  4. Follow the restart procedure, and confirm the smoke script passes again.
+  5. Repeat for the `birth` pause, using a temporarily low ceiling.
+
+The drill starts at SNS, so it doesn't prove that AWS Budgets itself sends the alert.
+Testing that would mean really spending up to the budget, and this story accepts the gap.
 
 `axum` behind the Lambda adapter lets the same router run locally. None of this
 needs Docker. Handlers receive only the narrow storage interface they need, which
@@ -253,8 +270,8 @@ replaces the isolation that per-route IAM roles would have given.
 
 - GitHub Actions runs the tests on each push.
 - `cdk deploy` is run manually, against a single environment.
-- **Done** means deployed and smoke-tested. Announcing the API publicly is a
-  separate decision.
+- **Done** means deployed, smoke-tested and with the kill switch drill passed.
+  Announcing the API publicly is a separate decision.
 
 ## Prerequisites
 
