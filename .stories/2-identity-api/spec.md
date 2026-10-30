@@ -66,7 +66,9 @@ agent solves again and gets a new identity, which leaves one orphaned identity i
 
 - `name`: required, 1 to 128 characters, not unique, purely self-description.
   Only the UUID identifies an agent.
-- `whoiam`: optional, opaque UTF-8 string of at most 512 KB (524,288 bytes).
+- `whoiam`: optional, opaque UTF-8 string of at most 32 KB (32,768 bytes), or about 8,000
+  tokens. An identity is only useful if an agent can load it, and raising this limit later
+  is easy, while lowering it isn't.
   `evolve` replaces it whole, and the last write wins.
 
 ### Credentials
@@ -113,7 +115,7 @@ Proof of work stops casual scripts and makes each fake birth cost something, wit
 human or CAPTCHA involved. **It isn't a cost control**, and it doesn't stop a determined
 attacker: a GPU can solve N=20 far faster than `birth`'s throttle allows. Scaling
 difficulty with body size wouldn't help, because `evolve` can fill an empty `whoiam` to
-512 KB with no puzzle. Cost is controlled by the WAF rule, the throttles, the storage
+its limit with no puzzle. Cost is controlled by the WAF rule, the throttles, the storage
 ceiling and the kill switch.
 
 ## Architecture
@@ -165,6 +167,13 @@ Write behaviour:
 The docs must state plainly that operators could technically read `whoiam`, and
 that agents wanting real secrecy should encrypt it themselves first.
 
+Anyone can do an anonymous `birth`, store content, and share the `uuid.claim` token so
+others can read it, and encrypted content can't be inspected. This risk is accepted for
+private storage with no content scanning, because the 32 KB limit, the `self` throttle and
+the WAF limit make it a poor file host. Abuse reports reach the owner through a contact
+published in the API description's `info.contact`, and are handled by the takedown
+procedure below. See `issues/03-legal-check-before-announcing.md`.
+
 Identities live indefinitely. There is no expiry and no delete endpoint. Abuse and
 takedown requests are handled by manually deleting by UUID. This is the first
 decision to revisit if real spam appears, because storage growth then depends only
@@ -206,7 +215,7 @@ Notes on these controls:
   IP or NAT share this allowance and can lock each other out. It is the owner's
   explicit choice, and it stays a config value that is easy to raise.
 - **Validator limit:** `maxLength` counts characters, not bytes, and a character written
-  as a JSON `\uXXXX` escape takes 6 bytes, so bodies up to about 3.2 MB pass the gateway.
+  as a JSON `\uXXXX` escape takes 6 bytes, so bodies up to about 200 KB pass the gateway.
   That stays below Lambda's 6 MB request limit, so every body that passes validation
   reaches the handler, which enforces the exact limit and returns `413`. This depends on
   the `$default` model working through OpenAPI import, which must be tested during
@@ -267,17 +276,17 @@ prices are from memory.
 
 | Scenario | Rough cost per month |
 |---|---|
-| `birth` at 1/s with 512 KB bodies | $40, with storage capped by the 100 GiB ceiling |
+| `birth` at 1/s with 32 KB bodies | $40, and storage reaches the 100 GiB ceiling in about 38 days |
 | `evolve` at 5/s | $131 |
-| `self` at 2/s returning 512 KB | $254 |
+| `self` at 2/s returning 32 KB | $40 |
 | `reclaim` at 1/s | $25 |
 | `openapi.yaml` at 2/s | $22 |
-| **All routes together** | **$475** |
+| **All routes together** | **$261** |
 | Fixed baseline for WAF, included above | $6 plus $0.60 per million requests |
 
-All routes together spend $30 in about 2 days. AWS Budgets updates every 8-12 hours, and
+All routes together spend $30 in about 3.4 days. AWS Budgets updates every 8-12 hours, and
 there is a further billing delay of unstated length, so the kill switch's overshoot has no
-documented upper bound. About a day's spend, roughly $15, is a planning estimate and not
+documented upper bound. About a day's spend, roughly $9, is a planning estimate and not
 a guarantee. The $30 budget is a stop for a sustained attack. It doesn't mean the API can
 absorb one.
 
@@ -365,7 +374,8 @@ replaces the isolation that per-route IAM roles would have given.
   passed as a CDK context value or environment variable at deploy time, and is never
   committed.
 - **Done** means deployed, smoke-tested and with the kill switch drill passed.
-  Announcing the API publicly is a separate decision.
+  Announcing the API publicly is a separate decision, and can't happen until
+  `issues/03-legal-check-before-announcing.md` is closed.
 
 ## Prerequisites
 
@@ -395,7 +405,8 @@ These could not be confirmed from AWS documentation:
   fields should be capped, for example at 16 KB, and served through CloudFront
   rather than the API Gateway cache, which is billed by the hour even when idle.
   Cache keys must never let a private response reach someone else. Hosting anonymous
-  public content can bring takedown duties, so get legal advice before launch.
+  public content can bring takedown duties, so get legal advice before launch, on top of
+  the check for private storage in `issues/03-legal-check-before-announcing.md`.
 - **Guardians:** other agents vouch for recovery, k of n.
 - **Ed25519 credentials:** a second credential type, where we hold no secret.
 - **Verified contact email:** dropped from phase 1 because of GDPR, SES and takeover
@@ -460,6 +471,12 @@ Answers marked "yes" accept the recommendation stated in the question.
 |---|---|
 | Kill switch by flipping the WAF default action to Block? | Asked about disabling API Gateway instead; `disableExecuteApiEndpoint` adopted as the main stop, with reserved concurrency 0 as the backstop |
 | Is the design tree complete? | Yes |
+
+### Review walkthrough
+
+| Question | Answer |
+|---|---|
+| Is 512 KB right for `whoiam`, or should it be 64 KB? | Owner chose 32 KB |
 
 ### Original idea
 
