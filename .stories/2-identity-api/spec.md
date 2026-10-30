@@ -131,6 +131,7 @@ starts it.
 | API Gateway | Per-route throttles, see below |
 | API Gateway | Request validator with a `$default` model, so every content type is validated |
 | Lambda | Exact byte limit on `whoiam`, proof-of-work check before any write |
+| Lambda | Reserved concurrency of 5 on the API Lambda |
 | Budget | $30 per month, alert at 50%, automatic stop at 100% |
 | Storage | 100 GiB ceiling on the identities bucket, which pauses `birth` only |
 
@@ -152,6 +153,12 @@ Notes on these controls:
 - **Throttles are not hard limits:** AWS describes usage plan throttles as
   best-effort and advises against relying on them for cost control. This story
   treats stage throttles with the same caution.
+- **Reserved concurrency is the hard ceiling:** all throttles together allow 11 requests
+  per second, which needs about 2 concurrent executions at an estimated 100 ms each, so
+  5 leaves room for bursts. AWS enforces it as a true maximum at no charge. It caps
+  Lambda, S3 writes and data transfer, but not requests the gateway rejects itself. It's
+  also loose: at 50 ms per request it still allows about 100 requests per second, so it
+  limits runaway failure and isn't a budget.
 
 ### Kill switch
 
@@ -178,7 +185,8 @@ build and toolchain as the API Lambda.
 
 Re-enabling is manual, and must first raise the budget limit for the rest of the
 month, or the next daily check stops the API again. The limit goes back to $30 at the
-start of the next month. This function needs permissions the API Lambda must never
+start of the next month. A restart also puts the API Lambda's reserved concurrency back
+to 5. This function needs permissions the API Lambda must never
 have, so it is separate from the single API Lambda.
 
 Constraints this creates:
@@ -288,6 +296,9 @@ replaces the isolation that per-route IAM roles would have given.
   the devcontainer has no Rust toolchain, `cargo-lambda`, Zig or `uv`.
 - A dedicated AWS account in `us-east-1`. This container has no AWS credentials,
   so the owner runs `aws login` when deployment is reached.
+- A Lambda concurrency quota of at least 105 on that account. AWS requires 100 units to
+  stay unreserved, so a new account with a lower quota needs an increase, or the deploy
+  fails.
 
 ## Open questions
 
