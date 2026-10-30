@@ -318,8 +318,13 @@ budget. The metric updates daily, so a flood can overshoot by a day or two. The 
 clears it once the bucket drops below 80 GiB, also a config value, and the gap stops
 `birth` flipping on and off around the ceiling. Unlike a restart, this is automatic,
 because storage only drops if someone deleted data, and the ceiling still applies if a
-flood returns. If the metric has no datapoint, as on a new bucket, the function leaves the
-pause as it is, logs this, and continues with the budget check.
+flood returns.
+
+If the metric has no datapoint in the last 3 days, the function lists one key from the bucket.
+An empty bucket, such as a new one or one emptied by a cleanup, counts as 0 bytes, so a pause
+clears normally. A bucket with objects, or a failed list, leaves the pause as it is and emails
+the owner each day, because the ceiling can't currently be enforced. Either way the function
+continues with the budget check.
 
 The runtime config is a standard Parameter Store parameter, `/sfab/runtime`, holding
 `required_bits` and `birth_paused`. Standard parameters and their API calls are free, and
@@ -409,6 +414,7 @@ The owner gets an email:
 - when the kill switch fires, or the storage ceiling pauses or resumes `birth`
 - when the budget limit is reset at the start of a month
 - when the kill switch function itself fails
+- each day that the bucket size metric is missing for a bucket with objects
 - when an alarm sees a malformed runtime config value
 - when a CloudWatch alarm sees sustained high request volume
 
@@ -472,7 +478,8 @@ leak.
   blocks that IP for a while, so it stays out of the smoke script.
 - Rust unit tests for the kill switch's decisions: stop at the budget limit, pause
   `birth` above the ceiling, clear the pause below the lower threshold, and leave it alone
-  in between. Also: reset the budget limit on the month's first run without stopping the API,
+  in between. A missing metric is covered for an empty bucket, a bucket with objects and a
+  failed list. Also: reset the budget limit on the month's first run without stopping the API,
   even with last month's high spend, leave it alone at or below the base value, and never let a failed reset block the spend check. A failure in
   any stop step still attempts the others, and raises the failure alert. It never writes the
   runtime config after a failed read.
