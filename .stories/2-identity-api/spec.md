@@ -198,6 +198,36 @@ All routes together spend $30 in about 2 days, and billing data updates about da
 so the real overshoot could be another day's spend, about $15. The $30 budget is a
 stop for a sustained attack. It doesn't mean the API can absorb one.
 
+## Operations
+
+An attacker can deliberately trip the kill switch: about 60 IPs at the WAF limit can
+keep `self` at its throttle, and all routes take about 330 IPs. This follows from
+putting the bill first. **The API may stay down until the owner responds, and phase 1
+makes no availability promise.**
+
+The owner gets an email:
+
+- when the budget reaches 50%
+- when the kill switch fires, or the storage ceiling pauses `birth`
+- when the kill switch function itself fails
+- when a CloudWatch alarm sees sustained high request volume
+
+The request alarm only alerts and never stops anything. It exists because budget data
+can lag by a day, so it reports an attack while it's happening. Its threshold is set
+during implementation.
+
+The runbook after a stop:
+
+1. Look at the access logs to see what happened.
+2. Block the offending IPs or ranges in WAF, if that would help. A distributed attack
+   won't stop for a few blocked ranges, so restarting can simply burn more budget, and
+   staying down until the attack ends is a valid choice.
+3. Raise the budget limit and restart, as described under "Kill switch".
+4. Run the bulk cleanup described under "Storage", if the flood stored data.
+
+Restarting is never automatic, because that would let an attacker burn through the
+budget repeatedly.
+
 ## Logging
 
 - API Gateway execution logs and request-body logging are off.
