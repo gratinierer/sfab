@@ -611,9 +611,11 @@ These could not be confirmed from AWS documentation:
 - **Self-deletion and inactivity rules.**
 - **`whoiam` history:** would need its own limit, because S3 versioning lets an
   attacker get around the size limit.
-- **Backups:** needed before real agents depend on the API. A good first candidate is
-  versioning on the claims bucket only, with old versions expiring after 7 days, which
-  would need changes to the takedown order and the versioning note in ADR 0001.
+- **Backups:** the owner's decision is that the first step doesn't need them, and they don't
+  gate announcing the API. A bug that overwrites data can't be undone, including one that locks
+  agents out. If they're added later, a good first candidate is versioning on the claims bucket
+  only, with old versions expiring after 7 days, which would need changes to the takedown
+  order and the versioning note in ADR 0001.
 - **Automated deployment:** through OIDC.
 
 ## Clarifications
