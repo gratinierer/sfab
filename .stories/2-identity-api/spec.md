@@ -307,8 +307,10 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
   Lambda runs. CloudFront overwrites a viewer's header of the same name. This only proves a request
   came through CloudFront, and isn't how agents authenticate.
 - **Domain:** the owner buys `domain_name` by hand once, as described under "First deploy", so
-  no stack can ever buy, change or lose it. Route 53 creates its hosted zone, at about $0.50 per
-  month (from memory), and the zone's ID goes in the config as `hosted_zone_id`. See
+  no stack can ever buy, change or lose it. Route 53 creates its hosted zone, and the zone's ID goes in the config as
+  `hosted_zone_id`. The API plan's `ResourceArns` includes the zone, so the plan covers its fee, records and
+  queries up to an allowance. That isn't a hard cap: past the allowance, AWS might move the zone back to
+  pay-as-you-go, and the kill switch can't stop DNS, so the alert budget still matters. See
   `docs/adr/0001-initial-architecture.md`. Registrations and renewals are non-refundable.
 - **Stacks:** the base stack holds the TLS certificate for `<domain_name>` and `api.<domain_name>`,
   which must be in `us-east-1`, both buckets with their lifecycle rules, both SNS topics and all three
@@ -605,7 +607,7 @@ Logs are the most likely place for a claim to leak.
   bucket removal policies, the `messages/` and `federation/` lifecycle rules, the `REGIONAL` endpoint
   type, the distribution's cache and origin request policies, viewer protocol and allowed methods, the
   API key required by every operation in `identity.yaml` (`SpecRestApi` creates no method resources to
-  check), both plan subscriptions, the website's rate rule, and that buckets, topics and budgets are
+  check), both plan subscriptions, the hosted zone in the API plan, the website's rate rule, and that buckets, topics and budgets are
   only in the base stack, apart from the website's own bucket. Also: the email subscription, the SNS topic
   policies, the alert budget's five thresholds, the check budget's one and the 50,000-call warning all targeting the alerts topic and not the
   stop topic, the 5-minute and daily schedules, all three budgets' `Metrics` and `FilterExpression`, and permissions that keep each function's rights out of the others, with no `budgets:ModifyBudget` on the kill switch.
@@ -768,8 +770,9 @@ These could not be confirmed from AWS documentation:
   "custom caching rules", so this is very likely. `issues/01-cdk-api-gateway-wiring.md` proves
   it on the first deploy. Pro is no fallback for this, because custom caching rules start at
   Business, so a rejection goes back to the owner.
-- Whether `<domain_name>` and `api.<domain_name>` can be on two separate plans. AWS says each plan
-  has up to one apex domain, but not whether two plans can share one. If they can't, the website's
+- Whether `<domain_name>` and `api.<domain_name>` can be on two separate plans, with the hosted zone
+  attached to one of them. AWS says each plan has up to one apex domain, but not whether two plans can
+  share one. If they can't, the website's
   design has to change, and that goes back to the owner.
 
 ## Deferred

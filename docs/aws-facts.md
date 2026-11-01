@@ -31,6 +31,8 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | Free Tier accounts can't use flat-rate plans | docs | [plans] | 2026-10-30 |
 | Each plan covers one distribution with up to one apex domain, and an account can have 3 Free plans | docs | [plans] | 2026-11-01 |
 | Free allows 5 cache behaviors | docs | [plans] | 2026-11-01 |
+| A plan can include a hosted zone, and past its allowance AWS might move the zone back to pay-as-you-go | docs | [plan-cfn], [plans] | 2026-11-01 |
+| Free covers the zone's fee, 50 records, unlimited alias queries and 1 million other queries a month | docs | [plans], the reviewer's reading | 2026-11-01 |
 | Two plans can share one apex domain, such as `<domain>` and `api.<domain>` | memory | Not stated by AWS; the first deploy proves it | 2026-11-01 |
 | `CachingOptimized` leaves query strings out of its cache key, with a 24-hour default TTL | docs | [cache-policies], the reviewer's reading | 2026-11-01 |
 | A private S3 origin doesn't add `index.html` to a folder path | memory | | 2026-11-01 |
@@ -101,7 +103,8 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | A budget can have up to five notifications, each with one SNS subscriber and up to 10 email subscribers | docs | [budgets-create] | 2026-11-01 |
 | Domain charges appear under the service name "Amazon Registrar" | memory | The first purchase's bill decides | 2026-11-01 |
 | Updating a budget replaces all of it, so a filter must be sent again | memory | | 2026-11-01 |
-| A hosted zone costs about $0.50 per month | memory | | 2026-11-01 |
+| A hosted zone costs about $0.50 per month without a plan | docs | The Route 53 pricing page, the reviewer's reading | 2026-11-01 |
+| Route 53 bills every query answered except alias records, at $0.40 per million up to a billion | docs | The Route 53 pricing page | 2026-11-01 |
 | S3 and Lambda prices used in cost tables | memory | | 2026-11-01 |
 
 [plans]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/flat-rate-pricing-plan.html

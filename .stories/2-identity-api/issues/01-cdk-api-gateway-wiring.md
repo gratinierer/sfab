@@ -60,7 +60,8 @@ This is stage 1, along with issues 03-09. Later stages add routes to the same st
   - `CachingDisabled` and `AllViewerExceptHostHeader` are accepted on the Free flat-rate plan.
     If not, stop and bring it to the owner. Pro doesn't help, because custom caching rules
     start at Business.
-  - The plan subscribes through `AWS::PricingPlanManager::Subscription`.
+  - The plan subscribes through `AWS::PricingPlanManager::Subscription`, with the hosted zone's ARN in
+    its `ResourceArns`.
   - The Free plan accepts the web ACL, and with no custom responses configured, WAF answers a
     block with a plain `403` that isn't `problem+json`, both for the rate rule and when its
     default action is Block.
