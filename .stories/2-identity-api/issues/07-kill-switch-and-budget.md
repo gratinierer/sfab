@@ -9,7 +9,7 @@ base stack, from issue 01.
 
 ## Scope
 
-- The second Rust binary: the three stop steps, the 5-minute check of API Gateway's `Count` since
+- The second Rust binary: the three stop steps, an email naming the trigger, the 5-minute check of API Gateway's `Count` since
   midnight UTC against the daily limit, and the daily spend check.
 - Subscribing the function to the stop topic, so the stop budget from issue 01 takes effect.
 - The 5-minute and daily schedules, and permissions.

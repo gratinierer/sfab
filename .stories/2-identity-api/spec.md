@@ -479,7 +479,7 @@ A small dedicated Rust function runs the same full stop, whatever triggers it:
 
 A failure in one step doesn't skip the others, and it's a function error, which fires the errors alarm,
 so the owner hears that a stop is incomplete. All steps can safely run twice, and the function emails
-the owner once, when a stop begins. Reserved concurrency of 0 means a stop is in force, so every
+the owner once, when a stop begins, naming the trigger: daily limit, budget alert or daily spend check. Reserved concurrency of 0 means a stop is in force, so every
 5-minute check makes sure all three steps are in place, and acts only on what's missing, which retries
 a failed step. While the steps propagate, agents may briefly get a `5xx`, which already means
 "retry with backoff".
@@ -598,7 +598,7 @@ Logs are the most likely place for a claim to leak.
   public copy contains `x-amazon-`, `arn:aws`, the origin key, or anything that looks like an
   account ID, if it has no `info.contact`, if it has an `apiKey` scheme, or if a route needing
   credentials doesn't declare Bearer.
-- Rust unit tests for the kill switch: stop over the daily limit and at the budget limit, and email once.
+- Rust unit tests for the kill switch: stop over the daily limit and at the budget limit, and email once, naming the trigger.
   With a stop in force, a check repeats only a step that's missing. A failure in any stop step still
   attempts the others and is a function error, and a failed metric read is an error that doesn't stop the API.
 - Unit tests for the daily world job: paging, skipping markers, deleting surplus pages, and the outbound check against a fake
@@ -653,9 +653,10 @@ Logs are the most likely place for a claim to leak.
   agents, without any markers.
 
 - A budget check, because the drill starts at the stop topic and doesn't prove that AWS Budgets sends the
-  alert. The check budget's first $0.01 email proves that half, once there's spend beyond the domain's own charge. For the stop budget, temporarily lower its
-  limit to $0.01 in the CDK and deploy, wait for AWS to report spend, which can take a day or so, confirm
-  the API stops, then restore the limit and restart. Then compare the stop budget's figure with the first real
+  alert. The check budget's first $0.01 email proves that half, once there's spend beyond the domain's own charge. For the stop budget, just after 12:00 UTC, temporarily lower its
+  limit to $0.01 in the CDK and deploy, and wait for AWS to report spend. It passes only if the stop email
+  names the budget alert, because the daily spend check reads the same budget. If that check fires first,
+  the result is inconclusive, so run it again. Then restore the limit and restart. Then compare the stop budget's figure with the first real
   bill, to confirm it tracks usage rather than the amount after credits.
 
 `axum` behind the Lambda adapter lets the same router run locally. None of this
