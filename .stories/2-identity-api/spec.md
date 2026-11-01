@@ -404,7 +404,8 @@ If it happened anyway, run the list above from the top.
 
 On the first daily run of each month
 (UTC), if the limit is above the base value, $30 as a config value, the function sets it
-back and emails the owner. That run always skips its spend check, because AWS updates budgets only
+back and emails the owner. If the reset fails, it raises the failure alert, telling the owner to
+set the limit back by hand, and the storage check still runs. That run always skips its spend check, because AWS updates budgets only
 every 8-12 hours and doesn't document what `ActualSpend` shows just after a month rolls over.
 A stale figure compared with the lowered limit could otherwise stop a healthy API. The storage
 check still runs, and the budget's 100% alert still works, since it's the first of the new
@@ -542,7 +543,7 @@ leak.
   in between. A missing metric is covered for an empty bucket, a bucket with objects and a
   failed list, and a failed metric read leaves the pause alone, emails the owner and still runs
   the budget check. Also: reset the budget limit on the month's first run without stopping the API,
-  even with last month's high spend, leave it alone at or below the base value, and never let a failed reset block the spend check. A failure in
+  even with last month's high spend, leave it alone at or below the base value, and a failed reset raises the failure alert and still runs the storage check. A failure in
   any stop step still attempts the others, and raises the failure alert. It never writes the
   runtime config after a failed read.
 - Parser tests: synth rejects a missing value, `CHANGE_ME` and a badly formed `origin_key`, and the example file and the
