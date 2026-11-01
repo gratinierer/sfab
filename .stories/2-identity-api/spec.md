@@ -536,9 +536,10 @@ leak.
   sends about 14 requests, one every 35
   seconds to stay safely under the WAF limit, which isn't precise, so a run takes about 8
   minutes. It treats WAF's plain `403` as "blocked, wait and rerun" rather than as a failure.
-- A separate abuse check that sends a quick burst of `birth` requests with no proof. The
-  first ones confirm the gateway's `THROTTLED` `429` with `problem+json`. Continuing past 10
-  requests confirms WAF's `403`, and that it isn't `problem+json`. It
+- A separate abuse check that sends about 10 rapid `birth` requests with no proof, which confirm
+  the gateway's `THROTTLED` `429` with `problem+json`. It then sends about one per second for up
+  to 5 minutes, and passes at the first plain `403` that isn't `problem+json`. AWS says WAF can
+  take several minutes to react, so it fails only if no block has arrived by then. It
   blocks that IP for a while, so it stays out of the smoke script.
 - Rust unit tests for the kill switch's decisions: stop at the budget limit, pause
   `birth` above the ceiling, clear the pause below the lower threshold, and leave it alone
