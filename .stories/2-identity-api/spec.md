@@ -458,9 +458,11 @@ A small dedicated Rust function runs the same full stop, whatever triggers it:
    direct access to the origin. AWS documents that this affects all stages and returns
    `403`, and that the change takes effect only after a stage update.
 
-A failure in one step doesn't skip the others. All steps can safely run twice, and the function emails
-the owner once, when a stop begins. Reserved concurrency of 0 means the API is already stopped, so
-nothing more happens. While the steps propagate, agents may briefly get a `5xx`, which already means
+A failure in one step doesn't skip the others, and it's a function error, which fires the errors alarm,
+so the owner hears that a stop is incomplete. All steps can safely run twice, and the function emails
+the owner once, when a stop begins. Reserved concurrency of 0 means a stop is in force, so every
+5-minute check makes sure all three steps are in place, and acts only on what's missing, which retries
+a failed step. While the steps propagate, agents may briefly get a `5xx`, which already means
 "retry with backoff".
 
 **What triggers it:**
@@ -491,9 +493,10 @@ To restart, by hand with the AWS CLI, in this order. Every step can safely be re
 1. Look at what happened first. If the daily total is over the limit and you want the API up today,
    raise the limit and deploy, or the next check stops it again within 5 minutes. If spend is at or
    above the budget, raise the budget for the month, and lower it by hand later.
-2. Clear `disableExecuteApiEndpoint` and deploy the stage. CloudFront's requests go through
-   this endpoint, so it has to be back first.
-3. Set the API Lambda's reserved concurrency back to 5.
+2. Set the API Lambda's reserved concurrency back to 5. This comes first, because it ends the stop,
+   and otherwise the next check would put the other steps back.
+3. Clear `disableExecuteApiEndpoint` and deploy the stage. CloudFront's requests go through
+   this endpoint, so it has to be back before WAF opens.
 4. Set the WAF's default action back to Allow. This comes last, so agents keep getting the
    plain `403` until everything behind it works.
 5. Run the smoke script.
@@ -566,9 +569,9 @@ Logs are the most likely place for a claim to leak.
   public copy contains `x-amazon-`, `arn:aws`, the origin key, or anything that looks like an
   account ID, if it has no `info.contact`, if it has an `apiKey` scheme, or if a route needing
   credentials doesn't declare Bearer.
-- Rust unit tests for the kill switch: stop over the daily limit and at the budget limit, do nothing when
-  already stopped, and email once. A failure in any stop step still attempts the others, and a failed
-  metric read is an error that doesn't stop the API. Any budget update keeps the domain charge filter.
+- Rust unit tests for the kill switch: stop over the daily limit and at the budget limit, and email once.
+  With a stop in force, a check repeats only a step that's missing. A failure in any stop step still
+  attempts the others and is a function error, and a failed metric read is an error that doesn't stop the API. Any budget update keeps the domain charge filter.
 - Unit tests for the daily world job: paging, skipping markers, and the outbound check against a fake
   server, covering a match, a wrong body, a redirect, a private address, a slow response and an oversized
   one.
