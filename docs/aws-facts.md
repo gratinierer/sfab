@@ -1,0 +1,95 @@
+# AWS facts
+
+AWS behaviour the project's stories rely on, with how far each fact can be trusted. Use it as a starting point, not as proof: facts go stale, and a review should still recheck anything old or high-stakes.
+
+**Status**, strongest first:
+
+- `tested`: seen on a real deploy.
+- `docs`: read in AWS's documentation or source.
+- `forum`: unofficial reports only.
+- `memory`: nobody has checked it yet.
+
+When a fact is checked, update its row and date. When a deploy proves or disproves one, set it to `tested`, or correct it.
+
+## CloudFront flat-rate plans
+
+| Fact | Status | Source | Checked |
+|---|---|---|---|
+| Free includes 1 million requests and 100 GB per month, with no overage charges | docs | [plans] | 2026-11-01 |
+| Requests blocked by WAF don't count against the allowance | docs | [plans] | 2026-11-01 |
+| Custom WAF responses are available from Pro, not on Free | docs | [plans] | 2026-11-01 |
+| Free allows 5 WAF rules | docs | [plans] | 2026-11-01 |
+| WAF request logs are available from Pro | docs | [plans] | 2026-11-01 |
+| Header-based WAF filtering starts at Pro, and regex-based at Business | docs | [plans] | 2026-11-01 |
+| Custom caching rules start at Business | docs | [plans] | 2026-11-01 |
+| Default origin request rules, using managed policies, are on every plan | docs | [plans] | 2026-11-01 |
+| Serverless edge compute is on every plan | docs | [plans] | 2026-11-01 |
+| Pro costs $15 per month, and Business $200 | docs | [plans] | 2026-10-30 |
+| Creating a subscription fails with `ValidationException` if an associated resource uses features outside the plan's tier | docs | [plan-api] | 2026-11-01 |
+| CloudFormation can't change a plan's tier, and creates paid plans in `PENDING_APPROVAL` | docs | [plan-cfn] | 2026-11-01 |
+| Cancelling or downgrading a paid plan takes effect at the end of the month, while a downgrade's features go at once | docs | [plan-api] | 2026-11-01 |
+| Free Tier accounts can't use flat-rate plans | docs | [plans] | 2026-10-30 |
+| `CachingDisabled` is accepted on Free | memory | Not stated by AWS; issue 01 of story `2-identity-api` proves it | 2026-11-01 |
+| Port 80 can't be closed, and `HTTPS_ONLY` answers `http://` with `403` | memory | Issue 01 of story `2-identity-api` proves it | 2026-11-01 |
+| A new account may need Support verification before creating CloudFront resources | forum | re:Post search summaries | 2026-11-01 |
+
+## WAF
+
+| Fact | Status | Source | Checked |
+|---|---|---|---|
+| Rate rules take up to several minutes to react, usually under 30 seconds | docs | [waf-rate] | 2026-11-01 |
+| The lowest rate limit is 10 | docs | Reviewer's reading of the WAF docs | 2026-11-01 |
+| A custom response's body is text, HTML or JSON, and a custom header can't set `content-type` | docs | Earlier review, R18 | 2026-10-30 |
+| WAF samples return each header's name and value for 3 hours | docs | Earlier review, R50 | 2026-10-30 |
+
+## API Gateway
+
+| Fact | Status | Source | Checked |
+|---|---|---|---|
+| An API key needs a usage plan to work | docs | [usage-plans] | 2026-11-01 |
+| Root-level `security` is ignored, so it must be set per operation | docs | [known-issues] | 2026-11-01 |
+| A `securitySchemes` type on import must be `apiKey` | docs | [known-issues] | 2026-11-01 |
+| API key values are 20-128 alphanumeric characters, and adding a key to a plan can take minutes | docs | [usage-plans] | 2026-11-01 |
+| In CloudFormation, changing a key's `Value` replaces it, and a named key can't be replaced | docs | [apikey-cfn] | 2026-11-01 |
+| A gateway response can override its status code | docs | [gateway-response] | 2026-11-01 |
+| An unknown route or method returns `MISSING_AUTHENTICATION_TOKEN` as `403`, and the `413` can't be customised | docs | [response-types] | 2026-11-01 |
+| REST requests cost $3.50 per million | docs | AWS's pricing page | 2026-11-01 |
+| Failed authentication, missing or invalid API keys and throttled requests aren't charged | docs | [old-pricing], a 2021 archive of a removed page, so possibly out of date; issue 02 of story `2-identity-api` confirms it | 2026-11-01 |
+
+## CDK
+
+| Fact | Status | Source | Checked |
+|---|---|---|---|
+| `RestApiOrigin` defaults its origin path to the stage name | docs | [rest-api-origin], v2.275.0, line 44 | 2026-11-01 |
+| A distribution defaults to `ALLOW_GET_HEAD`, and to `ALLOW_ALL` for the viewer protocol unless a flag makes it redirect | docs | [cdk-behavior] | 2026-11-01 |
+| `SpecRestApi` adds no Lambda invoke permission, and creates no method resources | docs | Earlier review, R12 and R61 | 2026-10-30 |
+| `cdk bootstrap aws://<account>/<region>` doesn't need the app | memory | | 2026-11-01 |
+
+## Route 53, Budgets and other services
+
+| Fact | Status | Source | Checked |
+|---|---|---|---|
+| An unverified registrant email forces AWS to suspend the domain, and only some TLDs and new addresses need it | docs | [domain-register] | 2026-11-01 |
+| Credits can't pay for domain registration | docs | [domain-register] | 2026-11-01 |
+| Budgets update every 8-12 hours, plus an unstated billing delay | docs | Earlier review, R16 | 2026-10-30 |
+| An actual-spend alert fires only once per budget period | docs | Earlier review, R2 | 2026-10-30 |
+| `DeletionPolicy: RetainExceptOnCreate` deletes a resource when its creating operation rolls back | docs | [deletion-policy] | 2026-11-01 |
+| Domain charges appear under the service name "Amazon Registrar" | memory | The first purchase's bill decides | 2026-11-01 |
+| Updating a budget replaces all of it, so a filter must be sent again | memory | | 2026-11-01 |
+| A hosted zone costs about $0.50 per month | memory | | 2026-11-01 |
+| S3 and Lambda prices used in cost tables | memory | | 2026-11-01 |
+
+[plans]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/flat-rate-pricing-plan.html
+[plan-api]: https://docs.aws.amazon.com/PricingPlanManager/latest/UserGuide/getting-started-pricingplanmanager-api.html
+[plan-cfn]: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-pricingplanmanager-subscription.html
+[waf-rate]: https://docs.aws.amazon.com/waf/latest/developerguide/waf-rule-statement-type-rate-based-caveats.html
+[usage-plans]: https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-api-usage-plans.html
+[known-issues]: https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-known-issues.html
+[apikey-cfn]: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-apigateway-apikey.html
+[gateway-response]: https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-swagger-extensions-gateway-responses.gatewayResponse.html
+[response-types]: https://docs.aws.amazon.com/apigateway/latest/developerguide/supported-gateway-response-types.html
+[old-pricing]: https://web.archive.org/web/20211202141251/https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-pricing.html
+[rest-api-origin]: https://github.com/aws/aws-cdk/blob/v2.275.0/packages/aws-cdk-lib/aws-cloudfront-origins/lib/rest-api-origin.ts
+[cdk-behavior]: https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_cloudfront.BehaviorOptions.html
+[domain-register]: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/domain-register.html
+[deletion-policy]: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-attribute-deletionpolicy.html

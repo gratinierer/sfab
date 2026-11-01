@@ -20,6 +20,14 @@ Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`,
 Single-context: one `GLOSSARY.md` plus `docs/adr/` at the repo root, both
 created lazily. See `docs/agents/domain.md`.
 
+### Reference files
+
+Check `docs/aws-facts.md` when a story, review or change relies on AWS
+behaviour, and update its row whenever you confirm or disprove a fact.
+
+When a kind of knowledge keeps being rechecked or has no home, add a small file
+under `docs/`, with a pointer here saying when to read it.
+
 ### Start-of-task: check/create an `.stories` ticket first
 
 Before starting any **non-ad-hoc** task (i.e. not a trivial one-off like a
