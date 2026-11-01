@@ -98,7 +98,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `RECORD_TYPE` is a budget filter key, and "Credit" is a charge type | docs | [budgets-values], [budgets-filters] | 2026-11-01 |
 | Credits are excluded by a `RECORD_TYPE` value of exactly `Credit` | memory | Issue 01 of story `2-identity-api` confirms it in the console | 2026-11-01 |
 | Changing a budget resets its calculated spend to zero until new usage data arrives | docs | [budgets-update] | 2026-11-01 |
-| A budget allows at most 5 notifications | memory | Issue 01 of story `2-identity-api` confirms it | 2026-11-01 |
+| A budget can have up to five notifications, each with one SNS subscriber and up to 10 email subscribers | docs | [budgets-create] | 2026-11-01 |
 | Domain charges appear under the service name "Amazon Registrar" | memory | The first purchase's bill decides | 2026-11-01 |
 | Updating a budget replaces all of it, so a filter must be sent again | memory | | 2026-11-01 |
 | A hosted zone costs about $0.50 per month | memory | | 2026-11-01 |

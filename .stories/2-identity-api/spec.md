@@ -311,7 +311,7 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
   month (from memory), and the zone's ID goes in the config as `hosted_zone_id`. See
   `docs/adr/0001-initial-architecture.md`. Registrations and renewals are non-refundable.
 - **Stacks:** the base stack holds the TLS certificate for `<domain_name>` and `api.<domain_name>`,
-  which must be in `us-east-1`, both buckets with their lifecycle rules, both SNS topics and both
+  which must be in `us-east-1`, both buckets with their lifecycle rules, both SNS topics and all three
   budgets, so the alerts exist before anything can be spent. The API
   stack holds the API and everything that protects it, including the `api.` DNS record. A rollback of
   the API stack can't touch what's in the base stack. The website stack is described next.
@@ -427,7 +427,8 @@ This is the first line of defence, and its whole job is to bound the bill:
 |---|---|
 | Daily limit | **100,000 API Gateway calls per UTC day, in the CDK code, which stops the API until the owner restarts it** |
 | Stop budget | $35 per month, automatic stop at 100%, measuring real charges: credits are excluded so sign-up credits can't hide abnormal usage, and domain charges are excluded so a purchase or renewal can't use up the budget |
-| Alert budget | The same measure of spend, emailing the owner at $0.01, $17.50, $35, $105 and $350, with no dependence on the kill switch |
+| Alert budget | Emails the owner at $29, $40, $50, $70 and $100, including domain charges, with no dependence on the kill switch |
+| Check budget | Emails the owner at $0.01, including domain charges, to show each month that the emails work |
 | CloudFront WAF | Rate-based rule: 10 requests per IP per 5 minutes, across all routes, blocking with WAF's plain `403`. Blocked requests are free |
 | API Gateway | One stage-wide default throttle of 10 requests per second, burst 20, so a route can't be forgotten |
 | API Gateway | The origin key, required on every method |
@@ -447,8 +448,11 @@ Notes on these controls:
   reaches the handler, which enforces the exact limit and returns `400`. This depends on
   the `$default` model working through OpenAPI import, which must be tested during
   implementation.
-- **How both budgets measure spend:** with `Metrics` of `UnblendedCost` and a `FilterExpression` of NOT
-  (`SERVICE` = the domain charge's service name OR `RECORD_TYPE` = `Credit`). AWS doesn't allow this
+- **How the budgets measure spend:** with `Metrics` of `UnblendedCost` and a `FilterExpression`. The stop
+  budget uses NOT (`SERVICE` = the domain charge's service name OR `RECORD_TYPE` = `Credit`), so a purchase
+  or renewal can't stop the API. The alert and check budgets use NOT (`RECORD_TYPE` = `Credit`), so stolen
+  credentials can't register domains unseen, at the cost of an expected email on a purchase or renewal.
+  There are three budgets because AWS allows five notifications per budget. AWS doesn't allow this
   alongside the deprecated `CostTypes`, so `IncludeCredit` can't be used. That the value is literally
   `Credit` isn't confirmed, so check it in the console's budget preview, and the budget check under
   "Testing" compares it with the first real bill.
@@ -492,15 +496,15 @@ a failed step. While the steps propagate, agents may briefly get a `5xx`, which 
   restart.
 
 A second SNS topic, the alerts topic, is the only thing the owner's email subscribes to. It gets every
-alert from the alert budget, every email the functions send, a warning alarm at 50,000 calls a day and an
+alert from the alert and check budgets, every email the functions send, a warning alarm at 50,000 calls a day and an
 alarm on either function's errors. So those can't stop anything, and neither budget holds an email
 address, so changing `alert_email` never touches them.
 
-**The alert budget is separate on purpose.** It only tells the owner, so it still works during a stop, or
-if the kill switch is broken, and it covers what the stop can't touch, because spending keeps being
-visible after the API is down. Each threshold fires once a month. The $0.01 alert fires on the month's first charge,
+**The alert and check budgets are separate on purpose.** They only tell the owner, so they still work during a stop, or
+if the kill switch is broken, and they cover what the stop can't touch, because spending keeps being
+visible after the API is down. Each threshold fires once a month. The check budget's $0.01 alert fires on the month's first charge,
 so its monthly email shows the chain works, and its absence after a month with usage shows it doesn't.
-So reaching $100 unnoticed would mean missing that and ignoring the $17.50 and $35 emails. Budgets lag by a day or so.
+So reaching $100 unnoticed would mean missing that and ignoring all five alert budget emails. Budgets lag by a day or so.
 
 The daily limit, `required_bits` and the budget live in the CDK code, so changing one takes a commit and
 a deploy, with history. The kill switch only reads the budget. AWS resets a budget's calculated spend
@@ -545,7 +549,7 @@ average, so ordinary use, such as agents polling for messages, can reach it, and
 
 ## Operations
 
-**The owner gets an email** when a stop begins, when spend passes $0.01, $17.50, $35, $105 and $350, at 50,000 calls in a day,
+**The owner gets an email** when a stop begins, when spend passes $0.01, $29, $40, $50, $70 and $100, at 50,000 calls in a day,
 when either function fails, and once a day if federation requests are verified.
 
 **Stopping is easy on purpose.** About 35 IPs at the WAF limit can reach 100,000 calls in a day, and more
@@ -603,8 +607,8 @@ Logs are the most likely place for a claim to leak.
   API key required by every operation in `identity.yaml` (`SpecRestApi` creates no method resources to
   check), both plan subscriptions, the website's rate rule, and that buckets, topics and budgets are
   only in the base stack, apart from the website's own bucket. Also: the email subscription, the SNS topic
-  policies, the alert budget's five thresholds and the 50,000-call warning all targeting the alerts topic and not the
-  stop topic, the 5-minute and daily schedules, both budgets' `Metrics` and `FilterExpression`, and permissions that keep each function's rights out of the others, with no `budgets:ModifyBudget` on the kill switch.
+  policies, the alert budget's five thresholds, the check budget's one and the 50,000-call warning all targeting the alerts topic and not the
+  stop topic, the 5-minute and daily schedules, all three budgets' `Metrics` and `FilterExpression`, and permissions that keep each function's rights out of the others, with no `budgets:ModifyBudget` on the kill switch.
 - A test on faked S3 calls that a takedown leaves nothing behind for an agent with every kind of
   data, and that the ID can't be recreated, which any feature adding per-agent data must extend.
 - A smoke script against the deployed API covering every route, plus
@@ -644,9 +648,9 @@ Logs are the most likely place for a claim to leak.
   agents, without any markers.
 
 - A budget check, because the drill starts at the stop topic and doesn't prove that AWS Budgets sends the
-  alert. The alert budget's first $0.01 email proves that half. For the stop budget, temporarily lower its
+  alert. The check budget's first $0.01 email proves that half, once there's spend beyond the domain's own charge. For the stop budget, temporarily lower its
   limit to $0.01 in the CDK and deploy, wait for AWS to report spend, which can take a day or so, confirm
-  the API stops, then restore the limit and restart. Then compare the budget's figure with the first real
+  the API stops, then restore the limit and restart. Then compare the stop budget's figure with the first real
   bill, to confirm it tracks usage rather than the amount after credits.
 
 `axum` behind the Lambda adapter lets the same router run locally. None of this

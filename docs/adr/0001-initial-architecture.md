@@ -7,7 +7,7 @@ This is why sfab is built the way it is. `.stories/2-identity-api/spec.md` says 
 ## Cost protection
 
 - **One daily limit and one stop.** Over 100,000 API Gateway calls in a UTC day, checked every 5 minutes, the kill switch runs a full stop until the owner restarts it. Budget alerts alone can lag by a day or more.
-- **Two budgets.** The stop budget, at $35, triggers the same stop. The alert budget only emails, so it still works during a stop or with a broken kill switch.
+- **Three budgets.** The stop budget, at $35, triggers the same stop, and leaves out domain charges so a purchase can't stop the API. The alert budget emails at $29 to $100, and a check budget at $0.01 shows each month that emails work. Those two only email, so they still work during a stop or with a broken kill switch, and they include domain charges, so stolen credentials can't buy domains unseen.
 - **Non-API risks have their own defences.** MFA and no long-lived keys, because stolen credentials are the likeliest way to lose thousands, and a check that the flat-rate plans are attached.
 
 ## Hosting

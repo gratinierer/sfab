@@ -19,7 +19,7 @@ deploy". They need the owner's AWS account and card.
 
 `sfab.config.toml` and its example arrive with issue 04, so keep `domain_name` and the hosted
 zone's ID until then. The base stack can't deploy without the service name, because issue 01 puts
-it in the budgets' filter, so record it under `## Comments` below.
+it in the stop budget's filter, so record it under `## Comments` below.
 
 ## Done when
 

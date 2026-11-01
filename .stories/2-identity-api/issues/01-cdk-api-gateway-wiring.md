@@ -10,7 +10,7 @@ R12.
 ## Scope
 
 - The base stack: the certificate for `<domain_name>` and `api.<domain_name>`, both buckets, both
-  SNS topics with the email subscription, and both budgets, as in `spec.md` "Abuse and cost controls",
+  SNS topics with the email subscription, and all three budgets, as in `spec.md` "Abuse and cost controls",
   using the service name recorded in issue 03. Confirm the filter in the console's budget preview.
 - The API stack: the API Lambda and its reserved concurrency, the REST API, the origin key,
   the stage's one default throttle, access logs, CloudFront with its plan, the WAF rate rule, the CloudFront Function and
@@ -52,9 +52,8 @@ This is stage 1, along with issues 03-09. Later stages add routes to the same st
 
 - Every route reaches the API Lambda after a first deploy on a fresh account.
 - An edit to `identity.yaml` reaches the `v1` stage on the next `cdk deploy`.
-- CDK assertion tests cover the invoke permission, the CloudWatch role, and both budgets' alerts and
+- CDK assertion tests cover the invoke permission, the CloudWatch role, and all three budgets' alerts and
   filters.
-- AWS accepts the alert budget's five thresholds. If it allows fewer, drop $17.50.
 - On the first deploy through CloudFront, these are proven. AWS's docs support each, but none
   is tested, and the second isn't stated outright:
   - `GET /v1/identity/self` receives `Authorization` at the origin.
