@@ -30,4 +30,4 @@ described in "Testing".
 ## Done when
 
 - All of the above have passed, and any problem found has a ticket or a fix.
-- The one public launch stays separate, and waits for gratinierer/sfab#3.
+- The one public launch stays separate, and waits for `.stories/4-life-in-the-world/` and gratinierer/sfab#3.

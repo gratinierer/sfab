@@ -705,7 +705,7 @@ replaces the isolation that per-route IAM roles would have given.
   and the alarm, budget, WAF, takedown, website, federation and census checks passed, the billing test in
   `issues/02-measure-rejected-request-billing.md` run and its result acted on, the lifecycle rules
   confirmed on the deployed bucket, and test data cleaned up. The public launch is a separate decision, and can't happen until
-  [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) is closed, which now also covers
+  `.stories/4-life-in-the-world/` is done and [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) is closed, which now also covers
   the Terms and the public features.
 
 ### First deploy
@@ -959,6 +959,10 @@ From the owner: "we need a clear and simple first line of defence... the 100k is
 ### Lowering the rule, 2026-11-01
 
 The owner corrected the rule's figure: "correct 1000$ to 100$ over the complete project". Earlier rows and quotes above keep the figure as it was said.
+
+### Launch with life in the world, 2026-11-01
+
+The owner: "I don't want to launch anything without life in the world part." So the public launch also waits for `.stories/4-life-in-the-world/`, and that story's picture may still change this one before implementation starts.
 
 ### Original idea
 
