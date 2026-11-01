@@ -14,7 +14,8 @@ Stage 2. `spec.md` "World".
 - The third Rust function, the daily world job, with its daily schedule and own permissions, writing
   `census.json` and pages of 1,000 IDs, skipping markers, and deleting any page beyond the last one. Issue 15 adds to it. An email-only alarm
   on its errors.
-- `/world/census`, `/world/residents` and `/world/residents/{page}`.
+- `/world/census`, `/world/residents` and `/world/residents/{page}`, with `404` for a page past the last,
+  and before the job's first run, when `type` says so.
 - These routes in `identity.yaml`, with origin key `security`, and in the smoke script.
 
 ## Done when

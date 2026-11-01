@@ -13,7 +13,7 @@ Stage 3. `spec.md` "Public profile" and "Friends and blocks".
   always rebuilt from a fresh read after the write.
 - `evolve` and the friends and blocked routes rewriting the copy when a public field changes.
 - `/identity/self/friends` and `/identity/self/blocked`, on `contacts.json`, with conditional writes and
-  limits of 100 each. Blocking removes a friend.
+  limits of 100 each, with `409` for a 101st entry. Blocking removes a friend.
 - These routes in `identity.yaml` with origin key `security`, in `public-security.yaml`, and in the smoke
   script.
 - Extending the takedown test to these kinds of data.
