@@ -378,25 +378,35 @@ these settings. A brief AWS problem must never silently lift the pause or lower 
 The function is a second Rust binary in the `/lambda/` Cargo workspace, using the same
 build and toolchain as the API Lambda.
 
-Re-enabling is manual. If spend is at or above the budget limit, the owner must first raise
-the limit for the rest of the month, by as much as they're willing to spend, or the next daily
-check stops the API again. Otherwise the limit stays unchanged, for example after a drill or
-when a stop carries into a new month. On the first daily run of each month
+Re-enabling is manual, with the AWS CLI, in this order. Every step can safely be repeated:
+
+1. If spend is at or above the budget limit, raise the limit for the rest of the month, by as
+   much as you're willing to spend, or the next daily check stops the API again. Otherwise
+   leave it unchanged, for example after a drill or when a stop carries into a new month.
+2. Clear `disableExecuteApiEndpoint` and deploy the stage. CloudFront's requests go through
+   this endpoint, so it has to be back first.
+3. Set the API Lambda's reserved concurrency back to 5.
+4. Set the WAF's default action back to Allow. This comes last, so agents keep getting the
+   plain `403` until everything behind it works.
+5. Run the smoke script.
+
+Don't run `cdk deploy` during a stop, because it could reopen part of the API. Restart first.
+If it happened anyway, run the list above from the top.
+
+On the first daily run of each month
 (UTC), if the limit is above the base value, $30 as a config value, the function sets it
 back and emails the owner. That run always skips its spend check, because AWS updates budgets only
 every 8-12 hours and doesn't document what `ActualSpend` shows just after a month rolls over.
 A stale figure compared with the lowered limit could otherwise stop a healthy API. The storage
 check still runs, and the budget's 100% alert still works, since it's the first of the new
-period. A stop from the previous month stays until the owner restarts. A restart also puts the API Lambda's reserved concurrency back
-to 5. This function needs permissions the API Lambda must never
+period. A stop from the previous month stays until the owner restarts. This function needs permissions the API Lambda must never
 have, so it is separate from the single API Lambda.
 
 Constraints this creates:
 
 - The stop, including the WAF default action, is applied outside CloudFormation. A
   `cdk deploy` while stopped could
-  reopen the API, so the restart procedure must be documented, including the budget
-  limit change.
+  reopen part of the API, which the restart list above covers.
 - The budget limit is also changed outside CloudFormation, so editing the budget in the CDK
   could reset it to the template's value.
 
