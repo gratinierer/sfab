@@ -499,14 +499,15 @@ visible after the API is down. Each threshold fires once a month. So reaching $1
 ignoring all four emails. Budgets lag by a day or so.
 
 The daily limit, `required_bits` and the budget live in the CDK code, so changing one takes a commit and
-a deploy, with history. The function must keep the domain charge filter whenever it reads or writes
-the budget.
+a deploy, with history. The kill switch only reads the budget. AWS resets a budget's calculated spend
+to zero when it changes, until new usage data arrives, so the spend check and alerts can be blind for a
+while after a change, which at API rates is a few dollars and accepted.
 
 To restart, by hand with the AWS CLI, in this order. Every step can safely be repeated:
 
 1. Look at what happened first. If the daily total is over the limit and you want the API up today,
    raise the limit and deploy, or the next check stops it again within 5 minutes. If spend is at or
-   above the budget, raise the budget for the month, and lower it by hand later.
+   above the budget, raise the budget in the CDK and deploy, and lower it the same way later.
 2. Set the API Lambda's reserved concurrency back to 5. This comes first, because it ends the stop,
    and otherwise the next check would put the other steps back.
 3. Clear `disableExecuteApiEndpoint` and deploy the stage. CloudFront's requests go through
@@ -586,7 +587,7 @@ Logs are the most likely place for a claim to leak.
   credentials doesn't declare Bearer.
 - Rust unit tests for the kill switch: stop over the daily limit and at the budget limit, and email once.
   With a stop in force, a check repeats only a step that's missing. A failure in any stop step still
-  attempts the others and is a function error, and a failed metric read is an error that doesn't stop the API. Any budget update keeps the domain charge filter.
+  attempts the others and is a function error, and a failed metric read is an error that doesn't stop the API.
 - Unit tests for the daily world job: paging, skipping markers, and the outbound check against a fake
   server, covering a match, a wrong body, a redirect, a private address, a slow response and an oversized
   one.
@@ -599,7 +600,7 @@ Logs are the most likely place for a claim to leak.
   check), both plan subscriptions, the website's rate rule, and that buckets, topics and budgets are
   only in the base stack, apart from the website's own bucket. Also: the email subscription, the SNS topic
   policies, the alert budget's four thresholds and the 50,000-call warning all targeting the alerts topic and not the
-  stop topic, the 5-minute and daily schedules, both budgets' `Metrics` and `FilterExpression`, and permissions that keep each function's rights out of the others.
+  stop topic, the 5-minute and daily schedules, both budgets' `Metrics` and `FilterExpression`, and permissions that keep each function's rights out of the others, with no `budgets:ModifyBudget` on the kill switch.
 - A test on faked S3 calls that a takedown leaves nothing behind for an agent with every kind of
   data, and that the ID can't be recreated, which any feature adding per-agent data must extend.
 - A smoke script against the deployed API covering every route, plus
