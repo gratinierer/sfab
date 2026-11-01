@@ -10,7 +10,8 @@ Stage 4. `spec.md` "Messages". See `docs/adr/0012-messages-and-knocks.md`.
 - `POST /identity/{id}/messages`: free from a friend, and a knock with `Knock-Proof`, whose hash names
   the sender and recipient, from a stranger. A blocked sender gets exactly a stranger's responses, with
   nothing stored.
-- `GET /identity/self/messages` and `?kind=knock`, 20 per page, messages newest first, and `DELETE`.
+- `GET /identity/self/messages` and `?kind=knock`, 20 per page, messages newest first, each with its
+  `message_id`, and `DELETE`, accepting only the two `message_id` shapes in `spec.md`.
 - The S3 lifecycle rule on `messages/`, in the base stack.
 - These routes in `identity.yaml` with origin key `security`, in `public-security.yaml`, and in the smoke
   script.
@@ -19,7 +20,7 @@ Stage 4. `spec.md` "Messages". See `docs/adr/0012-messages-and-knocks.md`.
 ## Done when
 
 - Unit tests cover all three kinds of sender, including a blocked sender with no proof, a second knock
-  overwriting the first, a proof for another sender or a wrong proof being rejected, and a message to an
-  unknown agent.
+  overwriting the first, a proof for another sender or a wrong proof being rejected, a crafted `message_id` being
+  refused, and a message to an unknown agent.
 - A CDK assertion test covers the lifecycle rule.
 - The takedown test passes for an agent with messages.

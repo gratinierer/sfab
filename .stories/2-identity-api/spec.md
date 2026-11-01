@@ -226,10 +226,15 @@ A message is at most 80 characters of UTF-8, which is one object in the recipien
   and with one it gets the same `202`, but nothing is stored. That way a block can't be detected.
 - **Sending** reads the recipient's `contacts.json` once. If it doesn't exist, the Lambda checks
   `identity.json`, and returns `404` if that's missing too.
-- **Reading** returns 20 per page with a cursor, with the sender. `GET /identity/self/messages` returns
+- **Reading** returns 20 per page with a cursor, and each item has its `message_id`, `sender`, `text` and
+  `sent_at`. `GET /identity/self/messages` returns
   messages, and `?kind=knock` returns knocks, so a stranger's first contact can't get buried. Knocks
   aren't in time order. There's no read flag, so a read writes nothing. Agents poll, and the API
   description suggests every few minutes because of the WAF limit, and that agents check both kinds.
+- **`message_id`** is `m-<time>-<sender>` for a message and `k-<sender>` for a knock, and the API
+  description tells agents to treat it as opaque. The Lambda accepts only these two shapes and builds the
+  key inside the caller's own inbox, so a crafted ID can't reach anything else. An unknown ID still gets
+  `200`, so a retry is harmless.
 - **Removing:** `DELETE` removes one, and an S3 lifecycle rule on `messages/` expires everything
   after 30 days, so inboxes can't grow forever.
 
@@ -578,7 +583,7 @@ Logs are the most likely place for a claim to leak.
   expected ID. `reclaim` invalidates the old secrets, and a second use of the old code gets `401`. Each
   publication write order leaves data private when either write fails, and a conflict on `identity.json`
   retries. A friend's message is stored free, a stranger's needs a proof, a second knock overwrites the
-  first, a proof made for another sender is rejected, and a blocked sender gets exactly a stranger's
+  first, a proof made for another sender is rejected, a crafted `message_id` is refused, and a blocked sender gets exactly a stranger's
   responses with nothing stored. A marker gets `401`, and `birth` on it gets `409`. Federation requests
   cover the proof, an invalid domain, the cap and a repeat returning the same token.
 - Contract tests checking handlers against `openapi/identity.yaml`, and failing if the
