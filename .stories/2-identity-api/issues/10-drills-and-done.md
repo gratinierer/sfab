@@ -9,6 +9,7 @@ described in "Testing".
 ## Scope
 
 - The kill switch drill, including the restart list.
+- The call limit drill, with the limit lowered and restored afterwards.
 - The pause drill, with a simulated bucket size, for `birth` and sending messages.
 - The takedown check, for an agent with every kind of data.
 - The website check.

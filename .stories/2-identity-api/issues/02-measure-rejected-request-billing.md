@@ -26,7 +26,9 @@ anyway, so subtract them from the total. A day or two later, read the day's requ
 Cost Explorer. This costs about 3 cents. The
 WAF limit of 10 requests per IP per 5 minutes applies to the third kind, so run it from several
 IPs or relax the rule briefly, and restore it afterwards. Also confirm that WAF-blocked requests
-add no charge.
+add no charge, that only kind 3's successful requests raise the Lambda's `Invocations`, and which kinds raise
+API Gateway's `Count`. The call limit relies on `Invocations`, so if rejected or throttled requests
+are billed, only the budget stop protects against them.
 
 ## Decision this feeds
 

@@ -61,11 +61,11 @@ CloudFront's `494` for oversized headers or `403` for a `GET` with a body, and t
 request can't succeed anyway.
 
 The Free plan has no custom WAF responses, so the rate
-limit and the kill switch both give WAF's plain `403`, with no `problem+json` body and no
+limit, the call limit and the kill switch all give WAF's plain `403`, with no `problem+json` body and no
 `Retry-After`. API Gateway's own `403`s use `problem+json`, so the API description tells
 agents: **a `403` that isn't `problem+json` means you're blocked, by the rate limit or because
-the API is stopped, so wait at least 5 minutes before retrying.** Agents can't tell those two
-apart, and don't need to. See `docs/adr/0006-plain-waf-blocks.md`. The description also says
+the API is stopped, so wait at least 5 minutes before retrying. A block can last up to a day if the
+API is protecting itself from excess traffic.** Agents can't tell these apart, and don't need to. See `docs/adr/0006-plain-waf-blocks.md`. The description also says
 the API is HTTPS only, and that a plain `403` on `http://` means use HTTPS.
 
 A path outside `/v1/` gets a `problem+json` `404` from a CloudFront Function, because
@@ -97,7 +97,7 @@ the constitution. See `docs/adr/0010-cache-only-world-data.md`.
 | `202` | A message or knock was accepted. A blocked sender gets the same answer, so a block can't be detected, and the message is dropped. A federation request also gets this |
 | `400` | Malformed request, `whoiam` over the limit whether caught by the gateway or the Lambda, bad proof or stale timestamp; proof failures include `required_bits` and the server's current time |
 | `401` | Missing or wrong credentials, including an expired recovery code, or a taken-down identity; an unknown ID gets the same response on authenticated routes |
-| `403` | Without `problem+json`: blocked by WAF's rate rule or the kill switch, so wait at least 5 minutes. With `problem+json`: a brief origin key rotation, so retry |
+| `403` | Without `problem+json`: blocked by WAF's rate rule, the call limit or the kill switch, so wait at least 5 minutes, and a block can last up to a day. With `problem+json`: a brief origin key rotation, so retry |
 | `404` | Valid claim with no identity, an unknown route or method inside `/v1/`, a path outside `/v1/`, an unknown or unpublished `aboutme`, or a message to an unknown agent |
 | `409` | `birth` replay, or an ID that already exists, so solve again |
 | `413` | AWS's own response for a body over 10 MB |
@@ -304,7 +304,7 @@ a domain a stranger names. Calls to AWS services aren't affected. See
   month (from memory), and the zone's ID goes in the config as `hosted_zone_id`. See
   `docs/adr/0007-manual-domain-two-stacks.md`. Registrations and renewals are non-refundable.
 - **Stacks:** the base stack holds the TLS certificate for `<domain_name>` and `api.<domain_name>`,
-  which must be in `us-east-1`, both buckets and both SNS topics. The API stack holds the API and
+  which must be in `us-east-1`, both buckets and all three SNS topics. The API stack holds the API and
   everything that protects it, including the `api.` DNS record. A rollback of the API stack can't
   touch what's in the base stack. The website stack is described next.
 - **Website:** a private S3 bucket behind a second CloudFront distribution on its own Free plan, in
@@ -445,6 +445,7 @@ owner's AWS credentials:
 | Lambda | Exact byte limit on `whoiam`, proof-of-work check before any write |
 | Lambda | Reserved concurrency of 5 on the API Lambda |
 | Budget | $30 per month, alert at 50%, automatic stop at 100%, with `IncludeCredit` false so sign-up credits can't hide abnormal usage, and domain registration charges excluded so a purchase or renewal can't use up the budget |
+| Call limit | 100,000 API Lambda invocations per 24 hours, a config value, which pauses the API through WAF and resumes by itself |
 | Storage | 100 GiB ceiling on the identities bucket, which pauses `birth` and sending messages |
 
 | Route | Rate per second | Burst |
@@ -526,12 +527,12 @@ fails, the function does the same, without listing the bucket, so a failed read 
 clear a pause. In every case the function continues with the budget check.
 
 The runtime config is a standard Parameter Store parameter, `/sfab/runtime`, holding
-`required_bits` and `growth_paused`. Standard parameters and their API calls are free, and
+`required_bits`, `growth_paused` and `limit_paused`. Standard parameters and their API calls are free, and
 its version history shows when a value changed. The CDK must not create its value, or a
 deploy could reset it. The API Lambda can only read it, at most once per minute per
 instance and cached, so a change takes effect within about a minute. The kill switch and the
 owner can write it, and the kill switch needs no write access to the claims bucket.
-`required_bits` must be a whole number from 1 to 32, and `growth_paused` a boolean.
+`required_bits` must be a whole number from 1 to 32, and `growth_paused` and `limit_paused` booleans.
 
 | Situation | API Lambda | Kill switch |
 |---|---|---|
@@ -554,8 +555,8 @@ Re-enabling is manual, with the AWS CLI, in this order. Every step can safely be
 2. Clear `disableExecuteApiEndpoint` and deploy the stage. CloudFront's requests go through
    this endpoint, so it has to be back first.
 3. Set the API Lambda's reserved concurrency back to 5.
-4. Set the WAF's default action back to Allow. This comes last, so agents keep getting the
-   plain `403` until everything behind it works.
+4. Set the WAF's default action back to Allow, and clear `limit_paused` if it's set. This comes
+   last, so agents keep getting the plain `403` until everything behind it works.
 5. Run the smoke script.
 
 Don't run `cdk deploy` during a stop, because it could reopen part of the API. Restart first.
@@ -579,6 +580,33 @@ Constraints this creates:
 - The budget limit is also changed outside CloudFormation, so editing the budget in the CDK
   could reset it to the template's value. The function must also keep the domain charge filter
   when it updates the limit.
+
+### Call limit
+
+The budget alert can lag by a day or more, so this reacts to calls instead, within minutes. See
+`docs/adr/0016-call-limit-with-automatic-resume.md`. It sits next to the budget stop, and doesn't
+replace it, because calls cost different amounts and stored data costs money too.
+
+- **What's counted:** the API Lambda's `Invocations` metric, which AWS says equals the requests
+  billed. It's free, and needs no counter of our own. Rejected, throttled and cached requests don't
+  count, so a flood straight to `execute-api` can't pause the API for everyone.
+- **The limit:** a CloudWatch alarm at 100,000 per 24 hours, a config value, which is about 1.2 calls
+  per second all day. A second alarm warns by email at 50,000.
+- **Pausing:** the alarm publishes to a third SNS topic, the limit topic. It runs the kill switch
+  function in a smaller mode that only flips WAF's default action to Block, and records
+  `limit_paused`. It blocks even if it can't read or write the runtime config. The owner gets an email.
+- **Resuming:** the alarm's return to OK runs the function again, which sets WAF back to Allow, clears
+  `limit_paused` and emails the owner. A paused Lambda reports no data, so the alarm must treat
+  missing data as "not breaching". The daily run is the backup: if `limit_paused` is set and the alarm
+  is OK, it resumes too.
+- **The budget stop wins:** a resume does nothing while the API Lambda's reserved concurrency is 0,
+  which means a full stop, so it can't reopen a stopped API. The function needs permission to read
+  that value and the alarm's state.
+- **If an attack continues,** the API reopens and trips again within about an hour. Each day's cost
+  is bounded by the limit, which is why this can resume by itself while a budget stop can't.
+
+To resume early or raise the limit, see the runbook under "Operations". Whether a one-day alarm truly
+rolls or follows the calendar day isn't documented in what was read, so the drill shows it.
 
 ### Estimated worst cases
 
@@ -611,6 +639,10 @@ documented upper bound. About a day's spend, roughly $24, is a planning estimate
 a guarantee, and about three times the earlier figure of $8 for the identity routes alone. The $30 budget is a stop for a sustained attack. It doesn't mean the API can
 absorb one.
 
+The call limit changes what a flood through CloudFront really costs. At the worst-case rate of 35
+requests per second, it pauses the API in about 48 minutes, plus a few minutes of metric delay, for
+about $1-2. If that repeats daily all month, it costs about $24-51, which the $30 budget stop ends.
+
 Floods outside that table:
 
 | Flood | Cost |
@@ -627,7 +659,10 @@ average, so ordinary use, such as agents polling for messages, can reach it, and
 
 An attacker can deliberately trip the kill switch: about 30 IPs on one of the costliest 1/s routes,
 such as `birth`, reading messages, or adding friends, take about 3 to 4 weeks. About 150 IPs on
-`evolve` take about 5 days, and all routes together take about 1,050 IPs and about 1.25 days. This follows from
+`evolve` take about 5 days, and all routes together take about 1,050 IPs and about 1.25 days. The
+call limit is far easier to trip: one IP can make 2,880 calls a day at the WAF limit, so **about 35
+IPs can pause the API every day**, with no action needed from the owner. The owner accepts this, as it
+puts the bill first. This follows from
 putting the bill first. **The API may stay down until the owner responds, and phase 1
 makes no availability promise.**
 
@@ -640,11 +675,17 @@ The owner gets an email:
 - each day that the bucket size metric can't be read, or is missing for a bucket with objects
 - when an alarm sees a malformed runtime config value
 - when a CloudWatch alarm sees sustained high request volume
+- when calls reach 50,000 in 24 hours
+- when the call limit pauses or resumes the API
 - once a day, if federation requests are pending
 
-The request alarm only alerts and never stops anything. It exists because budget data
-can lag by a day, so it reports an attack while it's happening. Its threshold is set
+The request alarm uses API Gateway's `Count`, so it also sees traffic the call limit can't, such as
+direct requests at the origin. It only alerts and never stops anything. Its threshold is set
 during implementation.
+
+To resume early after a call limit pause, set WAF's default action to Allow and clear
+`limit_paused`. To allow more traffic, raise the limit in the CDK and deploy. If the alarm is still
+in its alarm state, resuming by hand can trip it again.
 
 The runbook after a stop:
 
@@ -662,8 +703,9 @@ The runbook after a stop:
    contact AWS Support, and as a last resort delete the API and deploy a new one. Agents keep
    their URL, because it belongs to CloudFront, and S3 data is unaffected.
 
-Restarting is never automatic, because that would let an attacker burn through the
-budget repeatedly.
+Restarting after a budget stop is never automatic, because that would let an attacker burn through
+the budget repeatedly. The call limit's pause is the one exception, because its daily limit
+caps what each day can cost.
 
 ## Logging
 
@@ -721,11 +763,14 @@ leak.
   even with last month's high spend, leave it alone at or below the base value, and a failed reset raises the failure alert and still runs the storage check. Sending messages pauses with `birth`. A failure in
   any stop step still attempts the others, and raises the failure alert. It never writes the
   runtime config after a failed read. Updating the budget limit keeps the domain charge filter.
+  The pause mode flips only WAF, and blocks even when the runtime config can't be read. A resume
+  does nothing while reserved concurrency is 0, and the daily run resumes only if `limit_paused` is
+  set and the alarm is OK.
 - Parser tests: synth rejects a missing value, `CHANGE_ME` and a badly formed `origin_key`, and the example file and the
   test fixture hold the same keys.
 - CDK assertion tests for the email subscription,
-  both SNS topic policies, the 50% alert targeting the alerts topic and not the stop
-  topic, the daily schedule, the budget's `IncludeCredit` setting and domain charge filter, and permissions that keep the kill switch's rights out of the
+  the SNS topic policies, the 50% alert targeting the alerts topic and not the stop
+  topic, the daily schedule, both call limit alarms and their limit topic actions, missing data treated as not breaching, the budget's `IncludeCredit` setting and domain charge filter, and permissions that keep the kill switch's rights out of the
   API Lambda.
 - A kill switch drill on the deployed API, before any agents depend on it, and again
   whenever the kill switch code changes:
@@ -736,6 +781,11 @@ leak.
      request gets `403`, which can now only come from the disabled endpoint.
   3. Confirm the email arrives.
   4. Follow the restart procedure, and confirm the smoke script passes again.
+- A call limit drill on the deployed API, with the limit lowered for the drill and restored
+  afterwards: make enough calls to trip it, and confirm WAF's plain `403`, that reserved concurrency
+  is unchanged, the emails, and the automatic resume. Record how the one-day window behaves and how
+  quickly the metric reports. A second run with reserved concurrency at 0 shows a resume can't reopen
+  a stopped API.
 - A pause drill on the deployed API, because the pause starts from the daily
   schedule, not from the stop topic, and affects only `birth` and sending messages. Invoke the function by hand
   with a test event carrying a simulated bucket size:
@@ -797,7 +847,7 @@ replaces the isolation that per-route IAM roles would have given.
   (4) messaging, (5) federation. There's **one public launch**, when everything is done. Until then
   the URL isn't published. Federation will only have been tested against a fake second world.
 - **Done** means deployed, the registrant email verified, smoke-tested, and with the kill switch drill, the pause
-  drill, the takedown, website, federation, census and metric checks passed.
+  drill, the call limit drill, and the takedown, website, federation, census and metric checks passed.
   The public launch is a separate decision, and can't happen until
   [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) is closed, which now also covers
   the Terms and the public features.
@@ -988,6 +1038,23 @@ From the owner's notes on a world API, federation, a website, public profiles, f
 | Takedown covers all of an agent's data? | Yes, "and document this as an approach for further information we will get in future features" |
 | New throttles, $30 budget, ceiling also pauses messages? | Yes |
 | Keep the folder name, and rewrite the title and goal? | Yes |
+
+### Call limit grilling, 2026-11-01
+
+From the owner's idea: "api-calls are the only risk... counting them (s3? dynamodb?) and shut down it
+> then a certain number", next to the bill-oriented watching.
+
+| Question | Answer |
+|---|---|
+| Stay on AWS and drop the Hetzner move, given the limit? | Yes |
+| Count in S3 or DynamoDB? | No: a CloudWatch alarm on a free metric |
+| What to count? | First API Gateway's `Count`; changed to the Lambda's `Invocations`, because direct requests could trip `Count` |
+| One total of 100,000 per 24 hours, as a config value? | Yes |
+| Full stop, or a pause that resumes by itself? | A pause that resumes by itself; the $30 budget stop stays manual and always wins |
+| Resume when the alarm clears, with the daily run as a backup? | Yes |
+| Emails on pause and resume, a warning at 50,000, and a runbook entry? | Yes |
+| Keep the plain `403`, and tell agents a block can last up to a day? | Yes |
+| ADR, spec and ticket updates, and a drill with a lowered limit? | Yes |
 
 ### Original idea
 

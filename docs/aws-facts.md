@@ -82,6 +82,14 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `DeletionPolicy: RetainExceptOnCreate` deletes a resource when its creating operation rolls back | docs | [deletion-policy] | 2026-11-01 |
 | S3 lifecycle rules match the start of a path or an object tag, with no wildcard in the middle | memory | | 2026-11-01 |
 | A listing returns up to 1,000 keys per request, with each object's size | memory | | 2026-11-01 |
+| An alarm with a period of at least one hour can evaluate up to 7 days | docs | [alarms] | 2026-11-01 |
+| A one-day alarm period truly rolls, rather than following the calendar day | memory | Not found in what was read; the call limit drill shows it | 2026-11-01 |
+| An alarm treating missing data as not breaching returns to OK when a paused Lambda reports nothing | memory | The call limit drill shows it | 2026-11-01 |
+| A standard alarm costs $0.10 per metric per month, with 10 free | docs | [cw-pricing], from search results | 2026-11-01 |
+| Lambda `Invocations` equals the requests billed, and excludes throttled invocations | docs | [lambda-metrics] | 2026-11-01 |
+| API Gateway `Count` is "the total number API requests", without saying if rejected or throttled requests count | docs | [apigw-metrics]; issue 02 of story `2-identity-api` tests it | 2026-11-01 |
+| API Gateway's per-API metrics are sent at one-minute periods, and are free | docs | [apigw-monitoring], [cw-pricing], from search results | 2026-11-01 |
+| DynamoDB on-demand writes cost about $0.625 per million | docs | [dynamodb-pricing], from search results | 2026-11-01 |
 | Domain charges appear under the service name "Amazon Registrar" | memory | The first purchase's bill decides | 2026-11-01 |
 | Updating a budget replaces all of it, so a filter must be sent again | memory | | 2026-11-01 |
 | A hosted zone costs about $0.50 per month | memory | | 2026-11-01 |
@@ -100,4 +108,10 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 [rest-api-origin]: https://github.com/aws/aws-cdk/blob/v2.275.0/packages/aws-cdk-lib/aws-cloudfront-origins/lib/rest-api-origin.ts
 [cdk-behavior]: https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_cloudfront.BehaviorOptions.html
 [domain-register]: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/domain-register.html
+[alarms]: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html
+[cw-pricing]: https://aws.amazon.com/cloudwatch/pricing/
+[lambda-metrics]: https://docs.aws.amazon.com/lambda/latest/dg/monitoring-metrics-types.html
+[apigw-metrics]: https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-metrics-and-dimensions.html
+[apigw-monitoring]: https://docs.aws.amazon.com/apigateway/latest/developerguide/monitoring-cloudwatch.html
+[dynamodb-pricing]: https://aws.amazon.com/dynamodb/pricing/
 [deletion-policy]: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-attribute-deletionpolicy.html

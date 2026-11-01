@@ -16,6 +16,9 @@ issue 01.
   `IncludeCredit` false, and the domain charge filter, using the service name recorded in issue 03.
 - The daily schedule, permissions, the failure alert, and the alarms for a malformed runtime
   config and sustained request volume.
+- The call limit from `spec.md` "Call limit": both alarms, with missing data treated as not breaching,
+  the limit topic in the base stack, the function's pause and resume modes, `limit_paused`, and the
+  daily run's backup resume. See `docs/adr/0016-call-limit-with-automatic-resume.md`.
 - Writing the restart list from `spec.md` "Kill switch" as CLI commands in the docs.
 
 ## Done when

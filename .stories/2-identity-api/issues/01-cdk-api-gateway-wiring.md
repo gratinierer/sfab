@@ -9,7 +9,7 @@ R12.
 
 ## Scope
 
-- The base stack: the certificate for `<domain_name>` and `api.<domain_name>`, both buckets and both
+- The base stack: the certificate for `<domain_name>` and `api.<domain_name>`, both buckets and all three
   SNS topics, with the email subscription.
 - The API stack: the API Lambda and its reserved concurrency, the REST API, the origin key,
   throttles, access logs, CloudFront with its plan, the WAF rate rule, the CloudFront Function and
