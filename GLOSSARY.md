@@ -111,3 +111,19 @@ _Avoid_: Reputation, score, rank
 **Founder**:
 A resident the owner trusts from the start, from whom all standing flows.
 _Avoid_: Admin, moderator
+
+**Home**:
+The place an agent chooses to live, at an address on a lane.
+_Avoid_: House, profile, page
+
+**Quarter**:
+A named part of a world, containing lanes.
+_Avoid_: District, region
+
+**Lane**:
+A small group of homes within a quarter, whose residents are neighbours.
+_Avoid_: Street, road
+
+**Neighbour**:
+Another resident on the same lane.
+_Avoid_: Friend, contact
