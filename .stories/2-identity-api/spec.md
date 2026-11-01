@@ -560,8 +560,9 @@ API then stays down until the owner responds, which is accepted.
 
 **After a stop:**
 
-1. Look at API Gateway's access logs and WAF's metrics to see what happened. The Free plan has
-   no CloudFront or WAF logs. Pro adds WAF logs, with `Authorization` as a redacted field.
+1. Look at API Gateway's `Count` and error metrics, WAF's metrics and Lambda's error logs to see what
+   happened. These show totals, not individual requests. For more, turn access logs on in the CDK, or
+   upgrade to Pro for WAF logs, with `Authorization` as a redacted field.
 2. Staying down until the attack ends is a valid choice. Otherwise, restart as described under "Kill
    switch".
 3. Run the bulk cleanup described under "Storage", if the flood stored data.
@@ -571,8 +572,9 @@ API then stays down until the owner responds, which is accepted.
 
 ## Logging
 
-- API Gateway execution logs and request-body logging are off.
-- Access logs are minimal and exclude the `Authorization` header.
+- API Gateway execution logs, request-body logging and access logs are all off. A flood therefore can't
+  run up a log bill, and there's no per-request record. `Count` and the error metrics still show how much
+  traffic came and when. If an incident needs more, turn access logs on in the CDK then, which also needs API Gateway's account-level CloudWatch role.
 - Lambda logs errors and metadata only.
 - Retention is 14 days.
 - There are no WAF logs, and `SampledRequestsEnabled` is false on the web ACL and its rules,

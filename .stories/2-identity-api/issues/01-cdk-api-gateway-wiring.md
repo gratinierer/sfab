@@ -13,7 +13,7 @@ R12.
   SNS topics with the email subscription, and all three budgets, as in `spec.md` "Abuse and cost controls",
   using the service name recorded in issue 03. Confirm the filter in the console's budget preview.
 - The API stack: the API Lambda and its reserved concurrency, the REST API, the origin key,
-  the stage's one default throttle, access logs, CloudFront with its plan, the WAF rate rule, the CloudFront Function and
+  the stage's one default throttle, with access logs off, CloudFront with its plan, the WAF rate rule, the CloudFront Function and
   the `api.` DNS record.
 - The CDK assertion tests in `spec.md` "Testing" for these.
 
@@ -33,11 +33,9 @@ This is stage 1, along with issues 03-09. Later stages add routes to the same st
   `SpecRestApi` doesn't build from code, so later `identity.yaml` edits might never reach
   the stage. Pass the OpenAPI definition to `addToLogicalId()` on the deployment, as the
   CDK docs recommend. This hasn't been tested on a real deploy.
-- **CloudWatch role for access logs:** API Gateway needs an account-level IAM role before
-  it can write access logs, and CDK's default depends on the
-  `@aws-cdk/aws-apigateway:disableCloudWatchRole` flag. Set `cloudWatchRole` to true
-  explicitly, or a first deploy on a fresh account can fail. The role is account-wide,
-  which is fine in this dedicated account. Filed from review finding R20.
+- **No CloudWatch role:** access logs are off, so nothing needs API Gateway's account-level CloudWatch role.
+  CDK's default depends on the `@aws-cdk/aws-apigateway:disableCloudWatchRole` flag, so set
+  `cloudWatchRole` to false explicitly.
 - **Origin key:** an API key only works once it's associated with a usage plan and stage. Create
   a usage plan on the `v1` stage, with no throttle because the stage holds the throttles, and
   associate the key with it. Put `security` on every operation in `identity.yaml`, because
@@ -52,7 +50,7 @@ This is stage 1, along with issues 03-09. Later stages add routes to the same st
 
 - Every route reaches the API Lambda after a first deploy on a fresh account.
 - An edit to `identity.yaml` reaches the `v1` stage on the next `cdk deploy`.
-- CDK assertion tests cover the invoke permission, the CloudWatch role, and all three budgets' alerts and
+- CDK assertion tests cover the invoke permission, access logs off, no CloudWatch role, and all three budgets' alerts and
   filters.
 - On the first deploy through CloudFront, these are proven. AWS's docs support each, but none
   is tested, and the second isn't stated outright:
