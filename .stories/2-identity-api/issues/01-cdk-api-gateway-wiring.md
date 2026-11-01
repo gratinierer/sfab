@@ -25,6 +25,10 @@ R12.
   associate the key with it. Put `security` on every operation in `identity.yaml`, because
   root-level `security` is ignored. Leave the key's `Name` unset, because changing `Value`
   replaces the key, and a named key can't be replaced. Filed from review finding R61.
+- **Origin path:** `RestApiOrigin` defaults its origin path to the stage name, but public URLs
+  already include `/v1`, so requests would reach the origin as `/v1/v1/...`. Set the origin path
+  to `/` explicitly, or use an `HttpOrigin`, and add a CDK assertion test. Filed from review
+  finding R74.
 
 ## Done when
 
