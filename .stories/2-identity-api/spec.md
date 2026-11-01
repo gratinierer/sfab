@@ -177,14 +177,18 @@ ceiling and the kill switch.
   real ARN or account ID reaches the repo. Throttles live in the CDK stage settings.
 - **Public API description:** `GET /openapi.yaml` serves a generated public copy with
   every `x-amazon-*` extension removed, and a relative `servers` entry of `/v1`, so the
-  build doesn't need the real API URL. The Lambda includes it in its binary at compile
+  build doesn't need the real API URL. The generator also rewrites security, because the origin
+  key's `apiKey` scheme would tell agents they need a key they can never get, and API Gateway
+  won't import a Bearer scheme. It removes the `apiKey` scheme and every reference to it, then
+  merges in `openapi/public-security.yaml`, which declares Bearer on `evolve`, `self` and
+  `reclaim`, and nothing on `birth` and `openapi.yaml`. The Lambda includes it in its binary at compile
   time, so the route needs no S3 read and always matches the deployed code. The copy is
   generated and not committed.
 - **Build:** a small script in the Python tooling generates the public copy, then
   `cargo lambda build` produces the arm64 binary before `cdk deploy`, with no Docker.
   The build fails if the public copy is missing, and CI runs the same steps. After a
   successful build, a stamp next to the binary records a hash of every input to the public
-  copy, currently `identity.yaml` and `abuse_contact`. `cdk synth` recomputes the hash from
+  copy, currently `identity.yaml`, `public-security.yaml` and `abuse_contact`. `cdk synth` recomputes the hash from
   the current files, and fails if it differs or the stamp is missing, so a stale
   description can't be deployed even with a bare `cdk deploy`. A single `deploy`
   script runs generate, build and `cdk deploy` in order. The Python CDK packages live in a
@@ -494,7 +498,8 @@ leak.
   last good value.
 - Contract tests checking handlers against `openapi/identity.yaml`, and failing if the
   public copy contains `x-amazon-`, `arn:aws`, the origin key, or anything that looks like an
-  account ID, or if it has no `info.contact`.
+  account ID, if it has no `info.contact`, if it has an `apiKey` scheme, or if `evolve`, `self`
+  and `reclaim` don't declare Bearer.
 - CDK assertion tests for throttles, WAF with sampling off, public-access blocks, bucket removal policies, the
   `REGIONAL` endpoint type, the distribution's cache and origin request policies, the API key
   required on every method, the plan subscription, and that buckets and topics are only in
