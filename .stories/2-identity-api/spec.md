@@ -164,17 +164,13 @@ ceiling and the kill switch.
   every method, so a request straight to `execute-api` is rejected before the Lambda runs.
   CloudFront overwrites a viewer's header of the same name. This only proves a request came
   through CloudFront, and isn't how agents authenticate.
-- **Domain:** the stack registers `domain_name` through a custom resource, only when
-  `register_domain` is true. It first checks whether the account already owns the domain,
-  refuses any price above `max_price`, keeps WHOIS privacy and auto-renew on, and does nothing
-  on stack deletion or rollback, so the domain is never lost. A first deploy may run long or
-  time out, because registration can take days and needs an email confirmation; rerunning
-  `cdk deploy` is the recovery. Buying through the console is the documented fallback, which
-  the "already owned" check picks up. The helper is a small Python function, an exception for
-  deploy-time code. It also creates the TLS certificate, which must be in `us-east-1`, and the
-  `api.` DNS record. Contact details appear in the CloudFormation template and `cdk.out`,
-  readable only within this dedicated account, and `cdk.out` is gitignored. Registrations and
-  renewals are non-refundable.
+- **Domain:** the owner buys `domain_name` by hand once, as described under "First deploy", so
+  no stack can ever buy, change or lose it. Route 53 creates its hosted zone, at about $0.50 per
+  month (from memory), and the zone's ID goes in the config as `hosted_zone_id`. See
+  `docs/adr/0007-manual-domain-two-stacks.md`. Registrations and renewals are non-refundable.
+- **Stacks:** the base stack holds the TLS certificate, which must be in `us-east-1`, both
+  buckets and both SNS topics. The API stack holds everything else, including the `api.` DNS
+  record. A rollback of the API stack can't touch what's in the base stack.
 - **OpenAPI is the single source:** `openapi/identity.yaml` includes the AWS
   extensions and validators, with only a placeholder for the Lambda ARN. The CDK fills
   in the ARN in memory at deploy time and passes the result to `SpecRestApi`, so no
@@ -501,8 +497,8 @@ leak.
   account ID, or if it has no `info.contact`.
 - CDK assertion tests for throttles, WAF with sampling off, public-access blocks, bucket removal policies, the
   `REGIONAL` endpoint type, the distribution's cache and origin request policies, the API key
-  required on every method, the plan subscription, and the domain guards: nothing registered
-  with `register_domain` false, and stack deletion leaving the domain alone.
+  required on every method, the plan subscription, and that buckets and topics are only in
+  the base stack.
 - A smoke script against the deployed API covering birth, evolve, self and reclaim, plus
   gateway validation with a maximum-size escaped body and a body with an extra field,
   because the local router doesn't run the gateway's validator. It also checks the
@@ -564,8 +560,7 @@ replaces the isolation that per-route IAM roles would have given.
 - `cdk deploy` is run manually, against a single environment.
 - **Local config:** `sfab.config.toml` at the repo root holds private per-owner values,
   starting with `account_id`, `alert_email`, `abuse_contact`, `domain_name`,
-  `register_domain` (false by default), `max_price`, the domain contact details and
-  `origin_key`. The build step puts
+  `hosted_zone_id` and `origin_key`. The build step puts
   `abuse_contact` into the public description's `info.contact`, so that address is
   published, and the API can't go live without one. It's listed in `.gitignore`, and
   `sfab.config.example.toml` is committed with `CHANGE_ME` for every value and comments.
@@ -575,7 +570,7 @@ replaces the isolation that per-route IAM roles would have given.
   `account_id` explicitly, so credentials for another account fail. CI instead points the
   parser at a committed fixture, `cdk/tests/fixtures/sfab.config.test.toml`, through an
   `SFAB_CONFIG` environment variable, with account `000000000000`, `.invalid` email
-  addresses and `register_domain` false, so tests can never buy anything. That account doesn't exist, so the fixture can't deploy, and the `deploy` script
+  addresses. That account doesn't exist, so the fixture can't deploy, and the `deploy` script
   refuses to run with `SFAB_CONFIG` set. Only private
   values go here: public settings such as the budget, ceiling and region stay in the CDK
   code, where they're reviewed. Real secrets don't belong in it, with `origin_key` as a named
@@ -583,10 +578,28 @@ replaces the isolation that per-route IAM roles would have given.
   redeploying. Changing `alert_email`
   replaces the alerts topic's subscription, and AWS sends no alerts until the new confirmation
   link is clicked.
-- **Done** means deployed, smoke-tested, and with the kill switch drill, the `birth` pause
+- **Done** means deployed, the registrant email verified, smoke-tested, and with the kill switch drill, the `birth` pause
   drill, the takedown check and the metric check passed, so plan on about two days after first deploy.
   Announcing the API publicly is a separate decision, and can't happen until
   [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) is closed.
+
+### First deploy
+
+This happens once, so it's an ordered manual rather than automation that handles every
+failure. Each step needs the one before it:
+
+1. Complete "Prerequisites", fill in `sfab.config.toml` except `hosted_zone_id`, then run
+   `aws login` and `cdk bootstrap`.
+2. Buy `domain_name` in the Route 53 console, with WHOIS privacy and auto-renew on. If AWS
+   sends a registrant verification email, follow it, because AWS must otherwise suspend the
+   domain, which takes the API offline. Don't continue until registration has finished and
+   the console shows no verification pending. Copy the hosted zone's ID into the config.
+3. Deploy the base stack, and click the confirmation link in the SNS email. If this stack fails,
+   fix the cause and deploy again: bucket names are generated, so they can't collide, and any
+   empty bucket left behind can be deleted by hand.
+4. Deploy the API stack. If it fails and rolls back, the base stack is untouched, so fix the
+   cause and deploy again.
+5. Run the checks that "Done" lists.
 
 ## Prerequisites
 
@@ -597,7 +610,8 @@ replaces the isolation that per-route IAM roles would have given.
   plan account closes when its credits run out or after six months, and AWS deletes its
   data 90 days later, which would end every identity. AWS also says "Free Tier accounts
   cannot use CloudFront Flat-Rate Plans". Sign-up credits still apply on the
-  Paid plan, and charges beyond them go to the owner's card. This container has no AWS
+  Paid plan, and charges beyond them go to the owner's card. Credits can't pay for domain
+  registration, so that always goes to the card. This container has no AWS
   credentials, so at first deploy the owner fills in `sfab.config.toml`, including an
   address they're happy to publish as `abuse_contact`, runs `aws login` and `cdk bootstrap`, and confirms the SNS email
   subscription, because AWS sends no alerts until its confirmation link is clicked.
@@ -711,6 +725,7 @@ Answers marked "yes" accept the recommendation stated in the question.
 | WAF on CloudFront only, a stop through WAF with `503`, a JSON `404` outside `/v1/`, `origin_key` in the config? | Yes |
 | A throwaway test deploy first? | Dropped once AWS's docs answered most of it; issue 01 proves the rest |
 | `register_domain` false by default, rerun to recover, Python helper, domain charges outside the budget, WHOIS privacy and auto-renew on, contact details visible in the template, `domain_name` required for the real deploy? | Yes |
+| Register the domain in a script before the stack, or in the stack with a separate wait? | Neither: "very simple ordering in the deployment-manual", deployed stack by stack, because "we will deploy it only once". This replaces the earlier same-stack answer |
 | The Free plan has no custom WAF responses: stay on Free with a plain `403` and a CloudFront Function's `404`, or move to Pro at $15 per month? | Stay on Free |
 
 ### Original idea
