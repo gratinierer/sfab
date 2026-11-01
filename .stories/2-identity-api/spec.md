@@ -323,7 +323,8 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
   for humans and `/agents/` for agents, each linking to the constitution and API description. A
   CloudFront Function adds `index.html`, because a private bucket doesn't do it (from memory). Its own web ACL has a
   generous rate rule of 1,000 requests per IP per 5 minutes, which is far above normal browsing and
-  stops the simplest flood for free. CDK's `BucketDeployment` copies `website/` into the bucket as part of the stack, and refreshes the
+  stops the simplest flood for free. The pages hold a placeholder, `{{api_host}}`, and the generate step writes finished pages to a build
+  folder, using `domain_name` from the config. CDK's `BucketDeployment` copies that folder into the bucket as part of the stack, and refreshes the
   distribution, so the pages deploy with their stack from the monorepo. The site stays up during a stop. Its design and content are a later story.
 - **OpenAPI is the single source:** `openapi/identity.yaml` includes the AWS
   extensions and validators, with only a placeholder for the Lambda ARN. The CDK fills
@@ -337,8 +338,8 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
   merges in `openapi/public-security.yaml`, which declares Bearer on every route marked Bearer or
   recovery code in the table above, and nothing on anonymous routes. The Lambda includes it in its
   binary at compile time, so the route needs no S3 read. The copy is generated and not committed.
-- **Build and deploy:** always deploy through the `deploy` script, which generates the public copy,
-  runs `cargo lambda build` for the arm64 binaries, with no Docker, and runs `cdk deploy`. The build fails if the public copy is missing, and CI runs the same steps. With no argument
+- **Build and deploy:** always deploy through the `deploy` script, which generates the public copy and
+  the finished website pages, runs `cargo lambda build` for the arm64 binaries, with no Docker, and runs `cdk deploy`. The build fails if the public copy is missing, and CI runs the same steps. With no argument
   it deploys all three stacks, and it can name one for the first deploy. The Python CDK packages live
   in a virtual environment under `/cdk/`.
 - **Hosting:** a dedicated AWS account in `us-east-1`. The API Gateway endpoint type is
