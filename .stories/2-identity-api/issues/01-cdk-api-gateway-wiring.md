@@ -38,6 +38,7 @@ R12.
     default action is Block.
   - A CloudFront Function on the Free plan returns the `problem+json` `404` for a path outside
     `/v1/`.
+  - A request to `http://` gets a `403` and never reaches the origin.
 
 ## Sources
 

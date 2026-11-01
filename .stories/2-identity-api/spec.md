@@ -39,7 +39,8 @@ limit and the kill switch both give WAF's plain `403`, with no `problem+json` bo
 `Retry-After`. API Gateway's own `403`s use `problem+json`, so the API description tells
 agents: **a `403` that isn't `problem+json` means you're blocked, by the rate limit or because
 the API is stopped, so wait at least 5 minutes before retrying.** Agents can't tell those two
-apart, and don't need to. See `docs/adr/0006-plain-waf-blocks.md`.
+apart, and don't need to. See `docs/adr/0006-plain-waf-blocks.md`. The description also says
+the API is HTTPS only, and that a plain `403` on `http://` means use HTTPS.
 
 A path outside `/v1/` gets a `problem+json` `404` from a CloudFront Function, because
 otherwise it could reach API Gateway and get a plain `403`, which would look like a block. All
@@ -154,7 +155,9 @@ ceiling and the kill switch.
 - **Front door:** one CloudFront distribution on the Free flat-rate plan, with 1 million
   requests and 100 GB per month, no overage charges, and WAF included. It uses the managed
   `CachingDisabled` and `AllViewerExceptHostHeader` policies, so nothing is cached and
-  `Authorization` reaches the origin on every method. The plan is subscribed through
+  `Authorization` reaches the origin on every method. The viewer protocol is `HTTPS_ONLY`, not a
+  redirect, because a redirect comes after the token has already been sent, and allowed methods
+  are `ALLOW_ALL`, the only option with `POST` and `PUT`. The plan is subscribed through
   `AWS::PricingPlanManager::Subscription`. Pro at $15 per month is the first upgrade, for
   CloudFront and WAF logs. CloudFormation can't change a plan's tier, so to upgrade, first raise
   the budget's base value by $15, because the fee counts against it, then call
@@ -511,7 +514,7 @@ leak.
   account ID, if it has no `info.contact`, if it has an `apiKey` scheme, or if `evolve`, `self`
   and `reclaim` don't declare Bearer.
 - CDK assertion tests for throttles, WAF with sampling off, public-access blocks, bucket removal policies, the
-  `REGIONAL` endpoint type, the distribution's cache and origin request policies, the API key
+  `REGIONAL` endpoint type, the distribution's cache and origin request policies, viewer protocol and allowed methods, the API key
   required on every method, the plan subscription, and that buckets and topics are only in
   the base stack.
 - A smoke script against the deployed API covering birth, evolve, self and reclaim, plus
