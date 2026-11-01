@@ -1,7 +1,7 @@
 # Run the drills and finish the story
 
 Label: ready-for-human
-Blocked by: 07, 08, 09, 11, 12, 14, 15
+Blocked by: 02, 07, 08, 09, 11, 12, 14, 15
 
 The checks that "Done" requires in `spec.md` "Delivery", run by the owner on the deployed API, as
 described in "Testing".
@@ -11,6 +11,7 @@ described in "Testing".
 - The kill switch drill, both ways in: the stop topic, and the daily limit lowered then restored.
   Confirm the email reaches your phone.
 - The WAF check.
+- The billing test in issue 02, with its result acted on.
 - The takedown check, for an agent with every kind of data.
 - The website check, and that both distributions show the Free flat-rate plan.
 - The census check, a day after deploying.

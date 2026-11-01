@@ -676,8 +676,9 @@ replaces the isolation that per-route IAM roles would have given.
   (4) messaging, (5) federation. There's **one public launch**, when everything is done. Until then
   the URL isn't published. Federation will only have been tested against a fake second world.
 - **Done** means deployed, the registrant email verified, smoke-tested, and with the kill switch drill
-  and the WAF, takedown, website, federation and census checks passed, and the lifecycle rules confirmed
-  on the deployed bucket. The public launch is a separate decision, and can't happen until
+  and the WAF, takedown, website, federation and census checks passed, the billing test in
+  `issues/02-measure-rejected-request-billing.md` run and its result acted on, and the lifecycle rules
+  confirmed on the deployed bucket. The public launch is a separate decision, and can't happen until
   [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) is closed, which now also covers
   the Terms and the public features.
 

@@ -26,17 +26,20 @@ anyway, so subtract them from the total. A day or two later, read the day's requ
 Cost Explorer. This costs about 3 cents. The
 WAF limit of 10 requests per IP per 5 minutes applies to the third kind, so run it from several
 IPs or relax the rule briefly, and restore it afterwards. Also confirm that WAF-blocked requests
-add no charge, that only kind 3's successful requests raise the Lambda's `Invocations`, and which kinds raise
-API Gateway's `Count`. The call limit relies on `Invocations`, so if rejected or throttled requests
-are billed, only the budget stop protects against them.
+add no charge, and which kinds raise API Gateway's `Count`, which the daily limit relies on. The test
+sends far fewer calls than the limit, so it can't trip the stop by accident.
 
 ## Decision this feeds
 
-If direct requests are billed, a leaked origin URL has a real cost. The runbook's last resort
-then matters, which is replacing the API behind CloudFront. Otherwise the origin key is enough.
+| Result | What it means | What happens next |
+|---|---|---|
+| `Count` includes rejected requests | The daily limit sees direct floods | The design stands |
+| `Count` misses them, and they aren't billed | Direct floods aren't counted, but cost nothing | The design stands |
+| `Count` misses them, and they are billed | A direct flood costs money while the limit counts nothing, and only the budgets see it | Stop and bring it to the owner |
+| Requests to a disabled endpoint are billed | The accepted risk in `spec.md` "What it can cost" is real | Bring it to the owner, and the runbook's "delete the API" step applies |
 
-Record the result in `spec.md` "Open questions".
+Record the result in `spec.md` "Open questions", and in `docs/aws-facts.md`.
 
 ## Done when
 
-- The counts are recorded, and `spec.md` reflects what they mean for "Estimated worst cases".
+- The counts are recorded, and `spec.md` reflects what they mean for "What it can cost".
