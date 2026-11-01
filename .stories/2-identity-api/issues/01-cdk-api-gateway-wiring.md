@@ -32,13 +32,17 @@ R12.
   - `CachingDisabled` and `AllViewerExceptHostHeader` are accepted on the Free flat-rate plan.
     If not, move to Pro at $15 per month, and update `spec.md`.
   - The plan subscribes through `AWS::PricingPlanManager::Subscription`.
-  - The WAF returns the `503` with a JSON body when its default action is Block.
+  - The Free plan accepts the web ACL, and with no custom responses configured, WAF answers a
+    block with a plain `403` that isn't `problem+json`, both for the rate rule and when its
+    default action is Block.
+  - A CloudFront Function on the Free plan returns the `problem+json` `404` for a path outside
+    `/v1/`.
 
 ## Sources
 
 - <https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/add-origin-custom-headers.html>
 - <https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/template-preconfigured-origin-settings.html>
 - <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-pricingplanmanager-subscription.html>
-- <https://docs.aws.amazon.com/waf/latest/developerguide/customizing-the-response-status-codes.html>
+- <https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/flat-rate-pricing-plan.html>
 - <https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_apigateway-readme.html>
 - <https://github.com/aws/aws-cdk/blob/main/packages/aws-cdk-lib/aws-apigateway/lib/restapi.ts>

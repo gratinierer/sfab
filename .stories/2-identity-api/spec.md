@@ -34,11 +34,16 @@ Errors use `application/problem+json`, from the Lambda and from API Gateway thro
 responses in `identity.yaml` (`DEFAULT_4XX`, `DEFAULT_5XX`, `THROTTLED` and
 `BAD_REQUEST_BODY`).
 
-WAF's responses are the one exception. WAF can't send that content type, so its custom
-responses use `application/json` with a body of the same shape (`type`, `title`, `status`,
-`detail`). That covers the rate limit's `429` with `Retry-After: 300`, a path outside `/v1/`
-getting `404`, and **the kill switch's `503` with `Retry-After`, whose `type` says the API is
-stopped**. All API responses also send `Cache-Control: no-store`.
+WAF's blocks are the one exception. The Free plan has no custom WAF responses, so the rate
+limit and the kill switch both give WAF's plain `403`, with no `problem+json` body and no
+`Retry-After`. API Gateway's own `403`s use `problem+json`, so the API description tells
+agents: **a `403` that isn't `problem+json` means you're blocked, by the rate limit or because
+the API is stopped, so wait at least 5 minutes before retrying.** Agents can't tell those two
+apart, and don't need to. See `docs/adr/0006-plain-waf-blocks.md`.
+
+A path outside `/v1/` gets a `problem+json` `404` from a CloudFront Function, because
+otherwise it could reach API Gateway and get a plain `403`, which would look like a block. All
+API responses also send `Cache-Control: no-store`.
 
 ### Wire contract
 
@@ -60,11 +65,12 @@ stopped**. All API responses also send `Cache-Control: no-store`.
 | `200` | `evolve`, `self`, `reclaim` or `openapi.yaml` succeeded |
 | `400` | Malformed request, `whoiam` over the limit whether caught by the gateway or the Lambda, bad proof or stale timestamp; proof failures include `required_bits` and the server's current time |
 | `401` | Missing or wrong credentials, including an expired recovery code; an unknown UUID gets the same response, so UUIDs can't be probed |
+| `403` | Without `problem+json`: blocked by WAF's rate rule or the kill switch, so wait at least 5 minutes |
 | `404` | Valid claim with no identity, or a path outside `/v1/` |
 | `409` | `birth` replay |
 | `413` | AWS's own response for a body over 10 MB |
-| `429` | Throttled by the gateway or blocked by the WAF rate rule, so back off |
-| `503` | `birth` paused by the storage ceiling, or the whole API stopped by the kill switch; `type` says which |
+| `429` | Throttled by the gateway, so back off |
+| `503` | `birth` paused by the storage ceiling, or its settings are unavailable; `type` says which |
 | Other `5xx` | Includes the Lambda being over its concurrency limit, so retry with backoff |
 
 If a `birth` response is lost, a retry gets `409` and the first secrets are gone. The
@@ -265,8 +271,8 @@ owner's AWS credentials:
 
 | Layer | Control |
 |---|---|
-| CloudFront WAF | Rate-based rule: 10 requests per IP per 5 minutes, across all routes, blocking with a `429`, `application/json` and `Retry-After: 300` |
-| CloudFront WAF | A rule returning a JSON `404` for any path outside `/v1/`, so wrong paths never reach API Gateway. Free plan allows 5 rules in total |
+| CloudFront WAF | Rate-based rule: 10 requests per IP per 5 minutes, across all routes, blocking with WAF's plain `403` |
+| CloudFront Function | A viewer-request function returning a `problem+json` `404` for any path outside `/v1/`, so wrong paths never reach API Gateway. These requests pass WAF, so they count against the plan's allowance, with no overage charge |
 | API Gateway | The origin key, required on every method |
 | API Gateway | Per-route throttles, see below |
 | API Gateway | Request validator with a `$default` model, so every content type is validated, and `additionalProperties: false` on request models |
@@ -308,7 +314,7 @@ Notes on these controls:
 
 At 100% of budget, a small dedicated function:
 
-1. Flips the CloudFront WAF's default action to Block, returning the `503`. Blocked requests
+1. Flips the CloudFront WAF's default action to Block, returning its plain `403`. Blocked requests
    are free on the flat-rate plan and don't count against its allowance, so a stop costs
    nothing per request.
 2. Sets the API Lambda's reserved concurrency to 0, which takes effect at once and stops
@@ -498,13 +504,13 @@ leak.
   because the local router doesn't run the gateway's validator. It also checks the
   `problem+json` format of gateway errors, and that a birth with no proof gets `400` with
   `required_bits`. `self` proves `Authorization` reaches the origin, a path outside `/v1/`
-  must get WAF's JSON `404`, and a request straight to `execute-api` must be rejected. It
+  must get the CloudFront Function's `404`, and a request straight to `execute-api` must be rejected. It
   sends about 13 requests, one every 35
   seconds to stay safely under the WAF limit, which isn't precise, so a run takes about 8
-  minutes. It treats a WAF `429` as "rate limited, wait and rerun" rather than as a failure.
+  minutes. It treats WAF's plain `403` as "blocked, wait and rerun" rather than as a failure.
 - A separate abuse check that sends a quick burst of `birth` requests with no proof. The
   first ones confirm the gateway's `THROTTLED` `429` with `problem+json`. Continuing past 10
-  requests confirms WAF's `429`, `application/json`, the body fields and `Retry-After`. It
+  requests confirms WAF's `403`, and that it isn't `problem+json`. It
   blocks that IP for a while, so it stays out of the smoke script.
 - Rust unit tests for the kill switch's decisions: stop at the budget limit, pause
   `birth` above the ceiling, clear the pause below the lower threshold, and leave it alone
@@ -522,7 +528,7 @@ leak.
 - A kill switch drill on the deployed API, before any agents depend on it, and again
   whenever the kill switch code changes:
   1. Publish a test message to the stop topic.
-  2. Confirm the API returns the `503` with `Retry-After` through CloudFront, the API Lambda's
+  2. Confirm a request that worked just before step 1 now gets WAF's plain `403` through CloudFront, the API Lambda's
      reserved concurrency is 0, and `execute-api` returns `403`.
   3. Confirm the email arrives.
   4. Follow the restart procedure, and confirm the smoke script passes again.
@@ -699,6 +705,7 @@ Answers marked "yes" accept the recommendation stated in the question.
 | WAF on CloudFront only, a stop through WAF with `503`, a JSON `404` outside `/v1/`, `origin_key` in the config? | Yes |
 | A throwaway test deploy first? | Dropped once AWS's docs answered most of it; issue 01 proves the rest |
 | `register_domain` false by default, rerun to recover, Python helper, domain charges outside the budget, WHOIS privacy and auto-renew on, contact details visible in the template, `domain_name` required for the real deploy? | Yes |
+| The Free plan has no custom WAF responses: stay on Free with a plain `403` and a CloudFront Function's `404`, or move to Pro at $15 per month? | Stay on Free |
 
 ### Original idea
 
