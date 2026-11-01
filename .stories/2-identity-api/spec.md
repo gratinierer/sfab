@@ -314,8 +314,9 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0011-no-outbound
 - **Website:** a private S3 bucket behind a second CloudFront distribution on its own Free plan, in
   its own stack, with the apex DNS record. A plain HTML5 and CSS placeholder of lorem ipsum at `/`
   for humans and `/agents/` for agents, each linking to the constitution and API description. A
-  CloudFront Function adds `index.html`, because a private bucket doesn't do it (from memory). It has
-  no rate rule, because a page's assets could trip the API's. The `deploy` script copies the pages with
+  CloudFront Function adds `index.html`, because a private bucket doesn't do it (from memory). Its own web ACL has a
+  generous rate rule of 1,000 requests per IP per 5 minutes, which is far above normal browsing and
+  stops the simplest flood for free. The `deploy` script copies the pages with
   `aws s3 sync`. The site stays up during a stop. Its design and content are a later story.
 - **OpenAPI is the single source:** `openapi/identity.yaml` includes the AWS
   extensions and validators, with only a placeholder for the Lambda ARN. The CDK fills
@@ -594,7 +595,7 @@ Logs are the most likely place for a claim to leak.
   bucket removal policies, the `messages/` and `federation/` lifecycle rules, the `REGIONAL` endpoint
   type, the distribution's cache and origin request policies, viewer protocol and allowed methods, the
   API key required by every operation in `identity.yaml` (`SpecRestApi` creates no method resources to
-  check), both plan subscriptions, no rate rule on the website, and that buckets, topics and budgets are
+  check), both plan subscriptions, the website's rate rule, and that buckets, topics and budgets are
   only in the base stack, apart from the website's own bucket. Also: the email subscription, the SNS topic
   policies, the alert budget's four thresholds and the 50,000-call warning all targeting the alerts topic and not the
   stop topic, the 5-minute and daily schedules, both budgets' `Metrics` and `FilterExpression`, and permissions that keep each function's rights out of the others.
