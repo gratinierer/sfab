@@ -420,7 +420,8 @@ This is the first line of defence, and its whole job is to bound the bill:
 | Layer | Control |
 |---|---|
 | Daily limit | **100,000 API Gateway calls per UTC day, in the CDK code, which stops the API until the owner restarts it** |
-| Budget | $35 per month, alert at 50%, automatic stop at 100%, with `IncludeCredit` false so sign-up credits can't hide abnormal usage, and domain charges excluded so a purchase or renewal can't use up the budget |
+| Stop budget | $35 per month, automatic stop at 100%, with `IncludeCredit` false so sign-up credits can't hide abnormal usage, and domain charges excluded so a purchase or renewal can't use up the budget |
+| Alert budget | The same spend, emailing the owner at $17.50, $35, $105 and $350, with no dependence on the kill switch |
 | CloudFront WAF | Rate-based rule: 10 requests per IP per 5 minutes, across all routes, blocking with WAF's plain `403`. Blocked requests are free |
 | API Gateway | One stage-wide default throttle of 10 requests per second, burst 20, so a route can't be forgotten |
 | API Gateway | The origin key, required on every method |
@@ -479,10 +480,15 @@ a failed step. While the steps propagate, agents may briefly get a `5xx`, which 
   actual-spend alert only once per budget period, so the alert can't fire again after a same-month
   restart.
 
-A second SNS topic, the alerts topic, is the only thing the owner's email subscribes to. It gets the
-50% budget alert, every email the functions send, a warning alarm at 50,000 calls a day and an alarm on
-either function's errors. So those can't stop anything, and the budget holds no email address, so
-changing `alert_email` never touches it.
+A second SNS topic, the alerts topic, is the only thing the owner's email subscribes to. It gets every
+alert from the alert budget, every email the functions send, a warning alarm at 50,000 calls a day and an
+alarm on either function's errors. So those can't stop anything, and neither budget holds an email
+address, so changing `alert_email` never touches them.
+
+**The alert budget is separate on purpose.** It only tells the owner, so it still works during a stop, or
+if the kill switch is broken, and it covers what the stop can't touch, because spending keeps being
+visible after the API is down. Each threshold fires once a month. So reaching $1000 unnoticed would mean
+ignoring all four emails. Budgets lag by a day or so.
 
 The daily limit, `required_bits` and the budget live in the CDK code, so changing one takes a commit and
 a deploy, with history. The function must keep the domain charge filter whenever it reads or writes
@@ -513,7 +519,8 @@ update every 8-12 hours, plus an unstated billing delay, so the budget stop can 
 which at these rates is a few dollars. WAF, CloudFront and data transfer are covered by the flat-rate
 plan, and domain charges are excluded.
 
-Risks beyond the API are covered under "Prerequisites". One risk is accepted: if someone floods the
+Anything that keeps billing during a stop is visible through the alert budget, and other risks beyond the
+API are covered under "Prerequisites". One risk is accepted: if someone floods the
 `execute-api` URL during a stop, and AWS bills requests to a disabled endpoint, the budget would keep
 climbing, and the owner would have to delete the API by hand. That needs a leaked random URL, plus a
 billing behaviour AWS's former pricing page suggests is unlikely, though it didn't cover disabled
@@ -525,7 +532,7 @@ average, so ordinary use, such as agents polling for messages, can reach it, and
 
 ## Operations
 
-**The owner gets an email** when a stop begins, when the budget reaches 50%, at 50,000 calls in a day,
+**The owner gets an email** when a stop begins, when spend passes $17.50, $35, $105 and $350, at 50,000 calls in a day,
 when either function fails, and once a day if federation requests are verified.
 
 **Stopping is easy on purpose.** About 35 IPs at the WAF limit can reach 100,000 calls in a day, and more
@@ -583,7 +590,7 @@ Logs are the most likely place for a claim to leak.
   API key required by every operation in `identity.yaml` (`SpecRestApi` creates no method resources to
   check), both plan subscriptions, no rate rule on the website, and that buckets and topics are only in
   the base stack, apart from the website's own bucket. Also: the email subscription, the SNS topic
-  policies, the 50% budget alert and the 50,000-call warning both targeting the alerts topic and not the
+  policies, the alert budget's four thresholds and the 50,000-call warning all targeting the alerts topic and not the
   stop topic, the 5-minute and daily schedules, the budget's `IncludeCredit` setting and domain charge
   filter, and permissions that keep each function's rights out of the others.
 - A test on faked S3 calls that a takedown leaves nothing behind for an agent with every kind of
@@ -714,8 +721,9 @@ After this, each stage in "Order" deploys all stacks with the `deploy` script.
 - **Account security, because stolen credentials are the likeliest way to lose thousands, and the kill
   switch can't touch servers someone else starts:** MFA on the root and the owner's user, no long-lived
   access keys, and only `aws login`.
-- **AWS Cost Anomaly Detection** switched on in the console, emailing the owner, for unusual spending
-  anywhere in the account (free, from memory).
+- **AWS Cost Anomaly Detection** switched on in the console, emailing the owner, as a slow extra signal
+  (free, from memory). It needs 10 days of history for a new service, plus up to 24 hours, so the alert
+  budget is the main signal for unusual spending anywhere in the account.
 - **An alert address the owner reads on their phone,** because every defence here ends in an email. The
   drill confirms one arrives.
 - A Lambda concurrency quota of at least 105 on that account. AWS requires 100 units to

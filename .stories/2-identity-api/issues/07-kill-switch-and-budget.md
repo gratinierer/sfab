@@ -11,8 +11,9 @@ base stack, from issue 01.
 
 - The second Rust binary: the three stop steps, the 5-minute check of API Gateway's `Count` since
   midnight UTC against the daily limit, and the daily spend check.
-- The budget: $35, the 50% alert to the alerts topic, the 100% alert to the stop topic,
-  `IncludeCredit` false, and the domain charge filter, using the service name recorded in issue 03.
+- The stop budget: $35, its 100% alert to the stop topic, `IncludeCredit` false, and the domain charge
+  filter, using the service name recorded in issue 03.
+- The alert budget: the same spend, with alerts at $17.50, $35, $105 and $350 to the alerts topic.
 - The 5-minute and daily schedules, and permissions.
 - Email-only alarms on the alerts topic: 50,000 calls a day, and errors in this function.
 - Writing the restart list from `spec.md` "Kill switch" as CLI commands in the docs.
