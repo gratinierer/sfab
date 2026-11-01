@@ -457,8 +457,9 @@ allowance might slow delivery. The owner accepts these remaining risks.
 
 ## Operations
 
-An attacker can deliberately trip the kill switch: about 60 IPs at the WAF limit can
-keep `self` at its throttle, and all routes take about 330 IPs. This follows from
+An attacker can deliberately trip the kill switch: about 30 IPs on `birth` take about 25 days,
+about 150 IPs on `evolve` take about a week, and all routes together take about 330 IPs and
+about 4 days. No other single route gets there within a month. This follows from
 putting the bill first. **The API may stay down until the owner responds, and phase 1
 makes no availability promise.**
 
