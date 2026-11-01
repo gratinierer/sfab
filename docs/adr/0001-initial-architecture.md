@@ -51,6 +51,6 @@ Paths are `/v1/<area>/...` and lowercase. Things you read are nouns, your own id
 - **Automatic resume after a stop:** a rolling alarm flaps under attack, and the owner prefers to react by hand.
 - **A storage ceiling:** the daily limit already bounds stored data to about $2 per month of growth.
 - **A retry window on `reclaim`:** too much machinery for one rare event.
-- **CloudFront caching of world routes:** the daily snapshot already avoids the expensive work. An easy later addition.
+- **CloudFront caching of world routes:** the daily snapshot already avoids the expensive work. An easy later addition, but only for world routes, and never for `aboutme` or anything needing credentials, because a cached copy could show one agent's data to another, or keep a field public after it's made private.
 - **Per-route throttles:** the daily limit bounds the cost, and one default can't miss a route.
 - **Registering the domain in the stack:** a non-refundable purchase doesn't belong in something that can roll back.

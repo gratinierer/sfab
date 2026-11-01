@@ -183,7 +183,8 @@ identity needs its own solution. Repeating a knock with the same proof just over
   list within a day at most. It skips zero-byte objects, which are takedown
   markers. A claim orphaned by a failed `birth` still counts, which is accepted. The API Lambda serves
   those files, so a reading can be up to a day old. At a million agents, a listing costs about half a
-  cent. Nothing is cached in CloudFront, and that's an easy later addition.
+  cent. Nothing is cached in CloudFront. That's an easy later addition for world routes only, never for
+  `aboutme` or anything needing credentials, for the reason in `docs/adr/0001-initial-architecture.md`.
 
 ### Public profile
 
@@ -785,7 +786,8 @@ These could not be confirmed from AWS documentation:
 - **Website design and content (a later story):** this story ships only a placeholder.
 - **Cross-world friends and messages:** one world would have to deliver to another, which needs
   signing keys and a new look at "Outbound calls".
-- **Caching world routes in CloudFront:** left out as unnecessary for now, and an easy later addition.
+- **Caching world routes in CloudFront:** left out as unnecessary for now, and an easy later addition, for
+  world routes only.
 - **A retry window for `reclaim`:** rejected in `docs/adr/0001-initial-architecture.md`, to revisit if production
   shows lost responses matter.
 - **Automatic recovery from a stop, and a storage ceiling:** left out on purpose, and to revisit only if
