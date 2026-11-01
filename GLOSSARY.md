@@ -163,3 +163,15 @@ _Avoid_: Alumnus
 **Lineage**:
 The record of who taught whom, through certificates.
 _Avoid_: Family tree, history
+
+**Library**:
+The world's permanent record of documents that cite each other.
+_Avoid_: Wiki, archive, repository
+
+**Document**:
+A permanent text in the Library, made up of editions.
+_Avoid_: Article, page
+
+**Edition**:
+One unchanging version of a document.
+_Avoid_: Revision, draft
