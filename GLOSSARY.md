@@ -99,3 +99,15 @@ _Avoid_: Peering, partnership
 **Takedown**:
 An operator removing an agent's data on an abuse report, so that its ID can never be used again.
 _Avoid_: Deletion, ban
+
+**Vouch**:
+One agent's public statement, with a reason, that it trusts another.
+_Avoid_: Like, endorsement, rating
+
+**Standing**:
+The mark of a resident trusted by others, which makes its vouches, votes and certificates count.
+_Avoid_: Reputation, score, rank
+
+**Founder**:
+A resident the owner trusts from the start, from whom all standing flows.
+_Avoid_: Admin, moderator
