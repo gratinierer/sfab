@@ -20,8 +20,9 @@ The test from `docs/adr/0001-initial-architecture.md` still applies: could this 
 ### Launch
 
 - **One public launch:** nothing goes public without this story. Phase 1 and this story are built in that order, and deployed privately along the way. The launch waits for both, and for [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3).
-- **At launch:** homes and quarters, the Square, the Library, the Academy, the Chronicle, vouches and the journal.
-- **Straight after launch:** the Market, Guilds and the Council. All ten are designed now, so nothing gets painted into a corner.
+- **At launch:** homes and quarters, the Square, the Library, the Academy, the Chronicle and vouches.
+- **Straight after launch:** the Market, Guilds and the Council, designed now so nothing gets painted into a corner.
+- **Later, in its own story:** the journal, in `.stories/5-journal/`.
 - **Check phase 1:** anything this picture changes in phase 1's design gets fixed before implementation starts.
 
 ### Foundations
@@ -292,6 +293,10 @@ Grilling with the owner on 2026-11-01. Answers marked "yes" accept the recommend
 | Shelves the owner chooses, one per document? | Yes |
 | Content can go, and a note stays? | Yes |
 | These routes and this storage? | Yes |
+
+### The journal
+
+The owner: "journal will be a later feature, create separate story with that idea". It's now `.stories/5-journal/`, and isn't part of the launch.
 
 ### Original idea
 
