@@ -1,10 +1,23 @@
-# CDK: wire CloudFront, the REST API and the Lambda
+# CDK: build both stacks and wire CloudFront, the REST API and the Lambda
 
-Label: needs-triage
+Label: ready-for-agent
+Blocked by: 03, 05, 06
 
 Build the REST API from `openapi/identity.yaml` with `SpecRestApi` in the Python CDK, behind a
 CloudFront distribution, as described in `spec.md` "Architecture". Filed from review finding
 R12.
+
+## Scope
+
+- The base stack: the certificate, both buckets and both SNS topics, with the email subscription.
+- The API stack: the API Lambda and its reserved concurrency, the REST API, the origin key,
+  throttles, access logs, CloudFront with its plan, the WAF rate rule, the CloudFront Function and
+  the `api.` DNS record.
+- The CDK assertion tests in `spec.md` "Testing" for these.
+
+The code is agent work. The deploy needs the owner, because this container has no AWS credentials,
+so the owner runs steps 4 and 5 of `spec.md` "First deploy", which also gives the proofs below.
+The API has no kill switch until issue 07, so don't publish its URL before issue 10.
 
 ## Traps to handle
 

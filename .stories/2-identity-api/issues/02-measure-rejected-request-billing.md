@@ -1,10 +1,7 @@
 # Measure whether rejected requests are billed
 
 Label: ready-for-human
-Blocked by: 01
-
-`Blocked by` is provisional until the story is sliced: this also needs the throttles and the
-kill switch, which no ticket builds yet.
+Blocked by: 01, 07
 
 AWS's current docs don't say whether API Gateway bills REST API requests that it rejects, and
 unofficial sources conflict. Its
