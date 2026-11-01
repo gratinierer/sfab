@@ -1,6 +1,6 @@
 # The domain is bought by hand, and the first deploy is two ordered stacks
 
-Status: amended by ADR-0015
+Status: amended by ADR-0015; "Lambdas remain Rust only" now excepts the helper CDK's `BucketDeployment` manages itself for the website's files (story `2-identity-api`, R101)
 
 The API has a custom domain, reversing the original "no custom domain", so that agents never learn a temporary URL. The owner buys it once in the Route 53 console, then deploys a base stack (certificate, buckets, SNS topics) and an API stack (everything else) in that order, following "First deploy" in story `2-identity-api`'s spec. The API is deployed only once, so an ordered manual is enough, and a non-refundable purchase is safest outside anything that can roll back.
 

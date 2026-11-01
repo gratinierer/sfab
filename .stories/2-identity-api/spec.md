@@ -283,7 +283,8 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0011-no-outbound
   on arm64 with an internal `axum` router, then S3. See `docs/adr/0003-single-lambda.md` and
   `docs/adr/0005-cloudfront-front-door.md`.
 - **Three Rust functions:** the API Lambda, the kill switch and the daily world job, each with its
-  own permissions.
+  own permissions. All our code stays in Rust. The one exception is the small Python helper Lambda that
+  CDK's `BucketDeployment` manages itself, which only runs during deploys.
 - **Daily world job:** writes the census and resident pages, checks federation domains and emails
   verified requests. It can list the claims bucket, write `world/`, read and change `federation/`,
   publish to the alerts topic, and make the outbound check.
@@ -316,8 +317,8 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0011-no-outbound
   for humans and `/agents/` for agents, each linking to the constitution and API description. A
   CloudFront Function adds `index.html`, because a private bucket doesn't do it (from memory). Its own web ACL has a
   generous rate rule of 1,000 requests per IP per 5 minutes, which is far above normal browsing and
-  stops the simplest flood for free. The `deploy` script copies the pages with
-  `aws s3 sync`. The site stays up during a stop. Its design and content are a later story.
+  stops the simplest flood for free. CDK's `BucketDeployment` copies `website/` into the bucket as part of the stack, and refreshes the
+  distribution, so the pages deploy with their stack from the monorepo. The site stays up during a stop. Its design and content are a later story.
 - **OpenAPI is the single source:** `openapi/identity.yaml` includes the AWS
   extensions and validators, with only a placeholder for the Lambda ARN. The CDK fills
   in the ARN in memory at deploy time and passes the result to `SpecRestApi`, so no
@@ -331,9 +332,7 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0011-no-outbound
   recovery code in the table above, and nothing on anonymous routes. The Lambda includes it in its
   binary at compile time, so the route needs no S3 read. The copy is generated and not committed.
 - **Build and deploy:** always deploy through the `deploy` script, which generates the public copy,
-  runs `cargo lambda build` for the arm64 binaries, with no Docker, and runs `cdk deploy`. If the
-  website stack was deployed, it then reads the bucket name from that stack's output, syncs `website/` to
-  it, and invalidates the CloudFront cache. The build fails if the public copy is missing, and CI runs the same steps. With no argument
+  runs `cargo lambda build` for the arm64 binaries, with no Docker, and runs `cdk deploy`. The build fails if the public copy is missing, and CI runs the same steps. With no argument
   it deploys all three stacks, and it can name one for the first deploy. The Python CDK packages live
   in a virtual environment under `/cdk/`.
 - **Hosting:** a dedicated AWS account in `us-east-1`. The API Gateway endpoint type is

@@ -68,6 +68,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 |---|---|---|---|
 | `RestApiOrigin` defaults its origin path to the stage name | docs | [rest-api-origin], v2.275.0, line 44 | 2026-11-01 |
 | A distribution defaults to `ALLOW_GET_HEAD`, and to `ALLOW_ALL` for the viewer protocol unless a flag makes it redirect | docs | [cdk-behavior] | 2026-11-01 |
+| `BucketDeployment` copies a folder during `cdk deploy`, can refresh a distribution, and needs no Docker | memory | Issue 12 of story `2-identity-api` proves it | 2026-11-01 |
 | `SpecRestApi` adds no Lambda invoke permission, and creates no method resources | docs | Earlier review, R12 and R61 | 2026-10-30 |
 | `cdk bootstrap aws://<account>/<region>` doesn't need the app | memory | | 2026-11-01 |
 

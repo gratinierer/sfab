@@ -11,11 +11,12 @@ Stage 2. `spec.md` "Architecture" (website). See `docs/adr/0015-website-on-its-o
   with a rate rule of 1,000 requests per IP per 5 minutes, the apex DNS record, and a CloudFront Function that adds `index.html`.
 - Plain HTML5 and CSS at `website/`: a small lorem ipsum at `/` for humans and `/agents/` for agents,
   each linking to the constitution and API description. Design and content are a later story.
-- This stack in the `deploy` script's "all stacks" deploy, with a stack output for the bucket name. After
-  deploying it, the script syncs `website/` to that bucket and invalidates the CloudFront cache.
+- CDK's `BucketDeployment` in this stack, copying `website/` into the bucket and refreshing the
+  distribution, and this stack in the `deploy` script's "all stacks" deploy.
 
 ## Done when
 
-- CDK assertion tests cover the private bucket, the plan and the rate rule.
+- CDK assertion tests cover the private bucket, the plan, the rate rule and the `BucketDeployment`.
+- On a deploy: a changed page appears after `cdk deploy`, with no Docker needed.
 - On a deploy: the distribution shows the Free flat-rate plan in the console, and `<domain_name>` and `api.<domain_name>` are both on separate plans and working. If AWS
   refuses this, stop and bring it to the owner, because the design has to change.
