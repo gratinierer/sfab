@@ -646,7 +646,8 @@ Logs are the most likely place for a claim to leak.
   list and removes nothing.
 - A website check: `/` and `/agents/` load over HTTPS, the links work, and repeated requests from
   one IP aren't blocked.
-- A federation check against a fake second world: a request gets a token, a published token moves it to
+- A federation check against a fake second world, on a subdomain of `domain_name`, so nobody else can ever
+  own it: a request gets a token, a published token moves it to
   verified and it appears in the daily email, an unpublished one expires, and an approved world appears
   in `/federation/worlds` after a deploy. Real federation can't be tested until a second world exists.
 - A census check: a day after first deploy, `/world/census` and `/world/residents/0` show the test
@@ -692,14 +693,17 @@ replaces the isolation that per-route IAM roles would have given.
   procedure: if it leaks, replace it by hand and redeploy, which can cause a few minutes of
   `problem+json` `403`s. Changing `alert_email` replaces the alerts topic's subscription, and AWS sends no
   alerts until it's confirmed again, in the way "First deploy" describes.
+- **Clean up before launch:** remove the fake world from `federation/worlds.yaml` and deploy, remove the
+  test identities with `scripts/takedown`, and confirm `/federation/worlds` and `/world/census` show no test
+  data after the next daily run.
 - **Order:** the work is built and privately deployed in this order, with the ID format and path
   rules in from the start: (1) identity, (2) world and the website, (3) public profile and friends,
   (4) messaging, (5) federation. There's **one public launch**, when everything is done. Until then
   the URL isn't published. Federation will only have been tested against a fake second world.
 - **Done** means deployed, the registrant email verified, smoke-tested, and with the kill switch drill
   and the alarm, budget, WAF, takedown, website, federation and census checks passed, the billing test in
-  `issues/02-measure-rejected-request-billing.md` run and its result acted on, and the lifecycle rules
-  confirmed on the deployed bucket. The public launch is a separate decision, and can't happen until
+  `issues/02-measure-rejected-request-billing.md` run and its result acted on, the lifecycle rules
+  confirmed on the deployed bucket, and test data cleaned up. The public launch is a separate decision, and can't happen until
   [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) is closed, which now also covers
   the Terms and the public features.
 

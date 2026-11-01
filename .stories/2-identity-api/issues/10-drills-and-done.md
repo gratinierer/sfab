@@ -24,6 +24,8 @@ described in "Testing".
 - The smoke script over every route.
 - Replace the placeholder constitution with the owner's text.
 - Confirm the registrant email is verified.
+- Last, clean up: remove the fake world from `federation/worlds.yaml` and deploy, remove the test identities
+  with `scripts/takedown`, and confirm the public lists show no test data after the next daily run.
 
 ## Done when
 
