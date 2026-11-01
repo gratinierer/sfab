@@ -3,8 +3,7 @@
 Label: ready-for-agent
 Blocked by: 11
 
-Stage 5. `spec.md` "Federation". See `docs/adr/0013-federation-by-mutual-approval.md`,
-`docs/adr/0011-no-outbound-calls.md` and `docs/adr/0018-federation-domain-proof.md`.
+Stage 5. `spec.md` "Federation". See `docs/adr/0001-initial-architecture.md`.
 
 ## Scope
 

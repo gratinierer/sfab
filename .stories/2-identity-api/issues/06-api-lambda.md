@@ -9,7 +9,7 @@ birth", "Storage" (write behaviour) and "Logging".
 ## Scope
 
 - `birth`, `evolve`, `self`, `reclaim` and `openapi.yaml`, with the description compiled into the binary.
-- 12-character base32 IDs, as described in `docs/adr/0008-short-public-ids.md`, in a field called `id`.
+- 12-character base32 IDs, as described in `docs/adr/0001-initial-architecture.md`, in a field called `id`.
 - Markers: a zero-byte claim gets `401`, and `birth` on it gets `409`.
 - Credentials, hashing and `reclaim`, with random new secrets and `If-Match`.
 - Proof of work, with `required_bits` passed in from the CDK.

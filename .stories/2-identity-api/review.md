@@ -9,6 +9,8 @@ Statuses: `open` / `resolved` / `wontfix` / `superseded`.
 Axes: `factual` / `consistency` / `completeness` / `convention` / `staleness`.
 Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 
+ADRs 0001-0018 named below were merged into `docs/adr/0001-initial-architecture.md` on the owner's request on 2026-11-01. Commit `45de188` still has them.
+
 ## Review journal
 
 | Date | Kind | Reviewed | By | Findings | Notes |

@@ -61,14 +61,17 @@ or amendment of a prior ADR, or a convention meant to be visible/binding
 across teams or contexts. If so:
 
 - **New decision**: add a new ADR under the relevant `docs/adr/` (root for
-  system-wide, `<context>/docs/adr/` for context-scoped — see `domain.md`).
-- **Supersedes a prior decision**: never edit an old ADR's Decision section
-  in place. Add the new ADR, then mark the old one's Status line
-  `Superseded by ADR-000X` — ADRs are immutable history, not living docs.
+  system-wide, `<context>/docs/adr/` for context-scoped — see `domain.md`), only
+  if it's hard to reverse, surprising without context, and a real trade-off.
+  Everything else belongs in the story's `spec.md`.
+- **Supersedes a prior decision**: add the new ADR, then mark the old one's
+  Status line `Superseded by ADR-000X`. ADRs are immutable history. Rewriting or
+  merging them happens only when the owner asks for it in a special case, as in
+  `docs/adr/0001-initial-architecture.md`.
 - **Left work deferred/unfinished**: file it as a `.stories/<story>/issues/`
   ticket (see `issue-tracker.md`), not just a code comment or chat note —
   otherwise it's invisible to the next session/agent.
 
 This is a trusted convention, not a CI-enforced gate — there's no automated
-check for "was this architecturally significant", so judge it yourself and
-err toward writing the ADR/issue when in doubt.
+check for "was this architecturally significant", so judge it yourself, and
+err toward filing the issue when in doubt.

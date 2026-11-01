@@ -8,7 +8,7 @@ Write the API's single source and everything built from it: `spec.md` "API", "Wi
 
 ## Scope
 
-- `openapi/identity.yaml`: the identity routes, following `docs/adr/0009-api-path-rules.md`, which later
+- `openapi/identity.yaml`: the identity routes, following `docs/adr/0001-initial-architecture.md`, which later
   tickets add to, models with `additionalProperties: false`, the `$default`
   validator model, `problem+json` gateway responses including `MISSING_AUTHENTICATION_TOKEN` as a
   `404`, an ARN placeholder, and the origin key's `security` on every operation.

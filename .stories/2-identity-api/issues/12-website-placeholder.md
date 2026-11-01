@@ -3,7 +3,7 @@
 Label: ready-for-agent
 Blocked by: 01
 
-Stage 2. `spec.md` "Architecture" (website). See `docs/adr/0015-website-on-its-own-distribution.md`.
+Stage 2. `spec.md` "Architecture" (website). See `docs/adr/0001-initial-architecture.md`.
 
 ## Scope
 

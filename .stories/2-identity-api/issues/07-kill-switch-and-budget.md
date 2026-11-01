@@ -4,7 +4,7 @@ Label: ready-for-agent
 Blocked by: 01
 
 The first line of defence: `spec.md` "Abuse and cost controls", "Kill switch" and the email list in
-"Operations". See `docs/adr/0017-simple-first-line-of-defence.md`. The topics and budgets are in the
+"Operations". See `docs/adr/0001-initial-architecture.md`. The topics and budgets are in the
 base stack, from issue 01.
 
 ## Scope
