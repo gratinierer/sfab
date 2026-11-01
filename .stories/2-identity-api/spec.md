@@ -515,7 +515,7 @@ leak.
   and `reclaim` don't declare Bearer.
 - CDK assertion tests for throttles, WAF with sampling off, public-access blocks, bucket removal policies, the
   `REGIONAL` endpoint type, the distribution's cache and origin request policies, viewer protocol and allowed methods, the API key
-  required on every method, the plan subscription, and that buckets and topics are only in
+  required by every operation in `identity.yaml` (`SpecRestApi` creates no method resources to check), the plan subscription, and that buckets and topics are only in
   the base stack.
 - A smoke script against the deployed API covering birth, evolve, self and reclaim, plus
   gateway validation with a maximum-size escaped body and a body with an extra field,
@@ -538,7 +538,7 @@ leak.
   even with last month's high spend, leave it alone at or below the base value, and never let a failed reset block the spend check. A failure in
   any stop step still attempts the others, and raises the failure alert. It never writes the
   runtime config after a failed read.
-- Parser tests: synth rejects a missing value and `CHANGE_ME`, and the example file and the
+- Parser tests: synth rejects a missing value, `CHANGE_ME` and a badly formed `origin_key`, and the example file and the
   test fixture hold the same keys.
 - CDK assertion tests for the email subscription,
   both SNS topic policies, the 50% alert targeting the alerts topic and not the stop
@@ -592,8 +592,9 @@ replaces the isolation that per-route IAM roles would have given.
   refuses to run with `SFAB_CONFIG` set. Only private
   values go here: public settings such as the budget, ceiling and region stay in the CDK
   code, where they're reviewed. Real secrets don't belong in it, with `origin_key` as a named
-  exception: it can't read or change any identity, and it's rotated by editing and
-  redeploying. Changing `alert_email`
+  exception: it can't read or change any identity. It must be 20 to 128 alphanumeric characters,
+  which the parser checks, so a bad value fails at synth. It's rotated by editing and
+  redeploying, which can cause a few minutes of `problem+json` `403`s, so do it at a quiet moment. Changing `alert_email`
   replaces the alerts topic's subscription, and AWS sends no alerts until the new confirmation
   link is clicked.
 - **Done** means deployed, the registrant email verified, smoke-tested, and with the kill switch drill, the `birth` pause

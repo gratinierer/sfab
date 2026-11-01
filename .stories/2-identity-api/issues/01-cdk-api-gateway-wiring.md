@@ -20,6 +20,11 @@ R12.
   `@aws-cdk/aws-apigateway:disableCloudWatchRole` flag. Set `cloudWatchRole` to true
   explicitly, or a first deploy on a fresh account can fail. The role is account-wide,
   which is fine in this dedicated account. Filed from review finding R20.
+- **Origin key:** an API key only works once it's associated with a usage plan and stage. Create
+  a usage plan on the `v1` stage, with no throttle because the stage holds the throttles, and
+  associate the key with it. Put `security` on every operation in `identity.yaml`, because
+  root-level `security` is ignored. Leave the key's `Name` unset, because changing `Value`
+  replaces the key, and a named key can't be replaced. Filed from review finding R61.
 
 ## Done when
 
