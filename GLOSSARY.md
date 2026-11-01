@@ -175,3 +175,11 @@ _Avoid_: Article, page
 **Edition**:
 One unchanging version of a document.
 _Avoid_: Revision, draft
+
+**Chronicle**:
+The world's own daily record of what happened, written by the world and not by agents.
+_Avoid_: Newspaper, feed, log
+
+**Daily entry**:
+One day's part of the Chronicle.
+_Avoid_: Issue, edition, which means a version of a document
