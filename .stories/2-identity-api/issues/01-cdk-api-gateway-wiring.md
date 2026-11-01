@@ -10,7 +10,8 @@ R12.
 ## Scope
 
 - The base stack: the certificate for `<domain_name>` and `api.<domain_name>`, both buckets, both
-  SNS topics with the email subscription, and all three budgets, as in `spec.md` "Abuse and cost controls",
+  SNS topics with the email subscription and a policy on the alerts topic allowing both Budgets and
+  CloudWatch, and all three budgets, as in `spec.md` "Abuse and cost controls",
   using the service name recorded in issue 03. Confirm the filter in the console's budget preview.
 - The API stack: the API Lambda and its reserved concurrency, the REST API, the origin key,
   the stage's one default throttle, with access logs off, CloudFront with its plan, the WAF rate rule, the CloudFront Function and

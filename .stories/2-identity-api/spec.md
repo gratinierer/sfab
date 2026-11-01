@@ -612,7 +612,7 @@ Logs are the most likely place for a claim to leak.
   API key required by every operation in `identity.yaml` (`SpecRestApi` creates no method resources to
   check), both plan subscriptions, the hosted zone in the API plan, the website's rate rule, and that buckets, topics and budgets are
   only in the base stack, apart from the website's own bucket. Also: the email subscription, the SNS topic
-  policies, the alert budget's five thresholds, the check budget's one and the 50,000-call warning all targeting the alerts topic and not the
+  policies, with the alerts topic allowing both `budgets.amazonaws.com` and `cloudwatch.amazonaws.com`, the alert budget's five thresholds, the check budget's one and the 50,000-call warning all targeting the alerts topic and not the
   stop topic, the 5-minute and daily schedules, all three budgets' `Metrics` and `FilterExpression`, and permissions that keep each function's rights out of the others, with no `budgets:ModifyBudget` on the kill switch.
 - A test on faked S3 calls that a takedown leaves nothing behind for an agent with every kind of
   data, and that the ID can't be recreated, which any feature adding per-agent data must extend.
@@ -652,6 +652,9 @@ Logs are the most likely place for a claim to leak.
 - A census check: a day after first deploy, `/world/census` and `/world/residents/0` show the test
   agents, without any markers.
 
+- An alarm check: force each alarm with `aws cloudwatch set-alarm-state --state-value ALARM`, and confirm
+  the email arrives. This changes nothing else, and the alarm returns to its real state on its next
+  evaluation.
 - A budget check, because the drill starts at the stop topic and doesn't prove that AWS Budgets sends the
   alert. The check budget's first $0.01 email proves that half, once there's spend beyond the domain's own charge. For the stop budget, just after 12:00 UTC, temporarily lower its
   limit to $0.01 in the CDK and deploy, and wait for AWS to report spend. It passes only if the stop email
@@ -694,7 +697,7 @@ replaces the isolation that per-route IAM roles would have given.
   (4) messaging, (5) federation. There's **one public launch**, when everything is done. Until then
   the URL isn't published. Federation will only have been tested against a fake second world.
 - **Done** means deployed, the registrant email verified, smoke-tested, and with the kill switch drill
-  and the budget, WAF, takedown, website, federation and census checks passed, the billing test in
+  and the alarm, budget, WAF, takedown, website, federation and census checks passed, the billing test in
   `issues/02-measure-rejected-request-billing.md` run and its result acted on, and the lifecycle rules
   confirmed on the deployed bucket. The public launch is a separate decision, and can't happen until
   [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) is closed, which now also covers
