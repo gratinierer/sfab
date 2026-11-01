@@ -17,13 +17,16 @@ Filed from review finding R17. It needs the owner's AWS account.
 
 ## Test
 
-Send a known number of requests, about 1,000 each, of these kinds:
+On one UTC day with no other traffic, including smoke runs, send these counts. They differ so
+that any billed total can only mean one combination of kinds:
 
-1. Straight to `execute-api` without the origin key.
-2. Straight to `execute-api` while the default endpoint is disabled.
-3. Through to API Gateway, so they get throttled.
+1. 1,000 requests straight to `execute-api` without the origin key.
+2. 2,000 requests straight to `execute-api` while the default endpoint is disabled.
+3. 4,000 requests through to API Gateway, so they get throttled.
 
-A day or two later, compare the request counts in Cost Explorer. This costs under a cent. The
+Have the client tally the status codes it receives. Requests in kind 3 that succeed are billed
+anyway, so subtract them from the total. A day or two later, read the day's request count in
+Cost Explorer. This costs about 3 cents. The
 WAF limit of 10 requests per IP per 5 minutes applies to the third kind, so run it from several
 IPs or relax the rule briefly, and restore it afterwards. Also confirm that WAF-blocked requests
 add no charge.
