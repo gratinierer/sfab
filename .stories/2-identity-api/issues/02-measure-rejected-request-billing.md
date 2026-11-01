@@ -6,8 +6,12 @@ Blocked by: 01
 `Blocked by` is provisional until the story is sliced: this also needs the throttles and the
 kill switch, which no ticket builds yet.
 
-AWS doesn't say whether API Gateway bills REST API requests that it rejects. Unofficial sources
-conflict. This no longer affects floods that CloudFront's WAF blocks, which AWS says are free on
+AWS's current docs don't say whether API Gateway bills REST API requests that it rejects, and
+unofficial sources conflict. Its
+[former pricing page](https://web.archive.org/web/20211202141251/https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-pricing.html),
+since removed, said authentication failures, missing or invalid API keys and throttled requests
+aren't charged. This test confirms that still holds, and covers a disabled endpoint, which the
+page didn't mention. This no longer affects floods that CloudFront's WAF blocks, which AWS says are free on
 the flat-rate plan. It only affects traffic that gets past WAF, or goes straight to `execute-api`.
 Filed from review finding R17. It needs the owner's AWS account.
 

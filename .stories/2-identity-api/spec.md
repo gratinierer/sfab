@@ -448,7 +448,7 @@ Floods outside that table:
 | Flood | Cost |
 |---|---|
 | Blocked by CloudFront's WAF, including during a stop | $0, and it doesn't count against the plan's allowance |
-| Spread over enough IPs to stay under the WAF limit | Reaches API Gateway; 1,000 requests per second would need about 30,000 IPs. Beyond the throttles it could cost about $302 per day if throttled requests are billed, which `issues/02-measure-rejected-request-billing.md` measures |
+| Spread over enough IPs to stay under the WAF limit | Reaches API Gateway; 1,000 requests per second would need about 30,000 IPs. Beyond the throttles it could cost about $302 per day in the unlikely case that throttled requests are billed, which AWS's former pricing page said they aren't, and `issues/02-measure-rejected-request-billing.md` confirms |
 | Straight to `execute-api`, if the origin's URL leaks | Skips CloudFront and its free blocking; the origin key rejects them, and the same billing question applies |
 
 Traffic that passes WAF never costs CloudFront overage, but sustained excess over the plan's
@@ -653,7 +653,11 @@ failure. Each step needs the one before it:
 These could not be confirmed from AWS documentation:
 
 - Whether API Gateway bills requests it rejects, by throttle, missing origin key or disabled
-  endpoint. Unofficial sources conflict, and AWS doesn't say. It only matters for traffic that
+  endpoint. AWS's current docs don't say, and unofficial sources conflict. Its
+  [former pricing page](https://web.archive.org/web/20211202141251/https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-pricing.html),
+  since removed, said authentication failures, missing or invalid API keys and throttled requests
+  aren't charged, and didn't cover a disabled endpoint. So this is probably fine, but that's
+  not a current guarantee. It only matters for traffic that
   gets past CloudFront's WAF or goes straight to the origin.
   `issues/02-measure-rejected-request-billing.md` measures this.
 - Whether the managed `CachingDisabled` and `AllViewerExceptHostHeader` policies work on the
