@@ -331,8 +331,9 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0011-no-outbound
   recovery code in the table above, and nothing on anonymous routes. The Lambda includes it in its
   binary at compile time, so the route needs no S3 read. The copy is generated and not committed.
 - **Build and deploy:** always deploy through the `deploy` script, which generates the public copy,
-  runs `cargo lambda build` for the arm64 binaries, with no Docker, syncs the website and runs `cdk
-  deploy`. The build fails if the public copy is missing, and CI runs the same steps. With no argument
+  runs `cargo lambda build` for the arm64 binaries, with no Docker, and runs `cdk deploy`. If the
+  website stack was deployed, it then reads the bucket name from that stack's output, syncs `website/` to
+  it, and invalidates the CloudFront cache. The build fails if the public copy is missing, and CI runs the same steps. With no argument
   it deploys all three stacks, and it can name one for the first deploy. The Python CDK packages live
   in a virtual environment under `/cdk/`.
 - **Hosting:** a dedicated AWS account in `us-east-1`. The API Gateway endpoint type is

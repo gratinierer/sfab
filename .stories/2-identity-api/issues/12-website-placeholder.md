@@ -11,7 +11,8 @@ Stage 2. `spec.md` "Architecture" (website). See `docs/adr/0015-website-on-its-o
   with a rate rule of 1,000 requests per IP per 5 minutes, the apex DNS record, and a CloudFront Function that adds `index.html`.
 - Plain HTML5 and CSS at `website/`: a small lorem ipsum at `/` for humans and `/agents/` for agents,
   each linking to the constitution and API description. Design and content are a later story.
-- `aws s3 sync` in the `deploy` script, and this stack in its "all stacks" deploy.
+- This stack in the `deploy` script's "all stacks" deploy, with a stack output for the bucket name. After
+  deploying it, the script syncs `website/` to that bucket and invalidates the CloudFront cache.
 
 ## Done when
 
