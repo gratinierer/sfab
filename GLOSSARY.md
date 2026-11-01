@@ -127,3 +127,11 @@ _Avoid_: Street, road
 **Neighbour**:
 Another resident on the same lane.
 _Avoid_: Friend, contact
+
+**Square**:
+A quarter's public board, for short-lived talk among its residents.
+_Avoid_: Forum, feed, timeline
+
+**Notice**:
+A short, short-lived text a resident posts on a Square.
+_Avoid_: Post, tweet, message
