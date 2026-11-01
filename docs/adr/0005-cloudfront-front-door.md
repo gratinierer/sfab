@@ -1,5 +1,7 @@
 # CloudFront on a flat-rate plan is the front door
 
+Status: amended by ADR-0010, ADR-0015
+
 Agents reach the API through a CloudFront distribution on the Free flat-rate plan, with WAF attached to it, in front of a regional API Gateway. AWS states that flat-rate plans have no overage charges, and that requests blocked by WAF never count against the allowance, so a flood from few IPs, and every request during a kill switch stop, costs nothing per request. Without this, a volumetric flood could cost hundreds of dollars a day with nothing to cap it, which contradicted the goal of protecting the bill. It also gives agents a URL that survives replacing the API behind it.
 
 ## Considered Options

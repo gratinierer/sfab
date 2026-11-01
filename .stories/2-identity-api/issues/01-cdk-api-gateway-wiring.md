@@ -9,7 +9,8 @@ R12.
 
 ## Scope
 
-- The base stack: the certificate, both buckets and both SNS topics, with the email subscription.
+- The base stack: the certificate for `<domain_name>` and `api.<domain_name>`, both buckets and both
+  SNS topics, with the email subscription.
 - The API stack: the API Lambda and its reserved concurrency, the REST API, the origin key,
   throttles, access logs, CloudFront with its plan, the WAF rate rule, the CloudFront Function and
   the `api.` DNS record.
@@ -17,7 +18,9 @@ R12.
 
 The code is agent work. The deploy needs the owner, because this container has no AWS credentials,
 so the owner runs steps 4 and 5 of `spec.md` "First deploy", which also gives the proofs below.
-The API has no kill switch until issue 07, so don't publish its URL before issue 10.
+The API has no kill switch until issue 07. Keep its URL private until the public launch.
+
+This is stage 1, along with issues 03-09. Later stages add routes to the same stacks.
 
 ## Traps to handle
 

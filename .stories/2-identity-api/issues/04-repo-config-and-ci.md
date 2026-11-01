@@ -7,7 +7,8 @@ Create the monorepo and the config every later ticket uses: `spec.md` "Architect
 
 ## Scope
 
-- `/cdk/` with a Python virtual environment, `/openapi/`, and `/lambda/` as a Cargo workspace.
+- `/cdk/` with a Python virtual environment, `/openapi/`, `/lambda/` as a Cargo workspace, and
+  `/world/`, `/federation/` and `/website/` for later tickets.
 - The config parser, reading `sfab.config.toml` or the file named by `SFAB_CONFIG`.
 - `sfab.config.example.toml` with `CHANGE_ME` values, the gitignored real file, and the fixture
   `cdk/tests/fixtures/sfab.config.test.toml`.

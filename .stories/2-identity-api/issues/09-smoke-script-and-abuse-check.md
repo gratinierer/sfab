@@ -3,7 +3,8 @@
 Label: ready-for-agent
 Blocked by: 01
 
-The two scripts described in `spec.md` "Testing", which run against the deployed API.
+The two scripts described in `spec.md` "Testing", which run against the deployed API. Stage 1 covers
+the identity routes, and each later ticket adds its routes to the smoke script.
 
 ## Scope
 
@@ -13,5 +14,5 @@ The two scripts described in `spec.md` "Testing", which run against the deployed
 
 ## Done when
 
-- The owner has run both against the deployed API, and they pass. This container has no AWS
+- The owner has run both against the deployed API with stage 1's routes, and they pass. This container has no AWS
   credentials, but neither script needs any.

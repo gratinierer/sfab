@@ -29,6 +29,12 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | CloudFormation can't change a plan's tier, and creates paid plans in `PENDING_APPROVAL` | docs | [plan-cfn] | 2026-11-01 |
 | Cancelling or downgrading a paid plan takes effect at the end of the month, while a downgrade's features go at once | docs | [plan-api] | 2026-11-01 |
 | Free Tier accounts can't use flat-rate plans | docs | [plans] | 2026-10-30 |
+| Each plan covers one distribution with up to one apex domain, and an account can have 3 Free plans | docs | [plans] | 2026-11-01 |
+| Free allows 5 cache behaviors | docs | [plans] | 2026-11-01 |
+| Two plans can share one apex domain, such as `<domain>` and `api.<domain>` | memory | Not stated by AWS; the first deploy proves it | 2026-11-01 |
+| `CachingOptimized` is accepted in a cache behavior on Free | memory | Not stated by AWS; the first deploy proves it | 2026-11-01 |
+| `CachingOptimized` leaves query strings out of its cache key | memory | | 2026-11-01 |
+| A private S3 origin doesn't add `index.html` to a folder path | memory | | 2026-11-01 |
 | `CachingDisabled` is accepted on Free | memory | Not stated by AWS; issue 01 of story `2-identity-api` proves it | 2026-11-01 |
 | Port 80 can't be closed, and `HTTPS_ONLY` answers `http://` with `403` | memory | Issue 01 of story `2-identity-api` proves it | 2026-11-01 |
 | A new account may need Support verification before creating CloudFront resources | forum | re:Post search summaries | 2026-11-01 |
@@ -74,6 +80,8 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | Budgets update every 8-12 hours, plus an unstated billing delay | docs | Earlier review, R16 | 2026-10-30 |
 | An actual-spend alert fires only once per budget period | docs | Earlier review, R2 | 2026-10-30 |
 | `DeletionPolicy: RetainExceptOnCreate` deletes a resource when its creating operation rolls back | docs | [deletion-policy] | 2026-11-01 |
+| S3 lifecycle rules match the start of a path or an object tag, with no wildcard in the middle | memory | | 2026-11-01 |
+| A listing returns up to 1,000 keys per request, with each object's size | memory | | 2026-11-01 |
 | Domain charges appear under the service name "Amazon Registrar" | memory | The first purchase's bill decides | 2026-11-01 |
 | Updating a budget replaces all of it, so a filter must be sent again | memory | | 2026-11-01 |
 | A hosted zone costs about $0.50 per month | memory | | 2026-11-01 |

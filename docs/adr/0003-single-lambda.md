@@ -1,5 +1,7 @@
 # One Lambda serves all API routes
 
+Status: amended by ADR-0014
+
 All API routes run in a single Rust Lambda with an internal router, rather than one function per route, because the route count could grow to around 100 and one well-tested binary is simpler to deploy and reason about. Throttles stay per route, because they live on API Gateway.
 
 ## Consequences

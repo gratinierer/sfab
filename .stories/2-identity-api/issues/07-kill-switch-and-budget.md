@@ -9,7 +9,8 @@ issue 01.
 
 ## Scope
 
-- The second Rust binary: the three stop steps, the daily run, the storage ceiling and pause, the
+- The second Rust binary: the three stop steps, the daily run, the storage ceiling and
+  `growth_paused`, the
   missing-metric and failed-read rules, and the monthly limit reset.
 - The budget: $30, the 50% alert to the alerts topic, the 100% alert to the stop topic,
   `IncludeCredit` false, and the domain charge filter, using the service name recorded in issue 03.
