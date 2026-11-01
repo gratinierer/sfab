@@ -93,6 +93,9 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | API Gateway's per-API metrics are sent at one-minute periods, and are free | docs | [apigw-monitoring], [cw-pricing], from search results | 2026-11-01 |
 | DynamoDB on-demand writes cost about $0.625 per million | docs | [dynamodb-pricing], from search results | 2026-11-01 |
 | AWS Cost Anomaly Detection is free | memory | | 2026-11-01 |
+| A budget takes either `FilterExpression` and `Metrics`, or `CostFilters` and `CostTypes`, not both, and `CostTypes` is deprecated | docs | [budgets-create], [budgets-budget] | 2026-11-01 |
+| `RECORD_TYPE` is a budget filter key, and "Credit" is a charge type | docs | [budgets-values], [budgets-filters] | 2026-11-01 |
+| Credits are excluded by a `RECORD_TYPE` value of exactly `Credit` | memory | Issue 07 of story `2-identity-api` confirms it in the console | 2026-11-01 |
 | Domain charges appear under the service name "Amazon Registrar" | memory | The first purchase's bill decides | 2026-11-01 |
 | Updating a budget replaces all of it, so a filter must be sent again | memory | | 2026-11-01 |
 | A hosted zone costs about $0.50 per month | memory | | 2026-11-01 |
@@ -111,6 +114,10 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 [rest-api-origin]: https://github.com/aws/aws-cdk/blob/v2.275.0/packages/aws-cdk-lib/aws-cloudfront-origins/lib/rest-api-origin.ts
 [cdk-behavior]: https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_cloudfront.BehaviorOptions.html
 [domain-register]: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/domain-register.html
+[budgets-create]: https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_CreateBudget.html
+[budgets-budget]: https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_Budget.html
+[budgets-values]: https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_ExpressionDimensionValues.html
+[budgets-filters]: https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-create-filters.html
 [alarm-evaluation]: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/alarm-evaluation.html
 [alarm-window]: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/alarm-evaluation-window.html
 [alarms-missing]: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/alarms-and-missing-data.html

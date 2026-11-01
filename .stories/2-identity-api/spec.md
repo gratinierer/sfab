@@ -420,8 +420,8 @@ This is the first line of defence, and its whole job is to bound the bill:
 | Layer | Control |
 |---|---|
 | Daily limit | **100,000 API Gateway calls per UTC day, in the CDK code, which stops the API until the owner restarts it** |
-| Stop budget | $35 per month, automatic stop at 100%, with `IncludeCredit` false so sign-up credits can't hide abnormal usage, and domain charges excluded so a purchase or renewal can't use up the budget |
-| Alert budget | The same spend, emailing the owner at $17.50, $35, $105 and $350, with no dependence on the kill switch |
+| Stop budget | $35 per month, automatic stop at 100%, measuring real charges: credits are excluded so sign-up credits can't hide abnormal usage, and domain charges are excluded so a purchase or renewal can't use up the budget |
+| Alert budget | The same measure of spend, emailing the owner at $17.50, $35, $105 and $350, with no dependence on the kill switch |
 | CloudFront WAF | Rate-based rule: 10 requests per IP per 5 minutes, across all routes, blocking with WAF's plain `403`. Blocked requests are free |
 | API Gateway | One stage-wide default throttle of 10 requests per second, burst 20, so a route can't be forgotten |
 | API Gateway | The origin key, required on every method |
@@ -441,6 +441,11 @@ Notes on these controls:
   reaches the handler, which enforces the exact limit and returns `400`. This depends on
   the `$default` model working through OpenAPI import, which must be tested during
   implementation.
+- **How both budgets measure spend:** with `Metrics` of `UnblendedCost` and a `FilterExpression` of NOT
+  (`SERVICE` = the domain charge's service name OR `RECORD_TYPE` = `Credit`). AWS doesn't allow this
+  alongside the deprecated `CostTypes`, so `IncludeCredit` can't be used. That the value is literally
+  `Credit` isn't confirmed, so check it in the console's budget preview, and on the first real bill that
+  the budget tracks usage rather than the amount after credits.
 - **Stored data:** the daily limit also bounds it. Even 100,000 maximum-size writes every day is about
   96 GB a month, which adds about $2 to the monthly bill for each month it runs. There is no storage
   ceiling, and `birth` and messages never pause. The bill would show growth, and the owner handles it
@@ -591,8 +596,7 @@ Logs are the most likely place for a claim to leak.
   check), both plan subscriptions, no rate rule on the website, and that buckets and topics are only in
   the base stack, apart from the website's own bucket. Also: the email subscription, the SNS topic
   policies, the alert budget's four thresholds and the 50,000-call warning all targeting the alerts topic and not the
-  stop topic, the 5-minute and daily schedules, the budget's `IncludeCredit` setting and domain charge
-  filter, and permissions that keep each function's rights out of the others.
+  stop topic, the 5-minute and daily schedules, both budgets' `Metrics` and `FilterExpression`, and permissions that keep each function's rights out of the others.
 - A test on faked S3 calls that a takedown leaves nothing behind for an agent with every kind of
   data, and that the ID can't be recreated, which any feature adding per-agent data must extend.
 - A smoke script against the deployed API covering every route, plus
