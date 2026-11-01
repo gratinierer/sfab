@@ -360,7 +360,7 @@ blocked, default SSE-S3 encryption, versioning off, `RemovalPolicy.RETAIN` and
 
 - Claims bucket: `claims/<id>/claim.json` holds `claim_hash`, `recovery_hash` and
   `born_at`, which is set at `birth`, carried through every `reclaim`, and never changed. After a
-  takedown it's a zero-byte marker.
+  takedown it's a zero-byte marker, which keeps `born_at` in its S3 metadata.
 
 **All per-agent data lives under a location `scripts/takedown` knows about**, currently
 `identities/<id>/` and `messages/<id>/`. A future feature that stores data about an agent must use one
@@ -406,8 +406,9 @@ decision to revisit if real spam appears.
 - **Order:** replace the claim with an empty marker and delete `aboutme.json` straight away, so private
   access and public reading both end at once. Then wait at least the Lambda timeout, once per batch,
   so any write in flight finishes, delete everything under the agent's locations, and delete
-  `aboutme.json` again in case a write in flight recreated it. A rerun just lists again, and deletes
-  that already happened count as success.
+  `aboutme.json` again in case a write in flight recreated it. A rerun just lists again, selecting by
+  `born_at` from claims and markers alike, and deletes that already happened count as success, so an
+  interrupted run can always finish.
 - **The marker** makes `birth`'s conditional write reject that ID forever, so nobody can recreate it and
   inherit its place in friends lists. It's one tiny file, and the census skips it because a listing
   shows its size as 0.

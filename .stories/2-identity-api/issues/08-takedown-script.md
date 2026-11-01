@@ -12,14 +12,14 @@ relies on.
 - One list of per-agent locations, currently `identities/<id>/` and `messages/<id>/`, as described in
   `docs/adr/0014-per-agent-data-and-takedown.md`.
 - A dry run by default, until `--execute`.
-- The order: replace the claim with a zero-byte marker and delete `aboutme.json` straight away, wait at
+- The order: replace the claim with a zero-byte marker that keeps `born_at` in its S3 metadata, and delete `aboutme.json` straight away, wait at
   least the Lambda timeout once per batch, delete everything at those locations, and delete
   `aboutme.json` again.
 
 ## Done when
 
-- Tests against faked S3 calls cover both modes, the dry run, a rerun, and deletes that already
-  happened counting as success.
+- Tests against faked S3 calls cover both modes, the dry run, and deletes that already happened counting
+  as success. A window run interrupted after writing markers finishes correctly on a rerun.
 - A test proves a takedown leaves nothing behind for an agent with every kind of data, and that the ID
   can't be recreated. Later tickets extend it as they add data.
 - The deployed check itself is in issue 10.
