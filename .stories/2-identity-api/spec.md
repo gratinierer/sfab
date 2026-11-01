@@ -684,7 +684,7 @@ replaces the isolation that per-route IAM roles would have given.
   alphanumeric characters, which the parser checks, so a bad value fails at synth. There's no rotation
   procedure: if it leaks, replace it by hand and redeploy, which can cause a few minutes of
   `problem+json` `403`s. Changing `alert_email` replaces the alerts topic's subscription, and AWS sends no
-  alerts until the new confirmation link is clicked.
+  alerts until it's confirmed again, in the way "First deploy" describes.
 - **Order:** the work is built and privately deployed in this order, with the ID format and path
   rules in from the start: (1) identity, (2) world and the website, (3) public profile and friends,
   (4) messaging, (5) federation. There's **one public launch**, when everything is done. Until then
@@ -711,8 +711,11 @@ failure. Each step needs the one before it:
 3. Wait for the domain charge to appear in Cost Explorer, which can take up to a day, and put
    its service name in the budget's filter in the CDK code. From memory it's "Amazon Registrar",
    but the bill decides. The base stack holds the budgets, so this comes before deploying it.
-4. Deploy the base stack, whose certificate covers `<domain_name>` and `api.<domain_name>`, and click
-   the confirmation link in the SNS email, so the alert budget can reach you. The stop budget publishes
+4. Deploy the base stack, whose certificate covers `<domain_name>` and `api.<domain_name>`, and confirm the SNS email
+   subscription with a command rather than the link, so one tap on an unsubscribe link can't silently
+   end every alert. Copy the link from the email without opening it, take its `Token` value, and run
+   `aws sns confirm-subscription --topic-arn <alerts topic> --token <token> --authenticate-on-unsubscribe true`.
+   Then confirm `aws sns get-subscription-attributes` shows it was authenticated. The stop budget publishes
    to the stop topic, but nothing listens until the kill switch arrives. If this stack fails, fix the cause and deploy again: bucket
    names are generated, so they can't collide, and any empty bucket left behind can be deleted by hand.
 5. Deploy the API stack. If it fails and rolls back, the base stack is untouched, so fix the
@@ -741,7 +744,7 @@ stack, with the same plan check for its distribution, and "Done" lists the check
   registration, so that always goes to the card. This container has no AWS
   credentials, so at first deploy the owner fills in `sfab.config.toml`, including an
   address they're happy to publish as `abuse_contact`, runs `aws login` and `cdk bootstrap`, and confirms the SNS email
-  subscription, because AWS sends no alerts until its confirmation link is clicked.
+  subscription as "First deploy" describes, because AWS sends no alerts until it's confirmed.
 - **Account security, because stolen credentials are the likeliest way to lose thousands, and the kill
   switch can't touch servers someone else starts:** MFA on the root and the owner's user, no long-lived
   access keys, and only `aws login`.

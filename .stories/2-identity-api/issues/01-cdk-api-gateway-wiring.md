@@ -68,6 +68,8 @@ This is stage 1, along with issues 03-09. Later stages add routes to the same st
   - A CloudFront Function on the Free plan returns the `problem+json` `404` for a path outside
     `/v1/`.
   - A request to `http://` gets a `403` and never reaches the origin.
+  - The email subscription was confirmed with `--authenticate-on-unsubscribe true`, as in `spec.md`
+    "First deploy", and its attributes show that.
 - Before anything else depends on it, the owner confirms in the console that the distribution shows
   the Free flat-rate plan, because otherwise CloudFront and WAF bill per request.
 

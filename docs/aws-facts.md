@@ -101,6 +101,8 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | Credits are excluded by a `RECORD_TYPE` value of exactly `Credit` | memory | Issue 01 of story `2-identity-api` confirms it in the console | 2026-11-01 |
 | Changing a budget resets its calculated spend to zero until new usage data arrives | docs | [budgets-update] | 2026-11-01 |
 | A budget can have up to five notifications, each with one SNS subscriber and up to 10 email subscribers | docs | [budgets-create] | 2026-11-01 |
+| `ConfirmSubscription` with `AuthenticateOnUnsubscribe` true disallows unauthenticated unsubscribes | docs | [sns-confirm] | 2026-11-01 |
+| Each SNS email has an unsubscribe link needing no login, and the subscription attribute `ConfirmationWasAuthenticated` shows how it was confirmed | memory | Issue 01 of story `2-identity-api` confirms it | 2026-11-01 |
 | Domain charges appear under the service name "Amazon Registrar" | memory | The first purchase's bill decides | 2026-11-01 |
 | Updating a budget replaces all of it, so a filter must be sent again | memory | | 2026-11-01 |
 | A hosted zone costs about $0.50 per month without a plan | docs | The Route 53 pricing page, the reviewer's reading | 2026-11-01 |
@@ -125,6 +127,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 [budgets-values]: https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_ExpressionDimensionValues.html
 [budgets-filters]: https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-create-filters.html
 [budgets-update]: https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_UpdateBudget.html
+[sns-confirm]: https://docs.aws.amazon.com/sns/latest/api/API_ConfirmSubscription.html
 [alarm-evaluation]: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/alarm-evaluation.html
 [alarm-window]: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/alarm-evaluation-window.html
 [alarms-missing]: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/alarms-and-missing-data.html
