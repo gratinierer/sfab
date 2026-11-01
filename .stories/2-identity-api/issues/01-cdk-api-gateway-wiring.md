@@ -30,7 +30,8 @@ R12.
   is tested, and the second isn't stated outright:
   - `GET /v1/identity/self` receives `Authorization` at the origin.
   - `CachingDisabled` and `AllViewerExceptHostHeader` are accepted on the Free flat-rate plan.
-    If not, move to Pro at $15 per month, and update `spec.md`.
+    If not, stop and bring it to the owner. Pro doesn't help, because custom caching rules
+    start at Business.
   - The plan subscribes through `AWS::PricingPlanManager::Subscription`.
   - The Free plan accepts the web ACL, and with no custom responses configured, WAF answers a
     block with a plain `403` that isn't `problem+json`, both for the rate rule and when its

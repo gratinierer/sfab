@@ -156,7 +156,10 @@ ceiling and the kill switch.
   `CachingDisabled` and `AllViewerExceptHostHeader` policies, so nothing is cached and
   `Authorization` reaches the origin on every method. The plan is subscribed through
   `AWS::PricingPlanManager::Subscription`. Pro at $15 per month is the first upgrade, for
-  CloudFront and WAF logs or if the Free plan can't take these policies.
+  CloudFront and WAF logs. CloudFormation can't change a plan's tier, so to upgrade, first raise
+  the budget's base value by $15, because the fee counts against it, then call
+  `UpdateSubscription` and update the template to match. Cancelling takes effect only at the
+  end of the month.
 - **Origin key:** CloudFront adds a secret API key header, and API Gateway requires it on
   every method, so a request straight to `execute-api` is rejected before the Lambda runs.
   CloudFront overwrites a viewer's header of the same name. This only proves a request came
@@ -613,7 +616,8 @@ These could not be confirmed from AWS documentation:
 - Whether the managed `CachingDisabled` and `AllViewerExceptHostHeader` policies work on the
   Free plan. AWS's preconfigured API Gateway origin uses them, and the plan only excludes
   "custom caching rules", so this is very likely. `issues/01-cdk-api-gateway-wiring.md` proves
-  it on the first deploy, and Pro is the fallback.
+  it on the first deploy. Pro is no fallback for this, because custom caching rules start at
+  Business, so a rejection goes back to the owner.
 - The exact billing filter that excludes domain charges from the budget.
 
 ## Deferred
