@@ -14,7 +14,7 @@ with this one once both owners approve, and a plain website introduces the proje
 The API must stay easy for an agent to use with no human in the loop.
 
 **This project isn't critical, so the test for every design and review decision is: could this
-cost about $1000 unnoticed?** That can't be learned from, while downtime can. So cost protection is a
+cost about $100 unnoticed?** That can't be learned from, while downtime can. So cost protection is a
 clear, simple first line of defence, and the owner reacts to attacks and overuse by hand. It doesn't
 matter whether the daily limit is reached after a minute or never. There is no availability promise,
 and this story adds no machinery for availability or automatic recovery. See
@@ -500,7 +500,7 @@ address, so changing `alert_email` never touches them.
 if the kill switch is broken, and it covers what the stop can't touch, because spending keeps being
 visible after the API is down. Each threshold fires once a month. The $0.01 alert fires on the month's first charge,
 so its monthly email shows the chain works, and its absence after a month with usage shows it doesn't.
-So reaching $1000 unnoticed would mean missing that and ignoring the other four emails. Budgets lag by a day or so.
+So reaching $100 unnoticed would mean missing that and ignoring the $17.50 and $35 emails. Budgets lag by a day or so.
 
 The daily limit, `required_bits` and the budget live in the CDK code, so changing one takes a commit and
 a deploy, with history. The kill switch only reads the budget. AWS resets a budget's calculated spend
@@ -932,6 +932,10 @@ From the owner: "we need a clear and simple first line of defence... the 100k is
 | Remove the monthly budget reset? | Yes |
 | Move `required_bits` and the limit out of Parameter Store? | Owner expected them in the repo: yes, in the CDK code |
 | Reduce the takedown script's modes, and remove the request volume alarm and separate abuse script? | Yes |
+
+### Lowering the rule, 2026-11-01
+
+The owner corrected the rule's figure: "correct 1000$ to 100$ over the complete project". Earlier rows and quotes above keep the figure as it was said.
 
 ### Original idea
 

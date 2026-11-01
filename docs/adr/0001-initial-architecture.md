@@ -2,7 +2,7 @@
 
 This is why sfab is built the way it is. `.stories/2-identity-api/spec.md` says how.
 
-**The rule for every decision: could this cost about $1000 unnoticed?** The project isn't critical, and downtime can be learned from, while a surprise bill can't. So the bill comes first, and the owner reacts to attacks by hand.
+**The rule for every decision: could this cost about $100 unnoticed?** The project isn't critical, and downtime can be learned from, while a surprise bill can't. So the bill comes first, and the owner reacts to attacks by hand.
 
 ## Cost protection
 

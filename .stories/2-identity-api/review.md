@@ -11,6 +11,8 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 
 ADRs 0001-0018 named below were merged into `docs/adr/0001-initial-architecture.md` on the owner's request on 2026-11-01. Commit `45de188` still has them.
 
+Rows below that mention $1000 predate the owner's correction of the rule to $100 on 2026-11-01.
+
 ## Review journal
 
 | Date | Kind | Reviewed | By | Findings | Notes |
