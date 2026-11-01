@@ -619,7 +619,8 @@ This happens once, so it's an ordered manual rather than automation that handles
 failure. Each step needs the one before it:
 
 1. Complete "Prerequisites", fill in `sfab.config.toml` except `hosted_zone_id`, then run
-   `aws login` and `cdk bootstrap`.
+   `aws login` and `cdk bootstrap aws://<account_id>/us-east-1`, which names the target so it
+   shouldn't need the config yet.
 2. Buy `domain_name` in the Route 53 console, with WHOIS privacy and auto-renew on. If AWS
    sends a registrant verification email, follow it, because AWS must otherwise suspend the
    domain, which takes the API offline. Don't continue until registration has finished and
@@ -631,7 +632,9 @@ failure. Each step needs the one before it:
    fix the cause and deploy again: bucket names are generated, so they can't collide, and any
    empty bucket left behind can be deleted by hand.
 5. Deploy the API stack. If it fails and rolls back, the base stack is untouched, so fix the
-   cause and deploy again.
+   cause and deploy again. If it fails with "Your account must be verified before you can add
+   new CloudFront resources", open an AWS Support case, wait for the answer, and deploy again.
+   Forum reports describe this for new accounts; AWS doesn't document it.
 6. Run the checks that "Done" lists.
 
 ## Prerequisites
