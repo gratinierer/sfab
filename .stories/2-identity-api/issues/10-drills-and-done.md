@@ -10,6 +10,8 @@ described in "Testing".
 
 - The kill switch drill, both ways in: the stop topic, and the daily limit lowered then restored.
   Confirm the email reaches your phone.
+- The budget check: a $0.01 alert email has arrived, the stop budget stops the API with its limit
+  temporarily lowered, and the budget's figure matches the first real bill.
 - The WAF check.
 - The billing test in issue 02, with its result acted on.
 - The takedown check, for an agent with every kind of data.

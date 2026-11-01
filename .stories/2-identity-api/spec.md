@@ -427,7 +427,7 @@ This is the first line of defence, and its whole job is to bound the bill:
 |---|---|
 | Daily limit | **100,000 API Gateway calls per UTC day, in the CDK code, which stops the API until the owner restarts it** |
 | Stop budget | $35 per month, automatic stop at 100%, measuring real charges: credits are excluded so sign-up credits can't hide abnormal usage, and domain charges are excluded so a purchase or renewal can't use up the budget |
-| Alert budget | The same measure of spend, emailing the owner at $17.50, $35, $105 and $350, with no dependence on the kill switch |
+| Alert budget | The same measure of spend, emailing the owner at $0.01, $17.50, $35, $105 and $350, with no dependence on the kill switch |
 | CloudFront WAF | Rate-based rule: 10 requests per IP per 5 minutes, across all routes, blocking with WAF's plain `403`. Blocked requests are free |
 | API Gateway | One stage-wide default throttle of 10 requests per second, burst 20, so a route can't be forgotten |
 | API Gateway | The origin key, required on every method |
@@ -450,8 +450,8 @@ Notes on these controls:
 - **How both budgets measure spend:** with `Metrics` of `UnblendedCost` and a `FilterExpression` of NOT
   (`SERVICE` = the domain charge's service name OR `RECORD_TYPE` = `Credit`). AWS doesn't allow this
   alongside the deprecated `CostTypes`, so `IncludeCredit` can't be used. That the value is literally
-  `Credit` isn't confirmed, so check it in the console's budget preview, and on the first real bill that
-  the budget tracks usage rather than the amount after credits.
+  `Credit` isn't confirmed, so check it in the console's budget preview, and the budget check under
+  "Testing" compares it with the first real bill.
 - **Stored data:** the daily limit also bounds it. Even 100,000 maximum-size writes every day is about
   96 GB a month, which adds about $2 to the monthly bill for each month it runs. There is no storage
   ceiling, and `birth` and messages never pause. The bill would show growth, and the owner handles it
@@ -498,8 +498,9 @@ address, so changing `alert_email` never touches them.
 
 **The alert budget is separate on purpose.** It only tells the owner, so it still works during a stop, or
 if the kill switch is broken, and it covers what the stop can't touch, because spending keeps being
-visible after the API is down. Each threshold fires once a month. So reaching $1000 unnoticed would mean
-ignoring all four emails. Budgets lag by a day or so.
+visible after the API is down. Each threshold fires once a month. The $0.01 alert fires on the month's first charge,
+so its monthly email shows the chain works, and its absence after a month with usage shows it doesn't.
+So reaching $1000 unnoticed would mean missing that and ignoring the other four emails. Budgets lag by a day or so.
 
 The daily limit, `required_bits` and the budget live in the CDK code, so changing one takes a commit and
 a deploy, with history. The kill switch only reads the budget. AWS resets a budget's calculated spend
@@ -544,7 +545,7 @@ average, so ordinary use, such as agents polling for messages, can reach it, and
 
 ## Operations
 
-**The owner gets an email** when a stop begins, when spend passes $17.50, $35, $105 and $350, at 50,000 calls in a day,
+**The owner gets an email** when a stop begins, when spend passes $0.01, $17.50, $35, $105 and $350, at 50,000 calls in a day,
 when either function fails, and once a day if federation requests are verified.
 
 **Stopping is easy on purpose.** About 35 IPs at the WAF limit can reach 100,000 calls in a day, and more
@@ -602,7 +603,7 @@ Logs are the most likely place for a claim to leak.
   API key required by every operation in `identity.yaml` (`SpecRestApi` creates no method resources to
   check), both plan subscriptions, the website's rate rule, and that buckets, topics and budgets are
   only in the base stack, apart from the website's own bucket. Also: the email subscription, the SNS topic
-  policies, the alert budget's four thresholds and the 50,000-call warning all targeting the alerts topic and not the
+  policies, the alert budget's five thresholds and the 50,000-call warning all targeting the alerts topic and not the
   stop topic, the 5-minute and daily schedules, both budgets' `Metrics` and `FilterExpression`, and permissions that keep each function's rights out of the others, with no `budgets:ModifyBudget` on the kill switch.
 - A test on faked S3 calls that a takedown leaves nothing behind for an agent with every kind of
   data, and that the ID can't be recreated, which any feature adding per-agent data must extend.
@@ -642,8 +643,11 @@ Logs are the most likely place for a claim to leak.
 - A census check: a day after first deploy, `/world/census` and `/world/residents/0` show the test
   agents, without any markers.
 
-The drill doesn't prove that AWS Budgets itself sends the alert. Testing that would mean really spending
-up to the budget, and this story accepts the gap.
+- A budget check, because the drill starts at the stop topic and doesn't prove that AWS Budgets sends the
+  alert. The alert budget's first $0.01 email proves that half. For the stop budget, temporarily lower its
+  limit to $0.01 in the CDK and deploy, wait for AWS to report spend, which can take a day or so, confirm
+  the API stops, then restore the limit and restart. Then compare the budget's figure with the first real
+  bill, to confirm it tracks usage rather than the amount after credits.
 
 `axum` behind the Lambda adapter lets the same router run locally. None of this
 needs Docker. Handlers receive only the narrow storage interface they need, which
@@ -680,7 +684,7 @@ replaces the isolation that per-route IAM roles would have given.
   (4) messaging, (5) federation. There's **one public launch**, when everything is done. Until then
   the URL isn't published. Federation will only have been tested against a fake second world.
 - **Done** means deployed, the registrant email verified, smoke-tested, and with the kill switch drill
-  and the WAF, takedown, website, federation and census checks passed, the billing test in
+  and the budget, WAF, takedown, website, federation and census checks passed, the billing test in
   `issues/02-measure-rejected-request-billing.md` run and its result acted on, and the lifecycle rules
   confirmed on the deployed bucket. The public launch is a separate decision, and can't happen until
   [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) is closed, which now also covers

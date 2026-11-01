@@ -96,8 +96,9 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | AWS Cost Anomaly Detection is free | memory | | 2026-11-01 |
 | A budget takes either `FilterExpression` and `Metrics`, or `CostFilters` and `CostTypes`, not both, and `CostTypes` is deprecated | docs | [budgets-create], [budgets-budget] | 2026-11-01 |
 | `RECORD_TYPE` is a budget filter key, and "Credit" is a charge type | docs | [budgets-values], [budgets-filters] | 2026-11-01 |
-| Credits are excluded by a `RECORD_TYPE` value of exactly `Credit` | memory | Issue 07 of story `2-identity-api` confirms it in the console | 2026-11-01 |
+| Credits are excluded by a `RECORD_TYPE` value of exactly `Credit` | memory | Issue 01 of story `2-identity-api` confirms it in the console | 2026-11-01 |
 | Changing a budget resets its calculated spend to zero until new usage data arrives | docs | [budgets-update] | 2026-11-01 |
+| A budget allows at most 5 notifications | memory | Issue 01 of story `2-identity-api` confirms it | 2026-11-01 |
 | Domain charges appear under the service name "Amazon Registrar" | memory | The first purchase's bill decides | 2026-11-01 |
 | Updating a budget replaces all of it, so a filter must be sent again | memory | | 2026-11-01 |
 | A hosted zone costs about $0.50 per month | memory | | 2026-11-01 |
