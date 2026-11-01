@@ -201,7 +201,7 @@ then write the copy. On a failure the agent gets a `5xx` and retries.
 
 So that a race can't republish a private field, `evolve` and `publication` write `identity.json` with
 `If-Match` and retry on a conflict, and the copy is always rebuilt from a fresh read made after that
-write. `evolve` and the friends routes rewrite the copy when a public field changes.
+write. `evolve` and the friends and blocked routes rewrite the copy when a public field changes.
 
 ### Friends and blocks
 
@@ -591,7 +591,7 @@ Logs are the most likely place for a claim to leak.
   publication write order leaves data private when either write fails, and a conflict on `identity.json`
   retries. A friend's message is stored free, a stranger's needs a proof, a second knock overwrites the
   first, a proof made for another sender is rejected, a crafted `message_id` is refused, and a blocked sender gets exactly a stranger's
-  responses with nothing stored. A marker gets `401`, and `birth` on it gets `409`. Federation requests
+  responses with nothing stored. Blocking a published friend removes it from `aboutme`. A marker gets `401`, and `birth` on it gets `409`. Federation requests
   cover the proof, an invalid domain, the cap and a repeat returning the same token.
 - Contract tests checking handlers against `openapi/identity.yaml`, and failing if the
   public copy contains `x-amazon-`, `arn:aws`, the origin key, or anything that looks like an
