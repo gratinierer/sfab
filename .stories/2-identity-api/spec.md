@@ -418,7 +418,8 @@ Constraints this creates:
   `cdk deploy` while stopped could
   reopen part of the API, which the restart list above covers.
 - The budget limit is also changed outside CloudFormation, so editing the budget in the CDK
-  could reset it to the template's value.
+  could reset it to the template's value. The function must also keep the domain charge filter
+  when it updates the limit.
 
 ### Estimated worst cases
 
@@ -545,12 +546,12 @@ leak.
   the budget check. Also: reset the budget limit on the month's first run without stopping the API,
   even with last month's high spend, leave it alone at or below the base value, and a failed reset raises the failure alert and still runs the storage check. A failure in
   any stop step still attempts the others, and raises the failure alert. It never writes the
-  runtime config after a failed read.
+  runtime config after a failed read. Updating the budget limit keeps the domain charge filter.
 - Parser tests: synth rejects a missing value, `CHANGE_ME` and a badly formed `origin_key`, and the example file and the
   test fixture hold the same keys.
 - CDK assertion tests for the email subscription,
   both SNS topic policies, the 50% alert targeting the alerts topic and not the stop
-  topic, the daily schedule, the budget's `IncludeCredit` setting, and permissions that keep the kill switch's rights out of the
+  topic, the daily schedule, the budget's `IncludeCredit` setting and domain charge filter, and permissions that keep the kill switch's rights out of the
   API Lambda.
 - A kill switch drill on the deployed API, before any agents depend on it, and again
   whenever the kill switch code changes:
@@ -623,12 +624,15 @@ failure. Each step needs the one before it:
    sends a registrant verification email, follow it, because AWS must otherwise suspend the
    domain, which takes the API offline. Don't continue until registration has finished and
    the console shows no verification pending. Copy the hosted zone's ID into the config.
-3. Deploy the base stack, and click the confirmation link in the SNS email. If this stack fails,
+3. Wait for the domain charge to appear in Cost Explorer, which can take up to a day, and put
+   its service name in the budget's filter in the CDK code. From memory it's "Amazon Registrar",
+   but the bill decides. The API stack holds the budget, so this comes before deploying it.
+4. Deploy the base stack, and click the confirmation link in the SNS email. If this stack fails,
    fix the cause and deploy again: bucket names are generated, so they can't collide, and any
    empty bucket left behind can be deleted by hand.
-4. Deploy the API stack. If it fails and rolls back, the base stack is untouched, so fix the
+5. Deploy the API stack. If it fails and rolls back, the base stack is untouched, so fix the
    cause and deploy again.
-5. Run the checks that "Done" lists.
+6. Run the checks that "Done" lists.
 
 ## Prerequisites
 
@@ -665,7 +669,6 @@ These could not be confirmed from AWS documentation:
   "custom caching rules", so this is very likely. `issues/01-cdk-api-gateway-wiring.md` proves
   it on the first deploy. Pro is no fallback for this, because custom caching rules start at
   Business, so a rejection goes back to the owner.
-- The exact billing filter that excludes domain charges from the budget.
 
 ## Deferred
 
