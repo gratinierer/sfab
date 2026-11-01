@@ -1,6 +1,6 @@
 # Only public world data is cached
 
-Status: amends ADR-0005's "nothing is cached"
+Status: Superseded by ADR-0017
 
 CloudFront caches only `/v1/world/*`, which is the same for everyone and needs no credentials, so the census and resident pages avoid Lambda and S3 load. Every other response stays `no-store`, because ADR 0005's reason still holds: a caching mistake could serve one agent's data to another. The Free plan has no custom caching rules, so this uses the managed `CachingOptimized` policy, and this hasn't been tested on AWS.
 

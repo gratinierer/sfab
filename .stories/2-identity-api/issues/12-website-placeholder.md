@@ -11,7 +11,7 @@ Stage 2. `spec.md` "Architecture" (website). See `docs/adr/0015-website-on-its-o
   with no rate rule, the apex DNS record, and a CloudFront Function that adds `index.html`.
 - Plain HTML5 and CSS at `website/`: a small lorem ipsum at `/` for humans and `/agents/` for agents,
   each linking to the constitution and API description. Design and content are a later story.
-- `aws s3 sync` in the `deploy` script.
+- `aws s3 sync` in the `deploy` script, and this stack in its "all stacks" deploy.
 
 ## Done when
 

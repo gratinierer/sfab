@@ -1,6 +1,6 @@
 # All per-agent data lives where takedown can find it
 
-Status: amends ADR-0001 (the daily census lists a bucket) and ADR-0003 (a third function)
+Status: amends ADR-0001 (the daily census lists a bucket) and ADR-0003 (a third function); amended by ADR-0018 (the job's permissions are wider)
 
 `scripts/takedown` holds one list of per-agent locations, currently `identities/<id>/` and `messages/<id>/`, and deletes everything under them. **Any future feature storing data about an agent must use one of those, or add its location to the list**, and a test proves that a takedown leaves nothing behind for an agent with every kind of data. The abuse contact promises removal, and a new feature must not quietly break that promise.
 

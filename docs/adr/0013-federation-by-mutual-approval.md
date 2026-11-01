@@ -1,5 +1,7 @@
 # Federation needs both owners' approval, recorded in the repo
 
+Status: amended by ADR-0018
+
 A world asks to federate through a public route, and the request is stored with proof of work, capped and expiring, and summarised to the owner once a day. The owner checks the other domain by hand, then approves by committing to `federation/worlds.yaml` and deploying. The other owner does the same. A world's ID is its domain, so HTTPS proves who it is, like email and Mastodon, and a random caller gets nowhere.
 
 ## Considered Options

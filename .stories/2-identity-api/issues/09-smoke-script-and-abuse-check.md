@@ -1,4 +1,4 @@
-# Write the smoke script and abuse check
+# Write the smoke script and WAF check
 
 Label: ready-for-agent
 Blocked by: 01
@@ -10,7 +10,7 @@ the identity routes, and each later ticket adds its routes to the smoke script.
 
 - The paced smoke script, including the gateway validation cases, both `404`s, a direct
   `execute-api` request without the key, and treating WAF's plain `403` as "wait and rerun".
-- The separate abuse check: about 10 rapid requests, then about one per second for up to 5 minutes.
+- The separate WAF check: about one request per second for up to 5 minutes, passing at the first plain `403`.
 
 ## Done when
 

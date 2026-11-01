@@ -8,16 +8,16 @@ described in "Testing".
 
 ## Scope
 
-- The kill switch drill, including the restart list.
-- The call limit drill, with the limit lowered and restored afterwards.
-- The pause drill, with a simulated bucket size, for `birth` and sending messages.
+- The kill switch drill, both ways in: the stop topic, and the daily limit lowered then restored.
+  Confirm the email reaches your phone.
+- The WAF check.
 - The takedown check, for an agent with every kind of data.
-- The website check.
+- The website check, and that both distributions show the Free flat-rate plan.
 - The census check, a day after deploying.
 - The federation check, against a fake second world.
+- That the lifecycle rules exist on the deployed bucket.
 - The smoke script over every route.
 - Replace the placeholder constitution with the owner's text.
-- The metric check, about two days after first deploy.
 - Confirm the registrant email is verified.
 
 ## Done when

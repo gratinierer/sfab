@@ -32,11 +32,11 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | Each plan covers one distribution with up to one apex domain, and an account can have 3 Free plans | docs | [plans] | 2026-11-01 |
 | Free allows 5 cache behaviors | docs | [plans] | 2026-11-01 |
 | Two plans can share one apex domain, such as `<domain>` and `api.<domain>` | memory | Not stated by AWS; the first deploy proves it | 2026-11-01 |
-| `CachingOptimized` is accepted in a cache behavior on Free | memory | Not stated by AWS; the first deploy proves it | 2026-11-01 |
-| `CachingOptimized` leaves query strings out of its cache key | memory | | 2026-11-01 |
+| `CachingOptimized` leaves query strings out of its cache key, with a 24-hour default TTL | docs | [cache-policies], the reviewer's reading | 2026-11-01 |
 | A private S3 origin doesn't add `index.html` to a folder path | memory | | 2026-11-01 |
 | `CachingDisabled` is accepted on Free | memory | Not stated by AWS; issue 01 of story `2-identity-api` proves it | 2026-11-01 |
-| Port 80 can't be closed, and `HTTPS_ONLY` answers `http://` with `403` | memory | Issue 01 of story `2-identity-api` proves it | 2026-11-01 |
+| `HTTPS_ONLY` answers `http://` with `403` | docs | [https-viewers], the reviewer's reading; issue 01 of story `2-identity-api` proves it | 2026-11-01 |
+| Port 80 can't be closed on a distribution | memory | | 2026-11-01 |
 | A new account may need Support verification before creating CloudFront resources | forum | re:Post search summaries | 2026-11-01 |
 
 ## WAF
@@ -83,13 +83,16 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | S3 lifecycle rules match the start of a path or an object tag, with no wildcard in the middle | memory | | 2026-11-01 |
 | A listing returns up to 1,000 keys per request, with each object's size | memory | | 2026-11-01 |
 | An alarm with a period of at least one hour can evaluate up to 7 days | docs | [alarms] | 2026-11-01 |
-| A one-day alarm period truly rolls, rather than following the calendar day | memory | Not found in what was read; the call limit drill shows it | 2026-11-01 |
-| An alarm treating missing data as not breaching returns to OK when a paused Lambda reports nothing | memory | The call limit drill shows it | 2026-11-01 |
+| An alarm is evaluated every minute over a sliding window by default, or a wall clock window if set | docs | [alarm-evaluation], [alarm-window] | 2026-11-01 |
+| An alarm acts only when its state changes | docs | [alarms] | 2026-11-01 |
+| The missing-data setting is ignored when enough older real datapoints exist, and an alarm may re-evaluate old data after a metric stops | docs | [alarms-missing] | 2026-11-01 |
 | A standard alarm costs $0.10 per metric per month, with 10 free | docs | [cw-pricing], from search results | 2026-11-01 |
 | Lambda `Invocations` equals the requests billed, and excludes throttled invocations | docs | [lambda-metrics] | 2026-11-01 |
 | API Gateway `Count` is "the total number API requests", without saying if rejected or throttled requests count | docs | [apigw-metrics]; issue 02 of story `2-identity-api` tests it | 2026-11-01 |
+| API Gateway's account-level limit is about 10,000 requests per second | memory | | 2026-11-01 |
 | API Gateway's per-API metrics are sent at one-minute periods, and are free | docs | [apigw-monitoring], [cw-pricing], from search results | 2026-11-01 |
 | DynamoDB on-demand writes cost about $0.625 per million | docs | [dynamodb-pricing], from search results | 2026-11-01 |
+| AWS Cost Anomaly Detection is free | memory | | 2026-11-01 |
 | Domain charges appear under the service name "Amazon Registrar" | memory | The first purchase's bill decides | 2026-11-01 |
 | Updating a budget replaces all of it, so a filter must be sent again | memory | | 2026-11-01 |
 | A hosted zone costs about $0.50 per month | memory | | 2026-11-01 |
@@ -108,6 +111,11 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 [rest-api-origin]: https://github.com/aws/aws-cdk/blob/v2.275.0/packages/aws-cdk-lib/aws-cloudfront-origins/lib/rest-api-origin.ts
 [cdk-behavior]: https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_cloudfront.BehaviorOptions.html
 [domain-register]: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/domain-register.html
+[alarm-evaluation]: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/alarm-evaluation.html
+[alarm-window]: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/alarm-evaluation-window.html
+[alarms-missing]: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/alarms-and-missing-data.html
+[cache-policies]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html
+[https-viewers]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-https-viewers-to-cloudfront.html
 [alarms]: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html
 [cw-pricing]: https://aws.amazon.com/cloudwatch/pricing/
 [lambda-metrics]: https://docs.aws.amazon.com/lambda/latest/dg/monitoring-metrics-types.html

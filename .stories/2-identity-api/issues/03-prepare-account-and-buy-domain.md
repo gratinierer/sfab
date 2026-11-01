@@ -10,6 +10,8 @@ deploy". They need the owner's AWS account and card.
 - Decide `domain_name`.
 - Set up the dedicated account in `us-east-1` on the Paid plan, with a Lambda concurrency quota of
   at least 105.
+- Secure it: MFA on the root and your user, no long-lived access keys, and only `aws login`.
+- Switch on AWS Cost Anomaly Detection, emailing an address you read on your phone.
 - Run `aws login` and `cdk bootstrap aws://<account_id>/us-east-1`.
 - Buy the domain in the Route 53 console, with WHOIS privacy and auto-renew on, and follow any
   registrant verification email.
@@ -23,3 +25,4 @@ it in the budget's filter, so record it under `## Comments` below.
 
 - The console shows the domain registered, with no verification pending.
 - The hosted zone's ID and the charge's service name are known.
+- MFA and anomaly detection are on.

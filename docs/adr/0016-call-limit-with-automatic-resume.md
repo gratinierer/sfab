@@ -1,5 +1,7 @@
 # A call limit pauses the API and resumes by itself
 
+Status: Superseded by ADR-0017
+
 Budget data can lag by a day or more, so on its own the budget stop lets a flood run up about $24 before it fires. A CloudWatch alarm on the API Lambda's `Invocations` trips at 100,000 calls per 24 hours, flips WAF to Block within minutes, and reopens when the alarm clears, which cuts a flood's cost to about $1-2 a day. The budget stop stays, stays manual and always wins, because calls vary in price and stored data costs money too. This is the one exception to "restarting is never automatic", because the daily limit caps what each day can cost. These figures are estimates, and none of this has been tested.
 
 ## Considered Options

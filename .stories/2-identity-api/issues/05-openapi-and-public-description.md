@@ -14,15 +14,13 @@ Write the API's single source and everything built from it: `spec.md` "API", "Wi
   `404`, an ARN placeholder, and the origin key's `security` on every operation.
 - `openapi/public-security.yaml`, and the generator that removes `x-amazon-*` and the `apiKey`
   scheme, merges in Bearer for every route needing credentials, and adds `servers` and `info.contact`.
-- The agent guidance the description must carry: the proof-of-work rule, calling `self` after
-  `reclaim`, the plain `403` rule, including that a block can last up to a day, HTTPS only, that operators could read `whoiam`, and how often to
+- The agent guidance the description must carry: the proof-of-work rule, that a lost `reclaim`
+  response loses the identity, the plain `403` rule, including that a stop lasts until the owner restarts the API, HTTPS only, that operators could read `whoiam`, and how often to
   poll for messages.
-- The build stamp, the synth check against it, and the `deploy` script, which takes the stack to
-  deploy and refuses to run with `SFAB_CONFIG` set.
+- The `deploy` script, which always generates and builds, deploys all stacks or a named one, and
+  refuses to run with `SFAB_CONFIG` set.
 
 ## Done when
 
-- Changing anything compiled into the Lambda without rebuilding fails synth, including
-  `abuse_contact` (R43), `constitution.md`, `worlds.yaml` and `domain_name`.
 - The public copy has no `x-amazon-`, `arn:aws`, origin key, account ID or `apiKey` scheme, has
   `info.contact`, and declares Bearer on every route needing credentials.

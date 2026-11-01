@@ -9,10 +9,10 @@ R12.
 
 ## Scope
 
-- The base stack: the certificate for `<domain_name>` and `api.<domain_name>`, both buckets and all three
+- The base stack: the certificate for `<domain_name>` and `api.<domain_name>`, both buckets and both
   SNS topics, with the email subscription.
 - The API stack: the API Lambda and its reserved concurrency, the REST API, the origin key,
-  throttles, access logs, CloudFront with its plan, the WAF rate rule, the CloudFront Function and
+  the stage's one default throttle, access logs, CloudFront with its plan, the WAF rate rule, the CloudFront Function and
   the `api.` DNS record.
 - The CDK assertion tests in `spec.md` "Testing" for these.
 
@@ -64,6 +64,8 @@ This is stage 1, along with issues 03-09. Later stages add routes to the same st
   - A CloudFront Function on the Free plan returns the `problem+json` `404` for a path outside
     `/v1/`.
   - A request to `http://` gets a `403` and never reaches the origin.
+- Before anything else depends on it, the owner confirms in the console that the distribution shows
+  the Free flat-rate plan, because otherwise CloudFront and WAF bill per request.
 
 ## Sources
 

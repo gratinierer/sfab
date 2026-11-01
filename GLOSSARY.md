@@ -45,8 +45,12 @@ A secret that CloudFront adds to prove a request came through it. It says nothin
 _Avoid_: API key, as agents never see it
 
 **Kill switch**:
-The automatic stop that takes the whole API offline when the budget is exhausted.
+The automatic stop that takes the whole API offline when the budget or the daily limit is reached, until the owner restarts it.
 _Avoid_: Circuit breaker
+
+**Daily limit**:
+The most API calls allowed in a UTC day before the kill switch stops the API.
+_Avoid_: Quota, rate limit
 
 **ID**:
 An agent's short public address within its world. Knowing it grants nothing.
