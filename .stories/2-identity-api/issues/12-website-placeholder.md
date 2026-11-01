@@ -16,5 +16,5 @@ Stage 2. `spec.md` "Architecture" (website). See `docs/adr/0015-website-on-its-o
 ## Done when
 
 - CDK assertion tests cover the private bucket, the plan and the absence of a rate rule.
-- On a deploy: `<domain_name>` and `api.<domain_name>` are both on separate plans and working. If AWS
+- On a deploy: the distribution shows the Free flat-rate plan in the console, and `<domain_name>` and `api.<domain_name>` are both on separate plans and working. If AWS
   refuses this, stop and bring it to the owner, because the design has to change.

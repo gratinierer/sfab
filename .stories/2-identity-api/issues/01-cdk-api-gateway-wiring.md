@@ -9,16 +9,18 @@ R12.
 
 ## Scope
 
-- The base stack: the certificate for `<domain_name>` and `api.<domain_name>`, both buckets and both
-  SNS topics, with the email subscription.
+- The base stack: the certificate for `<domain_name>` and `api.<domain_name>`, both buckets, both
+  SNS topics with the email subscription, and both budgets, as in `spec.md` "Abuse and cost controls",
+  using the service name recorded in issue 03. Confirm the filter in the console's budget preview.
 - The API stack: the API Lambda and its reserved concurrency, the REST API, the origin key,
   the stage's one default throttle, access logs, CloudFront with its plan, the WAF rate rule, the CloudFront Function and
   the `api.` DNS record.
 - The CDK assertion tests in `spec.md` "Testing" for these.
 
 The code is agent work. The deploy needs the owner, because this container has no AWS credentials,
-so the owner runs steps 4 and 5 of `spec.md` "First deploy", which also gives the proofs below.
-The API has no kill switch until issue 07. Keep its URL private until the public launch.
+so the owner runs steps 4 to 6 of `spec.md` "First deploy", which also gives the proofs below.
+The API has alert emails from this deploy, but no automatic stop until issue 07, which is the very next
+deploy. Keep its URL unpublished until the public launch.
 
 This is stage 1, along with issues 03-09. Later stages add routes to the same stacks.
 
@@ -50,7 +52,8 @@ This is stage 1, along with issues 03-09. Later stages add routes to the same st
 
 - Every route reaches the API Lambda after a first deploy on a fresh account.
 - An edit to `identity.yaml` reaches the `v1` stage on the next `cdk deploy`.
-- CDK assertion tests cover the invoke permission and the CloudWatch role.
+- CDK assertion tests cover the invoke permission, the CloudWatch role, and both budgets' alerts and
+  filters.
 - On the first deploy through CloudFront, these are proven. AWS's docs support each, but none
   is tested, and the second isn't stated outright:
   - `GET /v1/identity/self` receives `Authorization` at the origin.

@@ -307,7 +307,8 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0011-no-outbound
   month (from memory), and the zone's ID goes in the config as `hosted_zone_id`. See
   `docs/adr/0007-manual-domain-two-stacks.md`. Registrations and renewals are non-refundable.
 - **Stacks:** the base stack holds the TLS certificate for `<domain_name>` and `api.<domain_name>`,
-  which must be in `us-east-1`, both buckets with their lifecycle rules, and both SNS topics. The API
+  which must be in `us-east-1`, both buckets with their lifecycle rules, both SNS topics and both
+  budgets, so the alerts exist before anything can be spent. The API
   stack holds the API and everything that protects it, including the `api.` DNS record. A rollback of
   the API stack can't touch what's in the base stack. The website stack is described next.
 - **Website:** a private S3 bucket behind a second CloudFront distribution on its own Free plan, in
@@ -593,8 +594,8 @@ Logs are the most likely place for a claim to leak.
   bucket removal policies, the `messages/` and `federation/` lifecycle rules, the `REGIONAL` endpoint
   type, the distribution's cache and origin request policies, viewer protocol and allowed methods, the
   API key required by every operation in `identity.yaml` (`SpecRestApi` creates no method resources to
-  check), both plan subscriptions, no rate rule on the website, and that buckets and topics are only in
-  the base stack, apart from the website's own bucket. Also: the email subscription, the SNS topic
+  check), both plan subscriptions, no rate rule on the website, and that buckets, topics and budgets are
+  only in the base stack, apart from the website's own bucket. Also: the email subscription, the SNS topic
   policies, the alert budget's four thresholds and the 50,000-call warning all targeting the alerts topic and not the
   stop topic, the 5-minute and daily schedules, both budgets' `Metrics` and `FilterExpression`, and permissions that keep each function's rights out of the others.
 - A test on faked S3 calls that a takedown leaves nothing behind for an agent with every kind of
@@ -692,20 +693,22 @@ failure. Each step needs the one before it:
    the console shows no verification pending. Copy the hosted zone's ID into the config.
 3. Wait for the domain charge to appear in Cost Explorer, which can take up to a day, and put
    its service name in the budget's filter in the CDK code. From memory it's "Amazon Registrar",
-   but the bill decides. The API stack holds the budget, so this comes before deploying it.
+   but the bill decides. The base stack holds the budgets, so this comes before deploying it.
 4. Deploy the base stack, whose certificate covers `<domain_name>` and `api.<domain_name>`, and click
-   the confirmation link in the SNS email. If this stack fails, fix the cause and deploy again: bucket
+   the confirmation link in the SNS email, so the alert budget can reach you. The stop budget publishes
+   to the stop topic, but nothing listens until the kill switch arrives. If this stack fails, fix the cause and deploy again: bucket
    names are generated, so they can't collide, and any empty bucket left behind can be deleted by hand.
 5. Deploy the API stack. If it fails and rolls back, the base stack is untouched, so fix the
    cause and deploy again. If it fails with "Your account must be verified before you can add
    new CloudFront resources", open an AWS Support case, wait for the answer, and deploy again.
    Forum reports describe this for new accounts; AWS doesn't document it.
-6. Deploy the website stack.
-7. **Check that both distributions show the Free flat-rate plan in the console.** If a plan isn't
+6. **Check that the distribution shows the Free flat-rate plan in the console.** If it isn't
    attached, CloudFront and WAF bill per request.
-8. Run the checks that "Done" lists.
+7. Build and deploy the kill switch as the very next deploy, because until then only the alert emails
+   and the throttle protect the bill. At the throttle, that's at most about $15 a day.
 
-After this, each stage in "Order" deploys all stacks with the `deploy` script.
+After this, each stage in "Order" deploys all stacks with the `deploy` script. Stage 2 adds the website
+stack, with the same plan check for its distribution, and "Done" lists the checks for the end.
 
 ## Prerequisites
 
