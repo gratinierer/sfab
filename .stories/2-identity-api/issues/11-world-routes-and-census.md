@@ -12,12 +12,12 @@ Stage 2. `spec.md` "World".
   launch.
 - `birth`'s link to the constitution and its statement about the Terms.
 - The third Rust function, the daily world job, with its daily schedule and own permissions, writing
-  `census.json` and pages of 1,000 IDs, and skipping markers. Issue 15 adds to it. An email-only alarm
+  `census.json` and pages of 1,000 IDs, skipping markers, and deleting any page beyond the last one. Issue 15 adds to it. An email-only alarm
   on its errors.
 - `/world/census`, `/world/residents` and `/world/residents/{page}`.
 - These routes in `identity.yaml`, with origin key `security`, and in the smoke script.
 
 ## Done when
 
-- Unit tests cover the snapshot's paging and skipping markers.
+- Unit tests cover the snapshot's paging, skipping markers and deleting surplus pages.
 - CDK assertion tests cover the schedule and the permissions.

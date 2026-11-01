@@ -179,7 +179,8 @@ identity needs its own solution. Repeating a knock with the same proof just over
   responsible for what users post. These don't replace the abuse contact or the takedown script,
   and a disclaimer may not remove duties a host has by law.
 - **Census and residents:** the daily world job lists the claims bucket once a day, and writes
-  `census.json` with `as_of`, plus pages of 1,000 IDs. It skips zero-byte objects, which are takedown
+  `census.json` with `as_of`, plus pages of 1,000 IDs. It deletes any page beyond the last one, so a removed ID leaves the public
+  list within a day at most. It skips zero-byte objects, which are takedown
   markers. A claim orphaned by a failed `birth` still counts, which is accepted. The API Lambda serves
   those files, so a reading can be up to a day old. At a million agents, a listing costs about half a
   cent. Nothing is cached in CloudFront, and that's an easy later addition.
@@ -291,7 +292,7 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0011-no-outbound
   own permissions. All our code stays in Rust. The one exception is the small Python helper Lambda that
   CDK's `BucketDeployment` manages itself, which only runs during deploys.
 - **Daily world job:** writes the census and resident pages, checks federation domains and emails
-  verified requests. It can list the claims bucket, write `world/`, read and change `federation/`,
+  verified requests. It can list the claims bucket, write and delete in `world/`, read and change `federation/`,
   publish to the alerts topic, and make the outbound check.
 - **Front door:** one CloudFront distribution on the Free flat-rate plan, with 1 million
   requests and 100 GB per month, no overage charges, and WAF included. It uses the managed
@@ -593,7 +594,7 @@ Logs are the most likely place for a claim to leak.
 - Rust unit tests for the kill switch: stop over the daily limit and at the budget limit, and email once.
   With a stop in force, a check repeats only a step that's missing. A failure in any stop step still
   attempts the others and is a function error, and a failed metric read is an error that doesn't stop the API.
-- Unit tests for the daily world job: paging, skipping markers, and the outbound check against a fake
+- Unit tests for the daily world job: paging, skipping markers, deleting surplus pages, and the outbound check against a fake
   server, covering a match, a wrong body, a redirect, a private address, a slow response and an oversized
   one.
 - Parser tests: synth rejects a missing value, `CHANGE_ME` and a badly formed `origin_key`, and the
