@@ -31,10 +31,16 @@ config.
 | `GET /openapi.yaml` | Anonymous | API description, including the proof-of-work rules |
 
 Errors use `application/problem+json`, from the Lambda and from API Gateway through gateway
-responses in `identity.yaml` (`DEFAULT_4XX`, `DEFAULT_5XX`, `THROTTLED` and
-`BAD_REQUEST_BODY`).
+responses in `identity.yaml` (`DEFAULT_4XX`, `DEFAULT_5XX`, `THROTTLED`, `BAD_REQUEST_BODY`,
+and `MISSING_AUTHENTICATION_TOKEN`, overridden to a `404` so an unknown route or wrong method
+inside `/v1/` doesn't look like a `403`).
 
-WAF's blocks are the one exception. The Free plan has no custom WAF responses, so the rate
+The exceptions are responses we don't control: WAF's blocks, and AWS's own edge errors, such as
+CloudFront's `494` for oversized headers or `403` for a `GET` with a body, and the `413`. A plain
+`403` from CloudFront gets the same advice below, which is harmless, because retrying a malformed
+request can't succeed anyway.
+
+The Free plan has no custom WAF responses, so the rate
 limit and the kill switch both give WAF's plain `403`, with no `problem+json` body and no
 `Retry-After`. API Gateway's own `403`s use `problem+json`, so the API description tells
 agents: **a `403` that isn't `problem+json` means you're blocked, by the rate limit or because
@@ -66,8 +72,8 @@ API responses also send `Cache-Control: no-store`.
 | `200` | `evolve`, `self`, `reclaim` or `openapi.yaml` succeeded |
 | `400` | Malformed request, `whoiam` over the limit whether caught by the gateway or the Lambda, bad proof or stale timestamp; proof failures include `required_bits` and the server's current time |
 | `401` | Missing or wrong credentials, including an expired recovery code; an unknown UUID gets the same response, so UUIDs can't be probed |
-| `403` | Without `problem+json`: blocked by WAF's rate rule or the kill switch, so wait at least 5 minutes |
-| `404` | Valid claim with no identity, or a path outside `/v1/` |
+| `403` | Without `problem+json`: blocked by WAF's rate rule or the kill switch, so wait at least 5 minutes. With `problem+json`: a brief origin key rotation, so retry |
+| `404` | Valid claim with no identity, an unknown route or method inside `/v1/`, or a path outside `/v1/` |
 | `409` | `birth` replay |
 | `413` | AWS's own response for a body over 10 MB |
 | `429` | Throttled by the gateway, so back off |
@@ -522,8 +528,9 @@ leak.
   because the local router doesn't run the gateway's validator. It also checks the
   `problem+json` format of gateway errors, and that a birth with no proof gets `400` with
   `required_bits`. `self` proves `Authorization` reaches the origin, a path outside `/v1/`
-  must get the CloudFront Function's `404`, and a request straight to `execute-api` must be rejected. It
-  sends about 13 requests, one every 35
+  must get the CloudFront Function's `404`, an unknown route inside `/v1/` must get the gateway's
+  `problem+json` `404`, and a request straight to `execute-api` must be rejected. It
+  sends about 14 requests, one every 35
   seconds to stay safely under the WAF limit, which isn't precise, so a run takes about 8
   minutes. It treats WAF's plain `403` as "blocked, wait and rerun" rather than as a failure.
 - A separate abuse check that sends a quick burst of `birth` requests with no proof. The
