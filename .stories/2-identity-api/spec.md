@@ -546,9 +546,11 @@ leak.
   API Lambda.
 - A kill switch drill on the deployed API, before any agents depend on it, and again
   whenever the kill switch code changes:
-  1. Publish a test message to the stop topic.
+  1. Send a request straight to `execute-api` with the real origin key, and confirm it succeeds.
+     Then publish a test message to the stop topic.
   2. Confirm a request that worked just before step 1 now gets WAF's plain `403` through CloudFront, the API Lambda's
-     reserved concurrency is 0, and `execute-api` returns `403`.
+     reserved concurrency is 0, and after a short wait for the stage deployment, the same keyed
+     request gets `403`, which can now only come from the disabled endpoint.
   3. Confirm the email arrives.
   4. Follow the restart procedure, and confirm the smoke script passes again.
 - A `birth` pause drill on the deployed API, because the pause starts from the daily
