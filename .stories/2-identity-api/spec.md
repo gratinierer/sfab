@@ -503,11 +503,14 @@ A small dedicated Rust function runs the same full stop, whatever triggers it:
 3. Sets `disableExecuteApiEndpoint` on the REST API and deploys the stage, which also closes
    direct access to the origin. AWS documents that this affects all stages and returns
    `403`, and that the change takes effect only after a stage update.
+4. Sets the daily world job's reserved concurrency to 0, because its cost grows with what's stored, not with
+   traffic, so it would otherwise keep spending during a stop. The census, Chronicle, standing and federation
+   emails pause, and missing entries stay missing. The kill switch's own spend check keeps running.
 
 A failure in one step doesn't skip the others, and it's a function error, which fires the errors alarm,
 so the owner hears that a stop is incomplete. All steps can safely run twice, and the function emails
 the owner once, when a stop begins, naming the trigger: daily limit, budget alert or daily spend check. Reserved concurrency of 0 means a stop is in force, so every
-5-minute check makes sure all three steps are in place, and acts only on what's missing, which retries
+5-minute check makes sure all four steps are in place, and acts only on what's missing, which retries
 a failed step. While the steps propagate, agents may briefly get a `5xx`, which already means
 "retry with backoff".
 
@@ -548,18 +551,19 @@ To restart, by hand with the AWS CLI, in this order. Every step can safely be re
    above the budget, raise the budget in the CDK and deploy, and lower it the same way later.
 2. Set the API Lambda's reserved concurrency back to 5. This comes first, because it ends the stop,
    and otherwise the next check would put the other steps back.
-3. Clear `disableExecuteApiEndpoint` and deploy the stage. CloudFront's requests go through
+3. Set the daily world job's reserved concurrency back to 1.
+4. Clear `disableExecuteApiEndpoint` and deploy the stage. CloudFront's requests go through
    this endpoint, so it has to be back before WAF opens.
-4. Set the WAF's default action back to Allow. This comes last, so agents keep getting the
+5. Set the WAF's default action back to Allow. This comes last, so agents keep getting the
    plain `403` until everything behind it works.
-5. Run the smoke script.
+6. Run the smoke script.
 
 Restarting is never automatic. Don't run `cdk deploy` during a stop without running this list
 afterwards, from step 2, because a deploy can reopen part of the API.
 
 ### What it can cost
 
-Costs below use S3 and Lambda prices from memory. Traffic at the daily limit costs about $0.80 a day for
+Costs below use S3 and Lambda prices from memory. The daily world job's cost grows with what's stored, not with traffic, and a stop ends it. Traffic at the daily limit costs about $0.80 a day for
 a mix of all routes, and about $1.71 a day at most, if every call is the most expensive route. So a
 month of hitting the limit every day costs about $24-51, and the $35 budget stop ends that. Budgets
 update every 8-12 hours, plus an unstated billing delay, so the budget stop can lag by a day or more,
@@ -662,8 +666,7 @@ Logs are the most likely place for a claim to leak.
   1. Send a request straight to `execute-api` with the real origin key, and confirm it succeeds.
      Then trigger the stop: publish a test message to the stop topic, or lower the daily limit below
      today's count and deploy.
-  2. Confirm a request that worked just before step 1 now gets WAF's plain `403` through CloudFront, the
-     API Lambda's reserved concurrency is 0, and after a short wait for the stage deployment, the same
+  2. Confirm a request that worked just before step 1 now gets WAF's plain `403` through CloudFront, the API Lambda's and daily world job's reserved concurrency are 0, and after a short wait for the stage deployment, the same
      keyed request gets `403`, which can now only come from the disabled endpoint.
   3. Confirm the email reaches the owner's phone.
   4. Restore the limit, follow the restart list, and confirm the smoke script passes again.
