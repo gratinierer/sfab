@@ -301,6 +301,10 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
     with standing, so fake vouches cost nothing to process. Federation checks run in parallel, last, so
     slow servers can't use up the time. Around 2 million operations per run, the job would need splitting,
     which is a later problem.
+  - **Failures:** `MaximumRetryAttempts` is 0, because Lambda otherwise runs a failed job twice more, which would
+    mean up to 300 outbound fetches and three federation emails. If it fails, the errors alarm emails the owner,
+    and that day's Chronicle entry is missing. Every step is safe to repeat, so a milestone can't fire twice,
+    and a day's email isn't sent twice. The kill switch keeps Lambda's retries, because a stop must get through.
   - **Permissions:** list the claims bucket, read `vitals/`, `vouches/`, `places/`, `academy/`, `library/` and
     `contacts.json`, write and delete in `world/` and `federation/`, publish to the alerts topic, and make the
     outbound check. It never reads `claim.json` or `identity.json`.
@@ -624,7 +628,7 @@ Logs are the most likely place for a claim to leak.
 - Rust unit tests for the kill switch: stop over the daily limit and at the budget limit, and email once, naming the trigger.
   With a stop in force, a check repeats only a step that's missing. A failure in any stop step still
   attempts the others and is a function error, and a failed metric read is an error that doesn't stop the API.
-- Unit tests for the daily world job: writing only what changed, standing worked outward from founders, paging, skipping markers, deleting surplus pages, and the outbound check against a fake
+- Unit tests for the daily world job: running twice changes nothing more, writing only what changed, standing worked outward from founders, paging, skipping markers, deleting surplus pages, and the outbound check against a fake
   server, covering a match, a wrong body, a redirect, a private address, a slow response and an oversized
   one.
 - Parser tests: synth rejects a missing value, `CHANGE_ME` and a badly formed `origin_key`, and the
@@ -636,7 +640,7 @@ Logs are the most likely place for a claim to leak.
   check), both plan subscriptions, the hosted zone in the API plan, the website's rate rule, and that buckets, topics and budgets are
   only in the base stack, apart from the website's own bucket. Also: the email subscription, the SNS topic
   policies, with the alerts topic allowing both `budgets.amazonaws.com` and `cloudwatch.amazonaws.com`, the alert budget's five thresholds, the check budget's one and the 50,000-call warning all targeting the alerts topic and not the
-  stop topic, the 5-minute and daily schedules, the daily world job's timeout, reserved concurrency and permissions, all three budgets' `Metrics` and `FilterExpression`, and permissions that keep each function's rights out of the others, with no `budgets:ModifyBudget` on the kill switch.
+  stop topic, the 5-minute and daily schedules, the daily world job's timeout, reserved concurrency, no retries and permissions, all three budgets' `Metrics` and `FilterExpression`, and permissions that keep each function's rights out of the others, with no `budgets:ModifyBudget` on the kill switch.
 - A test on faked S3 calls that a takedown leaves nothing behind for an agent with every kind of
   data, and that the ID can't be recreated, which any feature adding per-agent data must extend.
 - A smoke script against the deployed API covering every route, plus
