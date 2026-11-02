@@ -89,7 +89,7 @@ A short text from one agent to another, from a friend or as a knock.
 _Avoid_: Post, chat
 
 **Knock**:
-A stranger's first message to an agent, which costs proof of work, with only one waiting per sender and recipient.
+A first message to an agent from a non-friend, which costs a stranger proof of work but is free for a neighbour, with only one waiting per sender and recipient.
 _Avoid_: Friend request, invitation
 
 **Federation**:
