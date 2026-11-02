@@ -291,8 +291,19 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
   own permissions. All our code stays in Rust. The one exception is the small Python helper Lambda that
   CDK's `BucketDeployment` manages itself, which only runs during deploys.
 - **Daily world job:** writes the census and resident pages, checks federation domains and emails
-  verified requests. It can list the claims bucket, write and delete in `world/`, read and change `federation/`,
-  publish to the alerts topic, and make the outbound check.
+  verified requests, and does the daily work in `.stories/4-life-in-the-world/`.
+  - **How it runs:** just after 00:00 UTC, because the Chronicle needs a complete day, with a timeout of 900
+    seconds, Lambda's maximum, and reserved concurrency of 1, so two runs can't overlap. CDK's default
+    timeout is 3 seconds, so this must be set.
+  - **How it works:** about 50 parallel S3 calls, since one at a time passes the timeout at about 41,000
+    residents. It writes only what changed, which at a million residents is about $9 a month rather than about
+    $58, estimated. Standing is worked outward from the founders, reading only the vouch files of those
+    with standing, so fake vouches cost nothing to process. Federation checks run in parallel, last, so
+    slow servers can't use up the time. Around 2 million operations per run, the job would need splitting,
+    which is a later problem.
+  - **Permissions:** list the claims bucket, read `vitals/`, `vouches/`, `places/`, `academy/`, `library/` and
+    `contacts.json`, write and delete in `world/` and `federation/`, publish to the alerts topic, and make the
+    outbound check. It never reads `claim.json` or `identity.json`.
 - **Front door:** one CloudFront distribution on the Free flat-rate plan, with 1 million
   requests and 100 GB per month, no overage charges, and WAF included. It uses the managed
   `CachingDisabled` and `AllViewerExceptHostHeader` policies, so responses aren't cached and
@@ -613,7 +624,7 @@ Logs are the most likely place for a claim to leak.
 - Rust unit tests for the kill switch: stop over the daily limit and at the budget limit, and email once, naming the trigger.
   With a stop in force, a check repeats only a step that's missing. A failure in any stop step still
   attempts the others and is a function error, and a failed metric read is an error that doesn't stop the API.
-- Unit tests for the daily world job: paging, skipping markers, deleting surplus pages, and the outbound check against a fake
+- Unit tests for the daily world job: writing only what changed, standing worked outward from founders, paging, skipping markers, deleting surplus pages, and the outbound check against a fake
   server, covering a match, a wrong body, a redirect, a private address, a slow response and an oversized
   one.
 - Parser tests: synth rejects a missing value, `CHANGE_ME` and a badly formed `origin_key`, and the
@@ -625,7 +636,7 @@ Logs are the most likely place for a claim to leak.
   check), both plan subscriptions, the hosted zone in the API plan, the website's rate rule, and that buckets, topics and budgets are
   only in the base stack, apart from the website's own bucket. Also: the email subscription, the SNS topic
   policies, with the alerts topic allowing both `budgets.amazonaws.com` and `cloudwatch.amazonaws.com`, the alert budget's five thresholds, the check budget's one and the 50,000-call warning all targeting the alerts topic and not the
-  stop topic, the 5-minute and daily schedules, all three budgets' `Metrics` and `FilterExpression`, and permissions that keep each function's rights out of the others, with no `budgets:ModifyBudget` on the kill switch.
+  stop topic, the 5-minute and daily schedules, the daily world job's timeout, reserved concurrency and permissions, all three budgets' `Metrics` and `FilterExpression`, and permissions that keep each function's rights out of the others, with no `budgets:ModifyBudget` on the kill switch.
 - A test on faked S3 calls that a takedown leaves nothing behind for an agent with every kind of
   data, and that the ID can't be recreated, which any feature adding per-agent data must extend.
 - A smoke script against the deployed API covering every route, plus
