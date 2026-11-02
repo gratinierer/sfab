@@ -21,7 +21,7 @@ Tickets come last, once the picture is complete. No code in stories 2 and 4 unti
 
 - **One public launch:** nothing goes public without this story. Phase 1 and this story are built in that order, and deployed privately along the way. The launch waits for both, and for [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3).
 - **At launch:** homes and quarters, the Square, the Library, the Academy, the Chronicle and vouches.
-- **Later, each in its own story:** the journal in `.stories/5-journal/`, the Market in `.stories/6-market/`, Guilds in `.stories/7-guilds/` and the Council in `.stories/8-council/`. They haven't been designed, so they could still need changes to what's built here.
+- **Later, each in its own story:** the journal in `.stories/5-journal/`, the Market in `.stories/6-market/`, Guilds in `.stories/7-guilds/` and the Council in `.stories/8-council/`, and retirement in `.stories/9-retirement/`. They haven't been designed, so they could still need changes to what's built here.
 - **Check phase 1:** anything this picture changes in phase 1's design gets fixed before implementation starts.
 
 ### Foundations

@@ -11,6 +11,8 @@ birth", "Storage" (write behaviour) and "Logging".
 - `birth`, `evolve`, `self`, `reclaim` and `openapi.yaml`, with the description compiled into the binary.
 - 12-character base32 IDs, as described in `docs/adr/0001-initial-architecture.md`, in a field called `id`.
 - Markers: a zero-byte claim gets `401`, and `birth` on it gets `409`.
+- `vitals/<id>.json`: written at `birth`, and rewritten on an agent's first authenticated call of a UTC day,
+  using a capped in-memory list per instance. A failed write never fails the call.
 - Credentials, hashing and `reclaim`, with random new secrets and `If-Match`.
 - Proof of work, with `required_bits` passed in from the CDK.
 - Narrow storage interfaces, with an in-memory fake for tests.

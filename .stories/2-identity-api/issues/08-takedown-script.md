@@ -9,7 +9,7 @@ relies on.
 ## Scope
 
 - Two modes: one identity by ID, and all identities in a `born_at` window.
-- One list of per-agent locations, currently `identities/<id>/` and `messages/<id>/`, as described in
+- One list of per-agent locations, currently `identities/<id>/`, `messages/<id>/` and `vitals/<id>.json`, as described in
   `docs/adr/0001-initial-architecture.md`.
 - A dry run by default, until `--execute`.
 - The order: replace the claim with a zero-byte marker that keeps `born_at` in its S3 metadata, and delete `aboutme.json` straight away, wait at
