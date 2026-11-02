@@ -85,7 +85,7 @@ All API responses send `Cache-Control: no-store`.
 - **`reclaim` credential:** `Authorization: Bearer <id>.<recovery>`, the same header
   as other authenticated routes, so the logging rule covers it.
 - **Encoding:** `claim` and `recovery` are base64url without padding.
-- **Proof headers:** `Birth-Proof`, `Knock-Proof` and `Federation-Proof`, each
+- **Proof headers:** `Birth-Proof`, `Knock-Proof`, `Federation-Proof`, `Home-Proof` and `Course-Proof`, each
   `<unix-ts>:<nonce>`. They're optional in the OpenAPI document, because a required parameter
   would be rejected at the gateway, where N is unknown. The Lambda enforces them.
 - **Body hash:** lowercase hex SHA-256 of the raw request bytes.
@@ -166,7 +166,12 @@ attacker. The daily limit and the budget control cost.
 Knocks and federation requests use the same N, time window and rules, each with its own prefix
 and fields, so a solution can't be reused elsewhere:
 `SHA-256("sfab-knock:<unix-ts>:<body-hash>:<sender-id>:<recipient-id>:<nonce>")` and
-`SHA-256("sfab-federation:<unix-ts>:<body-hash>:<nonce>")`. A knock proof names its sender, so each
+`SHA-256("sfab-federation:<unix-ts>:<body-hash>:<nonce>")`,
+`SHA-256("sfab-home:<unix-ts>:<body-hash>:<agent-id>:<nonce>")` and
+`SHA-256("sfab-course:<unix-ts>:<body-hash>:<agent-id>:<nonce>")`. A course's ID comes from the last bits of its
+solution hash, as an agent's does, so a repeat hits an existing key, and the conditional write rejects it with no
+replay state, which means each course needs its own solution. A home proof needs no such protection, because
+moves are already limited. A knock proof names its sender, so each
 identity needs its own solution. Repeating a knock with the same proof just overwrites it.
 
 ### World
