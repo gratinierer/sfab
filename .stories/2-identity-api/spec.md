@@ -193,7 +193,8 @@ publishable field with true or false, so it explains itself:
 `{"name": false, "whoiam": false, "friends": false}`. `PUT` replaces it whole, like `evolve`.
 
 `aboutme.json` is a prepared copy holding only the public fields, so `GET /identity/{id}/aboutme` is
-a single S3 read with no merging. An unpublished, unknown or taken-down agent gets the same `404`.
+normally a single S3 read. Only the API Lambda ever writes it. If an agent publishes its received vouches,
+which change daily, the route makes one more read of `world/vouches/<id>.json`, and adds them. An unpublished, unknown or taken-down agent gets the same `404`.
 Public fields have the same limits as private ones, including 32 KB for `whoiam`.
 
 The two writes are ordered so a failure leaves data private. To make a field private, rewrite or
