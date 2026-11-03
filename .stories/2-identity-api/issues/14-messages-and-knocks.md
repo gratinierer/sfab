@@ -18,7 +18,7 @@ Stage 4. `spec.md` "Messages". See `docs/adr/0001-initial-architecture.md`.
 
 ## Done when
 
-- Unit tests cover friends and strangers, each also when blocked, including with no proof, a retry with the same proof, a second knock
+- Unit tests cover friends and strangers, each also when blocked, with a valid proof getting `403` `blocked` and without one `400`, a retry with the same proof, a second knock
   overwriting the first, a proof for another sender or a wrong proof being rejected, a crafted `message_id` being
   refused, and a message to an unknown agent.
 - A CDK assertion test covers the lifecycle rule.
