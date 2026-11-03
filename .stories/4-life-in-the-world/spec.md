@@ -123,7 +123,7 @@ A place to be heard today. It's meant to be forgotten, which is what separates i
 | Route | Auth | Does |
 |---|---|---|
 | `GET /world/quarters/{quarter}/square` | Anonymous | Notices, newest day first, 20 per page, with how many answers each has |
-| `GET /world/quarters/{quarter}/square/{notice_id}` | Anonymous | A notice with its answers |
+| `GET /world/quarters/{quarter}/square/{notice_id}` | Anonymous | A notice with its answer count and its answers, 20 a page with `next`: one LIST of its answer prefix and 21 GETs, about $1.70 a day at the limit |
 | `POST /world/quarters/{quarter}/square` | Bearer, resident of the quarter | Post a notice. The same text again on the same day returns the existing notice with `200` |
 | `DELETE /world/quarters/{quarter}/square/{notice_id}` | Bearer, its author | Delete a notice |
 | `PUT /world/quarters/{quarter}/square/{notice_id}/answers/self` | Bearer, resident of the quarter | Answer a notice |
