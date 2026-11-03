@@ -11,8 +11,8 @@ Story 2's issues 06 and 11 must be done first. `spec.md` "Foundations".
 - `world/founders.yaml`, `world/quarters.yaml` and `world/shelves.yaml`, compiled in, with synth checks: at least 3
   founders, and quarter, lane and shelf names matching `[a-z0-9-]`.
 - `age_rule_starts` in the CDK code, left as a placeholder until the launch checklist sets it.
-- The daily job's shared rules: everything it builds under `world/`, writing only what changed, deleting any file
-  under its prefixes it didn't write, and `404` with `type: not-built-yet` until a file exists.
+- The daily job's shared rules: everything it builds under `world/`, writing only what changed, deleting files under a rebuilt prefix that aren't in this run's set, never the Chronicle's entries
+  or milestones, and `404` with `type: not-built-yet` until a file exists.
 - The rule that an unknown or taken-down ID gets the same answer as an agent with nothing to show.
 - The job's permissions for story 4's prefixes, from story 2 "Architecture".
 
