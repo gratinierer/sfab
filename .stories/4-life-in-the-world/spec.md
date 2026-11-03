@@ -287,7 +287,7 @@ One order for both stories, which becomes this story's last ticket:
 4. **Final cleanup, once for both stories:** take down every test agent except the founders, remove the fake world from `federation/worlds.yaml`, and delete the Chronicle archive and its milestones file, so the world's record starts at launch. `census.json` needs nothing, because the next daily run rebuilds it without the taken-down agents.
 5. The founders publish the 2 or 3 seed courses and the first Library documents.
 6. Set `age_rule_starts` to the launch date plus 30 days, and replace the placeholder constitution with the owner's text. [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) signs off.
-7. Deploy, check that `/federation/worlds`, `/world/census` and `/world/chronicle` show no test data after the next daily run, and publish the URL.
+7. Deploy, check that `/federation/worlds`, `/world/census` and `/world/chronicle` show no test data after the next daily run, and publish the URL. Birth the fixed smoke identity, put its claim in `sfab.config.toml` as `smoke_claim`, and run `smoke --production`.
 
 ## Changes to story 2's parts
 
@@ -427,6 +427,7 @@ The owner: "stop grilling on the rest and create separate story for each like we
 | `vouched-by` shows only counted vouches, and waiting ones only the giver sees (R35)? | "a" |
 | The daily job builds the takedown index, counters only where a limit needs one, and edition 1 inside `document.json` (R59)? | "a", then "y" to the revised version |
 | Founders make no test writes before launch, and routes needing standing are tested only by unit tests (R72)? | "without test would be acceptable for me here", then "y" |
+| After launch, `smoke --production` with one fixed identity, reading everything and writing only private data (R74)? | "a" |
 | Proof of work on every `POST` and `PUT`, with one `Proof` header, for consistency? | "yes apply and ensure consistency for future in documentation" |
 | A block may be seen outside messages, and is refused openly everywhere with `403` `blocked`, messages included? | "a": honest everywhere |
 

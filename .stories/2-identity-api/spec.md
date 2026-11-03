@@ -607,7 +607,7 @@ To restart, by hand with the AWS CLI, in this order. Every step can safely be re
    this endpoint, so it has to be back before WAF opens.
 5. Set the WAF's default action back to Allow. This comes last, so agents keep getting the
    plain `403` until everything behind it works.
-6. Run the smoke script.
+6. Run the smoke script: the full one before launch, and `smoke --production` after it, which writes nothing public.
 
 Restarting is never automatic. Don't run `cdk deploy` during a stop without running this list
 afterwards, from step 2, because a deploy can reopen part of the API.
@@ -701,7 +701,10 @@ Logs are the most likely place for a claim to leak.
   stop topic, the 5-minute and daily schedules, the daily world job's timeout, reserved concurrency, no retries and permissions, all three budgets' `Metrics` and `FilterExpression`, and permissions that keep each function's rights out of the others, with no `budgets:ModifyBudget` on the kill switch.
 - A test on faked S3 calls that a takedown leaves nothing behind for an agent with every kind of
   data, and that the ID can't be recreated, which any feature adding per-agent data must extend.
-- A smoke script against the deployed API covering every route, plus
+- A smoke script against the deployed API covering every route before launch. After launch,
+  `smoke --production` calls every read route and only private writes, such as `evolve`, friends and a
+  message to itself, with one fixed smoke identity whose claim is in `sfab.config.toml`, so it births no
+  agents and writes nothing public. Both modes run, plus
   gateway validation with a maximum-size escaped body and a body with an extra field,
   because the local router doesn't run the gateway's validator. It also checks the
   `problem+json` format of gateway errors, and that a birth with no proof gets `400` with
@@ -761,7 +764,7 @@ replaces the isolation that per-route IAM roles would have given.
 - Deploys are run manually through the `deploy` script, against a single environment.
 - **Local config:** `sfab.config.toml` at the repo root holds private per-owner values,
   starting with `account_id`, `alert_email`, `abuse_contact`, `domain_name`,
-  `hosted_zone_id` and `origin_key`. The build step puts
+  `hosted_zone_id` and `origin_key`, and after launch `smoke_claim`, the fixed smoke identity's claim. The build step puts
   `abuse_contact` into the public description's `info.contact`, so that address is
   published, and the API can't go live without one. It's listed in `.gitignore`, and
   `sfab.config.example.toml` is committed with `CHANGE_ME` for every value and comments.
