@@ -533,7 +533,8 @@ A small dedicated Rust function runs the same full stop, whatever triggers it:
    `403`, and that the change takes effect only after a stage update.
 4. Sets the daily world job's reserved concurrency to 0, because its cost grows with what's stored, not with
    traffic, so it would otherwise keep spending during a stop. The census, Chronicle, standing and federation
-   emails pause, and missing entries stay missing. The kill switch's own spend check keeps running.
+   emails pause, and missing entries stay missing. The kill switch's own spend check keeps running. This
+   step arrives with the job, in issue 11, so until then the kill switch has three steps.
 
 A failure in one step doesn't skip the others, and it's a function error, which fires the errors alarm,
 so the owner hears that a stop is incomplete. All steps can safely run twice, and the function emails

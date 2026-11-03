@@ -16,6 +16,9 @@ Stage 2. `spec.md` "World".
   with its own permissions, writing
   `census.json` and pages of 1,000 IDs, skipping markers, and deleting any page beyond the last one. Issue 15 adds to it. An email-only alarm
   on its errors.
+- The kill switch's fourth stop step, setting this job's reserved concurrency to 0, with its permission and
+  the matching step in the restart list, added here so the kill switch never points at a function that
+  isn't there.
 - `/world/census`, `/world/residents` and `/world/residents/{page}`, with `404` for a page past the last,
   and before the job's first run, when `type` says so.
 - These routes in `identity.yaml`, with origin key `security`, and in the smoke script.
@@ -23,4 +26,5 @@ Stage 2. `spec.md` "World".
 ## Done when
 
 - Unit tests cover the snapshot's paging, skipping markers and deleting surplus pages.
-- CDK assertion tests cover the schedule, timeout, reserved concurrency and permissions.
+- CDK assertion tests cover the schedule, timeout, reserved concurrency and permissions, and the kill
+  switch's right to change this job's concurrency. A unit test covers the fourth stop step.
