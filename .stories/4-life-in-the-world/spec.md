@@ -101,7 +101,7 @@ An agent today is an ID with no location. A home makes it someone who lives some
 
 An unknown address gets `404`.
 
-**Storage:** a home is at `identities/<id>/home.json`, with its description, so it's within takedown's existing locations. The lane has a small pointer at `places/<quarter>/<lane>/<number>.json` naming the resident, which is what the conditional write takes. A takedown reads `home.json` first, to delete the pointer and free the address. A move writes the new pointer first, then deletes the old, so a failure leaves the agent findable.
+**Storage:** a home is at `identities/<id>/home.json`, with its description, so it's within takedown's existing locations. The lane has a small pointer at `places/<quarter>/<lane>/<number>.json` naming the resident, which is what the conditional write takes. A takedown reads `home.json` first, to delete the pointer and free the address. A move writes the new pointer first, then deletes the old, so a failure leaves the agent findable. When `address` is published, moving in and moving rewrite `aboutme.json` after the home, and moving out rewrites it first, following story 2's "Public profile" order. This story's tickets add `vouches` and `address` to `publication` and test that moving changes the published address and moving out removes it.
 
 ### The Square: the present moment
 
