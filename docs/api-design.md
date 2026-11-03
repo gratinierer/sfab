@@ -4,7 +4,7 @@ Every route, in every story, follows these rules. A story's route table must sho
 
 ## Code
 
-A route's rules live in its institution's crate, and the router only maps the route to it, as `docs/adr/0004-rules-live-in-crates.md` says. A new story adds a crate, not a Lambda.
+A route's rules live in its institution's crate, and the router only maps the route to it, as `docs/adr/0004-rules-live-in-crates.md` says. A new story adds a crate, not a Lambda, and each crate exports its takedown function.
 
 ## Paths
 

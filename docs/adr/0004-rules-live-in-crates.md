@@ -16,11 +16,13 @@ lambda/            Cargo workspace
   api/             the axum router: maps each route to a crate, and nothing else
   job/             the daily world job, a second binary using the same crates
   killswitch/      the kill switch, with no world rules
+  takedown/        the owner's takedown program, calling each crate's takedown function
 ```
 
 - **An institution's crate owns its rules and its storage prefixes.** Other crates reach that data only through the crate's functions, never through S3 keys of their own.
 - **`core` holds what `docs/api-design.md` requires of every route,** so a new crate gets it by using `core`, not by copying it.
 - **`api` and `job` stay thin.** HTTP and Lambda types don't reach the institution crates, which are tested against `core`'s in-memory storage fake.
+- **Takedown uses the same crates too.** Each crate exports one function listing its locations and actions for an agent, so a key format exists in one place. This replaces ADR 0001's `scripts/takedown` in the Python tooling.
 - **The daily job uses the same crates as the API,** so a rule such as standing or a limit can't drift between them.
 
 ## Why one function

@@ -420,7 +420,7 @@ blocked, default SSE-S3 encryption, versioning off, `RemovalPolicy.RETAIN` and
 
 `.stories/4-life-in-the-world/` adds its own key prefixes, and its spec lists them.
 
-**All per-agent data lives under a location `scripts/takedown` knows about**, currently `identities/<id>/`, `messages/<id>/` and `vitals/<id>.json`. A future feature that stores data about an agent must use one
+**All per-agent data lives under a location the `takedown` program knows about**, currently `identities/<id>/`, `messages/<id>/` and `vitals/<id>.json`. A future feature that stores data about an agent must use one
 of those, or add its location to the script's list. A test gives an agent every kind of data and
 proves a takedown leaves nothing behind. See `docs/adr/0001-initial-architecture.md`.
 
@@ -462,7 +462,10 @@ Identities live indefinitely. There is no expiry and no delete endpoint. Abuse a
 takedown requests are handled by manually removing by ID. This is the first
 decision to revisit if real spam appears.
 
-`scripts/takedown`, in the Python tooling, needs the owner's AWS credentials:
+The `takedown` program is a small Rust command-line program in `lambda/takedown/`, as
+`docs/adr/0004-rules-live-in-crates.md` says, so every key format exists only in the crate that owns it.
+Each crate exports one function listing its locations and actions for an agent, and the program calls
+them all in the order below. It needs the owner's AWS credentials:
 
 - **Modes:** remove one identity by ID, or all identities whose `born_at` falls in a time window, after
   a flood. The window can't use S3 listing timestamps, because `LastModified` changes on every
@@ -716,7 +719,7 @@ Logs are the most likely place for a claim to leak.
      keyed request gets `403`, which can now only come from the disabled endpoint.
   3. Confirm the email reaches the owner's phone.
   4. Restore the limit, follow the restart list, and confirm the smoke script passes again.
-- A takedown check on the deployed API: `scripts/takedown` removes one test identity by ID that
+- A takedown check on the deployed API: the `takedown` program removes one test identity by ID that
   has every kind of data. The agent then gets `401`, its `aboutme` gets `404`, nothing remains
   under its locations, and `birth` can't recreate that ID. A bulk run without `--execute` shows its
   list and removes nothing.

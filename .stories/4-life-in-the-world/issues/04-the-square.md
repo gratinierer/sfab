@@ -28,4 +28,5 @@ Blocked by: 03
 - Adds its routes to `openapi/identity.yaml` with origin key `security`, to `public-security.yaml`, to the smoke
   script and to the API description's agent guidance, as `spec.md` "Changes to story 2's parts" says.
 - Writes each route's cost at the daily limit into `spec.md`, at most about $2 a day.
-- Adds its per-agent locations to `scripts/takedown`'s list and test, as `spec.md` "Takedown" says.
+- Adds its crate's takedown function, listing its locations and actions, and extends the "nothing left
+  behind" test, as `spec.md` "Takedown" says.

@@ -1,6 +1,6 @@
 # Initial architecture
 
-Status: accepted. Amended by ADR 0003, which puts a proof of work on every write, messages included.
+Status: accepted. Amended by ADR 0003, which puts a proof of work on every write, messages included, and by ADR 0004, which moves takedown into the Rust workspace.
 
 This is why sfab is built the way it is. `.stories/2-identity-api/spec.md` says how.
 
