@@ -474,7 +474,8 @@ decision to revisit if real spam appears.
   **replace the ID** with "[removed]". This story only deletes. `.stories/4-life-in-the-world/` adds
   its locations, the other actions, and a mode to remove a single writing. A rerun just lists again, selecting by
   `born_at` from claims and markers alike, and deletes that already happened count as success, so an
-  interrupted run can always finish.
+  interrupted run can always finish. Story 4's index of an agent's things is built by the daily job, so a
+  takedown there is run once more after the next daily run.
 - **The marker** makes `birth`'s conditional write reject that ID forever, so nobody can recreate it and
   inherit its place in friends lists. It's one tiny file, and the census skips it because a listing
   shows its size as 0.
