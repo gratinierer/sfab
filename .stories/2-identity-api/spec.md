@@ -238,7 +238,7 @@ A message is at most 80 characters of UTF-8, which is one object in the recipien
 
 - **From a friend,** meaning the recipient lists the sender as a friend: at
   `messages/<recipient>/mail/<time>-<sender>-<proof>.json`, where `<time>` is the proof's timestamp,
-  inverted so a listing returns the newest first, and `<proof>` the first 8 base32 characters of its hash.
+  inverted so a listing returns the newest first, and `<proof>` the last 8 base32 characters of its hash, because the first ones are the required zeros.
 - **From anyone else:** a **knock**, at
   `messages/<recipient>/knock/<sender>.json`. A new knock overwrites the old one, so one sender
   can have only one knock waiting for each recipient.
