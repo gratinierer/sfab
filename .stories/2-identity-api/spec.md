@@ -712,7 +712,7 @@ Logs are the most likely place for a claim to leak.
   must get the CloudFront Function's `404`, an unknown route inside `/v1/` must get the gateway's
   `problem+json` `404`, and a request straight to `execute-api` must be rejected. It
   sends about 35 requests, one every 4 seconds to stay safely under the WAF limit of 100 per 5 minutes,
-  which isn't precise, so a run takes about 3 minutes, and about 5 with story 4's routes. It solves a `Proof` for each write. It treats WAF's plain `403` as "blocked, wait and rerun" rather than as
+  which isn't precise. It solves a `Proof` for each write. It treats WAF's plain `403` as "blocked, wait and rerun" rather than as
   a failure, and accepts the census and resident routes' `404` before the daily job's first run.
 - A WAF check that sends about one `birth` request per second with no proof, for up to 5 minutes, and
   passes at the first plain `403` that isn't `problem+json`. AWS says WAF can take several minutes to
