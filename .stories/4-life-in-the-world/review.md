@@ -23,6 +23,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-03T23:00:00+00:00 | walkthrough | working tree | claude-opus-5-5, auto | 0 new, 15 resolved, 3 still open | auto walkthrough, not a review pass |
 | 2026-11-04T00:00:00+00:00 | walkthrough | working tree | claude-opus-5-5, with the owner deciding | 0 new, 3 resolved, 0 still open | walkthrough, not a review pass; proof of work on every write (ADR 0003) |
 | 2026-11-03T19:42:45+00:00 | review | 65bc6e7 | claude-fable-5-1 (dispatched; stories authored by claude-opus-5-5) | 4 new, 0 resolved, 5 still open, 1 reopened, 1 superseded | full pass after ADR 0003, reviewed together with story 2 |
+| 2026-11-03T19:48:38+00:00 | walkthrough | working tree | claude-opus-5-5, auto commit | 0 new, 5 resolved, 1 still open | auto walkthrough, not a review pass |
 
 ## Findings
 

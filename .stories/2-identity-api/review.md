@@ -44,6 +44,7 @@ Rows below that mention $1000 predate the owner's correction of the rule to $100
 | 2026-11-03T23:00:00+00:00 | walkthrough | working tree | claude-opus-5-5, auto | 0 new, 4 resolved, 0 still open | auto walkthrough, not a review pass |
 | 2026-11-03T19:36:19+00:00 | walkthrough | 65bc6e7 | claude-opus-5-5, with the owner deciding | 0 new, 0 resolved, 0 still open | walkthrough, not a review pass: commits 8c16454 and 65bc6e7 applied ADR 0003 here; recorded late, at their commit time. Earlier rows with round times, such as 21:00 and 23:00, were approximate, and commits are the true record |
 | 2026-11-03T19:42:45+00:00 | review | 65bc6e7 | claude-fable-5-1 (dispatched; stories authored by claude-opus-5-5) | 9 new, 0 resolved, 11 still open, 2 reopened | full pass after ADR 0003, reviewed together with story 4; timestamps from here on are real |
+| 2026-11-03T19:48:38+00:00 | walkthrough | working tree | claude-opus-5-5, auto commit | 0 new, 11 resolved, 0 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
