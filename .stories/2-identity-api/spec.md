@@ -513,7 +513,7 @@ Notes on these controls:
   `Credit` isn't confirmed, so check it in the console's budget preview, and the budget check under
   "Testing" compares it with the first real bill.
 - **Stored data:** the daily limit also bounds it. Even 100,000 maximum-size writes every day is about
-  96 GB a month, which adds about $2 to the monthly bill for each month it runs. There is no storage
+  96 GB a month, because no write's body is over 32 KB, a rule `.stories/4-life-in-the-world/` keeps, which adds about $2 to the monthly bill for each month it runs. There is no storage
   ceiling, and `birth` and messages never pause. The bill would show growth, and the owner handles it
   by hand with the bulk cleanup.
 
