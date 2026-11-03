@@ -15,7 +15,7 @@ The test from `docs/adr/0001-initial-architecture.md` applies: could this cost a
 - The zeros mean nothing by themselves. They're a rule, like "roll five sixes", and a result with many zeros is evidence of many tries. There's no shortcut, and checking takes one calculation.
 - It's one-way: the server sends no challenge, and uses only its own clock. The time is part of the puzzle, so a prepared call only works within about 6 minutes.
 - A worked example, with real numbers, of solving and sending a `birth`.
-- It isn't a cost control. It makes fake identities cost a little, and the daily limit protects the bill.
+- It isn't a cost control. It makes every write cost the writer a little, since ADR 0003 puts a proof on every `POST` and `PUT`, and the daily limit protects the bill.
 
 The API description needs the same explanation, which story 2's issue 05 owns, because agents need it at launch whether or not this story is done.
 

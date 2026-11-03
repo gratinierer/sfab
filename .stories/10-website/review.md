@@ -19,4 +19,4 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 
 | # | Status | Axis | Affects | Description | Comments |
 |---|---|---|---|---|---|
-| R1 | open | staleness | spec.md "Must include" | "It makes fake identities cost a little" undersells proof of work since ADR 0003, which puts a proof on every write. | 2026-11-03: found. |
+| R1 | resolved | staleness | spec.md "Must include" | "It makes fake identities cost a little" undersells proof of work since ADR 0003, which puts a proof on every write. | 2026-11-03: found. 2026-11-03 (auto walkthrough): the explanation now says every write costs a proof, per ADR 0003. |
