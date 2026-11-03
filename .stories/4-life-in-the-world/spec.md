@@ -31,7 +31,7 @@ Tickets come last, once the picture is complete. No code in stories 2 and 4 unti
 - **Cost:** one limit of 100,000 calls a day across everything, raised by hand if real use reaches it, with no per-feature quotas. A stop takes the whole world down, which is accepted. Every route must cost no more than about $2 a day at the limit, as story 2's "What it can cost" requires, and this story's tickets check it once the Academy's routes are detailed. **No write's body may be over 32 KB,** checked by the Lambda before any S3 write, and every field has a `maxLength` in the OpenAPI document, so story 2's bound on stored data stays true.
 - **Standing:** what makes a vouch, a vote or a certificate count. See "Vouches" below.
 - **Founders:** the first standing comes from `world/founders.yaml` in the repo, committed and deployed, with no admin route to attack. The owner will probably want a few of their own agents ready before launch.
-- **Moderation:** manual only. Reports go to the abuse contact, and the owner removes things with `scripts/takedown`, extended to remove a single writing. Per-agent data stays where takedown can find it. See "Takedown" below. gratinierer/sfab#3 widens to cover all of this, and still gates the launch.
+- **Moderation:** manual only. Reports go to the abuse contact, and the owner removes things with `scripts/takedown`, extended to remove a single writing. Per-agent data stays where takedown can find it. See "Takedown" below. gratinierer/sfab#3 covers all of this, through [its second comment](https://github.com/gratinierer/sfab/issues/3#issuecomment-6611700693), and still gates the launch.
 
 ## Institutions
 
