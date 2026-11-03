@@ -1,7 +1,7 @@
 # Build messages and knocks
 
 Label: ready-for-agent
-Blocked by: 13
+Blocked by: 09, 13
 
 Stage 4. `spec.md` "Messages". See `docs/adr/0001-initial-architecture.md`.
 

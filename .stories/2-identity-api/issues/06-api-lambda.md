@@ -17,6 +17,11 @@ Stage 1. The Rust `axum` Lambda, with the identity routes that later tickets add
   passed in from the CDK, and create keys taken from the proof's hash.
 - Narrow storage interfaces, with an in-memory fake for tests.
 
+- An email-only alarm on this function's errors, to the alerts topic, like the kill switch's and the daily job's.
+- The hashed `<path>` is the path the client sent, starting with `/v1/`. What the Lambda sees depends on the
+  stage, CloudFront's origin path and `lambda_http`'s `AWS_LAMBDA_HTTP_IGNORE_STAGE_IN_PATH`, so the function
+  rebuilds the client's path explicitly, and an integration test on the deployed API checks a real write.
+
 ## Done when
 
 - The unit tests in `spec.md` "Testing" pass, and contract tests check the handlers against

@@ -60,6 +60,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | API key values are 20-128 alphanumeric characters, and adding a key to a plan can take minutes | docs | [usage-plans] | 2026-11-01 |
 | In CloudFormation, changing a key's `Value` replaces it, and a named key can't be replaced | docs | [apikey-cfn] | 2026-11-01 |
 | A gateway response can override its status code | docs | [gateway-response] | 2026-11-01 |
+| In a REST proxy event, `path` lacks the stage, and Rust's `lambda_http` adds it unless `AWS_LAMBDA_HTTP_IGNORE_STAGE_IN_PATH` is set | memory | | 2026-11-03 |
 | A wrong or missing API key on a key-required method raises the `INVALID_API_KEY` gateway response, a `403`, rather than `DEFAULT_4XX` alone | memory | | 2026-11-03 |
 | An unknown route or method returns `MISSING_AUTHENTICATION_TOKEN` as `403`, and the `413` can't be customised | docs | [response-types] | 2026-11-01 |
 | REST requests cost $3.50 per million | docs | AWS's pricing page | 2026-11-01 |

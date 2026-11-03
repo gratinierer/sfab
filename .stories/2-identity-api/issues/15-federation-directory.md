@@ -1,7 +1,7 @@
 # Build federation: directory, requests and domain proof
 
 Label: ready-for-agent
-Blocked by: 11
+Blocked by: 09, 11
 
 Stage 5. `spec.md` "Federation". See `docs/adr/0001-initial-architecture.md`.
 

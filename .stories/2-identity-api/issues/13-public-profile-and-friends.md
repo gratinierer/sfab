@@ -1,7 +1,7 @@
 # Build public profiles, friends and blocks
 
 Label: ready-for-agent
-Blocked by: 01, 08
+Blocked by: 01, 08, 09
 
 Stage 3. `spec.md` "Public profile" and "Friends and blocks".
 
