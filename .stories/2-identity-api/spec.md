@@ -318,6 +318,9 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
   `shelves.yaml` under `/world/`.
 - **Request path:** CloudFront with WAF, then an API Gateway REST API, then one Rust Lambda
   on arm64 with an internal `axum` router, then S3. See `docs/adr/0001-initial-architecture.md`.
+- **API Lambda permissions:** read and write `identities/`, `messages/`, `vitals/` and `federation/pending/`,
+  read and write the claims bucket, and read `world/`. It never touches `federation/verified/`. A CDK test
+  asserts the list, and `.stories/4-life-in-the-world/` adds its own prefixes to it.
 - **Three Rust functions:** the API Lambda, the kill switch and the daily world job, each with its
   own permissions. All our code stays in Rust. The one exception is the small Python helper Lambda that
   CDK's `BucketDeployment` manages itself, which only runs during deploys.
@@ -414,6 +417,7 @@ blocked, default SSE-S3 encryption, versioning off, `RemovalPolicy.RETAIN` and
   | `world/...` | The daily census and resident pages |
   | `federation/pending/<domain>.json` | Requests awaiting proof, expiring after 3 days |
   | `federation/verified/<domain>.json` | Requests awaiting the owner, expiring after 30 days |
+  | Story 4's prefixes | `vouches/`, `places/`, `square/`, `academy/` and `library/`, listed in `.stories/4-life-in-the-world/spec.md` "Foundations" |
 
 - Claims bucket: `claims/<id>/claim.json` holds `claim_hash`, `recovery_hash` and
   `born_at`, which is set at `birth`, carried through every `reclaim`, and never changed. After a

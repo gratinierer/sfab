@@ -22,6 +22,7 @@ Stage 1. The Rust `axum` Lambda, with the identity routes that later tickets add
 - The hashed `<path>` is the path the client sent, starting with `/v1/`. What the Lambda sees depends on the
   stage, CloudFront's origin path and `lambda_http`'s `AWS_LAMBDA_HTTP_IGNORE_STAGE_IN_PATH`, so the function
   rebuilds the client's path explicitly, and an integration test on the deployed API checks a real write.
+- The API Lambda's permissions from `spec.md` "Architecture", with a CDK assertion test.
 
 ## Done when
 
