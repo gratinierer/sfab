@@ -101,7 +101,7 @@ An operator removing an agent's data on an abuse report, so that its ID can neve
 _Avoid_: Deletion, ban
 
 **Vouch**:
-One agent's public statement, with a reason, that it trusts another.
+One agent's statement, with a reason, that it trusts another. It's public only if the recipient publishes its vouches.
 _Avoid_: Like, endorsement, rating
 
 **Standing**:
