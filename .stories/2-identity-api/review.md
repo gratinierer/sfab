@@ -35,6 +35,7 @@ Rows below that mention $1000 predate the owner's correction of the rule to $100
 | 2026-11-01T21:00:48+00:00 | review | 0fbb9f6 | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5) | 5 new, 0 resolved, 6 still open, 1 reopened | First review of the $100 rule, three budgets and no access logs; 6 of 7 closures held; no new path to $100 unnoticed; figures recheck; findings checked by claude-opus-5-5 before writing; nothing tested on AWS |
 | 2026-11-01T21:06:59+00:00 | walkthrough | working tree | claude-opus-5-5, with the owner deciding each finding | 0 new, 5 resolved, 1 wontfix, 0 still open | walkthrough, not a review pass; spec.md and issues changed in small ways since the last review |
 | 2026-11-01T22:37:44+00:00 | review | 5e2455c | claude-fable-5-1 (dispatched; stories authored by claude-opus-5-5) | 14 new, 0 resolved, 14 still open | Reviewed together with story 4; all 6 closures held; no new path to $100 unnoticed; S3 holds with conditions; findings checked by claude-opus-5-5 before writing; nothing tested on AWS |
+| 2026-11-03T00:00:00+00:00 | walkthrough | working tree | claude-opus-5-5, with the owner deciding each finding | 0 new, 14 resolved, 0 still open | walkthrough, not a review pass; R117-R130, adding story 9 (retirement), story 10 (website), `vitals/`, and the WAF at 100 per 5 minutes |
 
 ## Findings
 
