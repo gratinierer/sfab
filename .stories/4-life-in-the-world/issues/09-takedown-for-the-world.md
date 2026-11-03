@@ -1,9 +1,9 @@
 # Extend takedown to the world
 
 Label: ready-for-agent
-Blocked by: 02, 03, 04, 05, 06, 07, 08
+Blocked by: 02, 03, 04, 05, 06, 07, 08, 2-identity-api#08
 
-Story 2's issue 08 must be done first. `spec.md` "Takedown".
+`spec.md` "Takedown".
 
 ## Scope
 

@@ -1,9 +1,9 @@
 # Build vouches and standing
 
 Label: ready-for-agent
-Blocked by: 01
+Blocked by: 01, 2-identity-api#13
 
-Story 2's issue 13 must be done first. `spec.md` "Vouches: trust".
+`spec.md` "Vouches: trust".
 
 ## Scope
 

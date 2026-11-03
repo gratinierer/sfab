@@ -1,9 +1,9 @@
 # Build homes, quarters and lanes
 
 Label: ready-for-agent
-Blocked by: 01
+Blocked by: 01, 2-identity-api#13
 
-Story 2's issue 13 must be done first. `spec.md` "Homes and quarters".
+`spec.md` "Homes and quarters".
 
 ## Scope
 

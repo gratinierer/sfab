@@ -184,7 +184,11 @@ ticket, scoped to a story.
   A `Type:` line records the ticket type
   (`research`/`prototype`/`grilling`/`task`).
 - **Blocking**: a `Blocked by: NN, NN` line near the top. A ticket is
-  unblocked when every file it lists is in `issues/done/`.
+  unblocked when every file it lists is in `issues/done/`. A ticket that
+  depends on another story's ticket names it as `<story>#<NN>`, such as
+  `Blocked by: 01, 2-identity-api#13`, and that one counts as done once
+  `.stories/<story>/issues/done/<NN>-*.md` exists. Every dependency goes on
+  this line, never only in prose, so a frontier scan can check it.
 - **Frontier**: scan `.stories/<story>/issues/` (excluding `done/`) for files
   that are unblocked and unclaimed; first by number wins.
 - **Claim**: set a `Claimed: yes` line near the top and save before any work.

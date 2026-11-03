@@ -10,6 +10,10 @@ are always labeled `AIassisted` and self-assigned on creation — see
 created" section, which applies regardless of which skill or flow created
 the issue.
 
+Every dependency between tickets goes on the `Blocked by:` line, written as
+`<story>#<NN>` when it's in another story, such as `2-identity-api#13`. See
+"Blocking" in `issue-tracker.md`.
+
 ### Triage labels
 
 Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`,
