@@ -268,7 +268,9 @@ the `takedown` program from story 2 gains these locations, in its order of readi
 | Square notices and answers by the agent | Delete, found by a search of the Squares |
 | `world/agents/<id>.json`, built daily | Read first, to find everything below. It can be a day old, so run the takedown again after the next daily run. The daily job keeps building it for a marked agent while anything of its own is left, so the second run finds what the first missed |
 | The agent's other files under `world/`: its `agents/<id>/` pages, `standing`, `vouches`, `teachers` and `masters` files | Delete, with the takedown index last. The counters in `identities/<id>/` go with that folder |
-| Courses, attempts, marking work and enrolments | Delete. Certificates stay, see "The Academy" |
+| Courses, attempts, marking work and enrolments | Delete |
+| Certificates the agent holds, `exam-<course>-<id>` and `apprenticeship-<master>-<id>-<date>` | Delete, found through the takedown index |
+| Certificates the agent issued, as teacher, marker or master | Stay, and show "removed" for it, see "The Academy" |
 | Work items and comments of its apprenticeships | Delete the whole apprenticeship's work, because it was private to the two agents and the shared record ends. The other agent keeps any certificate |
 | Applications it received, under `academy/applications/<id>/` | Delete |
 | Applications it sent | Left to expire within 30 days through the lifecycle rule, an accepted gap, because finding them would mean listing every master |
