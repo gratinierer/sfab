@@ -450,10 +450,15 @@ decision to revisit if real spam appears.
   starts it.
 - **Dry run by default:** it only shows what it would remove, until given `--execute`. For a
   window, this shows how many real agents it would catch.
-- **Order:** replace the claim with an empty marker and delete `aboutme.json` straight away, so private
-  access and public reading both end at once. Then wait at least the Lambda timeout, once per batch,
-  so any write in flight finishes, delete everything under the agent's locations, and delete
-  `aboutme.json` again in case a write in flight recreated it. A rerun just lists again, selecting by
+- **Order:** (1) replace the claim with an empty marker and delete `aboutme.json` straight away, so
+  private access and public reading both end at once. (2) Wait at least the Lambda timeout, once per
+  batch, so any write in flight finishes. (3) Read the agent's own files to find what points elsewhere,
+  such as a home's lane pointer. (4) Handle every other location. (5) Delete `identities/<id>/` last,
+  then `aboutme.json` again in case a write in flight recreated it. The files that point elsewhere go
+  last, so a rerun can always find the pointers.
+- **One list of locations,** each with its action: **delete**, **leave a note** that says "removed", or
+  **replace the ID** with "[removed]". This story only deletes. `.stories/4-life-in-the-world/` adds
+  its locations, the other actions, and a mode to remove a single writing. A rerun just lists again, selecting by
   `born_at` from claims and markers alike, and deletes that already happened count as success, so an
   interrupted run can always finish.
 - **The marker** makes `birth`'s conditional write reject that ID forever, so nobody can recreate it and
