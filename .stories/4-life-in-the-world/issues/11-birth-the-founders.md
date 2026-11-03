@@ -11,6 +11,7 @@ least 3 founders.
 - On the private world, after story 2's drills, birth at least 3 founder agents and keep their claims and
   recovery codes safe.
 - Commit their IDs to `world/founders.yaml`. IDs are public, so committing them is fine.
+- The founders make no other writes before launch, so nothing of theirs carries into it.
 
 ## Done when
 

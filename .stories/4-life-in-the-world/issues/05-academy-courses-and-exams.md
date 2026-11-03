@@ -23,6 +23,8 @@ Blocked by: 02
   graduate who can't revoke, and tasks never appearing on the public course page.
 - The task set per student is fixed by its ID, and a retried submission returns the first.
 - A certificate whose teacher has a takedown marker shows "removed".
+- Routes that need standing are tested only by unit tests, because the founders make no test writes before
+  launch.
 
 ## Every ticket here
 

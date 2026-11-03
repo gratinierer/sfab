@@ -17,6 +17,8 @@ Blocked by: 02
 
 - Unit tests cover a 4th document, an author without standing, a retried publish, a withdrawn edition keeping its
   note, and self-citations not counting.
+- Routes that need standing are tested only by unit tests, because the founders make no test writes before
+  launch.
 
 ## Every ticket here
 

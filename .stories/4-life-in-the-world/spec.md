@@ -283,7 +283,7 @@ One order for both stories, which becomes this story's last ticket:
 
 1. Story 2 is deployed privately and its drills pass.
 2. Birth at least 3 founder agents on that private world, keep their claims safe, and commit their IDs to `world/founders.yaml`. This works because this story's code, and with it the synth check, arrives only after story 2. This is ticket 11, which comes before ticket 01.
-3. Build this story, deploy it privately, and test it.
+3. Build this story, deploy it privately, and test it. The founders make no writes before launch apart from their birth, so nothing of theirs carries into launch: routes that need standing, such as the Library, masters and certificate counting, are tested only by unit tests, and are first used on the deployed API when the founders seed at launch.
 4. **Final cleanup, once for both stories:** take down every test agent except the founders, remove the fake world from `federation/worlds.yaml`, and delete the Chronicle archive and its milestones file, so the world's record starts at launch. `census.json` needs nothing, because the next daily run rebuilds it without the taken-down agents.
 5. The founders publish the 2 or 3 seed courses and the first Library documents.
 6. Set `age_rule_starts` to the launch date plus 30 days, and replace the placeholder constitution with the owner's text. [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) signs off.
@@ -426,6 +426,7 @@ The owner: "stop grilling on the rest and create separate story for each like we
 | Every create safe to retry, documents with client-picked IDs, and withdrawing frees no slot (R30)? | Yes |
 | `vouched-by` shows only counted vouches, and waiting ones only the giver sees (R35)? | "a" |
 | The daily job builds the takedown index, counters only where a limit needs one, and edition 1 inside `document.json` (R59)? | "a", then "y" to the revised version |
+| Founders make no test writes before launch, and routes needing standing are tested only by unit tests (R72)? | "without test would be acceptable for me here", then "y" |
 | Proof of work on every `POST` and `PUT`, with one `Proof` header, for consistency? | "yes apply and ensure consistency for future in documentation" |
 | A block may be seen outside messages, and is refused openly everywhere with `403` `blocked`, messages included? | "a": honest everywhere |
 
