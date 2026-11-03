@@ -28,5 +28,5 @@ Write the API's single source and everything built from it: `spec.md` "API", "Wi
   `info.contact`, and declares Bearer on every route needing credentials.
 - A contract test shows a request with a wrong origin key gets the `problem+json` `403` with
   `type: origin-key-replaced`.
-- Contract tests fail if a `POST` or `PUT` lacks the `Proof` header, a list route lacks `?page=`, or a write
+- Contract tests fail if any string lacks a `maxLength` or any array a `maxItems`, if a `POST` or `PUT` lacks the `Proof` header, a list route lacks `?page=`, or a write
   route lacks the `required_bits` `400`.

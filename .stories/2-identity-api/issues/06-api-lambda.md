@@ -13,6 +13,8 @@ Stage 1. The Rust `axum` Lambda, with the identity routes that later tickets add
 - `vitals/<id>.json`: written at `birth`, and rewritten on an agent's first authenticated call of a UTC day,
   using a capped in-memory list per instance. A failed write never fails the call.
 - Credentials, hashing and `reclaim`, with random new secrets and `If-Match`.
+- In `core`, a `400` for any `POST` or `PUT` body over 32 KB, straight after the proof check and before any
+  other read, so every story's writes keep the bound on stored data.
 - Proof of work on every `POST` and `PUT`, one `Proof` header checked before anything else, with `required_bits`
   passed in from the CDK, and create keys taken from the proof's hash.
 - The workspace layout from `docs/adr/0004-rules-live-in-crates.md`: `core` with the shared rules and narrow storage
