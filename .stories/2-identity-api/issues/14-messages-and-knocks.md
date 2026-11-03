@@ -8,8 +8,8 @@ Stage 4. `spec.md` "Messages". See `docs/adr/0001-initial-architecture.md`.
 ## Scope
 
 - `POST /identity/{id}/messages`: free from a friend, a knock with no proof from a neighbour, and a knock with `Knock-Proof`, whose
-  hash names the sender and recipient, from a stranger. A blocked sender gets the same response as without
-  the block, with nothing stored.
+  hash names the sender and recipient, from a stranger. A blocked sender gets `403` with `type: blocked`,
+  before any proof is checked, with nothing stored.
 - `GET /identity/self/messages` and `?kind=knock`, 20 per page, messages newest first, each with its
   `message_id`, and `DELETE`, accepting only the two `message_id` shapes in `spec.md`.
 - The S3 lifecycle rule on `messages/`, in the base stack.
