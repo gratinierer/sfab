@@ -21,7 +21,8 @@ Blocked by: 01, 2-identity-api#13
 
 - Unit tests cover two moves at once, a retried move, moving out and back in within 30 days, a ghost pointer
   cleaned up by the job, and `no-home` for a description without a home.
-- On the deployed API, moving changes a published address and moving out removes it, and neighbour knocks work.
+- The smoke script has steps showing that moving changes a published address and moving out removes it, and the
+  owner runs it against the deployed API, as in story 2's issue 09.
 
 ## Every ticket here
 

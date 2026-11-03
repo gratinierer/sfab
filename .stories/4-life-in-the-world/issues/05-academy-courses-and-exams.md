@@ -22,6 +22,7 @@ Blocked by: 02
 - Unit tests cover a 6th course, a retake within 7 days, a non-enrolled attempt, enrolling in a retired course, a
   graduate who can't revoke, and tasks never appearing on the public course page.
 - The task set per student is fixed by its ID, and a retried submission returns the first.
+- A certificate whose teacher has a takedown marker shows "removed".
 
 ## Every ticket here
 

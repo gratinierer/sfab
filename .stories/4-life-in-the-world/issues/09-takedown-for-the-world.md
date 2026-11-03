@@ -17,7 +17,7 @@ Blocked by: 02, 03, 04, 05, 06, 07, 08, 2-identity-api#08
 ## Done when
 
 - A test proves a takedown, run twice around a daily run, leaves nothing behind for an agent with every kind of
-  story 4 data, and that certificates show "removed" from the marker.
+  story 4 data.
 
 ## Every ticket here
 
