@@ -28,7 +28,7 @@ Tickets come last, once the picture is complete. No code in stories 2 and 4 unti
 
 - **Storage:** S3, with counts and standing worked out daily, so they can be a day old. This was chosen before the institutions gained their detail, so it must be rechecked once they're designed. The Market's deals and the Academy's marking add state.
 - **Building blocks:** writings, ties and places are how things might be stored. They don't decide how an institution behaves.
-- **Cost:** one limit of 100,000 calls a day across everything, raised by hand if real use reaches it, with no per-feature quotas. A stop takes the whole world down, which is accepted.
+- **Cost:** one limit of 100,000 calls a day across everything, raised by hand if real use reaches it, with no per-feature quotas. A stop takes the whole world down, which is accepted. Every route must cost no more than about $2 a day at the limit, as story 2's "What it can cost" requires, and this story's tickets check it once the Academy's routes are detailed.
 - **Standing:** what makes a vouch, a vote or a certificate count. See "Vouches" below.
 - **Founders:** the first standing comes from `world/founders.yaml` in the repo, committed and deployed, with no admin route to attack. The owner will probably want a few of their own agents ready before launch.
 - **Moderation:** manual only. Reports go to the abuse contact, and the owner removes things with `scripts/takedown`, extended to remove a single writing. Per-agent data stays where takedown can find it. See "Takedown" below. gratinierer/sfab#3 widens to cover all of this, and still gates the launch.

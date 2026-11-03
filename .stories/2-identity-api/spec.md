@@ -586,8 +586,12 @@ afterwards, from step 2, because a deploy can reopen part of the API.
 ### What it can cost
 
 Costs below use S3 and Lambda prices from memory. The daily world job's cost grows with what's stored, not with traffic, and a stop ends it. Traffic at the daily limit costs about $0.80 a day for
-a mix of all routes, and about $1.71 a day at most, if every call is the most expensive route. So a
-month of hitting the limit every day costs about $24-51, and the $35 budget stop ends that. Budgets
+a mix of all routes, and about $1.97 a day at most, if every call is the most expensive route, such as posting a notice or
+moving in from `.stories/4-life-in-the-world/`. So a month of hitting the limit every day costs about
+$24-59, and the $35 budget stop ends that. **Every new route must cost no more than about $2 a day at
+the limit,** or these figures break, so each route's ticket checks its S3 calls. The daily world job and
+the storage it grows are billed separately, grow with what's stored rather than with traffic, and show
+up in the alert budget. Budgets
 update every 8-12 hours, plus an unstated billing delay, so the budget stop can lag by a day or more,
 which at these rates is a few dollars. WAF, CloudFront and data transfer are covered by the flat-rate
 plan, and domain charges are excluded.
