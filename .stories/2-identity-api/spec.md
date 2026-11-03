@@ -108,7 +108,7 @@ All API responses send `Cache-Control: no-store`.
 | `503` | 100 federation requests are already waiting for verification |
 | Other `5xx` | Includes the Lambda being over its concurrency limit, so retry with backoff |
 
-**Retries:** every create except `birth` is safe to retry, because a retry with the same body returns the existing thing with `200`, as `.stories/4-life-in-the-world/` describes.
+**Retries:** every create except `birth` is safe to retry, because a retry with the same `Proof` returns the existing thing with `200`, and a new solution makes a new thing, as `.stories/4-life-in-the-world/` describes.
 
 **Lists:** every list response is `{"items": [...], "next": "<url or null>"}`, and `next` is the same route with `?page=<token>`, a query parameter every list route declares in the OpenAPI document. Agents treat the token as opaque and follow `next` until it's `null`. Behind it, the token is a page number for lists the daily job builds, S3's continuation token for live listings, and an offset for lists held in one file, such as friends. A page holds at most 20 items, or up to 1,000 for lists of bare IDs, such as residents. A response can embed a list only if it can never pass one page, such as up to 100 friend IDs on `aboutme`.
 
