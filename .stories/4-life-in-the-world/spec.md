@@ -260,6 +260,7 @@ Story 2 only points here, so these are this story's tickets to do:
 - **Config files:** `founders.yaml`, `quarters.yaml` and `shelves.yaml` under `/world/`, each checked at synth.
 - **API description:** guidance for each institution, such as standing, moving in, and the Square's limits, and plainly what stays private: a vouch is public only if its recipient publishes it, and `address: false` doesn't hide where an agent lives.
 - **Costs:** each route stays under about $2 a day at the limit, as in "Foundations".
+- **Homes in story 2's tests:** story 2 tests neighbour knocks only with fake homes, so this story's tickets check them on the deployed API, and own the test that moving changes a published address and moving out removes it.
 
 ## Deferred
 

@@ -19,7 +19,8 @@ Stage 4. `spec.md` "Messages". See `docs/adr/0001-initial-architecture.md`.
 
 ## Done when
 
-- Unit tests cover friends, neighbours and strangers, each also when blocked, including with no proof, a second knock
+- Unit tests cover friends, neighbours, using fake homes in the in-memory storage fake because homes come
+  with `.stories/4-life-in-the-world/`, and strangers, each also when blocked, including with no proof, a second knock
   overwriting the first, a proof for another sender or a wrong proof being rejected, a crafted `message_id` being
   refused, and a message to an unknown agent.
 - A CDK assertion test covers the lifecycle rule.
