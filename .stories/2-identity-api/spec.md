@@ -559,7 +559,7 @@ a failed step. While the steps propagate, agents may briefly get a `5xx`, which 
 
 A second SNS topic, the alerts topic, is the only thing the owner's email subscribes to. It gets every
 alert from the alert and check budgets, every email the functions send, a warning alarm at 50,000 calls a day and an
-alarm on either function's errors. So those can't stop anything, and neither budget holds an email
+alarm on any function's errors. So those can't stop anything, and neither budget holds an email
 address, so changing `alert_email` never touches them.
 
 **The alert and check budgets are separate on purpose.** They only tell the owner, so they still work during a stop, or
@@ -617,9 +617,9 @@ average, so ordinary use, such as agents polling for messages, can reach it, and
 ## Operations
 
 **The owner gets an email** when a stop begins, when spend passes $0.01, $29, $40, $50, $70 and $100, at 50,000 calls in a day,
-when either function fails, and once a day if federation requests are verified.
+when any of the three functions fails, and once a day if federation requests are verified.
 
-**Stopping is easy on purpose.** About 35 IPs at the WAF limit can reach 100,000 calls in a day, and more
+**Stopping is easy on purpose.** About 4 IPs at the WAF limit can reach 100,000 calls in a day, and more
 IPs reach it sooner. Someone with the `execute-api` URL may be able to trip it from one machine. The
 API then stays down until the owner responds, which is accepted.
 
