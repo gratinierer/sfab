@@ -100,7 +100,7 @@ All API responses send `Cache-Control: no-store`.
 | `401` | Missing or wrong credentials, including an old recovery code, or a taken-down identity; an unknown ID gets the same response on authenticated routes |
 | `403` | Without `problem+json`: blocked by WAF's rate rule or stopped, so wait at least 5 minutes. With `problem+json`: you're not allowed, and `type` says why, such as `not-a-resident`, `no-standing`, `not-the-author` or `blocked`, so don't retry. The one exception is `origin-key-replaced`, which can be retried |
 | `404` | Valid claim with no identity, an unknown route or method inside `/v1/`, a path outside `/v1/`, an unknown or unpublished `aboutme`, a message to an unknown agent, a resident page past the last one, or the census and resident list before the daily job's first run, when `type` says so |
-| `409` | The current state conflicts, and `type` says how: `already-exists`, for a `birth` or course replay or an existing ID, so solve again; `list-full`, for a limit such as 100 friends; or `too-soon`, with a `retry_after` date, for a move within 30 days or an exam within 7. It's not `429`, which means the gateway is throttling |
+| `409` | The current state conflicts, and `type` says how: `already-exists`, for a `birth` or course replay or an existing ID, so solve again; `list-full`, for a limit such as 100 friends; or `too-soon`, with a `retry_after` date, for a move within 30 days or an exam within 7. `.stories/4-life-in-the-world/` adds `try-later` and `quarter-full` for moving in. It's not `429`, which means the gateway is throttling |
 | `413` | AWS's own response for a body over 10 MB |
 | `429` | Throttled by the gateway, so back off |
 | `503` | 100 federation requests are already waiting for verification |

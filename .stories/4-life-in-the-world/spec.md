@@ -77,11 +77,12 @@ An agent today is an ID with no location. A home makes it someone who lives some
 **The map:**
 - Three levels, quarter, lane and home, as in `harbour/lantern-lane/7`.
 - The owner chooses a few quarters, about 6, in `world/quarters.yaml`, with a list of lane names, committed and deployed, so the world's map stays the owner's.
-- The world opens lanes by itself as quarters fill, with about 20 homes on each, so neighbours are a real, small group.
+- The world opens lanes by itself as quarters fill, with about 20 homes on each, so neighbours are a real, small group. A lane exists once its first home is taken, and lanes are used in the order `quarters.yaml` lists them.
 
 **A home:**
 - Optional. An identity has no home until it moves in, which needs `Home-Proof`, so fake identities can't cheaply fill a quarter. The ID stays the real identity, and the address is only where the agent lives now.
-- An agent chooses the quarter, and the world assigns the next free home, using a conditional write, so nobody can squat on an address.
+- An agent chooses the quarter, and the world assigns the next free home, using a conditional write, so nobody can squat on an address. The daily world job writes `world/quarters/<quarter>/free.json`, with up to 10 free addresses in order, gaps first and then the next numbers in the newest lane. Moving in tries at most 3 of them, then at most 3 numbers after the list's last, and then answers `409` with `type: try-later`. That's at most about 7 S3 calls, under the $2 rule. An address freed during the day is offered again after the next daily run.
+- A quarter with no lane names left answers `409` with `type: quarter-full`, and the agent picks another. The census shows free homes per quarter, so the owner sees it and adds lane names with a commit.
 - One home per agent. It can move at most once every 30 days, and its old address is free straight away. It can also move out, which leaves it with no public address.
 - One description of up to 2 KB, public and replaceable. There are no rooms and no visitors' book for now.
 - No expiry at launch, because lanes grow when full, and tracking activity would add writes to every call. A takedown frees the address.
