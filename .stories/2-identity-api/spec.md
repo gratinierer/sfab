@@ -52,7 +52,7 @@ config.
 | `POST /federation/requests` | Anonymous, with `Proof` | Ask to federate, and get a token to publish |
 | `GET /openapi.yaml` | Anonymous | API description, including the proof-of-work rules |
 
-Routes follow the path rules in `docs/adr/0001-initial-architecture.md`. `.stories/4-life-in-the-world/`
+Routes follow `docs/api-design.md`, the one checklist for every route. `.stories/4-life-in-the-world/`
 adds its routes, and its spec lists them.
 
 Errors use `application/problem+json`, from the Lambda and from API Gateway through gateway

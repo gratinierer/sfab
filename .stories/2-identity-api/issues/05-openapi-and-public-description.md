@@ -8,8 +8,9 @@ Write the API's single source and everything built from it: `spec.md` "API", "Wi
 
 ## Scope
 
-- `openapi/identity.yaml`: the identity routes, following `docs/adr/0001-initial-architecture.md`, which later
-  tickets add to, models with `additionalProperties: false`, the `$default`
+- `openapi/identity.yaml`: the identity routes, following `docs/api-design.md`, which later
+  tickets add to, with the optional `Proof` header on every `POST` and `PUT`, `?page=` on every list route, and
+  the `required_bits` `400` problem schema, models with `additionalProperties: false`, the `$default`
   validator model, `problem+json` gateway responses including `MISSING_AUTHENTICATION_TOKEN` as a
   `404`, and `INVALID_API_KEY` as a `403` with `type: origin-key-replaced`, an ARN placeholder, and the origin key's `security` on every operation.
 - `openapi/public-security.yaml`, and the generator that removes `x-amazon-*` and the `apiKey`
@@ -27,3 +28,5 @@ Write the API's single source and everything built from it: `spec.md` "API", "Wi
   `info.contact`, and declares Bearer on every route needing credentials.
 - A contract test shows a request with a wrong origin key gets the `problem+json` `403` with
   `type: origin-key-replaced`.
+- Contract tests fail if a `POST` or `PUT` lacks the `Proof` header, a list route lacks `?page=`, or a write
+  route lacks the `required_bits` `400`.
