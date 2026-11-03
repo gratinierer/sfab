@@ -17,7 +17,7 @@ The proof is the first gate every write passes. Every rule an institution sets s
 
 1. **The proof**, with one hash, before anything is read or written.
 2. **Who is calling and whether they may:** the claim, blocks, residency, standing, or being the author or one of the agents it belongs to.
-3. **Is it a retry?** If the thing this `Proof` made already exists, the write redoes its follow-up writes, which are all safe to repeat, returns it with `200` and stops, so a retry never meets a limit its first attempt already passed.
+3. **Is it a retry?** If the thing this `Proof` made already exists, the write redoes only the follow-up writes that rebuild something or add a set member, skips the rest, which the route corrects another way, returns it with `200` and stops, so a retry never meets a limit its first attempt already passed.
 4. **The limits:** caps such as 10 active vouches or 3 notices a day, and time limits such as one move every 30 days.
 5. **The write.**
 

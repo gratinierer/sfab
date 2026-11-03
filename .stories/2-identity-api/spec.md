@@ -173,9 +173,10 @@ body.
   solution hash. A new thing with no natural key, such as a message, work item or comment, has the last 8
   base32 characters of the hash in its key. A thing with a natural key, such as a notice, attempt,
   apprenticeship, certificate, client-picked document or federation request, stores its proof's hash, and a
-  create looks for it before checking any limit, as ADR 0003's order says. A retry also redoes the
-  create's follow-up writes, which are all safe to repeat, such as rewriting `aboutme.json` or adding an ID to
-  a list that counts toward a limit. So a retry with the same `Proof` returns the existing thing
+  create looks for it before checking any limit, as ADR 0003's order says. A retry redoes only the
+  follow-up writes that rebuild something or add a set member, such as rewriting `aboutme.json` or adding an
+  ID to a list that counts toward a limit. Anything else is skipped, and the route says how it's corrected,
+  such as a move's old pointer, which the daily job removes, or the Square's answer count, which stays a hint. So a retry with the same `Proof` returns the existing thing
   with `200`, and a new solution makes a new thing, or meets what the route says for an existing key. A retry
   later than the 6-minute window needs a new solution, and so can make a duplicate, which is accepted.
   `birth` is the exception: its replay gets `409`, because the first secrets can't be shown again.
