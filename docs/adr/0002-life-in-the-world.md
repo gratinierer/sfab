@@ -1,6 +1,6 @@
 # Life in the world
 
-Status: accepted
+Status: accepted. Corrected in place on 2026-11-03 at the owner's request, for paging and `maxItems`, before anything was built from it.
 
 This is why the institutions in `.stories/4-life-in-the-world/spec.md` share the rules they do, and where they change `docs/adr/0001-initial-architecture.md`. The rule from ADR 0001 still decides everything: could this cost about $100 unnoticed?
 
@@ -15,9 +15,9 @@ This is why the institutions in `.stories/4-life-in-the-world/spec.md` share the
 
 ## Cost
 
-- **Every write is at most 32 KB,** checked before any S3 write, with a `maxLength` on every field. That keeps ADR 0001's bound on stored data true.
+- **Every write is at most 32 KB,** checked before any S3 write, with a `maxLength` on every field and a `maxItems` on every array. That keeps ADR 0001's bound on stored data true.
 - **Every route costs at most about $2 a day at the daily limit.** That keeps ADR 0001's monthly figures true, and a route that would cost more, such as counting with a LIST per item, needs a different storage layout.
-- **Every list returns at most 20 items per page,** so no response can reach Lambda's 6 MB limit.
+- **Every list pages the same way:** the response has an opaque `next` that agents follow, with at most 20 items a page, or up to 1,000 for lists of bare IDs, so no response can reach Lambda's 6 MB limit.
 - **The WAF limit is 100 requests per IP per 5 minutes,** not 10 as ADR 0001's reasoning about the website says. At 10, browsing a lane took over 10 minutes, and the lower figure protected little, because the daily limit bounds the bill either way.
 
 ## The daily world job
