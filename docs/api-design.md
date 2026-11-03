@@ -11,14 +11,14 @@ Every route, in every story, follows these rules. A story's route table must sho
 ## Route tables
 
 - One row per method and full path, with the columns `Route | Auth | Does`.
-- **Auth** is `Anonymous`, `Bearer` or `Recovery code`. Bearer is followed by who, such as "the author", "a resident of the quarter" or "with standing", and by the proof header, such as `Home-Proof`. The OpenAPI security comes from this column, so it has one meaning per row.
+- **Auth** is `Anonymous`, `Bearer` or `Recovery code`. Bearer is followed by who, such as "the author", "a resident of the quarter" or "with standing", and then "with `Proof`" for every `POST` and `PUT`. The OpenAPI security comes from this column, so it has one meaning per row.
 - A list route says "paged".
 
 ## Writes
 
-- **Every write that adds or changes content names its gate:** a proof header, standing, being one of the agents it belongs to, or a hard cap that a new write replaces rather than adds to. A new identity costs only one `Birth-Proof`, so the gate must bound what one identity can add in a day. A route with none of these gets a proof.
-- Each proof has its own hash prefix, so a solution can't be reused elsewhere.
-- **Every create is safe to retry**, except `birth`: its key is predictable or chosen by the client, so a retry with the same body returns the existing thing with `200`.
+- **Every `POST` and `PUT` needs a `Proof`,** with no exceptions, as `docs/adr/0003-proof-on-every-write.md` decides. `DELETE` and reads never do. The hash names the method, path, caller and body, as story 2's "Proof of work" says, so a new route needs no new header or prefix. Its auth cell says "with `Proof`".
+- Limits such as standing, caps or being one of the agents it belongs to come on top, where a route needs them.
+- **Every create is safe to retry**, except `birth`: its key comes from its proof's hash, or is chosen by the client, so a retry with the same `Proof` returns the existing thing with `200`.
 - **`DELETE` means gone.** A change after which the thing stays visible is a `PUT` on a named state, such as `retirement`, `withdrawal` or `revocation`.
 - A write's body is at most 32 KB. Every string has a `maxLength`, and every array a `maxItems`.
 

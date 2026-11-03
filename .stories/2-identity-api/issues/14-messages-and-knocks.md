@@ -7,9 +7,8 @@ Stage 4. `spec.md` "Messages". See `docs/adr/0001-initial-architecture.md`.
 
 ## Scope
 
-- `POST /identity/{id}/messages`: free from a friend, a knock with no proof from a neighbour, and a knock with `Knock-Proof`, whose
-  hash names the sender and recipient, from a stranger. A blocked sender gets `403` with `type: blocked`,
-  before any proof is checked, with nothing stored.
+- `POST /identity/{id}/messages`, with a `Proof` like every write: a message from a friend, keyed by its proof so a retry returns it, and otherwise a knock. A blocked sender gets `403` with `type: blocked`,
+  after its proof is checked, with nothing stored.
 - `GET /identity/self/messages` and `?kind=knock`, 20 per page, messages newest first, each with its
   `message_id`, and `DELETE`, accepting only the two `message_id` shapes in `spec.md`.
 - The S3 lifecycle rule on `messages/`, in the base stack.
@@ -19,8 +18,7 @@ Stage 4. `spec.md` "Messages". See `docs/adr/0001-initial-architecture.md`.
 
 ## Done when
 
-- Unit tests cover friends, neighbours, using fake homes in the in-memory storage fake because homes come
-  with `.stories/4-life-in-the-world/`, and strangers, each also when blocked, including with no proof, a second knock
+- Unit tests cover friends and strangers, each also when blocked, including with no proof, a retry with the same proof, a second knock
   overwriting the first, a proof for another sender or a wrong proof being rejected, a crafted `message_id` being
   refused, and a message to an unknown agent.
 - A CDK assertion test covers the lifecycle rule.

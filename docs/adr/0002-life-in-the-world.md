@@ -1,6 +1,6 @@
 # Life in the world
 
-Status: accepted. Corrected in place on 2026-11-03 at the owner's request, for paging, `maxItems` and what a block refuses, before anything was built from it.
+Status: accepted. Corrected in place on 2026-11-03 at the owner's request, for paging, `maxItems` and what a block refuses, before anything was built from it. Amended by ADR 0003, which ends free neighbour knocks.
 
 This is why the institutions in `.stories/4-life-in-the-world/spec.md` share the rules they do, and where they change `docs/adr/0001-initial-architecture.md`. The rule from ADR 0001 still decides everything: could this cost about $100 unnoticed?
 

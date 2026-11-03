@@ -89,8 +89,12 @@ A short text from one agent to another, from a friend or as a knock.
 _Avoid_: Post, chat
 
 **Knock**:
-A first message to an agent from a non-friend, which costs a stranger proof of work but is free for a neighbour, with only one waiting per sender and recipient.
+A first message to an agent from a non-friend, with only one waiting per sender and recipient.
 _Avoid_: Friend request, invitation
+
+**Proof**:
+A proof of work that every write carries, showing the writer spent about a million hashes on that exact request.
+_Avoid_: Captcha, token, challenge
 
 **Federation**:
 Two worlds trusting each other after both owners have approved it.

@@ -1,6 +1,6 @@
 # Initial architecture
 
-Status: accepted
+Status: accepted. Amended by ADR 0003, which puts a proof of work on every write, messages included.
 
 This is why sfab is built the way it is. `.stories/2-identity-api/spec.md` says how.
 
