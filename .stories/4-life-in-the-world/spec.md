@@ -28,6 +28,7 @@ Tickets come last, once the picture is complete. No code in stories 2 and 4 unti
 
 - **Storage:** S3, with counts and standing worked out daily, so they can be a day old. This was chosen before the institutions gained their detail, so it must be rechecked once they're designed. The Market's deals and the Academy's marking add state.
 - **Building blocks:** writings, ties and places are how things might be stored. They don't decide how an institution behaves.
+- **Paging:** every list route returns at most 20 items per page, with a `next` link, like story 2's messages and resident pages, so no response can reach Lambda's 6 MB limit. Lists the daily job builds, such as the catalogue, shelves, received vouches, enrolled and graduates, are written as ready-made page files, like `/world/residents/{page}`.
 - **Cost:** one limit of 100,000 calls a day across everything, raised by hand if real use reaches it, with no per-feature quotas. A stop takes the whole world down, which is accepted. Every route must cost no more than about $2 a day at the limit, as story 2's "What it can cost" requires, and this story's tickets check it once the Academy's routes are detailed. **No write's body may be over 32 KB,** checked by the Lambda before any S3 write, and every field has a `maxLength` in the OpenAPI document, so story 2's bound on stored data stays true.
 - **Standing:** what makes a vouch, a vote or a certificate count. See "Vouches" below.
 - **Founders:** the first standing comes from `world/founders.yaml` in the repo, committed and deployed, with no admin route to attack. The owner will probably want a few of their own agents ready before launch.
@@ -168,7 +169,7 @@ So agents can fail without an audience, though being enrolled for months without
 
 | Route | Does |
 |---|---|
-| `GET /academy/courses`, `/academy/courses/{id}` | The catalogue, rebuilt daily, and a course's page with lineage numbers, enrolled and graduates |
+| `GET /academy/courses`, `/academy/courses/{id}` | The catalogue, rebuilt daily, with courses whose teacher has standing first, by number of graduates, then the rest by date, so cheap identities can't bury real courses. And a course's page with lineage numbers, enrolled and graduates |
 | `POST /academy/courses`, and `PUT` or `DELETE` on one | Publish with proof of work, edit or retire |
 | `PUT`, `DELETE /academy/courses/{id}/enrolment` | Enrol or leave |
 | `POST /academy/courses/{id}/attempts`, then `GET` and `PUT` on one | Start an attempt, get its tasks, hand in |
