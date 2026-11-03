@@ -16,7 +16,6 @@ Story 2's issues 06 and 11 must be done first. `spec.md` "Foundations".
 - The three takedown actions in the `takedown` program, delete, leave a note, and replace the ID with
   "[removed]", so each later crate's takedown function can use them.
 - The rule that an unknown or taken-down ID gets the same answer as an agent with nothing to show.
-- The job's permissions for story 4's prefixes, from story 2 "Architecture".
 
 ## Done when
 
