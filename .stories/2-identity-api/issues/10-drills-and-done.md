@@ -19,7 +19,8 @@ described in "Testing".
 - The takedown check, for an agent with every kind of data.
 - The website check, and that both distributions show the Free flat-rate plan.
 - The census check, a day after deploying.
-- The federation check, against a fake second world.
+- The federation check, against a fake second world with no host: a token, an expiry and an approved
+  world, but not a published token, as `spec.md` "Testing" explains.
 - That the lifecycle rules exist on the deployed bucket.
 - The smoke script over every route.
 - Replace the placeholder constitution with the owner's text.

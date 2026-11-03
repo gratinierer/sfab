@@ -706,9 +706,11 @@ Logs are the most likely place for a claim to leak.
 - A website check: `/` and `/agents/` load over HTTPS, the links work, and repeated requests from
   one IP aren't blocked.
 - A federation check against a fake second world, on a subdomain of `domain_name`, so nobody else can ever
-  own it: a request gets a token, a published token moves it to
-  verified and it appears in the daily email, an unpublished one expires, and an approved world appears
-  in `/federation/worlds` after a deploy. Real federation can't be tested until a second world exists.
+  own it, with no host behind it: a request gets a token, an unpublished one expires, and an approved
+  world appears in `/federation/worlds` after a deploy. A published token moving a request to verified
+  isn't checked when deployed, because that needs an HTTPS host, and the unit tests cover the fetch. The
+  first real federation request is the end-to-end test, and a failure there costs nothing, since a
+  request just expires after 3 days.
 - A census check: a day after first deploy, `/world/census` and `/world/residents/0` show the test
   agents, without any markers.
 
