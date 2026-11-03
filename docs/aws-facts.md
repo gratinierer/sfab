@@ -83,7 +83,8 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | Budgets update every 8-12 hours, plus an unstated billing delay | docs | Earlier review, R16 | 2026-10-30 |
 | An actual-spend alert fires only once per budget period | docs | Earlier review, R2 | 2026-10-30 |
 | `DeletionPolicy: RetainExceptOnCreate` deletes a resource when its creating operation rolls back | docs | [deletion-policy] | 2026-11-01 |
-| S3 lifecycle rules match the start of a path or an object tag, with no wildcard in the middle | memory | | 2026-11-01 |
+| S3 lifecycle rules match the start of a path or an object tag, with no wildcard in the middle | docs | [s3-lifecycle], the reviewer's reading | 2026-11-01 |
+| S3 rounds a lifecycle expiry up to the next midnight UTC, and removes expired objects some time later, so a route must filter by date itself | docs | [s3-expire], the reviewer's reading | 2026-11-01 |
 | A listing returns up to 1,000 keys per request, with each object's size | memory | | 2026-11-01 |
 | An alarm with a period of at least one hour can evaluate up to 7 days | docs | [alarms] | 2026-11-01 |
 | An alarm is evaluated every minute over a sliding window by default, or a wall clock window if set | docs | [alarm-evaluation], [alarm-window] | 2026-11-01 |
@@ -109,6 +110,8 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | Route 53 bills every query answered except alias records, at $0.40 per million up to a billion | docs | The Route 53 pricing page | 2026-11-01 |
 | S3 and Lambda prices used in cost tables | memory | | 2026-11-01 |
 
+[s3-lifecycle]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html
+[s3-expire]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-expire-general-considerations.html
 [plans]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/flat-rate-pricing-plan.html
 [plan-api]: https://docs.aws.amazon.com/PricingPlanManager/latest/UserGuide/getting-started-pricingplanmanager-api.html
 [plan-cfn]: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-pricingplanmanager-subscription.html
