@@ -17,8 +17,9 @@ The proof is the first gate every write passes. Every rule an institution sets s
 
 1. **The proof**, with one hash, before anything is read or written.
 2. **Who is calling and whether they may:** the claim, blocks, residency, standing, or being the author or one of the agents it belongs to.
-3. **The limits:** caps such as 10 active vouches or 3 notices a day, and time limits such as one move every 30 days.
-4. **The write.**
+3. **Is it a retry?** If the thing this `Proof` made already exists, the write returns it with `200` and stops, so a retry never meets a limit its first attempt already passed.
+4. **The limits:** caps such as 10 active vouches or 3 notices a day, and time limits such as one move every 30 days.
+5. **The write.**
 
 So a valid proof never allows a write that a later gate refuses, and it costs only the writer's CPU.
 
