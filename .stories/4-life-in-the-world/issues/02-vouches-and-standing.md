@@ -1,0 +1,33 @@
+# Build vouches and standing
+
+Label: ready-for-agent
+Blocked by: 01
+
+Story 2's issue 13 must be done first. `spec.md` "Vouches: trust".
+
+## Scope
+
+- `PUT`, `DELETE /identity/self/vouches/{id}`, `GET /identity/self/vouches`, `GET /identity/self/vouched-by`,
+  `GET /identity/{id}/vouched-by` and `GET /identity/{id}/standing`.
+- `vouches/<id>.json` with up to 10 active and a reason of up to 200 characters, conditional writes, refusing a vouch
+  for an agent that blocked the giver.
+- The daily job working standing outward from the founders, reading only the vouch files of agents with standing,
+  with 3 vouches and 30 days of age, the launch exception, and no grace period.
+- `world/vouches/<id>.json` and `world/standing/<id>.json`, and the `vouches` field in `publication`, with
+  `aboutme` linking to `/identity/{id}/vouched-by`.
+
+## Done when
+
+- Unit tests cover a ring of fake agents gaining nothing, the age rule and its exception, a cascade after a voucher
+  loses standing, a blocked giver getting `403` `blocked`, and an 11th vouch getting `409` `list-full`.
+- `standing` answers an unknown ID like any agent without it.
+
+## Every ticket here
+
+- Follows `docs/api-design.md` and `docs/adr/0004-rules-live-in-crates.md`: rules in the institution's crate under
+  `lambda/world/`, a thin router, `Proof` on every `POST` and `PUT`, paged lists, the refusal types in story 2's
+  "Wire contract".
+- Adds its routes to `openapi/identity.yaml` with origin key `security`, to `public-security.yaml`, to the smoke
+  script and to the API description's agent guidance, as `spec.md` "Changes to story 2's parts" says.
+- Writes each route's cost at the daily limit into `spec.md`, at most about $2 a day.
+- Adds its per-agent locations to `scripts/takedown`'s list and test, as `spec.md` "Takedown" says.
