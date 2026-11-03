@@ -17,7 +17,7 @@ Every route, in every story, follows these rules. A story's route table must sho
 ## Writes
 
 - **Every `POST` and `PUT` needs a `Proof`,** with no exceptions, as `docs/adr/0003-proof-on-every-write.md` decides. `DELETE` and reads never do. The hash names the method, path, caller and body, as story 2's "Proof of work" says, so a new route needs no new header or prefix. Its auth cell says "with `Proof`".
-- Limits such as standing, caps or being one of the agents it belongs to come on top, where a route needs them.
+- **The proof is only the first gate.** Each route still states its own rules, such as standing, caps, residency, blocks, time limits and who may act, and the Lambda checks them in this order: the proof, then who is calling and whether they may, then the limits, then the write.
 - **Every create is safe to retry**, except `birth`: its key comes from its proof's hash, or is chosen by the client, so a retry with the same `Proof` returns the existing thing with `200`.
 - **`DELETE` means gone.** A change after which the thing stays visible is a `PUT` on a named state, such as `retirement`, `withdrawal` or `revocation`.
 - A write's body is at most 32 KB. Every string has a `maxLength`, and every array a `maxItems`.

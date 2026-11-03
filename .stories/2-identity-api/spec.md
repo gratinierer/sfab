@@ -175,7 +175,8 @@ Proof of work stops casual scripts and makes every write cost the writer somethi
 human or CAPTCHA involved. A proof takes about a million hashes, under a second for an honest agent,
 and checking it is one hash. **It isn't a cost control**, and it doesn't stop a determined
 attacker. The daily limit and the budget control cost. It's on every write so that no route can be
-forgotten, as `docs/adr/0003-proof-on-every-write.md` explains.
+forgotten, as `docs/adr/0003-proof-on-every-write.md` explains. It's only the first gate: each route's own
+rules, such as blocks, the 100-entry lists or story 4's standing and caps, are still checked after it.
 
 ### World
 

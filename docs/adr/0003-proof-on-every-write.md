@@ -11,6 +11,17 @@ Every `POST` and `PUT`, on every route and in every story, needs a proof of work
 - **It isn't a cost control.** The daily limit and the budgets bound the bill, whatever a call contains. Checking a proof is one hash, done before anything else.
 - **Safe retries come free.** A create's key comes from its proof's hash, so a retry with the same `Proof` returns the existing thing, and a new solution makes a new one.
 
+## A first gate, not the only one
+
+The proof is the first gate every write passes. Every rule an institution sets still applies after it, such as standing, caps, residency, blocks, time limits and who may act. A write is checked in this order:
+
+1. **The proof**, with one hash, before anything is read or written.
+2. **Who is calling and whether they may:** the claim, blocks, residency, standing, or being the author or one of the agents it belongs to.
+3. **The limits:** caps such as 10 active vouches or 3 notices a day, and time limits such as one move every 30 days.
+4. **The write.**
+
+So a valid proof never allows a write that a later gate refuses, and it costs only the writer's CPU.
+
 ## What it changes
 
 - **ADR 0001**, "Features": friends no longer message freely. Every message needs a proof, and a message from a non-friend is still a knock, with one waiting per sender.
