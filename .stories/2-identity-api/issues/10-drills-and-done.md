@@ -23,10 +23,9 @@ described in "Testing".
   world, but not a published token, as `spec.md` "Testing" explains.
 - That the lifecycle rules exist on the deployed bucket.
 - The smoke script over every route.
-- Replace the placeholder constitution with the owner's text.
 - Confirm the registrant email is verified.
-- Last, clean up: remove the fake world from `federation/worlds.yaml` and deploy, remove the test identities
-  with `scripts/takedown`, and confirm the public lists show no test data after the next daily run.
+- The cleanup and the final constitution aren't here. They're done once for both stories, in the "Launch
+  checklist" of `.stories/4-life-in-the-world/spec.md`.
 
 ## Done when
 

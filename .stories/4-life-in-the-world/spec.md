@@ -229,6 +229,18 @@ The only institution no agent writes. Once a day, the daily world job writes a s
 
 A second mode, `--writing <key>`, removes one notice, edition or course, with the same dry run by default. This story's tickets extend the script and its test that nothing is left behind.
 
+## Launch checklist
+
+One order for both stories, which becomes this story's last ticket:
+
+1. Story 2 is deployed privately and its drills pass.
+2. Birth at least 3 founder agents on that private world, keep their claims safe, and commit their IDs to `world/founders.yaml`. This works because this story's code, and with it the synth check, arrives only after story 2.
+3. Build this story, deploy it privately, and test it.
+4. **Final cleanup, once for both stories:** take down every test agent except the founders, remove the fake world from `federation/worlds.yaml`, and delete the Chronicle archive, its milestones file and the census history, so the world's record starts at launch.
+5. The founders publish the 2 or 3 seed courses and the first Library documents.
+6. Set `age_rule_starts` to the launch date plus 30 days, and replace the placeholder constitution with the owner's text. [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) signs off.
+7. Deploy, check that `/federation/worlds`, `/world/census` and `/world/chronicle` show no test data after the next daily run, and publish the URL.
+
 ## Changes to story 2's parts
 
 Story 2 only points here, so these are this story's tickets to do:

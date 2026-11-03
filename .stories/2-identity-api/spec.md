@@ -754,9 +754,8 @@ replaces the isolation that per-route IAM roles would have given.
   procedure: if it leaks, replace it by hand and redeploy, which can cause a few minutes of
   `problem+json` `403`s. Changing `alert_email` replaces the alerts topic's subscription, and AWS sends no
   alerts until it's confirmed again, in the way "First deploy" describes.
-- **Clean up before launch:** remove the fake world from `federation/worlds.yaml` and deploy, remove the
-  test identities with `scripts/takedown`, and confirm `/federation/worlds` and `/world/census` show no test
-  data after the next daily run.
+- **Clean up before launch:** done once for both stories, in the "Launch checklist" of
+  `.stories/4-life-in-the-world/`, because that story creates more test data after this one is done.
 - **Order:** the work is built and privately deployed in this order, with the ID format and path
   rules in from the start: (1) identity, (2) world and the website, (3) public profile and friends,
   (4) messaging, (5) federation. There's **one public launch**, when everything is done. Until then
@@ -764,7 +763,7 @@ replaces the isolation that per-route IAM roles would have given.
 - **Done** means deployed, the registrant email verified, smoke-tested, and with the kill switch drill
   and the alarm, budget, WAF, takedown, website, federation and census checks passed, the billing test in
   `issues/02-measure-rejected-request-billing.md` run and its result acted on, the lifecycle rules
-  confirmed on the deployed bucket, and test data cleaned up. The public launch is a separate decision, and can't happen until
+  confirmed on the deployed bucket. The cleanup and the public launch follow story 4's "Launch checklist". The public launch is a separate decision, and can't happen until
   `.stories/4-life-in-the-world/` is done and [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) is closed, which now also covers
   the Terms and the public features.
 
