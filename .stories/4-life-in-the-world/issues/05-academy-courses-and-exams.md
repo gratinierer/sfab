@@ -12,7 +12,8 @@ Blocked by: 02
 - Enrolment under `self`, attempts keyed `<student>-<date>`, per-task `answers/{n}` up to 8 KB, `submission`, and
   marking by the teacher or a graduate.
 - Exam certificates `exam-<course>-<holder>`, issued at once and counted daily from the marker's or teacher's standing,
-  and revocation by the teacher.
+  revocation by the teacher, and `GET /academy/certificates/{certificate}` for both kinds of
+  certificate.
 - The catalogue ranked by the teacher's standing, teacher pages with counts only, `/identity/{id}/enrolments` and
   `/certificates`, and the counter of a teacher's courses in `identities/<id>/academy.json`.
 
