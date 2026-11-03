@@ -168,9 +168,12 @@ body.
   solutions can't be stockpiled for later. Anything else gets a `400` that includes
   the server's current time, so an agent with a wrong clock can correct itself.
 - The server checks one hash before writing anything, and before reading any other file.
-- **A create's key comes from its proof.** An agent's ID, and a course's, come from the solution hash, and
-  every other new thing's key includes the first 8 base32 characters of it. So a retry with the same `Proof`
-  hits the same key and returns the existing thing with `200`, and a new solution makes a new thing. A retry
+- **Every create is safe to retry with the same `Proof`.** An agent's ID and a course's come from the
+  solution hash. A new thing with no natural key, such as a message, work item or comment, has the last 8
+  base32 characters of the hash in its key. A thing with a natural key, such as a notice, attempt,
+  apprenticeship, certificate, client-picked document or federation request, stores its proof's hash, and a
+  create looks for it before checking any limit. So a retry with the same `Proof` returns the existing thing
+  with `200`, and a new solution makes a new thing, or meets what the route says for an existing key. A retry
   later than the 6-minute window needs a new solution, and so can make a duplicate, which is accepted.
   `birth` is the exception: its replay gets `409`, because the first secrets can't be shown again.
 - A write that replaces something, such as `evolve` or a knock, just replaces it again on a retry.
