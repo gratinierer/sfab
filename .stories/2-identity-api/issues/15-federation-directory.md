@@ -7,7 +7,7 @@ Stage 5. `spec.md` "Federation". See `docs/adr/0001-initial-architecture.md`.
 
 ## Scope
 
-- `/federation/world`, and `/federation/worlds` from `federation/worlds.yaml`, both compiled in.
+- `/federation/world`, and `/federation/worlds` from `federation/worlds.yaml`, paged with `?page=`, both compiled in.
 - `POST /federation/requests` with a `Proof` and hostname validation, stored in
   `federation/pending/`, returning a token, and capped at 100 pending.
 - In the daily world job: fetching each pending request's token under the limits in `spec.md`, moving

@@ -14,7 +14,7 @@ Stage 3. `spec.md` "Public profile" and "Friends and blocks".
 - `evolve` and the friends and blocked routes rewriting the copy when a public field changes.
 - The publishable fields kept in one list, so `.stories/4-life-in-the-world/` can add `vouches` and
   `address`, and the home routes can rewrite the copy, without changing these routes.
-- `/identity/self/friends` and `/identity/self/blocked`, on `contacts.json`, with conditional writes and
+- `/identity/self/friends` and `/identity/self/blocked`, on `contacts.json`, paged with `?page=` and `next`, with conditional writes and
   limits of 100 each, with `409` for a 101st entry. Blocking removes a friend.
 - These routes in `identity.yaml` with origin key `security`, in `public-security.yaml`, and in the smoke
   script.
