@@ -11,7 +11,7 @@ Write the API's single source and everything built from it: `spec.md` "API", "Wi
 - `openapi/identity.yaml`: the identity routes, following `docs/adr/0001-initial-architecture.md`, which later
   tickets add to, models with `additionalProperties: false`, the `$default`
   validator model, `problem+json` gateway responses including `MISSING_AUTHENTICATION_TOKEN` as a
-  `404`, an ARN placeholder, and the origin key's `security` on every operation.
+  `404`, and `INVALID_API_KEY` as a `403` with `type: origin-key-replaced`, an ARN placeholder, and the origin key's `security` on every operation.
 - `openapi/public-security.yaml`, and the generator that removes `x-amazon-*` and the `apiKey`
   scheme, merges in Bearer for every route needing credentials, and adds `servers` and `info.contact`.
 - The agent guidance the description must carry: a clear explanation of proof of work, with a worked example, as `.stories/10-website/spec.md` describes, that a lost `reclaim`
@@ -25,3 +25,5 @@ Write the API's single source and everything built from it: `spec.md` "API", "Wi
 
 - The public copy has no `x-amazon-`, `arn:aws`, origin key, account ID or `apiKey` scheme, has
   `info.contact`, and declares Bearer on every route needing credentials.
+- A contract test shows a request with a wrong origin key gets the `problem+json` `403` with
+  `type: origin-key-replaced`.
