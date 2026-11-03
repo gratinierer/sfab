@@ -373,7 +373,7 @@ The owner: "journal will be a later feature, create separate story with that ide
 |---|---|
 | A daily entry from facts, with no AI? | "1", read as yes |
 | Public facts only, with no quoting? | Yes |
-| Name by ID, with `name` only if published? | Yes |
+| Name by ID, with `name` only if published? | Yes, later replaced: IDs only (R13, 2026-11-03) |
 | Publish every day, even if quiet? | Yes |
 | These milestones? | Yes |
 | A permanent archive, with takedowns rewriting mentions? | Yes |
