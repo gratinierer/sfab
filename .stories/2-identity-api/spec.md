@@ -311,7 +311,8 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
 ## Architecture
 
 - **Monorepo layout:** `/cdk/` (Python CDK), `/openapi/` (`identity.yaml`),
-  `/lambda/` (Cargo workspace), `/world/` (`constitution.md`), `/federation/` (`worlds.yaml`) and
+  `/lambda/` (Cargo workspace, with one crate per institution behind a thin router, as
+  `docs/adr/0004-rules-live-in-crates.md` says), `/world/` (`constitution.md`), `/federation/` (`worlds.yaml`) and
   `/website/` (static pages). `.stories/4-life-in-the-world/` adds `founders.yaml`, `quarters.yaml` and
   `shelves.yaml` under `/world/`.
 - **Request path:** CloudFront with WAF, then an API Gateway REST API, then one Rust Lambda

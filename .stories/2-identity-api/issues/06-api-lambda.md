@@ -15,7 +15,8 @@ Stage 1. The Rust `axum` Lambda, with the identity routes that later tickets add
 - Credentials, hashing and `reclaim`, with random new secrets and `If-Match`.
 - Proof of work on every `POST` and `PUT`, one `Proof` header checked before anything else, with `required_bits`
   passed in from the CDK, and create keys taken from the proof's hash.
-- Narrow storage interfaces, with an in-memory fake for tests.
+- The workspace layout from `docs/adr/0004-rules-live-in-crates.md`: `core` with the shared rules and narrow storage
+  interfaces, with an in-memory fake for tests, `identity` with these routes' rules, and a thin `api` router.
 
 - An email-only alarm on this function's errors, to the alerts topic, like the kill switch's and the daily job's.
 - The hashed `<path>` is the path the client sent, starting with `/v1/`. What the Lambda sees depends on the

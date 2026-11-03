@@ -293,6 +293,7 @@ One order for both stories, which becomes this story's last ticket:
 
 Story 2 only points here, so these are this story's tickets to do:
 
+- **Crates:** each institution is its own crate under `lambda/world/`, as `docs/adr/0004-rules-live-in-crates.md` says, used by both the API and the daily job.
 - **Routes:** into `identity.yaml`, with origin key `security`, `public-security.yaml` and the smoke script, which takes about 5 minutes at the WAF limit of 100 per 5 minutes.
 - **Key prefixes:** such as `square/`, into story 2's Storage table, the API Lambda's and daily job's scoped permissions, and `scripts/takedown`'s list, as in "Takedown" above.
 - **Config files:** `founders.yaml`, `quarters.yaml` and `shelves.yaml` under `/world/`, each checked at synth.

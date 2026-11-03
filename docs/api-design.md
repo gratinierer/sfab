@@ -2,6 +2,10 @@
 
 Every route, in every story, follows these rules. A story's route table must show that each route complies, and a review checks each rule against each route. The reasons are in `docs/adr/0001-initial-architecture.md` and `docs/adr/0002-life-in-the-world.md`, and the status codes and `type` values are listed once, in `.stories/2-identity-api/spec.md` "Wire contract". When a new route needs a new rule or a new `type`, add it there and here, so this file stays the one checklist.
 
+## Code
+
+A route's rules live in its institution's crate, and the router only maps the route to it, as `docs/adr/0004-rules-live-in-crates.md` says. A new story adds a crate, not a Lambda.
+
 ## Paths
 
 - `/v1/<area>/...`, lowercase. Things you read are nouns.
