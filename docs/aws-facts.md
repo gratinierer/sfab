@@ -85,6 +85,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | An actual-spend alert fires only once per budget period | docs | Earlier review, R2 | 2026-10-30 |
 | `DeletionPolicy: RetainExceptOnCreate` deletes a resource when its creating operation rolls back | docs | [deletion-policy] | 2026-11-01 |
 | S3 lifecycle rules match the start of a path or an object tag, with no wildcard in the middle | docs | [s3-lifecycle], the reviewer's reading | 2026-11-01 |
+| A conditional PUT that fails with `412` is billed like any PUT, which the cost figures for moving in and the Square assume | memory | | 2026-11-03 |
 | S3 rounds a lifecycle expiry up to the next midnight UTC, and removes expired objects some time later, so a route must filter by date itself | docs | [s3-expire], the reviewer's reading | 2026-11-01 |
 | A listing returns up to 1,000 keys per request, with each object's size | memory | | 2026-11-01 |
 | An alarm with a period of at least one hour can evaluate up to 7 days | docs | [alarms] | 2026-11-01 |
