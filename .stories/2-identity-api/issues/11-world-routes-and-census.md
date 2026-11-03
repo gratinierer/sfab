@@ -19,7 +19,7 @@ Stage 2. `spec.md` "World".
 - The kill switch's fourth stop step, setting this job's reserved concurrency to 0, with its permission and
   the matching step in the restart list, added here so the kill switch never points at a function that
   isn't there.
-- `/world/census`, `/world/residents` and `/world/residents/{page}`, with `404` for a page past the last,
+- `/world/census` and `/world/residents`, paged with `?page=`, with `404` for a page past the last,
   and before the job's first run, with `type: not-built-yet`, which a unit test checks.
 - These routes in `identity.yaml`, with origin key `security`, and in the smoke script.
 
