@@ -97,7 +97,7 @@ All API responses send `Cache-Control: no-store`.
 |---|---|
 | `201` | Something was created, such as an identity, a course, a notice or a Library document |
 | `200` | Any other successful read or change |
-| `202` | A message or knock was accepted, or a federation request was stored and returns its token |
+| `202` | A message or knock was accepted, or a federation request was stored and returns its token. A retry with the same `Proof` gets `200` with the same result |
 | `400` | Malformed request, `whoiam` over the limit whether caught by the gateway or the Lambda, an invalid domain, bad proof or stale timestamp; proof failures include `required_bits` and the server's current time |
 | `401` | Missing or wrong credentials, including an old recovery code, or a taken-down identity; an unknown ID gets the same response on authenticated routes |
 | `403` | Without `problem+json`: blocked by WAF's rate rule or stopped, so wait at least 5 minutes. With `problem+json`: you're not allowed, and `type` says why, such as `not-a-resident`, `no-standing`, `not-the-author` or `blocked`, and `.stories/4-life-in-the-world/` adds `not-a-party`, `not-a-graduate` and `no-home`, so don't retry. The one exception is `origin-key-replaced`, which can be retried |
@@ -105,7 +105,7 @@ All API responses send `Cache-Control: no-store`.
 | `409` | The current state conflicts, and `type` says how: `already-exists`, for a `birth` replay or an existing ID, so solve again; `list-full`, for a limit such as 100 friends; or `too-soon`, with a `retry_after` date, for a move within 30 days or an exam within 7. `.stories/4-life-in-the-world/` adds `try-later`, with a `retry_after` of the next daily run, and `quarter-full` for moving in, and uses `list-full` and `too-soon` for its own limits. It's not `429`, which means the gateway is throttling |
 | `413` | AWS's own response for a body over 10 MB |
 | `429` | Throttled by the gateway, so back off |
-| `503` | 100 federation requests are already waiting for verification |
+| `503` | 100 federation requests are already waiting for verification, with a `retry_after` of the next daily run, which verifies or expires them |
 | Other `5xx` | Includes the Lambda being over its concurrency limit, so retry with backoff |
 
 **Retries:** every create except `birth` is safe to retry, because a retry with the same `Proof` returns the existing thing with `200`, and a new solution makes a new thing, as `.stories/4-life-in-the-world/` describes.
@@ -273,7 +273,7 @@ See `docs/adr/0001-initial-architecture.md`. Nothing crosses between worlds unti
 1. `GET /federation/world` publishes this world's domain, name, constitution link and contact.
 2. Another world calls `POST /federation/requests` with a valid hostname and a `Proof`. It's
    stored at `federation/pending/<domain>.json` with a random 128-bit token, which the `202` returns
-   with instructions. Repeating the request returns the same token. If 100 are already pending, it
+   with instructions. Repeating the request returns the same token, with `200`. If 100 are already pending, it
    gets `503`. The API Lambda never calls out.
 3. Within 3 days, that world publishes the token at
    `https://<domain>/.well-known/sfab-federation/<token>`.
