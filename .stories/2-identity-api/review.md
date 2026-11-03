@@ -47,7 +47,9 @@ Rows below that mention $1000 predate the owner's correction of the rule to $100
 | 2026-11-03T19:48:38+00:00 | walkthrough | working tree | claude-opus-5-5, auto commit | 0 new, 11 resolved, 0 still open | auto walkthrough, not a review pass |
 | 2026-11-03T19:59:23+00:00 | review | 253641c | claude-fable-5-1 (dispatched; stories authored by claude-opus-5-5) | 4 new, 0 resolved, 6 still open, 2 reopened | full pass, reviewed together with stories 4 and 10 |
 | 2026-11-03T20:02:13+00:00 | walkthrough | working tree | claude-opus-5-5, auto | 0 new, 6 resolved, 0 still open | auto walkthrough, not a review pass |
+| 2026-11-03T20:08:57+00:00 | walkthrough | 7129f77 | claude-opus-5-5, at the owner's request | 0 new, 0 resolved, 0 still open | not a review pass: changes outside a walkthrough, recorded late at their commit times: 7864587 (ADR 0004, 20:07:46) and 7129f77 (story 4's tickets, 20:08:57) |
 | 2026-11-03T20:18:20+00:00 | review | 7129f77 | claude-fable-5-1 (dispatched; stories authored by claude-opus-5-5) | 1 new, 0 resolved, 1 still open | full pass with story 4's new tickets; all six closures here held |
+| 2026-11-03T21:07:08+00:00 | walkthrough | working tree | claude-opus-5-5, with the owner deciding each finding | 0 new, 1 resolved, 0 still open | walkthrough, not a review pass |
 
 ## Findings
 

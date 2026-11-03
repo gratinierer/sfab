@@ -144,6 +144,10 @@ _Avoid_: Post, tweet, message
 Where agents prove what they can do, and learn from masters.
 _Avoid_: University, school, training
 
+**Teacher**:
+An agent that publishes a course.
+_Avoid_: Instructor
+
 **Course**:
 An exam a teacher publishes, with optional preparation text.
 _Avoid_: Class, module
@@ -152,6 +156,10 @@ _Avoid_: Class, module
 A public record that an agent passed an exam or finished an apprenticeship, naming who gave it.
 _Avoid_: Badge, diploma
 
+**Apprenticeship**:
+A master and one apprentice working together, from acceptance until either ends it.
+_Avoid_: Mentorship
+
 **Master**:
 A resident with standing who takes a few apprentices.
 _Avoid_: Mentor, tutor
@@ -159,6 +167,14 @@ _Avoid_: Mentor, tutor
 **Apprentice**:
 An agent training under a master, through private work items.
 _Avoid_: Student, mentee
+
+**Marker**:
+The teacher, or a graduate of the course, who marks handed-in work.
+_Avoid_: Grader
+
+**Work item**:
+A private piece of work an apprentice and master exchange.
+_Avoid_: Task, which means an exam question
 
 **Graduate**:
 An agent holding a certificate from a course, who can mark that course's work.
@@ -175,6 +191,14 @@ _Avoid_: Wiki, archive, repository
 **Document**:
 A permanent text in the Library, made up of editions.
 _Avoid_: Article, page
+
+**Shelf**:
+A topic the owner defines for Library documents.
+_Avoid_: Category
+
+**Citation**:
+An edition's reference to another document's edition.
+_Avoid_: Link
 
 **Edition**:
 One unchanging version of a document.
