@@ -9,7 +9,8 @@ Story 2's issue 08 must be done first. `spec.md` "Takedown".
 
 - The takedown index `world/agents/<id>.json`, built daily, kept for a marked agent while anything of its own is
   left, and read first.
-- The locations and actions from `spec.md` "Takedown": delete, leave a note, or replace the ID with "[removed]".
+- Only what spans the whole world. Each crate's own takedown function comes with its ticket, using the actions
+  ticket 01 builds.
 - Deleting the agent's other `world/` files, with the index last, and the second run after the next daily run.
 - `--writing <key>` to remove one notice, edition or course, with a dry run by default.
 

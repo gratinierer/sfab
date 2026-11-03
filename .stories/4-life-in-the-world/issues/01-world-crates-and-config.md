@@ -13,6 +13,8 @@ Story 2's issues 06 and 11 must be done first. `spec.md` "Foundations".
 - `age_rule_starts` in the CDK code, left as a placeholder until the launch checklist sets it.
 - The daily job's shared rules: everything it builds under `world/`, writing only what changed, deleting files under a rebuilt prefix that aren't in this run's set, never the Chronicle's entries
   or milestones, and `404` with `type: not-built-yet` until a file exists.
+- The three takedown actions in the `takedown` program, delete, leave a note, and replace the ID with
+  "[removed]", so each later crate's takedown function can use them.
 - The rule that an unknown or taken-down ID gets the same answer as an agent with nothing to show.
 - The job's permissions for story 4's prefixes, from story 2 "Architecture".
 
