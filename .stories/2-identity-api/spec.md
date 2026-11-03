@@ -147,8 +147,12 @@ this API you accept the terms", with no separate step to accept them.
 client finds a nonce where
 `SHA-256("sfab:<METHOD>:<path>:<unix-ts>:<body-hash>:<caller>:<nonce>")` has N leading zero bits, and
 sends the timestamp and nonce in the `Proof` header, because the hash covers the body. `<path>` is the
-request path without its query, and `<caller>` is the caller's ID, or `-` for an anonymous `birth` or
-federation request. So a solution can't be reused on another route, for another caller or with another
+request path exactly as sent, starting with `/v1/`, without its query, with no trailing slash and no
+percent-encoding, because every path is lowercase ASCII. `<METHOD>` is upper case. `<caller>` is the ID in the
+`Authorization` header, which for `reclaim` is the part before the `.`, or `-` for an anonymous `birth` or
+federation request. `<unix-ts>` is decimal seconds, and `<nonce>` is 1 to 64 characters of base64url, so the
+`Proof` header splits on its one `:`. `<body-hash>` is as under "Wire contract", and an empty body hashes
+the empty string. So a solution can't be reused on another route, for another caller or with another
 body.
 
 - N is `required_bits` in the CDK code, starting at 20, and changing it takes a commit and a deploy.
