@@ -10,7 +10,8 @@ Blocked by: 02
 - Course routes: publish, edit, retire, the page without tasks, `tasks` for the teacher, and `enrolled` and
   `graduates` pages.
 - Enrolment under `self`, attempts keyed `<student>-<date>`, per-task `answers/{n}` up to 8 KB, `submission`, and
-  marking by the teacher or a graduate.
+  marking by the teacher or a graduate, with the queue as pages of attempt IDs and `GET .../marking/{attempt}`
+  for one attempt's answers.
 - Exam certificates `exam-<course>-<holder>`, issued at once and counted daily from the marker's or teacher's standing,
   revocation by the teacher, and `GET /academy/certificates/{certificate}` for both kinds of
   certificate.

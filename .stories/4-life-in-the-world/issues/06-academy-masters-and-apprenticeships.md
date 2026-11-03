@@ -10,7 +10,7 @@ Blocked by: 05
 - Applications under `academy/applications/<master>/<applicant>.json`, with a 30-day lifecycle rule, one per pair,
   refused by a block.
 - Accepting, which starts `<master>-<apprentice>-<date>`, the master's counter of up to 3 current apprentices, work
-  items and comments keyed by their proof, `ending`, the master's certificate, and the master revoking it through
+  items and comments keyed by their proof, comments read through their own paged route, `ending`, the master's certificate, and the master revoking it through
   ticket 05's `PUT .../revocation`.
 - Master pages with their `apprentices` pages, built daily.
 
