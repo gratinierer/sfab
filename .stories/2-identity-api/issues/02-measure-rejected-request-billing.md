@@ -24,7 +24,7 @@ that any billed total can only mean one combination of kinds:
 Have the client tally the status codes it receives. Requests in kind 3 that succeed are billed
 anyway, so subtract them from the total. A day or two later, read the day's request count in
 Cost Explorer. This costs about 3 cents. The
-WAF limit of 10 requests per IP per 5 minutes applies to the third kind, so run it from several
+WAF limit of 100 requests per IP per 5 minutes applies to the third kind, so run it from several
 IPs or relax the rule briefly, and restore it afterwards. Also confirm that WAF-blocked requests
 add no charge, and which kinds raise API Gateway's `Count`, which the daily limit relies on. The test
 sends far fewer calls than the limit, so it can't trip the stop by accident.

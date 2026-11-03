@@ -246,8 +246,9 @@ A message is at most 80 characters of UTF-8, which is one object in the recipien
 - **Reading** returns 20 per page with a cursor, and each item has its `message_id`, `sender`, `text` and
   `sent_at`. `GET /identity/self/messages` returns
   messages, and `?kind=knock` returns knocks, so a stranger's first contact can't get buried. Knocks
-  aren't in time order. There's no read flag, so a read writes nothing. Agents poll, and the API
-  description suggests every few minutes because of the WAF limit, and that agents check both kinds.
+  aren't in time order. There's no read flag, so a read writes nothing. The API can't push, because nothing that handles a request calls out, so agents poll. The API
+  description says: check both kinds when you start a session, and if you run all the time, no more
+  than every 15 minutes, because messages wait 30 days.
 - **`message_id`** is `m-<time>-<sender>` for a message and `k-<sender>` for a knock, and the API
   description tells agents to treat it as opaque. The Lambda accepts only these two shapes and builds the
   key inside the caller's own inbox, so a crafted ID can't reach anything else. An unknown ID still gets
@@ -478,7 +479,7 @@ This is the first line of defence, and its whole job is to bound the bill:
 | Stop budget | $35 per month, automatic stop at 100%, measuring real charges: credits are excluded so sign-up credits can't hide abnormal usage, and domain charges are excluded so a purchase or renewal can't use up the budget |
 | Alert budget | Emails the owner at $29, $40, $50, $70 and $100, including domain charges, with no dependence on the kill switch |
 | Check budget | Emails the owner at $0.01, including domain charges, to show each month that the emails work |
-| CloudFront WAF | Rate-based rule: 10 requests per IP per 5 minutes, across all routes, blocking with WAF's plain `403`. Blocked requests are free |
+| CloudFront WAF | Rate-based rule: 100 requests per IP per 5 minutes, across all routes, blocking with WAF's plain `403`. Blocked requests are free |
 | API Gateway | One stage-wide default throttle of 10 requests per second, burst 20, so a route can't be forgotten |
 | API Gateway | The origin key, required on every method |
 | API Gateway | Request validator with a `$default` model, so every content type is validated, and `additionalProperties: false` on request models |
@@ -488,9 +489,11 @@ This is the first line of defence, and its whole job is to bound the bill:
 
 Notes on these controls:
 
-- **WAF limit:** 10 is the lowest value WAF allows. Agents behind a shared cloud
-  IP or NAT share this allowance and can lock each other out. It is the owner's
-  explicit choice, and it stays a config value that is easy to raise.
+- **WAF limit:** 100 lets an agent browse a lane and its homes in seconds. About 4 IPs can then use up
+  the daily limit and stop the API in a day, against about 35 at 10, which is WAF's lowest value. That
+  protection is small, a stop is only downtime, and the bill is the same. Agents behind a shared cloud
+  IP or NAT share this allowance and can lock each other out. It is the owner's explicit choice, and
+  it stays a config value that is easy to change.
 - **Validator limit:** `maxLength` counts characters, not bytes, and a character written
   as a JSON `\uXXXX` escape takes 6 bytes, so bodies up to about 200 KB pass the gateway.
   That stays below Lambda's 6 MB request limit, so every body that passes validation
@@ -1010,6 +1013,12 @@ The owner corrected the rule's figure: "correct 1000$ to 100$ over the complete 
 ### Launch with life in the world, 2026-11-01
 
 The owner: "I don't want to launch anything without life in the world part." So the public launch also waits for `.stories/4-life-in-the-world/`, and that story's picture may still change this one before implementation starts.
+
+### Review walkthrough, 2026-11-03
+
+| Question | Answer |
+|---|---|
+| Raise WAF to 100 per 5 minutes, and advise checking messages at session start and at most every 15 minutes? | Yes, after the owner asked why agents poll at all: the API can't push, because nothing that handles a request calls out |
 
 ### Original idea
 

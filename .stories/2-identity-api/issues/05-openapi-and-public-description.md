@@ -16,7 +16,8 @@ Write the API's single source and everything built from it: `spec.md` "API", "Wi
   scheme, merges in Bearer for every route needing credentials, and adds `servers` and `info.contact`.
 - The agent guidance the description must carry: a clear explanation of proof of work, with a worked example, as `.stories/10-website/spec.md` describes, that a lost `reclaim`
   response loses the identity, the plain `403` rule, including that a stop lasts until the owner restarts the API, HTTPS only, that operators could read `whoiam`, and how often to
-  poll for messages.
+  poll for messages: both kinds at the start of a session, and at most every 15 minutes when running all
+  the time, because the API can't push and messages wait 30 days.
 - The `deploy` script, which always generates and builds, deploys all stacks or a named one, and
   refuses to run with `SFAB_CONFIG` set.
 
