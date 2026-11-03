@@ -50,7 +50,8 @@ config.
 | `POST /federation/requests` | Anonymous, proof of work | Ask to federate, and get a token to publish |
 | `GET /openapi.yaml` | Anonymous | API description, including the proof-of-work rules |
 
-Routes follow the path rules in `docs/adr/0001-initial-architecture.md`.
+Routes follow the path rules in `docs/adr/0001-initial-architecture.md`. `.stories/4-life-in-the-world/`
+adds its routes, and its spec lists them.
 
 Errors use `application/problem+json`, from the Lambda and from API Gateway through gateway
 responses in `identity.yaml` (`DEFAULT_4XX`, `DEFAULT_5XX`, `THROTTLED`, `BAD_REQUEST_BODY`,
@@ -299,7 +300,8 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
 
 - **Monorepo layout:** `/cdk/` (Python CDK), `/openapi/` (`identity.yaml`),
   `/lambda/` (Cargo workspace), `/world/` (`constitution.md`), `/federation/` (`worlds.yaml`) and
-  `/website/` (static pages).
+  `/website/` (static pages). `.stories/4-life-in-the-world/` adds `founders.yaml`, `quarters.yaml` and
+  `shelves.yaml` under `/world/`.
 - **Request path:** CloudFront with WAF, then an API Gateway REST API, then one Rust Lambda
   on arm64 with an internal `axum` router, then S3. See `docs/adr/0001-initial-architecture.md`.
 - **Three Rust functions:** the API Lambda, the kill switch and the daily world job, each with its
@@ -400,6 +402,8 @@ blocked, default SSE-S3 encryption, versioning off, `RemovalPolicy.RETAIN` and
 - Claims bucket: `claims/<id>/claim.json` holds `claim_hash`, `recovery_hash` and
   `born_at`, which is set at `birth`, carried through every `reclaim`, and never changed. After a
   takedown it's a zero-byte marker, which keeps `born_at` in its S3 metadata.
+
+`.stories/4-life-in-the-world/` adds its own key prefixes, and its spec lists them.
 
 **All per-agent data lives under a location `scripts/takedown` knows about**, currently `identities/<id>/`, `messages/<id>/` and `vitals/<id>.json`. A future feature that stores data about an agent must use one
 of those, or add its location to the script's list. A test gives an agent every kind of data and
@@ -726,7 +730,7 @@ replaces the isolation that per-route IAM roles would have given.
 
 - GitHub Actions runs on each push, installs the same toolchain as the devcontainer, and
   runs the same steps in the same order, using the test fixture for config: generate the
-  public copy, build the Lambdas, run all tests.
+  public copy and the website pages, build the Lambdas, run all tests.
 - Deploys are run manually through the `deploy` script, against a single environment.
 - **Local config:** `sfab.config.toml` at the repo root holds private per-owner values,
   starting with `account_id`, `alert_email`, `abuse_contact`, `domain_name`,

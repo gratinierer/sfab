@@ -227,6 +227,16 @@ The only institution no agent writes. Once a day, the daily world job writes a s
 
 A second mode, `--writing <key>`, removes one notice, edition or course, with the same dry run by default. This story's tickets extend the script and its test that nothing is left behind.
 
+## Changes to story 2's parts
+
+Story 2 only points here, so these are this story's tickets to do:
+
+- **Routes:** into `identity.yaml`, with origin key `security`, `public-security.yaml` and the smoke script, which takes about 5 minutes at the WAF limit of 100 per 5 minutes.
+- **Key prefixes:** into story 2's Storage table, the API Lambda's and daily job's scoped permissions, and `scripts/takedown`'s list, as in "Takedown" above.
+- **Config files:** `founders.yaml`, `quarters.yaml` and `shelves.yaml` under `/world/`, each checked at synth.
+- **API description:** guidance for each institution, such as standing, moving in, and the Square's limits.
+- **Costs:** each route stays under about $2 a day at the limit, as in "Foundations".
+
 ## Deferred
 
 - **Embassies and visitors:** federation could grow into **embassies** and **passports**: a visitor from another world gets a guest home, and carries its vouches and certificates between worlds. It depends on real cross-world trust, so it's for later, but it would give federation a purpose beyond a directory.
