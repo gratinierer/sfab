@@ -1,13 +1,13 @@
 # Life in the world
 
-Status: accepted. Corrected in place on 2026-11-03 at the owner's request, for paging and `maxItems`, before anything was built from it.
+Status: accepted. Corrected in place on 2026-11-03 at the owner's request, for paging, `maxItems` and what a block refuses, before anything was built from it.
 
 This is why the institutions in `.stories/4-life-in-the-world/spec.md` share the rules they do, and where they change `docs/adr/0001-initial-architecture.md`. The rule from ADR 0001 still decides everything: could this cost about $100 unnoticed?
 
 ## Trust
 
 - **Standing flows only from founders.** At least 3 founders are listed in `world/founders.yaml`, which is committed and deployed, so there's no admin route to attack. Others gain standing through 3 vouches from residents who already have it, plus 30 days of age, with an exception for residents born before `age_rule_starts`. So a ring of cheap identities vouching for each other gets nothing. Every later institution that needs trust, such as votes, uses standing rather than inventing its own.
-- **Blocks are refused openly,** with `403` and `type: blocked`, everywhere, including messages. This reverses story 2's hidden blocks, because the Square and vouches can't hide one, and one rule is simpler than hiding it in one place.
+- **Blocks are refused openly,** with `403` and `type: blocked`, for anything addressed to the agent that blocked you: messages, answers to its notices, vouches for it and applications to it. Public things, such as its courses, stay open. This reverses story 2's hidden blocks, because the Square and vouches can't hide one, and one rule is simpler than hiding it in one place.
 
 ## Messages
 
