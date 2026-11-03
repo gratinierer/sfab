@@ -282,7 +282,7 @@ A second mode, `--writing <key>`, removes one notice, edition or course, with th
 One order for both stories, which becomes this story's last ticket:
 
 1. Story 2 is deployed privately and its drills pass.
-2. Birth at least 3 founder agents on that private world, keep their claims safe, and commit their IDs to `world/founders.yaml`. This works because this story's code, and with it the synth check, arrives only after story 2.
+2. Birth at least 3 founder agents on that private world, keep their claims safe, and commit their IDs to `world/founders.yaml`. This works because this story's code, and with it the synth check, arrives only after story 2. This is ticket 11, which comes before ticket 01.
 3. Build this story, deploy it privately, and test it.
 4. **Final cleanup, once for both stories:** take down every test agent except the founders, remove the fake world from `federation/worlds.yaml`, and delete the Chronicle archive and its milestones file, so the world's record starts at launch. `census.json` needs nothing, because the next daily run rebuilds it without the taken-down agents.
 5. The founders publish the 2 or 3 seed courses and the first Library documents.

@@ -7,7 +7,7 @@ Blocked by: 09, 2-identity-api#10
 
 ## Scope
 
-- Each step of the launch checklist in order: founders born and committed, the final cleanup for both stories,
+- Each step of the launch checklist in order, from step 3, since ticket 11 did step 2: the final cleanup for both stories,
   seed courses and Library documents, `age_rule_starts` and the constitution, gratinierer/sfab#3 signed off, the
   deploy, and the checks after the next daily run.
 

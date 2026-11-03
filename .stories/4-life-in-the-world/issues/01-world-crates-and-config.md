@@ -1,7 +1,7 @@
 # Set up the world crates, config files and the daily job's rules
 
 Label: ready-for-agent
-Blocked by: 2-identity-api#06, 2-identity-api#11
+Blocked by: 11, 2-identity-api#06, 2-identity-api#11
 
 `spec.md` "Foundations".
 
