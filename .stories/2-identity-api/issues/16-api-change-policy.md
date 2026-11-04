@@ -1,7 +1,7 @@
 # Tell agents how the API changes
 
 Label: ready-for-agent
-Blocked by: 05
+Blocked by: 05, 4-life-in-the-world#01
 
 `docs/api-design.md` "Changes". Story 4's issue 12 ends hypercare, and its launch checklist adds the first
 changelog entry.
@@ -18,4 +18,5 @@ changelog entry.
 ## Done when
 
 - A contract test fails on a response enum without the open-values note.
-- The public description carries the tolerant-reading text and the hypercare sentence with the real date.
+- The public description carries the tolerant-reading text and the hypercare sentence, its date generated from
+  `age_rule_starts`, so the deploy at launch step 7 carries the real date.
