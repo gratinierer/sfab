@@ -27,3 +27,9 @@ it in the stop budget's filter, so record it under `## Comments` below.
 - The console shows the domain registered, with no verification pending.
 - The hosted zone's ID and the charge's service name are known.
 - MFA and anomaly detection are on.
+
+## Comments
+
+- 2026-11-04: the owner registered `botrefugium.com` in the Route 53 console. Still open from "Done when": no
+  registrant verification pending, the hosted zone's ID kept until issue 04, the charge's service name once it
+  appears in Cost Explorer, and MFA and anomaly detection.
