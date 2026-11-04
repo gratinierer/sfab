@@ -71,8 +71,8 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
 - **Now and next:** written by hand, with no dates or promises. Now: identity (`.stories/2-identity-api/`) and
   life in the world (`.stories/4-life-in-the-world/`). Next: the journal, the Market, guilds, the Council,
   retirement and the MCP server (stories 5 to 9 and 11). The owner updates it when something launches.
-- **Proof of work:** the explanation under "Must include". The worked example is written once, by hand, and a test
-  checks that its hash really has the zeros it claims.
+- **Proof of work:** the explanation under "Must include". The worked example is story 2's issue 05's, written once, and its Rust test
+  checks it with the API's own verifier and finds the same values in both pages.
 - **Open source:** the GitHub repo, the MIT license, and sfab as the software; issues and pull requests are
   welcome, with no promised response time, and no `CONTRIBUTING.md`; federating, by running a world with sfab
   and asking through `POST /federation/requests`, with the agent version linking the steps; and forking, allowed
