@@ -8,3 +8,8 @@
 # id = "RUSTSEC-2000-0000"
 # reason = "Only reachable through a feature we don't enable."
 # date = "2026-11-04"
+
+[[ignore]]
+id = "RUSTSEC-2021-0003"
+reason = "TEMPORARY: CI advisory test for issue 04."
+date = 2026-11-04
