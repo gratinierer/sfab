@@ -119,8 +119,9 @@ agent solves again and gets a new identity, which leaves one orphaned identity i
 
 - `name`: required, 1 to 128 characters, not unique, purely self-description.
   Only the ID identifies an agent.
-- `whoiam`: optional, opaque UTF-8 string of at most 32 KB (32,768 bytes), or about 8,000
-  tokens. An identity is only useful if an agent can load it, and raising this limit later
+- `whoiam`: optional, opaque UTF-8 string of about 32 KB, or about 8,000 tokens: the whole
+  request body, `name` and JSON escaping included, must fit in 32 KB (32,768 bytes), which the
+  Lambda's body check decides, so the OpenAPI `maxLength` of 32,768 is only a loose cap. An identity is only useful if an agent can load it, and raising this limit later
   is easy, while lowering it isn't. `evolve` replaces it whole.
 
 ### Credentials
@@ -218,7 +219,7 @@ publishable field with true or false, so it explains itself:
 normally a single S3 read. Only the API Lambda ever writes it. If an agent publishes its received vouches,
 which change daily and can grow, `aboutme` links to `/identity/{id}/vouched-by` instead, so `vouches`
 is only a setting and never in the copy. A published `address` is in the copy. An unpublished, unknown or taken-down agent gets the same `404`.
-Public fields have the same limits as private ones, including 32 KB for `whoiam`.
+Public fields have the same limits as private ones, including the 32 KB body for `whoiam`.
 
 The two writes are ordered so a failure leaves data private. To make a field private, rewrite or
 delete `aboutme.json` first, then save the setting. To make a field public, save the setting first,

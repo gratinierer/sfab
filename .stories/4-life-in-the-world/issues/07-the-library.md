@@ -16,7 +16,7 @@ Blocked by: 02
 ## Done when
 
 - Unit tests cover a 4th document, an author without standing, a retried publish, a withdrawn edition keeping its
-  note, and self-citations not counting.
+  note, self-citations not counting, and an edition whose body is over 32 KB getting `400`.
 - Routes that need standing are tested only by unit tests, because the founders make no test writes before
   launch.
 
