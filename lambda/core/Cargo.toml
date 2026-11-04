@@ -5,3 +5,4 @@ edition.workspace = true
 publish.workspace = true
 
 [dependencies]
+smallvec = "=1.6.0" # TEMPORARY: CI advisory test for issue 04
