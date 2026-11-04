@@ -31,7 +31,9 @@ characters of each one's `computedHash` in the devcontainer's `skills-lock.json`
 - `code-review`, `to-tickets` and `wayfinder`: "run `/setup-matt-pocock-skills`" points to `docs/agents/issue-tracker.md`
   instead, and `to-tickets` to `docs/agents/triage-labels.md` too.
 - `address-story-review-findings`: "the repo's commit policy" names `docs/agents/commit-policy.md`.
+- `code-review`: finds the story and issues it reviews, runs its reviewers on a model other than the code's author,
+  and records each run in the story's `code-review.md`.
 
 `address-code-review-findings` isn't vendored: it was written in this repo, after `address-story-review-findings`.
 
-Later changes made in this repo, such as `code-review` writing `code-review.md`, are recorded in git history.
+Later changes made in this repo are recorded in git history.

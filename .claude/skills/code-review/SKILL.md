@@ -32,8 +32,8 @@ in `issues/` or `issues/done/`. Find them in this order:
    which name them ("Issue 05 of story 2"), or from the issue files the range moved into `done/`.
 3. If the story or its issues are still unclear, or the range spans two stories, ask. Never guess between them.
 
-Note the story and the issue numbers: step 6 records them. If the user says there's no spec, the **Spec**
-sub-agent skips and reports "no spec available", and step 6 records the review under the story the commits name.
+Note the story and the issue numbers: step 7 records them. If the user says there's no spec, the **Spec**
+sub-agent skips and reports "no spec available", and step 7 records the review under the story the commits name.
 
 ### 3. Identify the standards sources
 
@@ -59,9 +59,26 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 - **Middle Man**: a class or function that mostly just delegates onward. → cut it, call the real target direct.
 - **Refused Bequest**: a subclass or implementer that ignores or overrides most of what it inherits. → drop the inheritance, use composition.
 
-### 4. Spawn both sub-agents in parallel
+### 4. Pick the reviewers' model
 
-Issue both sub-agent calls together, in the foreground, and aggregate the reports they return.
+A model reviewing code it wrote shares the blind spots that produced it, so both reviewers run on a model other
+than the code's author, as `review-story` does for planning reviews.
+
+1. **Find the author** from the reviewed commits' `Co-Authored-By:` lines: `git log <fixed-point>..HEAD --format=%b
+   | grep -i '^Co-Authored-By:' | sort | uniq -c`. A line such as `Co-Authored-By: Claude Opus 5.5 <...>` names the
+   model. Match the line rather than `%(trailers)`: older commits end with a `Created with AI support` line, which has
+   no colon, so git doesn't parse their last paragraph as trailers. If no line names a model, ask who wrote the code.
+2. **Pick a different model** for both sub-agents and name it in chat. A different model of the same vendor is
+   enough, such as Sonnet or Fable for code by Opus. If the commits have several author models, pick one that wrote
+   none of them, or say which overlap remains.
+3. **If the author is unknown, or no other model is available**, say which of the two it is, and continue only on
+   the user's go-ahead. Record the compromise in the journal's `Notes` in step 7, so a later reader knows the
+   review wasn't independent. A human author needs no other model.
+
+### 5. Spawn both sub-agents in parallel
+
+Issue both sub-agent calls together, in the foreground, on the model from step 4, and aggregate the reports they
+return.
 
 **Standards sub-agent prompt** should include:
 
@@ -77,13 +94,13 @@ Issue both sub-agent calls together, in the foreground, and aggregate the report
 
 If the spec is missing, skip the Spec sub-agent and note this in the final report.
 
-### 5. Aggregate
+### 6. Aggregate
 
 Present the two reports under `## Standards` and `## Spec` headings, verbatim or lightly cleaned. Do **not** merge or rerank findings, because the two axes are deliberately separate (see _Why two axes_).
 
 End with a one-line summary: total findings per axis, and the worst issue _within each axis_ (if any). Don't pick a single winner across axes: that's the reranking the separation exists to prevent.
 
-### 6. Record the review
+### 7. Record the review
 
 Write the findings to `.stories/<story>/code-review.md` before discussing them, so they outlive the conversation. The
 conventions are in `docs/agents/issue-tracker.md` "Code review file". If the file doesn't exist, create it from the
@@ -91,7 +108,8 @@ template below.
 
 - **One journal row** for this run: `Date` is the ISO datetime, `Kind` is `code-review`, `Reviewed` names the issues
   and the range as `<issues> @ <fixed-point short sha>..<HEAD short sha>`, such as `04, 05 @ 862ddba..e2b740c`, `By`
-  names the model of each sub-agent, and `Findings` is `<n> new: <s> standards, <p> spec`.
+  names the reviewers' model and the code's author, such as `claude-sonnet-5-5 (dispatched; code by claude-opus-5-5)`,
+  and `Findings` is `<n> new: <s> standards, <p> spec`.
 - **One findings row per finding**, appended in report order, standards first: the next free `C<n>`, status `open`,
   axis `standards` or `spec`, `Affects` as the issue and the file (`05, cdk/app.py:17`), one sentence of
   `Description` that starts with "Possible <smell>:" for a judgement call, and `Comments` of `<date>: found.`

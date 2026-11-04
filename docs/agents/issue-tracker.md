@@ -149,7 +149,8 @@ outlive the conversation. It holds the same two tables as `review.md`:
 
 - a **review journal**, one row per pass, newest last. `Kind` is `code-review` for a `/code-review` run or
   `walkthrough` for a pass of `/address-code-review-findings`. `Reviewed` names the issues and the commit range,
-  such as `04, 05 @ 862ddba..e2b740c`.
+  such as `04, 05 @ 862ddba..e2b740c`, and `By` names the reviewers' model and the code's author, which differ:
+  `/code-review` runs its reviewers on a model other than the one that wrote the code.
 - a **findings table**, with IDs `C1`, `C2` and so on, never reused, and `Axis` as `standards` or `spec`. The two
   axes stay apart and aren't ranked against each other.
 
