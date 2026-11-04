@@ -68,6 +68,7 @@ Rows below that mention $1000 predate the owner's correction of the rule to $100
 | 2026-11-04T16:32:51+00:00 | walkthrough | working tree | claude-opus-5-5, at the owner's request | 0 new, 0 resolved, 0 still open | not a review pass: issue 04 closed into `issues/done/` with its CI results in `## Comments`; no planning change |
 | 2026-11-04T16:55:10+00:00 | walkthrough | working tree | claude-opus-5-5, at the owner's request | 0 new, 0 resolved, 0 still open | not a review pass: a progress note in issue 05's `## Comments` on implementing it; no planning change |
 | 2026-11-04T18:07:14+00:00 | walkthrough | working tree | claude-opus-5-5, for `14-agent-skills#04` | 0 new, 0 resolved, 0 still open | not a review pass: a progress note in issue 05's `## Comments` that open code-review findings block its close; no planning change |
+| 2026-11-04T18:45:06+00:00 | walkthrough | working tree | claude-opus-5-5, in `/address-code-review-findings` | 0 new, 0 resolved, 0 still open | not a review pass: code-review finding C7 filed into issue 06's scope as a `Caller` type; a planning change, so the review is stale until the next `/review-story` |
 
 ## Findings
 

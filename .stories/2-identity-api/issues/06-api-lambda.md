@@ -19,6 +19,9 @@ Stage 1. The Rust `axum` Lambda, with the identity routes that later tickets add
   gets `400`.
 - Proof of work on every `POST` and `PUT`, one `Proof` header checked before anything else, with `required_bits`
   passed in from the CDK, and create keys taken from the proof's hash.
+- A `Caller` type in `core` for the proof's `<caller>`, replacing `proof::Request.caller: &str` and `ANONYMOUS = "-"`:
+  `Anonymous`, printed as `-`, or `Agent(AgentId)`, where `AgentId` is the validated 12-character ID, so a full
+  `id.claim` or any other wrong string can't reach the preimage (code review C7).
 - The workspace layout from `docs/adr/0004-rules-live-in-crates.md`: `core` with the shared rules and narrow storage
   interfaces, with an in-memory fake for tests, `identity` with these routes' rules, and a thin `api` router.
 

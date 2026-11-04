@@ -1,6 +1,5 @@
 # Set up the repo, config and CI
 
-
 Create the monorepo and the config every later ticket uses: `spec.md` "Architecture" (layout) and
 "Delivery" (local config, CI).
 
