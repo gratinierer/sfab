@@ -42,7 +42,9 @@ Stage 1. The Rust `axum` Lambda, with the identity routes that later tickets add
 - The unit tests in `spec.md` "Testing" pass, and contract tests check the handlers against
   `sfab.yaml`.
 - A fixed solution gives the exact expected ID, which `worked_example.rs` already checks; keep it passing.
-- This issue's first `/code-review` also covers the review walkthrough's changes made after issue 05 closed:
+- This issue's first `/code-review` starts at or before `39c2bed`, so it also covers the review walkthrough's
+  changes in e9e8391, made after issue 05 closed, and findings on them are filed against this issue:
   `Proof::parse` and the `Proof` pattern refusing a leading zero (review R171), and `scripts/check` falling back
-  to the test fixture with no config (R165).
+  to the test fixture with no config (R165), and `scripts/deploy` refusing to start without `sfab.config.toml`
+  (R176), committed after e9e8391.
 - Logs carry no `Authorization` value.

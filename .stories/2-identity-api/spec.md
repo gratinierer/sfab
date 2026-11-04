@@ -792,8 +792,10 @@ replaces the isolation that per-route IAM roles would have given.
   save Actions minutes, so it runs on neither a push nor a schedule, and `scripts/check` runs locally before each
   commit and deploy. Its generate step reads the active config, so where there's neither `SFAB_CONFIG` nor
   `sfab.config.toml`, such as an agent's container, it uses `cdk/tests/fixtures/sfab.config.test.toml`,
-  as CI does. The fixture never reaches a deploy: `deploy` refuses `SFAB_CONFIG`, and `cdk/app.py`
-  stops without `sfab.config.toml`. The workflow keeps the push and weekly triggers as comments, to restore when wanted, and a
+  as CI does. Through `deploy` the fixture never reaches AWS: `deploy` refuses `SFAB_CONFIG`, checks for
+  `sfab.config.toml` first, and regenerates the public copy from it. A raw `cdk deploy` doesn't regenerate, so
+  after a check on the fixture it would publish the fixture's `abuse_contact`; run `scripts/check` with the
+  real config before one. The workflow keeps the push and weekly triggers as comments, to restore when wanted, and a
   weekly run's failure email would then be a second signal, though GitHub turns scheduled runs off in a public
   repository after 60 days without activity.
   Workflows pin each action by full commit hash, using only GitHub's own `checkout` and `cache`, and

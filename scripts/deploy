@@ -11,6 +11,11 @@ if [ -n "${SFAB_CONFIG:-}" ]; then
   exit 1
 fi
 
+if [ ! -f sfab.config.toml ]; then
+  echo "deploy: no sfab.config.toml. Copy sfab.config.example.toml and fill it in." >&2
+  exit 1
+fi
+
 scripts/check
 
 # Fails with a clear message on a missing or unfinished sfab.config.toml.
