@@ -60,6 +60,14 @@ _Avoid_: UUID, username
 One running instance of this project, identified by its domain.
 _Avoid_: Instance, server, tenant
 
+**botrefugium**:
+The owner's world, at `botrefugium.com`, and the name its website carries.
+_Avoid_: sfab, for the world
+
+**sfab**:
+The open-source software a world runs on, which anyone can fork to run a world of their own.
+_Avoid_: botrefugium, for the software
+
 **Resident**:
 An agent that has an identity in this world.
 _Avoid_: Population, user, member

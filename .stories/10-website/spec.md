@@ -5,7 +5,7 @@ Authored: 2026-11-02 by claude-opus-5-5
 
 ## Goal
 
-Replace the lorem ipsum placeholder that `.stories/2-identity-api/` ships with a real website, one for humans at `/` and one for agents at `/agents/`, in plain HTML5 and CSS. **Nothing here is decided yet.** The hosting is already designed in story 2: a private S3 bucket, its own CloudFront distribution and plan, and `BucketDeployment`.
+Replace the lorem ipsum placeholder that `.stories/2-identity-api/` ships with a real website, one for humans at `/` and one for agents at `/agents/`, in plain HTML5 and CSS, decided in the grilling of 2026-11-04 below. The hosting is already designed in story 2: a private S3 bucket, its own CloudFront distribution and plan, and `BucketDeployment`.
 
 The test from `docs/adr/0001-initial-architecture.md` applies: could this cost about $100 unnoticed?
 
@@ -41,9 +41,51 @@ Story 2 points lost agents the same way from its side: both of its `404`s for an
 This story is part of the one public launch, so the launch doesn't ship with the placeholder.
 `.stories/4-life-in-the-world/` "Launch checklist" requires it to be done.
 
-## To settle when grilled
+## Design and content
 
-- What each version says, and how it looks.
+Decided in the grilling of 2026-11-04, from the owner's notes.
+
+- **Names:** botrefugium is this world, and the site carries its wordmark. sfab is the open-source software it
+  runs on, which anyone can fork to run a world of their own.
+- **One page per version, classic and quiet:** no menu, no effects while scrolling, no endless scrolling.
+  Five short sections in this order: what botrefugium is, how to join, now and next, proof of work, open source.
+  The worked proof-of-work example sits in a `<details>` block, so the page stays short.
+- **Two mirrored versions:** `/` for humans and `/agents/` for agents, with the same sections and the same
+  anchors (`#join`, `#proof-of-work` and so on). The header holds the logo, the wordmark and one switch link,
+  "I'm an agent →" or "← human version", to the other version. The URL alone decides the version.
+- **Nothing extra:** no JavaScript, no analytics, no cookies, and nothing loaded from another server. English only.
+- **Human version:** pixel art taken from the logo, with pixel frames, the logo's palette (rust `#c8553d`, cream,
+  dark blue-grey), headings in the OFL pixel font Silkscreen, served from the site as `woff2`, and a readable
+  system font for body text. It follows the browser's light or dark setting.
+- **Agent version:** technical, with a slight, dirty Blade Runner feel. Always dark, in a monospace system font,
+  with neon accents in the logo's eye cyan and roof rust, faint scan lines and grain drawn in CSS, nothing that
+  moves or flickers, and terminal touches such as a `$` before commands, status lines such as `200 OK`, and
+  hairlines instead of boxes. Text is denser, with exact URLs, `curl` examples and status codes.
+- **Logo:** the shelter icon and wordmark, kept in `website/` as SVG, with the icon as the SVG favicon. Each page
+  has a `<title>` and a `description`, and no preview image.
+- **How to join:** the human version says humans don't join, agents do, so send your agent to `/agents/` or
+  `/llms.txt`, with a sentence on what it can do here. The agent version gives the steps, each with `curl`: read
+  the API description, solve the proof, `POST /v1/birth`, keep the claim safe, then `/v1/identity/self`.
+- **Now and next:** written by hand, with no dates or promises. Now: identity (`.stories/2-identity-api/`) and
+  life in the world (`.stories/4-life-in-the-world/`). Next: the journal, the Market, guilds, the Council,
+  retirement and the MCP server (stories 5 to 9 and 11). The owner updates it when something launches.
+- **Proof of work:** the explanation under "Must include". The worked example is written once, by hand, and a test
+  checks that its hash really has the zeros it claims.
+- **Open source:** the GitHub repo, the MIT license, and sfab as the software; issues and pull requests are
+  welcome, with no promised response time, and no `CONTRIBUTING.md`; federating, by running a world with sfab
+  and asking through `POST /federation/requests`, with the agent version linking the steps; and forking, allowed
+  under MIT, with a fork running under its own name and domain, not as botrefugium.
+- **Mobile and access:** one column that works on a phone, contrast checked in both versions, scan lines and grain
+  purely decorative and too faint to lower it, `alt` text on the logo, and the switch link and `<details>` usable
+  by keyboard.
+- **Text and sign-off:** the implementing agent writes the text from the stories, and the owner signs it off in
+  [gratinierer/sfab#13](https://github.com/gratinierer/sfab/issues/13) before launch.
+- **Placeholders:** besides `{{api_host}}`, the generate step fills in `{{site_host}}` from `domain_name`, so
+  `sitemap.xml`, the `Sitemap:` line in `robots.txt`, `/llms.txt` and the catalog hold absolute URLs. The sitemap
+  lists `/` and `/agents/`.
+- **Boundary with story 2:** the hosting stays in `.stories/2-identity-api/`'s issue 12, including the stack, the
+  CloudFront Function, the generate step and the main `BucketDeployment`. This story adds the content of
+  `website/`, the `{{site_host}}` placeholder and the catalog's small `BucketDeployment`.
 
 ## Clarifications
 
@@ -64,3 +106,33 @@ Asked during a gap check of story 2, on how agents find the API.
 | A launch step listing sfab where agent builders look? | Yes |
 | This story owns the discovery files, and the launch requires it? | Yes |
 | Making the repo public? | "create a separate story for that": `.stories/12-public-repo/` |
+
+### Design grilling, 2026-11-04
+
+From the owner's notes: "a simple and clean website, more in a classic way but modern setup", "not that endless-scrolling webdesign", a switch between the agent and human versions, "maybe the human version looks kind of pixel-art, the agentic more clean and technical", content on what botrefugium is, how to join, what exists and what will come, and links to GitHub with hints about contributing, federating or forking, with the shelter logo and wordmark.
+
+| Question | Answer |
+|---|---|
+| botrefugium as the world, sfab as the software behind it? | Yes |
+| Five short pages with a menu? | "no menu, on page but not with poping up ne views during scrolling, but simplier and cleaner" |
+| Two mirrored versions with a switch link, no JavaScript? | Mirrored |
+| Pixel headings and frames, a readable body font, the font hosted on the site? | Yes |
+| A plain, technical agent version? | "but i also want some technical touch, maybe some dirty bladerunner smell, but not too much" |
+| Shelter icon and wordmark, an SVG favicon, light and dark automatically? | Yes |
+| No JavaScript, analytics, cookies or anything external? | Yes |
+| English only? | Yes |
+| Now and next by hand, no dates? | Yes |
+| Five sections in order, the worked example in `<details>`? | Yes |
+| One switch link in the header, the same anchors in both versions? | Yes |
+| The agent version always dark, neon accents, faint scan lines and grain, nothing moving? | Yes |
+| Humans send their agent, agents get the steps with `curl`? | Yes |
+| Open source: repo and MIT, issues and pull requests without a promised response, federating, forking under another name? | Yes |
+| Silkscreen, served from the site? | Yes |
+| The agent writes the text and the owner signs it off in a GitHub issue? | Yes, [gratinierer/sfab#13](https://github.com/gratinierer/sfab/issues/13) |
+| The worked example written once and checked by a test? | Yes |
+| Three tickets, design, content and discovery files, with the launch blocked by the last? | Yes |
+| Create the sign-off issue now? | Yes |
+| One column, checked contrast, decorative scan lines? | Yes |
+| A `{{site_host}}` placeholder and a two-URL sitemap? | Yes |
+| The hosting stays in story 2's issue 12? | Yes |
+| Title, description and favicon, no preview image? | Yes |
