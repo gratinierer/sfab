@@ -380,8 +380,8 @@ components:
         `POST` and `PUT`.
       schema:
         type: string
-        maxLength: 85
-        pattern: "^[0-9]{1,20}:[A-Za-z0-9_-]{1,64}$"
+        maxLength: 83
+        pattern: "^[0-9]{1,18}:[A-Za-z0-9_-]{1,64}$"
 
   headers:
     CacheControl:

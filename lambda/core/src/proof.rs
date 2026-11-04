@@ -13,8 +13,8 @@ pub const MAX_AGE_SECS: i64 = 5 * 60;
 pub const MAX_AHEAD_SECS: i64 = 60;
 /// The longest nonce, in base64url characters.
 pub const MAX_NONCE_LEN: usize = 64;
-/// The most digits a timestamp may have.
-pub const MAX_TIMESTAMP_DIGITS: usize = 20;
+/// The most digits a timestamp may have: every 18-digit number fits the `i64` it's parsed into.
+pub const MAX_TIMESTAMP_DIGITS: usize = 18;
 /// `<caller>` for an anonymous `birth` or federation request.
 pub const ANONYMOUS: &str = "-";
 

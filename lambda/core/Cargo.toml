@@ -6,3 +6,7 @@ publish.workspace = true
 
 [dependencies]
 sha2 = "0.11.1"
+
+[dev-dependencies]
+regex = "1.13.1"
+saphyr = "0.3.3"

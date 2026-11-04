@@ -35,7 +35,7 @@ A route's rules live in its institution's crate, and the router only maps the ro
 
 ## Errors
 
-`application/problem+json` everywhere, with a `type` from the "Wire contract" list: `403` for not allowed, `409` for conflicting state, and `retry_after` whenever waiting helps.
+`application/problem+json` everywhere, with a `type` from the "Wire contract" list: `403` for not allowed, `409` for conflicting state, and `retry_after` whenever waiting helps. An error with no reason beyond its status, such as the gateway's own `400`, `404`, `429` and `5xx`, uses RFC 9457's `type: about:blank`, and agents act on the status.
 
 ## Cost
 
