@@ -1,6 +1,5 @@
 # Let the repo's skills win over the global links
 
-Label: ready-for-agent
 Blocked by: 02
 
 `spec.md` "Skills in the repo" ("The repo's copy wins"). The change is in gratinierer/agentic_containers.
@@ -25,3 +24,12 @@ Blocked by: 02
 - The Copilot check's result is under `## Comments`: which copy Copilot CLI uses for a shared name. If it's the
   global one, the branch also changes `skill-loading.instructions.md`.
 - The owner's merge, the host checkout's update and the restart are issue 06.
+
+- 2026-11-04: done. gratinierer/agentic_containers#4, branch `4-let-a-projects-own-skills-win-over-the-global-links`
+  at `466745f`, pushed and not merged. `poststart.sh` skips linking any skill a repo under `/workspaces/*/` has in
+  `.claude/skills/`, says so, and removes a link an earlier start left. A dry run of the linking block against a copy
+  of this container's links skipped all 13 skills with a global copy, removed their links, and linked the other 30 as
+  before; `address-code-review-findings` has no global copy.
+- 2026-11-04: Copilot check, with Copilot CLI 1.0.105 in this repo: `copilot skill list` shows all 14 repo skills once,
+  under "Project skills", and none of them again under "Custom skills", so Copilot already uses the repo's copy for a
+  shared name. `skill-loading.instructions.md` needs no change.
