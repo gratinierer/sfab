@@ -54,11 +54,10 @@ example, story 14's commits on `2-identity-api-…` end with `(#14)`, while stor
 
    Don't create a branch, assume an issue number, or choose between a new branch and the current one without the
    user's instruction.
-3. End every commit message with a trailer noting AI involvement, naming the tool, as the last line or lines of
-   the body, beside any other required trailers such as `Co-Authored-By:`:
+3. End every commit message with a trailer noting AI involvement, as the last line or lines of the body, beside
+   any other required trailers such as `Co-Authored-By:`. It names no tool, so it reads the same whichever agent
+   made the commit:
 
    ```
-   Created with AI support (<tool>)
+   Created with AI support
    ```
-
-   For example `Created with AI support (Claude Code)` or `Created with AI support (GitHub Copilot CLI)`.

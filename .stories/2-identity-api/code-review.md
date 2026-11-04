@@ -19,7 +19,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 
 | # | Status | Axis | Affects | Description | Comments |
 |---|---|---|---|---|---|
-| C1 | open | standards | 04, 05, commit messages | Possible policy mismatch (soft): the commits' trailer reads `Created with AI support (Claude Code)`, not the global policy's literal `(GitHub Copilot CLI)`; `docs/agents/commit-policy.md` now names the tool. | 2026-11-04: found. |
+| C1 | resolved | standards | 04, 05, commit messages | Possible policy mismatch (soft): the commits' trailer reads `Created with AI support (Claude Code)`, not the global policy's literal `(GitHub Copilot CLI)`; `docs/agents/commit-policy.md` now names the tool. | 2026-11-04: found. 2026-11-04 (walkthrough): on the owner's decision, the trailer is now a plain `Created with AI support`, naming no tool, in `docs/agents/commit-policy.md` and AGENTS.md, and in the global policy through gratinierer/agentic_containers' change; earlier commits keep their trailers as history. |
 | C2 | open | standards | 04, cdk/app.py | Possible Speculative Generality: `_env = cdk.Environment(account=config.account_id, region=REGION)` is built and never used. | 2026-11-04: found. |
 | C3 | open | standards | 04, cdk/sfab_config.py | Possible Duplicated Code: `REQUIRED_KEYS` repeats the six fields of the `Config` dataclass, which `dataclasses.fields(Config)` could derive. | 2026-11-04: found. |
 | C4 | open | standards | 04, 05, cdk/sfab_config.py, cdk/generate_public_openapi.py | Possible Duplicated Code: the 12-digit account ID regex appears in both files, a full match in one and a search in the other. | 2026-11-04: found. |

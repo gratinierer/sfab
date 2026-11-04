@@ -13,7 +13,7 @@ section, which applies regardless of which skill or flow created the issue.
 
 Commits, pushes and issue creation follow `docs/agents/commit-policy.md`. It
 wins over any global commit policy a session also loads, including its
-issue number for the commit subject and its AI trailer naming the tool.
+issue number for the commit subject and its AI trailer, which names no tool.
 
 Every dependency between tickets goes on the `Blocked by:` line, written as
 `<story>#<NN>` when it's in another story, such as `2-identity-api#13`. See
