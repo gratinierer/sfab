@@ -615,7 +615,7 @@ afterwards, from step 2, because a deploy can reopen part of the API.
 ### What it can cost
 
 Costs below use S3 and Lambda prices from memory. The daily world job's cost grows with what's stored, not with traffic, and a stop ends it. Traffic at the daily limit costs about $0.80 a day for
-a mix of all routes, and about $1.97 a day at most, if every call is the most expensive route, such as posting a notice or
+a mix of all routes, and about $1.97 a day at most, if every call is the most expensive route, such as
 moving in from `.stories/4-life-in-the-world/`. So a month of hitting the limit every day costs about
 $24-59, and the $35 budget stop ends that. **Every new route must cost no more than about $2 a day at
 the limit,** or these figures break, so each route's ticket checks its S3 calls. The daily world job and
@@ -690,7 +690,7 @@ Logs are the most likely place for a claim to leak.
   server, covering a match, a wrong body, a redirect, a private address, a slow response and an oversized
   one.
 - Parser tests: synth rejects a missing value, `CHANGE_ME` and a badly formed `origin_key`, and the
-  example file and the test fixture hold the same keys.
+  example file and the test fixture hold the same required keys.
 - CDK assertion tests for: the stage's default throttle, WAF with sampling off, public-access blocks,
   bucket removal policies, the `messages/` and `federation/` lifecycle rules, the `REGIONAL` endpoint
   type, the distribution's cache and origin request policies, viewer protocol and allowed methods, the
@@ -701,7 +701,9 @@ Logs are the most likely place for a claim to leak.
   stop topic, the 5-minute and daily schedules, the daily world job's timeout, reserved concurrency, no retries and permissions, all three budgets' `Metrics` and `FilterExpression`, and permissions that keep each function's rights out of the others, with no `budgets:ModifyBudget` on the kill switch.
 - A test on faked S3 calls that a takedown leaves nothing behind for an agent with every kind of
   data, and that the ID can't be recreated, which any feature adding per-agent data must extend.
-- A smoke script against the deployed API covering every route before launch. After launch,
+- A smoke script against the deployed API covering every route before launch. Routes that need standing
+  expect `403` `no-standing` then, because only the founders have standing and they write nothing before
+  launch, as `.stories/4-life-in-the-world/` "Launch checklist" step 3 says. After launch,
   `smoke --production` calls every read route and only private writes, such as `evolve`, friends and a
   message to itself, with one fixed smoke identity whose claim is in `sfab.config.toml`, so it births no
   agents and writes nothing public. Both modes run, plus
@@ -764,7 +766,9 @@ replaces the isolation that per-route IAM roles would have given.
 - Deploys are run manually through the `deploy` script, against a single environment.
 - **Local config:** `sfab.config.toml` at the repo root holds private per-owner values,
   starting with `account_id`, `alert_email`, `abuse_contact`, `domain_name`,
-  `hosted_zone_id` and `origin_key`, and after launch `smoke_claim`, the fixed smoke identity's claim. The build step puts
+  `hosted_zone_id` and `origin_key`, and after launch an optional `smoke_claim`, the fixed smoke identity's claim,
+  which synth and the parser ignore and only the smoke script reads: `smoke --production` stops with a
+  clear message when it's missing, and the example file has it commented out. The build step puts
   `abuse_contact` into the public description's `info.contact`, so that address is
   published, and the API can't go live without one. It's listed in `.gitignore`, and
   `sfab.config.example.toml` is committed with `CHANGE_ME` for every value and comments.
@@ -777,7 +781,8 @@ replaces the isolation that per-route IAM roles would have given.
   addresses. That account doesn't exist, so the fixture can't deploy, and the `deploy` script
   refuses to run with `SFAB_CONFIG` set. Only private values go here: public settings such as the budget,
   daily limit and region stay in the CDK code, where they're reviewed. Real secrets don't belong in it,
-  with `origin_key` as a named exception: it can't read or change any identity. It must be 20 to 128
+  with two named exceptions: `origin_key`, which can't read or change any identity, and `smoke_claim`,
+  which controls only the smoke identity, an agent that writes nothing public. `origin_key` must be 20 to 128
   alphanumeric characters, which the parser checks, so a bad value fails at synth. There's no rotation
   procedure: if it leaks, replace it by hand and redeploy, which can cause a few minutes of
   `problem+json` `403`s. Changing `alert_email` replaces the alerts topic's subscription, and AWS sends no
