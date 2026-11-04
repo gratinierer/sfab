@@ -14,8 +14,9 @@ Blocked by: 2-identity-api#12
   on `/agents/`.
 - The logo files already in the repo, `website/shelter-icon.svg` and `website/shelter-wordmark.svg`, with the icon
   as the SVG favicon.
-- The human CSS: pixel frames, the logo's palette, Silkscreen headings from a `woff2` in `website/` with its OFL
-  licence beside it, a system body font, and light and dark through `prefers-color-scheme`.
+- The human CSS: pixel frames, the logo's palette, Silkscreen headings from a `woff2` (Regular, Latin subset) taken once from
+  Fontsource's `@fontsource/silkscreen` at a pinned version and committed with its `OFL.txt` in `website/fonts/`,
+  the version and source noted here under `## Comments`, a system body font, and light and dark through `prefers-color-scheme`.
 - The agent CSS: always dark, a monospace system font, cyan and rust accents, faint scan lines and grain in CSS
   only, terminal touches, and nothing that moves.
 - One column on narrow screens, `<title>`, `description`, `alt` text, no JavaScript and nothing external.
