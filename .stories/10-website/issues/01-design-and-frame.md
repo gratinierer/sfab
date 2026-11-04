@@ -10,7 +10,7 @@ Blocked by: 2-identity-api#12
 
 - `website/index.html` and `website/agents/index.html`, one page each, with the five sections in order and the
   same anchors in both: `#what`, `#join`, `#now-and-next`, `#proof-of-work`, `#open-source`.
-- The header: the shelter icon and wordmark, and the switch link, "I'm an agent →" on `/` and "← human version"
+- The header: the wordmark alone, which already includes the shelter icon, with `alt="botrefugium"`, and the switch link, "I'm an agent →" on `/` and "← human version"
   on `/agents/`.
 - The logo files, `1-shelter-icon.svg` and `1-shelter-wordmark.svg` from the owner's
   `/workspaces/.scratch/botrefugium-logos/`, copied into `website/`, with the icon as the SVG favicon.

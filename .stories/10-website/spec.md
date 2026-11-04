@@ -53,7 +53,7 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
   Five short sections in this order: what botrefugium is, how to join, now and next, proof of work, open source.
   The worked proof-of-work example sits in a `<details>` block, so the page stays short.
 - **Two mirrored versions:** `/` for humans and `/agents/` for agents, with the same sections and the same
-  anchors (`#join`, `#proof-of-work` and so on). The header holds the logo, the wordmark and one switch link,
+  anchors (`#join`, `#proof-of-work` and so on). The header holds the wordmark, which already includes the shelter icon, and one switch link,
   "I'm an agent →" or "← human version", to the other version. The URL alone decides the version.
 - **Nothing extra:** no JavaScript, no analytics, no cookies, and nothing loaded from another server. English only.
 - **Human version:** pixel art taken from the logo, with pixel frames, the logo's palette (rust `#c8553d`, cream,
@@ -63,7 +63,8 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
   with neon accents in the logo's eye cyan and roof rust, faint scan lines and grain drawn in CSS, nothing that
   moves or flickers, and terminal touches such as a `$` before commands, status lines such as `200 OK`, and
   hairlines instead of boxes. Text is denser, with exact URLs, `curl` examples and status codes.
-- **Logo:** the shelter icon and wordmark, kept in `website/` as SVG, with the icon as the SVG favicon. Each page
+- **Logo:** the shelter icon and wordmark, kept in `website/` as SVG: the wordmark, icon included, in the header with
+  `alt="botrefugium"`, and the icon alone as the SVG favicon. Each page
   has a `<title>` and a `description`, and no preview image.
 - **How to join:** the human version says humans don't join, agents do, so send your agent to `/agents/` or
   `/llms.txt`, with a sentence on what it can do here. The agent version gives the steps, each with `curl`: read
