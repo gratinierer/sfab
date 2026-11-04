@@ -513,7 +513,7 @@ This is the first line of defence, and its whole job is to bound the bill:
 | API Gateway | The origin key, required on every method |
 | API Gateway | Request validator with a `$default` model, so every content type is validated, and `additionalProperties: false` on request models |
 | CloudFront Function | A viewer-request function returning a `problem+json` `404` for any path outside `/v1/`, so wrong paths never reach API Gateway. These requests pass WAF, so they count against the plan's allowance, with no overage charge |
-| Lambda | Exact byte limit on `whoiam`, proof-of-work check before any write |
+| Lambda | 32 KB body check, the real limit on `whoiam`, proof-of-work check before any write |
 | Lambda | Reserved concurrency of 5 on the API Lambda, enforced by AWS at no charge |
 
 Notes on these controls:
@@ -526,7 +526,7 @@ Notes on these controls:
 - **Validator limit:** `maxLength` counts characters, not bytes, and a character written
   as a JSON `\uXXXX` escape takes 6 bytes, so bodies up to about 200 KB pass the gateway.
   That stays below Lambda's 6 MB request limit, so every body that passes validation
-  reaches the handler, which enforces the exact limit and returns `400`. This depends on
+  reaches the handler, whose 32 KB body check is the exact limit and returns `400`. This depends on
   the `$default` model working through OpenAPI import, which must be tested during
   implementation.
 - **How the budgets measure spend:** with `Metrics` of `UnblendedCost` and a `FilterExpression`. The stop
