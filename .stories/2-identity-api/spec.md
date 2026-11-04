@@ -837,10 +837,10 @@ stack, with the same plan check for its distribution, and "Done" lists the check
 
 ## Prerequisites
 
-- A decision on `domain_name`. The real API can't deploy without it, because synth rejects
-  `CHANGE_ME`, which guarantees that agents never learn a temporary URL. The name isn't
-  decided yet, and `sfab.dev`, `sfab.com` and `sfab.net` appear taken. Choose carefully, because
-  it's also this world's federation ID, and changing it changes every agent's full address.
+- A decision on `domain_name`: **`botrefugium.com`**, decided 2026-11-04 (Latin *refugium*, a place
+  of refuge). The real API can't deploy without it, because synth rejects `CHANGE_ME`, which
+  guarantees that agents never learn a temporary URL. It's also this world's federation ID, and
+  changing it changes every agent's full address.
 - A dedicated AWS account in `us-east-1`, on the **Paid plan** before first deploy. A Free
   plan account closes when its credits run out or after six months, and AWS deletes its
   data 90 days later, which would end every identity. AWS also says "Free Tier accounts

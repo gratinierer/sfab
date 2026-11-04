@@ -7,7 +7,8 @@ deploy". They need the owner's AWS account and card.
 
 ## Scope
 
-- Decide `domain_name`.
+- `domain_name` is `botrefugium.com`, decided 2026-11-04. If Route 53 can't register it, stop and
+  choose again, because it's also this world's federation ID.
 - Set up the dedicated account in `us-east-1` on the Paid plan, with a Lambda concurrency quota of
   at least 105.
 - Secure it: MFA on the root and your user, no long-lived access keys, and only `aws login`.
