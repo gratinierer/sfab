@@ -13,6 +13,8 @@ pub const MAX_AGE_SECS: i64 = 5 * 60;
 pub const MAX_AHEAD_SECS: i64 = 60;
 /// The longest nonce, in base64url characters.
 pub const MAX_NONCE_LEN: usize = 64;
+/// The most digits a timestamp may have.
+pub const MAX_TIMESTAMP_DIGITS: usize = 20;
 /// `<caller>` for an anonymous `birth` or federation request.
 pub const ANONYMOUS: &str = "-";
 
@@ -50,10 +52,14 @@ impl<'a> Proof<'a> {
     /// Splits `<unix-ts>:<nonce>` on its one `:`.
     pub fn parse(header: &'a str) -> Result<Self, Rejection> {
         let (ts, nonce) = header.split_once(':').ok_or(Rejection::Malformed)?;
-        let ts_ok = !ts.is_empty() && ts.len() <= 20 && ts.bytes().all(|b| b.is_ascii_digit());
+        let ts_ok = !ts.is_empty()
+            && ts.len() <= MAX_TIMESTAMP_DIGITS
+            && ts.bytes().all(|b| b.is_ascii_digit());
         let nonce_ok = !nonce.is_empty()
             && nonce.len() <= MAX_NONCE_LEN
-            && nonce.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_');
+            && nonce
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_');
         if !ts_ok || !nonce_ok {
             return Err(Rejection::Malformed);
         }
@@ -145,12 +151,20 @@ mod tests {
 
     #[test]
     fn parses_a_header() {
-        assert_eq!(Proof::parse("17:aZ_-9"), Ok(Proof { timestamp: 17, nonce: "aZ_-9" }));
+        assert_eq!(
+            Proof::parse("17:aZ_-9"),
+            Ok(Proof {
+                timestamp: 17,
+                nonce: "aZ_-9"
+            })
+        );
     }
 
     #[test]
     fn refuses_malformed_headers() {
-        for h in ["", "17", ":x", "17:", "-1:x", "1.5:x", "17:a:b", "17:a=", "17:a b"] {
+        for h in [
+            "", "17", ":x", "17:", "-1:x", "1.5:x", "17:a:b", "17:a=", "17:a b",
+        ] {
             assert_eq!(Proof::parse(h), Err(Rejection::Malformed), "{h:?}");
         }
         let long = format!("17:{}", "a".repeat(MAX_NONCE_LEN + 1));
@@ -189,18 +203,36 @@ mod tests {
 
     #[test]
     fn refuses_too_few_zero_bits() {
-        assert_eq!(verify(Some("1000000:x"), &REQ, 1_000_000, 256), Err(Rejection::Insufficient));
+        assert_eq!(
+            verify(Some("1000000:x"), &REQ, 1_000_000, 256),
+            Err(Rejection::Insufficient)
+        );
     }
 
     #[test]
     fn a_solution_is_bound_to_its_method_path_caller_and_body() {
-        let proof = Proof { timestamp: 1, nonce: "n" };
+        let proof = Proof {
+            timestamp: 1,
+            nonce: "n",
+        };
         let base = solution_hash(&REQ, &proof);
         for other in [
-            Request { method: "PUT", ..REQ },
-            Request { path: "/v1/identity/evolve", ..REQ },
-            Request { caller: "aaaaaaaaaaaa", ..REQ },
-            Request { body: b"{ }", ..REQ },
+            Request {
+                method: "PUT",
+                ..REQ
+            },
+            Request {
+                path: "/v1/identity/evolve",
+                ..REQ
+            },
+            Request {
+                caller: "aaaaaaaaaaaa",
+                ..REQ
+            },
+            Request {
+                body: b"{ }",
+                ..REQ
+            },
         ] {
             assert_ne!(solution_hash(&other, &proof), base);
         }
