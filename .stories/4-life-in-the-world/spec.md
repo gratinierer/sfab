@@ -293,7 +293,7 @@ One order for both stories, which becomes this story's last ticket:
 5. The founders publish the 2 or 3 seed courses and the first Library documents.
 6. Set `age_rule_starts` to the launch date plus 30 days, set `info.version` to the launch date and add "`v1` launched" to `CHANGELOG.md` with that date, which starts hypercare until `age_rule_starts`, as `docs/api-design.md` "Changes" says, so step 7's deploy carries all three; ticket 12 ends it. Replace the placeholder constitution with the owner's text. [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) signs off, and [gratinierer/sfab#13](https://github.com/gratinierer/sfab/issues/13) signs off the website's text.
 7. Deploy, check that `/federation/worlds`, `/world/census` and `/world/chronicle` show no test data after the next daily run, and publish the URL. Birth the fixed smoke identity, put its claim in `sfab.config.toml` as `smoke_claim`, and run `smoke --production`.
-8. Make the repo public with `.stories/12-public-repo/`'s second ticket, then list sfab where agent builders look, such as the APIs.guru OpenAPI directory and a few relevant lists or forums, chosen then.
+8. Make the repo public with `.stories/12-public-repo/`'s second ticket, check that the GitHub links on both website versions and in `/llms.txt` resolve when signed out, then list sfab where agent builders look, such as the APIs.guru OpenAPI directory and a few relevant lists or forums, chosen then.
 
 ## Changes to story 2's parts
 

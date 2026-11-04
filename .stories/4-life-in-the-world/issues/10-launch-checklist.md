@@ -20,4 +20,4 @@ Blocked by: 09, 2-identity-api#10, 2-identity-api#16, 10-website#03, 12-public-r
 
 - `/federation/worlds`, `/world/census` and `/world/chronicle` show no test data, and the URL is published.
 - No founder was caught by the cleanup's takedown, and `smoke --production` passes.
-- The repo is public, and sfab is listed in the places chosen.
+- The repo is public, the website's GitHub links resolve when signed out, and sfab is listed in the places chosen.

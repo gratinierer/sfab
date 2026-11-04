@@ -18,5 +18,6 @@ proof-of-work explanation, which story 2's issue 05 writes.
 ## Done when
 
 - A test recomputes the worked example's hash and checks it has the zeros the text claims.
-- No lorem ipsum is left, and every link on both pages resolves on a deploy.
+- No lorem ipsum is left, and every link on both pages resolves on a deploy, except those to the GitHub repo,
+  which stays private until `4-life-in-the-world`'s launch step 8 checks them.
 - gratinierer/sfab#13 is closed with the owner's sign-off.
