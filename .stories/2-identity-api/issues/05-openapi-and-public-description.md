@@ -33,3 +33,17 @@ Write the API's single source and everything built from it: `spec.md` "API", "Wi
   route lacks the `required_bits` `400`.
 - A Rust test in `core` runs the worked example through the API's own proof verifier and checks that the public
   description holds exactly those values, so a wrong or drifted example fails CI.
+
+## Comments
+
+- 2026-11-04: built in the working tree, at the owner's go-ahead to skip re-reviewing after issue 04's
+  progress notes. `openapi/sfab.yaml` has `birth`, `evolve`, `self`, `reclaim` and `openapi.yaml`, with
+  their response shapes for issue 06 to match: `birth` returns `id`, `claim`, `recovery`, a `notice` and the
+  `constitution` path, and `reclaim` the same without the path. Gateway errors without a listed `type` use
+  `about:blank`. The generator is `cdk/generate_public_openapi.py`, and `scripts/check` runs it from the
+  active config. `core` has the proof verifier and `agent_id`, which issue 06 builds on. The worked example
+  is nonce `614135`, giving 22 zero bits and ID `mfyk2nkunooc`. The wrong origin key test checks the
+  `INVALID_API_KEY` gateway response in the document. Seeing it on the deployed API belongs to issue 09's
+  smoke script. The `$default` content type and the inlined integration are `memory` rows in
+  `docs/aws-facts.md`, which issue 01's first import proves. The `deploy` script from issue 04 already
+  generates, builds, deploys all stacks or a named one, and refuses `SFAB_CONFIG`.

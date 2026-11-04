@@ -1,0 +1,19 @@
+# Merged into the public copy in place of the origin key's apiKey scheme, which agents
+# can never get: .stories/2-identity-api/spec.md "Architecture" ("Public API description").
+# API Gateway won't import a Bearer scheme, so it lives here, not in sfab.yaml.
+#
+# `bearer` lists every operation marked Bearer or Recovery code in the route tables of
+# .stories/2-identity-api/spec.md and .stories/4-life-in-the-world/spec.md, as
+# "<METHOD> <path>". Anonymous operations get no security. A contract test checks this
+# list against those tables.
+securitySchemes:
+  bearer:
+    type: http
+    scheme: bearer
+    description: |
+      `Authorization: Bearer <id>.<claim>`, or `Bearer <id>.<recovery>` for
+      `POST /identity/reclaim` only.
+bearer:
+  - PUT /identity/evolve
+  - GET /identity/self
+  - POST /identity/reclaim

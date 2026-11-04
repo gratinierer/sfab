@@ -7,3 +7,7 @@ members = ["core"]
 [workspace.package]
 edition = "2024"
 publish = false
+
+# Hashing is the hot path in tests (the worked example's nonce search), so optimise it.
+[profile.dev.package.sha2]
+opt-level = 3

@@ -67,6 +67,8 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | In a REST proxy event, `path` lacks the stage, and Rust's `lambda_http` adds it unless `AWS_LAMBDA_HTTP_IGNORE_STAGE_IN_PATH` is set | memory | | 2026-11-03 |
 | A wrong or missing API key on a key-required method raises the `INVALID_API_KEY` gateway response, a `403`, rather than `DEFAULT_4XX` alone | memory | | 2026-11-03 |
 | An unknown route or method returns `MISSING_AUTHENTICATION_TOKEN` as `403`, and the `413` can't be customised | docs | [response-types] | 2026-11-01 |
+| OpenAPI import accepts `$default` as a `requestBody` content type, giving a model that validates every content type, beside `application/json` | memory | Why `openapi/sfab.yaml` lists both; issue 01 of story `2-identity-api` proves it on import | 2026-11-04 |
+| OpenAPI import doesn't resolve a `$ref` inside `x-amazon-apigateway-integration`, so `openapi/sfab.yaml` repeats it with a YAML anchor instead | memory | | 2026-11-04 |
 | REST requests cost $3.50 per million | docs | AWS's pricing page | 2026-11-01 |
 | Failed authentication, missing or invalid API keys and throttled requests aren't charged | docs | [old-pricing], a 2021 archive of a removed page, so possibly out of date; issue 02 of story `2-identity-api` confirms it | 2026-11-01 |
 
