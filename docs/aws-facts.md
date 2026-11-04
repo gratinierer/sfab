@@ -36,8 +36,10 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | Two plans can share one apex domain, such as `<domain>` and `api.<domain>` | memory | Not stated by AWS; the first deploy proves it | 2026-11-01 |
 | `CachingOptimized` leaves query strings out of its cache key, with a 24-hour default TTL | docs | [cache-policies], the reviewer's reading | 2026-11-01 |
 | A private S3 origin doesn't add `index.html` to a folder path | memory | | 2026-11-01 |
-| `BucketDeployment` sets each object's content type by guessing from its extension, so an extensionless file gets S3's default `binary/octet-stream` | memory | Story `10-website`'s deploy check of `/.well-known/api-catalog` proves it | 2026-11-04 |
-| `BucketDeployment`'s `contentType` applies to every object that deployment uploads | memory | Story `10-website`'s deploy check proves it | 2026-11-04 |
+| `BucketDeployment` sets each object's content type by guessing from its extension, so an extensionless file gets S3's default `binary/octet-stream` | memory | Why story `10-website` sets the catalog's type in CloudFront | 2026-11-04 |
+| `BucketDeployment`'s `contentType` applies to every object that deployment uploads | docs | CDK s3-deployment README, the reviewer's reading | 2026-11-04 |
+| `BucketDeployment` prunes by default, deleting files not in its source, and only its own deployment-level `exclude` protects one, so two deployments on one bucket delete each other's files | docs | CDK s3-deployment README ("Prune", "Exclude and Include Filters"), the reviewer's reading; why story `10-website` uses one | 2026-11-04 |
+| A CloudFront Function on viewer response can set `Content-Type` and add a `Link` header | memory | Ticket 03 of story `10-website` proves it on a deploy | 2026-11-04 |
 | `CachingDisabled` is accepted on Free | memory | Not stated by AWS; issue 01 of story `2-identity-api` proves it | 2026-11-01 |
 | `HTTPS_ONLY` answers `http://` with `403` | docs | [https-viewers], the reviewer's reading; issue 01 of story `2-identity-api` proves it | 2026-11-01 |
 | Port 80 can't be closed on a distribution | memory | | 2026-11-01 |

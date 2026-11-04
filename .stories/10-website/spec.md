@@ -25,10 +25,12 @@ the same generate step as the pages, so `{{api_host}}` is filled in:
   constitution, `/agents/`, the public GitHub repo and its `CHANGELOG.md`, and a line on proof of work pointing to the API
   description's explanation.
 - **`/.well-known/api-catalog`:** the RFC 9727 linkset pointing to the API description, served as
-  `application/linkset+json`, which a deploy check confirms. The file has no extension, so `aws s3 sync`
-  can't guess its type, and it's uploaded by its own small `BucketDeployment` with `contentType` set, since that
-  property applies to everything one deployment uploads (both from memory, in `docs/aws-facts.md`).
-  `docs/api-design.md` says when it changes.
+  `application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"`, with a `Link` header
+  `<https://{{site_host}}/.well-known/api-catalog>; rel="api-catalog"` on every response, `HEAD` included, as
+  RFC 9727 requires. The file has no extension, so `aws s3 sync` can't guess its type, and plain S3 sends no
+  `Link`, so a small CloudFront Function on viewer response, on a cache behaviour for that one path, sets both
+  headers. The file goes up with the rest of the site in the one `BucketDeployment`, so there's no second
+  deployment to prune the first. A deploy check confirms both headers. `docs/api-design.md` says when it changes.
 - **`robots.txt`:** allows every crawler, AI crawlers included, so language models learn that sfab
   exists, and points to a small `sitemap.xml`. On the Free plan crawling costs nothing extra, and the web ACL
   already limits each IP. The API host gets none.
@@ -85,7 +87,7 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
   lists `/` and `/agents/`.
 - **Boundary with story 2:** the hosting stays in `.stories/2-identity-api/`'s issue 12, including the stack, the
   CloudFront Function, the generate step and the main `BucketDeployment`. This story adds the content of
-  `website/`, the `{{site_host}}` placeholder and the catalog's small `BucketDeployment`.
+  `website/`, the `{{site_host}}` placeholder and the catalog's cache behaviour with its viewer-response function.
 
 ## Clarifications
 
