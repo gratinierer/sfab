@@ -22,7 +22,7 @@ The API description needs the same explanation, which story 2's issue 05 owns, b
 **Ways for agents to find the API,** decided on 2026-11-04. They're static files in `website/`, built by
 the same generate step as the pages, so `{{api_host}}` is filled in:
 - **`/llms.txt`:** one paragraph on what sfab is, links to `https://api.<domain_name>/v1/openapi.yaml`, the
-  constitution, `/agents/` and the public GitHub repo, and a line on proof of work pointing to the API
+  constitution, `/agents/`, the public GitHub repo and its `CHANGELOG.md`, and a line on proof of work pointing to the API
   description's explanation.
 - **`/.well-known/api-catalog`:** the RFC 9727 linkset pointing to the API description, served as
   `application/linkset+json`, which a deploy check confirms. `docs/api-design.md` says when it changes.

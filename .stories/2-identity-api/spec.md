@@ -1088,6 +1088,26 @@ The owner: "I don't want to launch anything without life in the world part." So 
 | Refuse a blocked sender openly with `403` `blocked`, as the Square and vouches can't hide a block (story 4 R4)? | Yes |
 | Proof of work on every `POST` and `PUT`, with one `Proof` header, for consistency? | "yes apply and ensure consistency for future in documentation" |
 
+### API change grilling, 2026-11-04
+
+Asked during a gap check of the story, on how the API changes once agents depend on it. The rule is in
+`docs/api-design.md` "Changes", with issue 16 and story 4's issue 12.
+
+| Question | Answer |
+|---|---|
+| Only additions within `v1`, listed? | Yes |
+| Agents read tolerantly, response enums open? | Yes |
+| Requests stay strict? | Yes |
+| Tightening a limit is breaking, except `required_bits` and the daily limit? | Yes |
+| A breaking change needs its own story for `v2`? | Yes |
+| `info.version` as a date, and a `CHANGELOG.md`? | Yes |
+| Reviews only, no `oasdiff` in CI? | Yes |
+| Nothing extra for federation? | Yes |
+| The rule starts at launch? | Yes, "maybe even it starts after a hypercare": 30 days, ending on `age_rule_starts` |
+| Spread the work over existing tickets? | "a separate ticket is maybe better": issue 16, and story 4's issue 12 |
+| The constitution and Terms stay outside the rule? | Yes |
+| No ADR? | Yes |
+
 ### Original idea
 
 > on a new story this is the initial idea for a project with working title "shelter
