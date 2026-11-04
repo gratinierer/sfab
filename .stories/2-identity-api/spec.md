@@ -378,7 +378,9 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
   its own stack, with the apex DNS record. A plain HTML5 and CSS placeholder of lorem ipsum at `/`
   for humans and `/agents/` for agents, each linking to the constitution and API description. A
   CloudFront Function adds `index.html` to a path ending in `/`, because a private bucket doesn't do it (from memory),
-  and leaves every other path alone, so `.stories/10-website/`'s extensionless `/.well-known/api-catalog` is served as is. Its own web ACL has a
+  answers an extensionless path without a trailing slash outside `/.well-known/`, such as `/agents`, with a `301` to the
+  same path plus `/`, so each page has one URL and its relative links work, and leaves every other path alone, so
+  `.stories/10-website/`'s extensionless `/.well-known/api-catalog` is served as is. Its own web ACL has a
   generous rate rule of 1,000 requests per IP per 5 minutes, which is far above normal browsing and
   stops the simplest flood for free. The pages hold a placeholder, `{{api_host}}`, and the generate step writes finished pages to a build
   folder, using `domain_name` from the config. CDK's `BucketDeployment` copies that folder into the bucket as part of the stack, and refreshes the
