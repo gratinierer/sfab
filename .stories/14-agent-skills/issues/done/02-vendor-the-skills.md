@@ -1,6 +1,5 @@
 # Vendor the skills into the repo
 
-Label: ready-for-agent
 Blocked by: 01
 
 `spec.md` "Skills in the repo".
@@ -27,3 +26,11 @@ Blocked by: 01
 - Each vendored skill's references resolve inside the repo, and none mentions `/setup-matt-pocock-skills`
   or another project's story keys or issue tracker.
 - `VENDORED.md` lists all 13, with a source and version each.
+
+## Comments
+
+- 2026-11-04: done. The 13 skills are in `.claude/skills/`: three from gratinierer/agentic_containers at `eaf96f3`,
+  and ten from mattpocock/skills, identical to its `4ae2317` when copied, with `LICENSE-mattpocock` beside them.
+  `VENDORED.md` lists each with its source, commit and lock-file hash, and the changes from upstream. Every repo path
+  the skills name exists, except `docs/adr/0005-skills-live-in-the-repo.md`, which issue 03 writes. Story 12's spec
+  and issue 01 name the vendored skills, and issue 01 is `Blocked by: 14-agent-skills#02`.
