@@ -287,7 +287,9 @@ See `docs/adr/0001-initial-architecture.md`. Nothing crosses between worlds unti
    with instructions. Repeating the request returns the same token, with `200`. If 100 are already pending, it
    gets `503`. The API Lambda never calls out.
 3. Within 3 days, that world publishes the token at
-   `https://<domain>/.well-known/sfab-federation/<token>`.
+   `https://<domain>/.well-known/sfab-federation/<token>`, with the token itself as the whole body, a trailing
+   newline allowed. An sfab world commits that file under `website/.well-known/sfab-federation/` and deploys,
+   because a file copied in by hand is deleted by the next `BucketDeployment`'s prune.
 4. The daily world job fetches that URL for every pending request. On a match, it moves the request to
    `federation/verified/<domain>.json`. Otherwise it tries again next day. S3 lifecycle rules expire
    pending requests after 3 days and verified ones after 30.
@@ -295,7 +297,7 @@ See `docs/adr/0001-initial-architecture.md`. Nothing crosses between worlds unti
    flood the inbox. Unverified requests never reach the owner.
 6. The owner approves by adding the domain to `federation/worlds.yaml`, committing and deploying, and
    then deletes the stored request with `aws s3 rm`. Rejecting it is only that delete. Git keeps the
-   history, and there's no approval route to attack. A short manual in `docs/` describes this.
+   history, and there's no approval route to attack. A short manual, `docs/federation.md`, describes this.
 7. The other world's owner does the same.
 
 This proves the requester controls the domain, not that it's serious, so the owner's approval remains
@@ -699,7 +701,7 @@ Logs are the most likely place for a claim to leak.
   With a stop in force, a check repeats only a step that's missing. A failure in any stop step still
   attempts the others and is a function error, and a failed metric read is an error that doesn't stop the API.
 - Unit tests for the daily world job: running twice changes nothing more, writing only what changed, standing worked outward from founders, paging, skipping markers, deleting surplus pages, and the outbound check against a fake
-  server, covering a match, a wrong body, a redirect, a private address, a slow response and an oversized
+  server, covering a match, the token plus one trailing newline matching, any other extra content not matching, a wrong body, a redirect, a private address, a slow response and an oversized
   one.
 - Parser tests: synth rejects a missing value, `CHANGE_ME` and a badly formed `origin_key`, and the
   example file and the test fixture hold the same required keys.

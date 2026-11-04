@@ -13,7 +13,7 @@ Stage 2. `spec.md` "Architecture" (website). See `docs/adr/0001-initial-architec
 - Plain HTML5 and CSS at `website/`: a small lorem ipsum at `/` for humans and `/agents/` for agents,
   each linking to the constitution and API description. Design and content are a later story.
 - A generate step turning `{{api_host}}` in the pages into the real address from the config, writing to a
-  build folder.
+  build folder, and copying every other file in `website/` unchanged.
 - CDK's `BucketDeployment` in this stack, copying that folder into the bucket and refreshing the
   distribution, and this stack in the `deploy` script's "all stacks" deploy.
 

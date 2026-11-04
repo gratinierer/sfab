@@ -37,6 +37,8 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-04T12:59:07+00:00 | walkthrough | working tree | claude-opus-5-5, auto | 0 new, 3 resolved, 0 still open | auto walkthrough, not a review pass |
 | 2026-11-04T13:26:30+00:00 | review | ccdeca1 | claude-fable-5-1 (dispatched; stories authored by claude-opus-5-5) | 2 new, 0 resolved, 2 still open | full pass over 491b331..ccdeca1, reviewed together with stories 2 and 10, including launch steps 1 and 8 and ticket 12; all 3 closures held; no new cost figures |
 | 2026-11-04T13:31:29+00:00 | walkthrough | working tree | claude-opus-5-5, with the owner deciding each finding | 0 new, 2 resolved, 0 still open | walkthrough, not a review pass |
+| 2026-11-04T14:23:38+00:00 | review | b49f618 | claude-fable-5-1 (dispatched; stories authored by claude-opus-5-5) | 0 new, 0 resolved, 0 still open | full pass over ccdeca1..b49f618, reviewed together with stories 2 and 10; both closures held; nothing new |
+| 2026-11-04T14:30:36+00:00 | review | working tree on b49f618 | claude-fable-5-1 (dispatched; stories authored by claude-opus-5-5) | 0 new, 0 resolved, 0 still open | reviewed with stories 2 and 10; nothing new |
 
 ## Findings
 
