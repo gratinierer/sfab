@@ -6,9 +6,14 @@ Stories and issues as local markdown under `.stories/`, stories named
 `<n>-<slug>` after their GitHub issue number. See
 `docs/agents/issue-tracker.md` and `docs/agents/github.md`. New GitHub issues
 are always labeled `AIassisted` and self-assigned on creation — see
-`git-commit-policy.instructions.md`'s "Whenever a new GitHub issue is
-created" section, which applies regardless of which skill or flow created
-the issue.
+`docs/agents/commit-policy.md`'s "Whenever a new GitHub issue is created"
+section, which applies regardless of which skill or flow created the issue.
+
+### Commit policy
+
+Commits, pushes and issue creation follow `docs/agents/commit-policy.md`. It
+wins over any global commit policy a session also loads, including its
+issue number for the commit subject and its AI trailer naming the tool.
 
 Every dependency between tickets goes on the `Blocked by:` line, written as
 `<story>#<NN>` when it's in another story, such as `2-identity-api#13`. See

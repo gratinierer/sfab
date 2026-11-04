@@ -1,7 +1,5 @@
 # Move the commit policy into the repo
 
-Label: ready-for-agent
-
 `spec.md` "The commit policy in the repo".
 
 ## Scope
@@ -18,3 +16,10 @@ Label: ready-for-agent
 
 - Outside `.stories/`, no file names `git-commit-policy.instructions.md`, except `docs/agents/commit-policy.md` naming
   it as its origin.
+
+## Comments
+
+- 2026-11-04: done. `docs/agents/commit-policy.md` holds the policy, with the tool-named trailer and the rule
+  for which number a commit carries. AGENTS.md has a "Commit policy" section saying it wins over any global policy,
+  and AGENTS.md, `docs/agents/github.md` and `docs/agents/issue-tracker.md` point to it. Outside `.stories/`, only
+  `commit-policy.md` names the global file, as its origin.

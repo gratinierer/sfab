@@ -13,8 +13,8 @@ numbered **issues**, all tracked as markdown files under `.stories/`.
   `<n>-` prefix, which is what everything matches on. Create that issue the
   same way as any other (`gh issue create --title "<summary>" --body
   "<body>" --label AIassisted --assignee @me`, per
-  `git-commit-policy.instructions.md`'s "Whenever a new GitHub issue is
-  created" section — applies here too, not just inside the commit flow) — a
+  `commit-policy.md`'s "Whenever a new GitHub issue is created"
+  section — applies here too, not just inside the commit flow) — a
   `.stories/` directory is purely a local organisational grouping, the
   GitHub issue backing it is a plain issue like any other. The numbered
   `issues/NN-*.md` files below stay local; they don't get GitHub issues.

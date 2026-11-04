@@ -8,7 +8,7 @@ Used for:
 - Prefixing story directory names (`.stories/<n>-<slug>/`, `<n>` = the GitHub
   issue number) — see `issue-tracker.md`.
 - Branch/commit issue references and issue creation — see
-  `git-commit-policy.instructions.md`.
+  `commit-policy.md`.
 
 ## Repo
 
@@ -39,8 +39,8 @@ Use `gh` directly (it resolves the repo from the git remote; add
   every issue created by an agent carries this label, so humans can tell
   agent-created issues apart from human-created ones at a glance. No issue
   type. **After creating any issue, by this or any other path,
-  follow `git-commit-policy.instructions.md`'s "Whenever a new GitHub issue
-  is created" section** — it fires on issue creation itself, not only in the
+  follow `commit-policy.md`'s "Whenever a new GitHub issue is created"
+  section** — it fires on issue creation itself, not only in the
   commit flow.
 - **List this repo's issues**: `gh issue list`
 - **Close an issue**: normally via `Closes #<n>` in the merged PR. When a
