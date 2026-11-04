@@ -19,7 +19,7 @@ env:
   SFAB_CONFIG: cdk/tests/fixtures/sfab.config.test.toml
   UV_VERSION: "0.13.6"
   CARGO_LAMBDA_VERSION: "1.9.2"
-  ZIGLANG_VERSION: "0.16.0" # the devcontainer's zig
+  ZIGLANG_VERSION: "0.16.0" # the devcontainer's zig on 2026-11-04; it comes from apt there, unpinned
   CARGO_AUDIT_VERSION: "0.22.2"
 
 jobs:
@@ -40,7 +40,9 @@ jobs:
           key: cargo-${{ runner.os }}-${{ env.CARGO_AUDIT_VERSION }}-${{ hashFiles('lambda/rust-toolchain.toml', 'lambda/Cargo.lock') }}
 
       # cargo-lambda finds zig through `python3 -m ziglang`, so both go in one
-      # virtual environment whose python3 comes first on PATH.
+      # virtual environment whose python3 comes first on PATH. Every later step
+      # then gets this python3: scripts that need the project's Python call
+      # cdk/.venv/bin/python by path, as scripts/check does.
       - name: Install uv and cargo-lambda (with zig)
         run: |
           pipx install "uv==${UV_VERSION}"
