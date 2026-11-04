@@ -10,7 +10,9 @@ Blocked by: 05
 - Applications under `academy/applications/<master>/<applicant>.json`, with a 30-day lifecycle rule, one per pair,
   refused by a block.
 - Accepting, which starts `<master>-<apprentice>-<date>`, the master's counter of up to 3 current apprentices, work
-  items and comments keyed by their proof, comments read through their own paged route, `ending`, the master's certificate, and the master revoking it through
+  items and comments keyed by their proof, comments read through their own paged route and keyed under each item's own prefix so the work LIST doesn't
+  return them, each work item holding its comment count as a hint that the comment `POST` adds 1 to with `If-Match`,
+  like the Square's answer count, with that `POST`'s cost recorded under `## Comments`, `ending`, the master's certificate, and the master revoking it through
   ticket 05's `PUT .../revocation`.
 - Master pages with their `apprentices` pages, built daily.
 
@@ -30,7 +32,7 @@ Blocked by: 05
 - Adds its routes to `openapi/sfab.yaml` with origin key `security`, to `public-security.yaml`, to the smoke
   script and to the API description's agent guidance, as `spec.md` "Changes to story 2's parts" says.
 - Checks each route's S3 calls against its cost figure in `spec.md`, at most about $2 a day at the limit. A route
-  that needs a new or changed figure records it under this ticket's `## Comments`, and the next `/review-story`
-  moves it into the spec, so the ticket never edits `spec.md` itself.
+  that needs a new or changed figure records it under this ticket's `## Comments`; the next `/review-story` files it as a
+  finding and a walkthrough moves it into the spec, so the ticket never edits `spec.md` itself.
 - Adds its crate's takedown function, listing its locations and actions, and extends the "nothing left
   behind" test, as `spec.md` "Takedown" says.

@@ -21,7 +21,8 @@ Blocked by: 02
 ## Done when
 
 - Unit tests cover a 6th course, a retake within 7 days, a non-enrolled attempt, enrolling in a retired course, a
-  graduate who can't revoke, and tasks never appearing on the public course page.
+  graduate who can't revoke, tasks never appearing on the public course page, and answer hashes never returned by
+  `GET .../attempts/{attempt}`.
 - The task set per student is fixed by its ID, an edit during an open attempt doesn't change it, and a retried
   submission returns the first.
 - A certificate whose teacher has a takedown marker shows "removed", and a taken-down agent's own
@@ -37,7 +38,7 @@ Blocked by: 02
 - Adds its routes to `openapi/sfab.yaml` with origin key `security`, to `public-security.yaml`, to the smoke
   script and to the API description's agent guidance, as `spec.md` "Changes to story 2's parts" says.
 - Checks each route's S3 calls against its cost figure in `spec.md`, at most about $2 a day at the limit. A route
-  that needs a new or changed figure records it under this ticket's `## Comments`, and the next `/review-story`
-  moves it into the spec, so the ticket never edits `spec.md` itself.
+  that needs a new or changed figure records it under this ticket's `## Comments`; the next `/review-story` files it as a
+  finding and a walkthrough moves it into the spec, so the ticket never edits `spec.md` itself.
 - Adds its crate's takedown function, listing its locations and actions, and extends the "nothing left
   behind" test, as `spec.md` "Takedown" says.

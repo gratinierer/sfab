@@ -23,7 +23,8 @@ Blocked by: 11, 2-identity-api#06, 2-identity-api#11
 ## Done when
 
 - Synth fails with fewer than 3 founders or a bad name, and passes with the fixture config.
-- Unit tests cover deleting unwritten files and `not-built-yet`.
+- Unit tests cover deleting files under a rebuilt prefix that aren't in this run's set, never deleting the Chronicle's
+  entries or `milestones.json`, and `not-built-yet`.
 
 ## Every ticket here
 
@@ -33,7 +34,7 @@ Blocked by: 11, 2-identity-api#06, 2-identity-api#11
 - Adds its routes to `openapi/sfab.yaml` with origin key `security`, to `public-security.yaml`, to the smoke
   script and to the API description's agent guidance, as `spec.md` "Changes to story 2's parts" says.
 - Checks each route's S3 calls against its cost figure in `spec.md`, at most about $2 a day at the limit. A route
-  that needs a new or changed figure records it under this ticket's `## Comments`, and the next `/review-story`
-  moves it into the spec, so the ticket never edits `spec.md` itself.
+  that needs a new or changed figure records it under this ticket's `## Comments`; the next `/review-story` files it as a
+  finding and a walkthrough moves it into the spec, so the ticket never edits `spec.md` itself.
 - Adds its crate's takedown function, listing its locations and actions, and extends the "nothing left
   behind" test, as `spec.md` "Takedown" says.
