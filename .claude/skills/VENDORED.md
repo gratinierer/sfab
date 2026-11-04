@@ -32,4 +32,6 @@ characters of each one's `computedHash` in the devcontainer's `skills-lock.json`
   instead, and `to-tickets` to `docs/agents/triage-labels.md` too.
 - `address-story-review-findings`: "the repo's commit policy" names `docs/agents/commit-policy.md`.
 
+`address-code-review-findings` isn't vendored: it was written in this repo, after `address-story-review-findings`.
+
 Later changes made in this repo, such as `code-review` writing `code-review.md`, are recorded in git history.

@@ -1,6 +1,5 @@
 # Add the address-code-review-findings skill
 
-Label: ready-for-agent
 Blocked by: 03
 
 `spec.md` "Code review file" (`address-code-review-findings`).
@@ -52,3 +51,10 @@ Spec:
 - C13, looks wrong: `BAD_REQUEST_BODY`'s template quotes `$context.error.validationErrorString`, which may itself
   hold double quotes and break the JSON (from memory); the test substitutes a string without quotes.
 - C14, minor: `check_public` treats any run of 12 digits as an account ID, so a future hash or example could trip it.
+
+## Comments
+
+- 2026-11-04: done. `.claude/skills/address-code-review-findings/SKILL.md` mirrors `address-story-review-findings` for
+  `code-review.md`, with the closing gate in its "Finishing", and the two skills point to each other. Story 2's
+  `code-review.md` holds the findings above as C1-C14, all `open`, plus C15-C17 from issue 03's test run on
+  `7124f67..d8ac678`. Story 2's issue 05 has the dated note, and story 2's `review.md` a `walkthrough` row for it.

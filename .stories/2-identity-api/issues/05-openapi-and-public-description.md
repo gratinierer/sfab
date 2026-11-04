@@ -47,3 +47,6 @@ Write the API's single source and everything built from it: `spec.md` "API", "Wi
   smoke script. The `$default` content type and the inlined integration are `memory` rows in
   `docs/aws-facts.md`, which issue 01's first import proves. The `deploy` script from issue 04 already
   generates, builds, deploys all stacks or a named one, and refuses `SFAB_CONFIG`.
+- 2026-11-04: this issue can't close while a finding against it in `../code-review.md` is `open`, under
+  `docs/agents/issue-tracker.md` "Closing an issue or story". The first code review, of issues 04 and 05 at
+  `862ddba..e2b740c`, left C1 to C14 open. Work through them with `/address-code-review-findings 2-identity-api 05`.

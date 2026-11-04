@@ -1,6 +1,6 @@
 ---
 name: address-story-review-findings
-description: "Walk through a story's open review findings one at a time, in dialogue with the user (or, with `auto`, without interaction): decide each one, optionally fix it, and record the outcome in the story's `review.md`. Use when asked to go through, work through, or address a story's review findings, or to address them automatically. For producing findings, use `review-story`; for reviewing a diff or PR, use `code-review`."
+description: "Walk through a story's open review findings one at a time, in dialogue with the user (or, with `auto`, without interaction): decide each one, optionally fix it, and record the outcome in the story's `review.md`. Use when asked to go through, work through, or address a story's review findings, or to address them automatically. For producing findings, use `review-story`; for reviewing a diff or PR, use `code-review`, and for its findings `address-code-review-findings`."
 ---
 
 # Address Story Review Findings
