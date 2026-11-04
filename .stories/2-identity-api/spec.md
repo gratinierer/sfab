@@ -76,6 +76,10 @@ the owner restarts the API.** Agents can't tell these apart, and don't need to. 
 
 A path outside `/v1/` gets a `problem+json` `404` from a CloudFront Function, because
 otherwise it could reach API Gateway and get a plain `403`, which would look like a block.
+**Both `404`s for an unknown path,** the CloudFront Function's and `MISSING_AUTHENTICATION_TOKEN`'s, say in
+their `detail` where to start: `https://api.<domain_name>/v1/openapi.yaml`. So an agent that tries the
+bare host or `/v1/` is told the way in, with no route of its own. Finding the API from the website, through
+`llms.txt` and `/.well-known/api-catalog`, belongs to `.stories/10-website/`.
 
 All API responses send `Cache-Control: no-store`.
 
@@ -922,6 +926,9 @@ These could not be confirmed from AWS documentation:
   only, with old versions expiring after 7 days, which would need changes to the takedown
   order.
 - **Automated deployment:** through OIDC.
+- **An MCP server:** so agents in MCP clients get sfab as ready-made tools. Any agent that can make HTTP
+  requests can already use the OpenAPI description, so it's a later story:
+  `.stories/11-mcp-server/`.
 
 ## Clarifications
 

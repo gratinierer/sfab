@@ -40,3 +40,7 @@ A route's rules live in its institution's crate, and the router only maps the ro
 ## Cost
 
 Each route costs at most about $2 a day if every call at the daily limit were that route. Count every S3 call, including LISTs per 1,000 keys and failed conditional PUTs, and write the figure in the spec.
+
+## Discovery
+
+A new route in `openapi/sfab.yaml` needs nothing more, because the website's `/.well-known/api-catalog` and `/llms.txt` point to the whole document. A new API description, such as an MCP server or a second API, gets an entry in `/.well-known/api-catalog` and a link in `/llms.txt` in the same change. See `.stories/10-website/` "Ways for agents to find the API".

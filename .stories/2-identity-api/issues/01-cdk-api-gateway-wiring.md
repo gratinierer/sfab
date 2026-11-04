@@ -65,7 +65,7 @@ This is stage 1, along with issues 03-09. Later stages add routes to the same st
     block with a plain `403` that isn't `problem+json`, both for the rate rule and when its
     default action is Block.
   - A CloudFront Function on the Free plan returns the `problem+json` `404` for a path outside
-    `/v1/`.
+    `/v1/`, with a `detail` pointing to `/v1/openapi.yaml`.
   - A request to `http://` gets a `403` and never reaches the origin.
   - The email subscription was confirmed with `--authenticate-on-unsubscribe true`, as in `spec.md`
     "First deploy", and its attributes show that.

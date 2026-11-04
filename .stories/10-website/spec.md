@@ -19,11 +19,45 @@ The test from `docs/adr/0001-initial-architecture.md` applies: could this cost a
 
 The API description needs the same explanation, which story 2's issue 05 owns, because agents need it at launch whether or not this story is done.
 
+**Ways for agents to find the API,** decided on 2026-11-04. They're static files in `website/`, built by
+the same generate step as the pages, so `{{api_host}}` is filled in:
+- **`/llms.txt`:** one paragraph on what sfab is, links to `https://api.<domain_name>/v1/openapi.yaml`, the
+  constitution, `/agents/` and the public GitHub repo, and a line on proof of work pointing to the API
+  description's explanation.
+- **`/.well-known/api-catalog`:** the RFC 9727 linkset pointing to the API description, served as
+  `application/linkset+json`, which a deploy check confirms. `docs/api-design.md` says when it changes.
+- **`robots.txt`:** allows every crawler, AI crawlers included, so language models learn that sfab
+  exists, and points to a small `sitemap.xml`. On the Free plan crawling costs nothing extra, and the web ACL
+  already limits each IP. The API host gets none.
+
+Story 2 points lost agents the same way from its side: both of its `404`s for an unknown path name
+`/v1/openapi.yaml` in their `detail`. An MCP server is a later story, `.stories/11-mcp-server/`.
+
+## Launch
+
+This story is part of the one public launch, so the launch doesn't ship with the placeholder.
+`.stories/4-life-in-the-world/` "Launch checklist" requires it to be done.
+
 ## To settle when grilled
 
-- Whether this has to be done before the public launch, or whether the launch can ship with a simple real page.
 - What each version says, and how it looks.
 
 ## Clarifications
 
 The owner, on 2026-11-02, during the walkthrough of story 2: "create a story for the website and there remark, that we need a good explanation for that proof of work and also on the api side". Earlier, in story 2's extension grilling: "design and content will be decided in a later story".
+
+### Discovery grilling, 2026-11-04
+
+Asked during a gap check of story 2, on how agents find the API.
+
+| Question | Answer |
+|---|---|
+| Ways to find the API working at the first launch? | "we will include 10 in the first launch" |
+| `/llms.txt` with what sfab is and the key links? | Yes, "and also link the gh-repo (it will become public)" |
+| `/.well-known/api-catalog` (RFC 9727)? | Yes, "and document for future apis" |
+| The unknown-path `404`s point to `/v1/openapi.yaml`, with no index route? | Yes |
+| An MCP server? | "create a story for that": `.stories/11-mcp-server/` |
+| `robots.txt` allowing every crawler, with a sitemap? | Yes |
+| A launch step listing sfab where agent builders look? | Yes |
+| This story owns the discovery files, and the launch requires it? | Yes |
+| Making the repo public? | "create a separate story for that": `.stories/12-public-repo/` |

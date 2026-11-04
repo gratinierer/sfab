@@ -12,7 +12,7 @@ Write the API's single source and everything built from it: `spec.md` "API", "Wi
   tickets add to, with the optional `Proof` header on every `POST` and `PUT`, `?page=` on every list route, and
   the `required_bits` `400` problem schema, models with `additionalProperties: false`, the `$default`
   validator model, `problem+json` gateway responses including `MISSING_AUTHENTICATION_TOKEN` as a
-  `404`, and `INVALID_API_KEY` as a `403` with `type: origin-key-replaced`, an ARN placeholder, and the origin key's `security` on every operation.
+  `404` whose `detail` points to `/v1/openapi.yaml`, and `INVALID_API_KEY` as a `403` with `type: origin-key-replaced`, an ARN placeholder, and the origin key's `security` on every operation.
 - `openapi/public-security.yaml`, and the generator that removes `x-amazon-*` and the `apiKey`
   scheme, merges in Bearer for every route needing credentials, and adds `servers` and `info.contact`.
 - The agent guidance the description must carry: a clear explanation of proof of work, with a worked example, as `.stories/10-website/spec.md` describes, that a lost `reclaim`
