@@ -94,8 +94,12 @@ def build_public(source: dict, security: dict, abuse_contact: str) -> dict:
     return head | doc
 
 
-def check_public(text: str, doc: dict, config: sfab_config.Config, bearer: list[str]) -> list[str]:
-    """Everything the public copy must never contain, and what it must contain."""
+def check_public(text: str, config: sfab_config.Config, bearer: list[str]) -> list[str]:
+    """Everything the public copy must never contain, and what it must contain.
+
+    It checks only the text, as written and served, parsing it for the structural checks.
+    """
+    doc = yaml.safe_load(text) or {}
     problems = []
     if "x-amazon-" in text:
         problems.append("contains an x-amazon- extension")
@@ -140,7 +144,7 @@ def generate(config: sfab_config.Config) -> str:
     security = load_yaml(PUBLIC_SECURITY)
     doc = build_public(load_yaml(SOURCE), security, config.abuse_contact)
     text = dump(doc)
-    problems = check_public(text, yaml.safe_load(text), config, security["bearer"])
+    problems = check_public(text, config, security["bearer"])
     if problems:
         raise GenerateError("the public API description " + "; ".join(problems))
     return text

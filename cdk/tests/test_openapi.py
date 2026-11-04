@@ -241,8 +241,8 @@ def test_an_unknown_route_gets_a_404_pointing_to_the_description(source):
 # --- the public copy -----------------------------------------------------------------
 
 
-def test_public_copy_passes_its_own_checks(public_text, public, config, security):
-    assert gen.check_public(public_text, public, config, security["bearer"]) == []
+def test_public_copy_passes_its_own_checks(public_text, config, security):
+    assert gen.check_public(public_text, config, security["bearer"]) == []
 
 
 def test_public_copy_has_nothing_private(public_text, public, config):
@@ -279,18 +279,18 @@ def test_public_copy_declares_bearer_exactly_where_needed(public, security):
         ("{{api_host}}", "placeholder"),
     ],
 )
-def test_check_public_catches_leaks(public_text, public, config, security, leak, problem):
+def test_check_public_catches_leaks(public_text, config, security, leak, problem):
     leaked = public_text + f"\n# {leak}\n"
-    problems = gen.check_public(leaked, public, config, security["bearer"])
+    problems = gen.check_public(leaked, config, security["bearer"])
     assert any(problem in p for p in problems), problems
 
 
-def test_check_public_catches_a_missing_contact_apikey_or_bearer(public_text, public, config, security):
+def test_check_public_catches_a_missing_contact_apikey_or_bearer(public, config, security):
     broken = copy.deepcopy(public)
     del broken["info"]["contact"]
     broken["components"]["securitySchemes"]["k"] = {"type": "apiKey", "name": "k", "in": "header"}
     broken["paths"]["/identity/self"]["get"].pop("security")
-    problems = gen.check_public(public_text, broken, config, security["bearer"])
+    problems = gen.check_public(gen.dump(broken), config, security["bearer"])
     assert any("info.contact" in p for p in problems)
     assert any("apiKey" in p for p in problems)
     assert any("GET /identity/self" in p for p in problems)
