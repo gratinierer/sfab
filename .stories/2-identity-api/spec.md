@@ -158,10 +158,11 @@ request path exactly as sent, starting with `/v1/`, without its query, with no t
 percent-encoding, because every path is lowercase ASCII: IDs use lowercase base32, client-picked IDs are
 checked by the OpenAPI pattern, and synth checks `quarters.yaml` and `shelves.yaml` names against `[a-z0-9-]`. `<METHOD>` is upper case. `<caller>` is the ID in the
 `Authorization` header, which for `reclaim` is the part before the `.`, or `-` for an anonymous `birth` or
-federation request. `<unix-ts>` is decimal seconds, and `<nonce>` is 1 to 64 characters of base64url, so the
+federation request. `<unix-ts>` is decimal seconds with no leading zeros, so the hashed text is the header's, and `<nonce>` is 1 to 64 characters of base64url, so the
 `Proof` header splits on its one `:`. The timestamp has at most 18 digits, so it fits the server's 64-bit integer; the
 limit was 20 before launch, and tightening it was allowed because nothing depended on the API yet
-(`docs/api-design.md` "Changes"). `<body-hash>` is as under "Wire contract", and an empty body hashes
+(`docs/api-design.md` "Changes"). For the same reason, a timestamp with a leading zero was made malformed
+on 2026-11-04 (review R171), because the server hashes the parsed number. `<body-hash>` is as under "Wire contract", and an empty body hashes
 the empty string. So a solution can't be reused on another route, for another caller or with another
 body.
 
@@ -789,7 +790,10 @@ replaces the isolation that per-route IAM roles would have given.
   updates are off. **Dependabot's alert email is the alert,** because new advisories appear for code that
   doesn't change, and it keeps working in a quiet repo. On 2026-11-04 the owner set CI to manual runs only, to
   save Actions minutes, so it runs on neither a push nor a schedule, and `scripts/check` runs locally before each
-  commit and deploy. The workflow keeps the push and weekly triggers as comments, to restore when wanted, and a
+  commit and deploy. Its generate step reads the active config, so where there's neither `SFAB_CONFIG` nor
+  `sfab.config.toml`, such as an agent's container, it uses `cdk/tests/fixtures/sfab.config.test.toml`,
+  as CI does. The fixture never reaches a deploy: `deploy` refuses `SFAB_CONFIG`, and `cdk/app.py`
+  stops without `sfab.config.toml`. The workflow keeps the push and weekly triggers as comments, to restore when wanted, and a
   weekly run's failure email would then be a second signal, though GitHub turns scheduled runs off in a public
   repository after 60 days without activity.
   Workflows pin each action by full commit hash, using only GitHub's own `checkout` and `cache`, and
@@ -841,8 +845,9 @@ This happens once, so it's an ordered manual rather than automation that handles
 failure. Each step needs the one before it:
 
 1. Complete "Prerequisites", fill in `sfab.config.toml` except `hosted_zone_id`, then run
-   `aws login` and `cdk bootstrap aws://<account_id>/us-east-1`, which names the target so it
-   shouldn't need the config yet.
+   `aws login` and `cdk bootstrap aws://<account_id>/us-east-1` from the repo root, not `cdk/`: beside
+   `cdk/cdk.json` the CLI synthesizes the app even when the target is named, and `cdk/app.py` exits
+   without `hosted_zone_id`.
 2. Buy `domain_name` in the Route 53 console, with WHOIS privacy and auto-renew on. If AWS
    sends a registrant verification email, follow it, because AWS must otherwise suspend the
    domain, which takes the API offline. Don't continue until registration has finished and

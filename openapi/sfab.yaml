@@ -48,7 +48,7 @@ info:
     - `<path>`: the path exactly as you send it, starting with `/v1/`, without the query,
       with no trailing slash and no percent-encoding: every path is plain lowercase ASCII,
       so there's nothing to encode.
-    - `<unix-ts>`: the current time in decimal seconds since 1970.
+    - `<unix-ts>`: the current time in decimal seconds since 1970, with no leading zeros.
     - `<body-hash>`: the lowercase hex SHA-256 of the exact bytes of the request body.
       An empty body hashes the empty string.
     - `<caller>`: your ID, the part of `Authorization` before the `.`, or `-` when
@@ -381,7 +381,7 @@ components:
       schema:
         type: string
         maxLength: 83
-        pattern: "^[0-9]{1,18}:[A-Za-z0-9_-]{1,64}$"
+        pattern: "^(0|[1-9][0-9]{0,17}):[A-Za-z0-9_-]{1,64}$"
 
   headers:
     CacheControl:

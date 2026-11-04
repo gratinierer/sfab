@@ -70,7 +70,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | A wrong or missing API key on a key-required method raises the `INVALID_API_KEY` gateway response, a `403`, rather than `DEFAULT_4XX` alone | memory | | 2026-11-03 |
 | An unknown route or method returns `MISSING_AUTHENTICATION_TOKEN` as `403`, and the `413` can't be customised | docs | [response-types] | 2026-11-01 |
 | OpenAPI import accepts `$default` as a `requestBody` content type, giving a model that validates every content type, beside `application/json` | memory | Why `openapi/sfab.yaml` lists both; issue 01 of story `2-identity-api` proves it on import | 2026-11-04 |
-| OpenAPI import doesn't resolve a `$ref` inside `x-amazon-apigateway-integration`, so `openapi/sfab.yaml` repeats it with a YAML anchor instead | memory | | 2026-11-04 |
+| OpenAPI import doesn't resolve a `$ref` inside `x-amazon-apigateway-integration`, so `openapi/sfab.yaml` repeats it with a YAML anchor instead | memory | Issue 01 of story `2-identity-api` checks it on import | 2026-11-04 |
 | REST requests cost $3.50 per million | docs | AWS's pricing page | 2026-11-01 |
 | Failed authentication, missing or invalid API keys and throttled requests aren't charged | docs | [old-pricing], a 2021 archive of a removed page, so possibly out of date; issue 02 of story `2-identity-api` confirms it | 2026-11-01 |
 
@@ -82,7 +82,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | A distribution defaults to `ALLOW_GET_HEAD`, and to `ALLOW_ALL` for the viewer protocol unless a flag makes it redirect | docs | [cdk-behavior] | 2026-11-01 |
 | `BucketDeployment` copies a folder during `cdk deploy`, can refresh a distribution, and needs no Docker | memory | Issue 12 of story `2-identity-api` proves it | 2026-11-01 |
 | `SpecRestApi` adds no Lambda invoke permission, and creates no method resources | docs | Earlier review, R12 and R61 | 2026-10-30 |
-| `cdk bootstrap aws://<account>/<region>` doesn't need the app | memory | | 2026-11-01 |
+| `cdk bootstrap aws://<account>/<region>` still synthesizes the app when run beside a `cdk.json`, though it names the target, so run it where there's none | docs | CDK CLI 2.1147.0 source, `defineEnvironments` in `lib/cli/cdk-toolkit.js`; corrected from "doesn't need the app" | 2026-11-04 |
 
 ## Route 53, Budgets and other services
 

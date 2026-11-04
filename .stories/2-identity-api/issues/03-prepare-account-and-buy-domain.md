@@ -13,13 +13,14 @@ deploy". They need the owner's AWS account and card.
   at least 105.
 - Secure it: MFA on the root and your user, no long-lived access keys, and only `aws login`.
 - Switch on AWS Cost Anomaly Detection, emailing an address you read on your phone.
-- Run `aws login` and `cdk bootstrap aws://<account_id>/us-east-1`.
+- Run `aws login` and `cdk bootstrap aws://<account_id>/us-east-1` from the repo root, not `cdk/`,
+  as `spec.md` "First deploy" step 1 explains.
 - Buy the domain in the Route 53 console, with WHOIS privacy and auto-renew on, and follow any
   registrant verification email.
 - Once the charge appears in Cost Explorer, read its service name.
 
-`sfab.config.toml` and its example arrive with issue 04, so keep `domain_name` and the hosted
-zone's ID until then. The base stack can't deploy without the service name, because issue 01 puts
+Write `domain_name` and `hosted_zone_id` into `sfab.config.toml`, copied from
+`sfab.config.example.toml`, which issue 04 added. The base stack can't deploy without the service name, because issue 01 puts
 it in the stop budget's filter, so record it under `## Comments` below.
 
 ## Done when

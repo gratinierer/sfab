@@ -75,6 +75,15 @@ This is stage 1, along with issues 03-09. Later stages add routes to the same st
   - A request to `http://` gets a `403` and never reaches the origin.
   - The email subscription was confirmed with `--authenticate-on-unsubscribe true`, as in `spec.md`
     "First deploy", and its attributes show that.
+- On the first import and deploy of `sfab.yaml`, these `memory` rows of `docs/aws-facts.md` are
+  proven or disproved, and their rows updated:
+  - The import accepts `$default` as a `requestBody` content type.
+  - The import doesn't resolve a `$ref` inside `x-amazon-apigateway-integration`, so the YAML
+    anchor is needed.
+  - `$context.error.messageString` arrives already JSON-quoted: a malformed body's `400` parses
+    as JSON. If not, every gateway response template is wrong, so fix them before going on.
+  - Whether `$context.error.validationErrorString` with `$util.escapeJavaScript` gives valid JSON
+    in a gateway response template.
 - Before anything else depends on it, the owner confirms in the console that the distribution shows
   the Free flat-rate plan, because otherwise CloudFront and WAF bill per request.
 

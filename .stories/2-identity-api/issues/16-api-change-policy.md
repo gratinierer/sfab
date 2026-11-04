@@ -8,11 +8,14 @@ changelog entry.
 
 ## Scope
 
-- In `info.description`: agents ignore response fields they don't know, treat an unknown problem `type` by its
-  status code, and treat `?page=` tokens and `next` URLs as opaque; `v1` only grows; and, during hypercare,
-  "`v1` may still change until <`age_rule_starts`>; see the changelog", with the date filled in from the CDK code.
-- Every response enum in `openapi/sfab.yaml` says new values may appear.
-- `info.version` as a date, such as `2026-11-04`.
+Issue 05 already shipped part of this: the `## Compatibility` section of `info.description` (`v1` only grows,
+ignore unknown fields, treat an unknown problem `type` by its status code and every response enum as open, treat
+`?page=` tokens and `next` URLs as opaque), "New values may appear" on `Problem.type`, and `info.version` as a
+date, which `test_info_version_is_a_date` checks. What's left:
+
+- The hypercare sentence in `info.description`, "`v1` may still change until <`age_rule_starts`>; see the
+  changelog", with the date filled in from the CDK code.
+- The open-values note on every response enum that later issues add, enforced by the contract test below.
 - `CHANGELOG.md` at the repo root, with a heading and no entries, which the launch fills.
 
 ## Done when

@@ -54,7 +54,8 @@ impl<'a> Proof<'a> {
         let (ts, nonce) = header.split_once(':').ok_or(Rejection::Malformed)?;
         let ts_ok = !ts.is_empty()
             && ts.len() <= MAX_TIMESTAMP_DIGITS
-            && ts.bytes().all(|b| b.is_ascii_digit());
+            && ts.bytes().all(|b| b.is_ascii_digit())
+            && (ts == "0" || !ts.starts_with('0'));
         let nonce_ok = !nonce.is_empty()
             && nonce.len() <= MAX_NONCE_LEN
             && nonce

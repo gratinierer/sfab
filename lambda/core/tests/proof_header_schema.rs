@@ -63,6 +63,7 @@ fn the_pattern_accepts_exactly_what_the_parser_accepts() {
         ("no colon", "1".to_string()),
         ("no timestamp", ":a".to_string()),
         ("no nonce", "1:".to_string()),
+        ("a leading zero", "01:a".to_string()),
         ("negative timestamp", "-1:a".to_string()),
         ("fractional timestamp", "1.5:a".to_string()),
         ("a second colon", "1:a:b".to_string()),

@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
-# The steps CI, the weekly run and the deploy script all run, in this order:
+# The steps CI and the deploy script both run, in this order:
 # generate, build, audit, test. See .stories/2-identity-api/spec.md "Delivery".
 # Stops at the first failure.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+# With no config at all, as in an agent's container, check against the committed fixture, as CI
+# does. A deploy can't use it: cdk/app.py reads sfab.config.toml and stops when it's missing.
+if [ -z "${SFAB_CONFIG:-}" ] && [ ! -f sfab.config.toml ]; then
+  export SFAB_CONFIG=cdk/tests/fixtures/sfab.config.test.toml
+  echo "check: no sfab.config.toml, so using $SFAB_CONFIG" >&2
+fi
 
 step() { printf '\n==> %s\n' "$*"; }
 
