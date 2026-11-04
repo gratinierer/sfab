@@ -1,6 +1,5 @@
 # Write the OpenAPI document and generate the public description
 
-Label: ready-for-agent
 Blocked by: 04
 
 Write the API's single source and everything built from it: `spec.md` "API", "Wire contract",
@@ -50,3 +49,6 @@ Write the API's single source and everything built from it: `spec.md` "API", "Wi
 - 2026-11-04: this issue can't close while a finding against it in `../code-review.md` is `open`, under
   `docs/agents/issue-tracker.md` "Closing an issue or story". The first code review, of issues 04 and 05 at
   `862ddba..e2b740c`, left C1 to C14 open. Work through them with `/address-code-review-findings 2-identity-api 05`.
+- 2026-11-04: done. Four `/code-review` runs, recorded in `../code-review.md`, the last at `1587a57..3505471`, reach this
+  issue's last code commit, and none of its findings is open: C1-C35 are resolved or, on the owner's word, waived.
+  Along the way the `Proof` timestamp limit became 18 digits, so it fits the parser's `i64`.

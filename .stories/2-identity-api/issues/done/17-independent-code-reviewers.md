@@ -1,6 +1,5 @@
 # Run code reviews on a model other than the code's author
 
-Label: ready-for-agent
 
 The repo's `code-review` skill starts each reviewer with a fresh context but on the session's own model, which is
 usually the one that wrote the code, so a review shares the author's blind spots. `review-story` already guards
@@ -30,3 +29,6 @@ issue 05's second code review.
 - 2026-11-04: at the owner's request, commit 5c65b5f also changed the commit policy's AI trailer to `Assisted-by: AI`, a
   real git trailer, while making step 4 read the `Co-Authored-By:` lines; outside this issue's scope as written, and
   recorded here so it isn't a surprise (code review C29).
+- 2026-11-04: done. The repo's `code-review` runs its reviewers on a model other than the code's author, and the last
+  three runs in `../code-review.md` record `claude-sonnet-5-5 (dispatched; code by claude-opus-5-5)`. None of its
+  findings (C26, C29) is open.
