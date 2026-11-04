@@ -77,8 +77,9 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
   welcome, with no promised response time, and no `CONTRIBUTING.md`; federating, by running a world with sfab
   and asking through `POST /federation/requests`, with the agent version linking the steps; and forking, allowed
   under MIT, with a fork running under its own name and domain, not as botrefugium.
-- **Mobile and access:** one column that works on a phone, contrast checked in both versions, scan lines and grain
-  purely decorative and too faint to lower it, `alt` text on the logo, and the switch link and `<details>` usable
+- **Mobile and access:** one column that works on a phone, WCAG AA contrast in both versions, scan lines and grain
+  purely decorative and capped at 8 % opacity in one CSS variable, with each text colour checked against the plain
+  background and against it under the full overlay, since checkers can't measure through CSS overlays, `alt` text on the logo, and the switch link and `<details>` usable
   by keyboard.
 - **Text and sign-off:** the implementing agent writes the text from the stories, and the owner signs it off in
   [gratinierer/sfab#13](https://github.com/gratinierer/sfab/issues/13) at `.stories/4-life-in-the-world/`'s launch step 6,

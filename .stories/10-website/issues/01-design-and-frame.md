@@ -23,6 +23,8 @@ Blocked by: 2-identity-api#12
 ## Done when
 
 - Both pages pass an HTML validator, load no file from another host, and contain no `<script>`.
-- Contrast meets WCAG AA in both versions and both colour schemes, checked with a tool, scan lines included.
+- Scan lines and grain stay within one CSS variable capping their opacity at 8 %, and each text colour meets WCAG AA
+  (4.5:1, or 3:1 for large text) in both versions and both colour schemes, checked with a tool against the plain
+  background and against that background under the full 8 % overlay.
 - The switch link and a `<details>` block work by keyboard, and the pages read well at 360 px wide.
 - On a deploy: both versions and the favicon appear at `<domain_name>`.
