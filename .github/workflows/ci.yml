@@ -3,14 +3,13 @@
 # Actions are pinned by full commit hash, and only GitHub's own are used.
 name: CI
 
+# Manual only for now, so no Actions minutes go to routine runs (owner, 2026-11-04).
+# Run scripts/check locally instead. To bring the automatic runs back, restore:
+#   push:
+#   schedule:
+#     - cron: "23 6 * * 1"   # weekly, so new advisories for unchanged code still fail
 on:
-  push:
   workflow_dispatch:
-  # Weekly, so new advisories for unchanged code still fail a run. GitHub turns
-  # this off after 60 days without activity in a public repo; re-enable it in
-  # the Actions tab when wanted.
-  schedule:
-    - cron: "23 6 * * 1"
 
 permissions:
   contents: read

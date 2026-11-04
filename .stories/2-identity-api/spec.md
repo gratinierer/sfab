@@ -775,7 +775,7 @@ replaces the isolation that per-route IAM roles would have given.
 
 ## Delivery
 
-- GitHub Actions runs on each push, installs the same toolchain as the devcontainer, and
+- GitHub Actions runs on demand, installs the same toolchain as the devcontainer, and
   runs the same steps in the same order, using the test fixture for config: generate the
   public copy and the website pages, build the Lambdas, audit dependencies, run all tests.
 - **Dependency audits:** `cargo audit` on the committed `Cargo.lock`, and `uvx pip-audit==<pinned>`
@@ -783,9 +783,11 @@ replaces the isolation that per-route IAM roles would have given.
   fails the step, and the only way past one is an entry in a committed ignore list with the advisory's
   ID, a reason and a date. Dependabot alerts and security fix pull requests are on, and routine version
   updates are off. **Dependabot's alert email is the alert,** because new advisories appear for code that
-  doesn't change, and it keeps working in a quiet repo. A weekly scheduled CI run also repeats the steps,
-  and its failure email is a second signal, but GitHub turns scheduled runs off in a public repository
-  after 60 days without activity, so the owner turns it back on in the Actions tab when that's wanted.
+  doesn't change, and it keeps working in a quiet repo. On 2026-11-04 the owner set CI to manual runs only, to
+  save Actions minutes, so it runs on neither a push nor a schedule, and `scripts/check` runs locally before each
+  commit and deploy. The workflow keeps the push and weekly triggers as comments, to restore when wanted, and a
+  weekly run's failure email would then be a second signal, though GitHub turns scheduled runs off in a public
+  repository after 60 days without activity.
   Workflows pin each action by full commit hash, using only GitHub's own `checkout` and `cache`, and
   `rust-toolchain.toml` pins the exact compiler. CI installs `cargo-audit` at a pinned version with
   `--locked`, and the devcontainer gets it from agentic_containers.
