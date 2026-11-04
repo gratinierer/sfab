@@ -65,6 +65,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | In CloudFormation, changing a key's `Value` replaces it, and a named key can't be replaced | docs | [apikey-cfn] | 2026-11-01 |
 | A gateway response can override its status code | docs | [gateway-response] | 2026-11-01 |
 | In a REST proxy event, `path` lacks the stage, and Rust's `lambda_http` adds it unless `AWS_LAMBDA_HTTP_IGNORE_STAGE_IN_PATH` is set | memory | | 2026-11-03 |
+| `$context.error.validationErrorString` can hold double quotes, such as `(["name"])`, so it can't sit inside a quoted JSON string in a gateway response template, and whether `$util.escapeJavaScript` works there is unknown | memory | Why `BAD_REQUEST_BODY` in `openapi/sfab.yaml` uses `messageString`; issue 01 of story `2-identity-api` can check both on a deploy | 2026-11-04 |
 | A wrong or missing API key on a key-required method raises the `INVALID_API_KEY` gateway response, a `403`, rather than `DEFAULT_4XX` alone | memory | | 2026-11-03 |
 | An unknown route or method returns `MISSING_AUTHENTICATION_TOKEN` as `403`, and the `413` can't be customised | docs | [response-types] | 2026-11-01 |
 | OpenAPI import accepts `$default` as a `requestBody` content type, giving a model that validates every content type, beside `application/json` | memory | Why `openapi/sfab.yaml` lists both; issue 01 of story `2-identity-api` proves it on import | 2026-11-04 |

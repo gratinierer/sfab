@@ -201,7 +201,10 @@ def test_every_operation_is_in_a_route_table_with_matching_auth(source, security
 def render(template: str) -> dict:
     """Fills the $context variables the way API Gateway would, and parses the JSON."""
     filled = template.replace("$context.error.messageString", json.dumps('a "quoted" message'))
-    filled = filled.replace("$context.error.validationErrorString", "[instance failed]")
+    # From memory, AWS's validation messages hold double quotes, so a quoted substitution is unsafe.
+    filled = filled.replace(
+        "$context.error.validationErrorString", 'object has missing required properties (["name"])'
+    )
     filled = filled.replace("{{api_host}}", "api.example.invalid")
     return json.loads(filled)
 

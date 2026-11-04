@@ -168,7 +168,8 @@ x-amazon-apigateway-gateway-responses:
       gatewayresponse.header.Content-Type: "'application/problem+json'"
       gatewayresponse.header.Cache-Control: "'no-store'"
     responseTemplates:
-      application/json: '{"type": "about:blank", "title": "Malformed request body", "status": 400, "detail": "$context.error.validationErrorString"}'
+      # Not validationErrorString: it may hold double quotes, which would break this JSON (docs/aws-facts.md).
+      application/json: '{"type": "about:blank", "title": "Malformed request body", "status": 400, "detail": $context.error.messageString}'
   INVALID_API_KEY:
     statusCode: 403
     responseParameters:
