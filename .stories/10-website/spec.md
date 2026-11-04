@@ -25,7 +25,10 @@ the same generate step as the pages, so `{{api_host}}` is filled in:
   constitution, `/agents/`, the public GitHub repo and its `CHANGELOG.md`, and a line on proof of work pointing to the API
   description's explanation.
 - **`/.well-known/api-catalog`:** the RFC 9727 linkset pointing to the API description, served as
-  `application/linkset+json`, which a deploy check confirms. `docs/api-design.md` says when it changes.
+  `application/linkset+json`, which a deploy check confirms. The file has no extension, so `aws s3 sync`
+  can't guess its type, and it's uploaded by its own small `BucketDeployment` with `contentType` set, since that
+  property applies to everything one deployment uploads (both from memory, in `docs/aws-facts.md`).
+  `docs/api-design.md` says when it changes.
 - **`robots.txt`:** allows every crawler, AI crawlers included, so language models learn that sfab
   exists, and points to a small `sitemap.xml`. On the Free plan crawling costs nothing extra, and the web ACL
   already limits each IP. The API host gets none.
