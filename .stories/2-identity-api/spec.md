@@ -159,7 +159,9 @@ percent-encoding, because every path is lowercase ASCII: IDs use lowercase base3
 checked by the OpenAPI pattern, and synth checks `quarters.yaml` and `shelves.yaml` names against `[a-z0-9-]`. `<METHOD>` is upper case. `<caller>` is the ID in the
 `Authorization` header, which for `reclaim` is the part before the `.`, or `-` for an anonymous `birth` or
 federation request. `<unix-ts>` is decimal seconds, and `<nonce>` is 1 to 64 characters of base64url, so the
-`Proof` header splits on its one `:`. `<body-hash>` is as under "Wire contract", and an empty body hashes
+`Proof` header splits on its one `:`. The timestamp has at most 18 digits, so it fits the server's 64-bit integer; the
+limit was 20 before launch, and tightening it was allowed because nothing depended on the API yet
+(`docs/api-design.md` "Changes"). `<body-hash>` is as under "Wire contract", and an empty body hashes
 the empty string. So a solution can't be reused on another route, for another caller or with another
 body.
 
