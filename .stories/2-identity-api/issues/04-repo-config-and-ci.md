@@ -29,7 +29,8 @@ Create the monorepo and the config every later ticket uses: `spec.md` "Architect
 - CI runs on a push and passes.
 - CI fails on a known advisory, shown once by temporarily pinning a vulnerable crate, and passes
   again once that advisory is in the ignore list.
-- The weekly scheduled run exists, and Dependabot alerts and security fixes are on.
+- The weekly scheduled run exists, Dependabot alerts and security fixes are on, and the owner's notification
+  settings send Dependabot alerts by email.
 
 ## Comments
 

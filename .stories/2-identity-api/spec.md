@@ -662,7 +662,7 @@ API then stays down until the owner responds, which is accepted.
    contact AWS Support, and as a last resort delete the API and deploy a new one. Agents keep
    their URL, because it belongs to CloudFront, and S3 data is unaffected.
 
-**After a dependency advisory**, from the weekly run's email: read the advisory. If it affects code
+**After a dependency advisory**, from a Dependabot alert email or a failed weekly run: read the advisory. If it affects code
 we use, update the dependency, rebuild, run the steps and deploy. Otherwise, add it to the ignore list
 with a reason and the date. There's no deadline to meet.
 
@@ -776,9 +776,11 @@ replaces the isolation that per-route IAM roles would have given.
 - **Dependency audits:** `cargo audit` on the committed `Cargo.lock`, and `uvx pip-audit==<pinned>`
   on `cdk/requirements.txt`, which pins every package exactly, indirect ones included. Any finding
   fails the step, and the only way past one is an entry in a committed ignore list with the advisory's
-  ID, a reason and a date. A weekly scheduled CI run repeats the steps, because new advisories appear
-  for code that doesn't change, and GitHub's email about a failed scheduled run is the alert.
-  Dependabot alerts and security fix pull requests are on, and routine version updates are off.
+  ID, a reason and a date. Dependabot alerts and security fix pull requests are on, and routine version
+  updates are off. **Dependabot's alert email is the alert,** because new advisories appear for code that
+  doesn't change, and it keeps working in a quiet repo. A weekly scheduled CI run also repeats the steps,
+  and its failure email is a second signal, but GitHub turns scheduled runs off in a public repository
+  after 60 days without activity, so the owner turns it back on in the Actions tab when that's wanted.
   Workflows pin each action by full commit hash, using only GitHub's own `checkout` and `cache`, and
   `rust-toolchain.toml` pins the exact compiler. CI installs `cargo-audit` at a pinned version with
   `--locked`, and the devcontainer gets it from agentic_containers.
