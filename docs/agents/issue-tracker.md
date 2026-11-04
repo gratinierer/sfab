@@ -141,6 +141,22 @@ Rules:
   instead, and records both in the journal's `By` column. Human-authored
   stories are exempt.
 
+## Code review file
+
+A story's code reviews are recorded in `.stories/<story>/code-review.md`, beside `review.md`. The repo's
+`code-review` skill (`/code-review`) creates it on its first run and writes every run's findings to it, so they
+outlive the conversation. It holds the same two tables as `review.md`:
+
+- a **review journal**, one row per pass, newest last. `Kind` is `code-review` for a `/code-review` run or
+  `walkthrough` for a pass of `/address-code-review-findings`. `Reviewed` names the issues and the commit range,
+  such as `04, 05 @ 862ddba..e2b740c`.
+- a **findings table**, with IDs `C1`, `C2` and so on, never reused, and `Axis` as `standards` or `spec`. The two
+  axes stay apart and aren't ranked against each other.
+
+The statuses and the rules for rows are those of the review file: rows are never deleted or renumbered, `wontfix`
+needs the user's own reason, and anyone may flip a row to `resolved` with a dated comment. Acting on the findings is
+`/address-code-review-findings`, which walks the open rows one at a time with the user, or unattended with `auto`.
+
 ## Before implementing a story
 
 Before writing code for any issue in a story, check that story's `review.md`
@@ -173,6 +189,20 @@ normally closes via `Closes #<n>` in the merged PR), offer to run
 the `Label:` line when moving a completed issue; only `wontfix` keeps its
 label, since it records why the issue was closed. A file in `done/` without a
 `Label:` line is therefore completed.
+
+**An issue that changes code needs a code review before it closes.** It changes
+code when any of its commits touch files outside `.stories/` and `docs/`.
+Before moving it to `done/`:
+
+- the story's `code-review.md` has a `code-review` journal row naming the
+  issue, whose range reaches the issue's last such commit, so code added after
+  a review needs another run; and
+- no finding against the issue is `open`. Marking one `wontfix`, on the user's
+  say-so, or filing it as an issue unblocks it.
+
+This applies to issues closed from 2026-11-04 on, starting with
+`2-identity-api#05`. Story `14-agent-skills`, which builds the rule, is exempt.
+It gates closing, not starting: starting work is the review file's gate.
 
 ## Wayfinding operations
 

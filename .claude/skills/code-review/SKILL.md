@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \"review since X\"."
+description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents, reports them side by side, and records the findings in the story's `code-review.md`. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \"review since X\"."
 ---
 
 Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
@@ -24,12 +24,16 @@ Before going further, confirm the fixed point resolves (`git rev-parse <fixed-po
 
 ### 2. Identify the spec source
 
-Look for the originating spec, in this order:
+In this repo the spec is a story under `.stories/`: its `spec.md`, plus the issue files the change implements,
+in `issues/` or `issues/done/`. Find them in this order:
 
-1. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), fetched via the workflow in the tracker doc.
-2. A path the user passed as an argument.
-3. A spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature.
-4. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
+1. The story and issues the user named, such as "issues 04 and 05 of story 2".
+2. The story from the commit subjects' `(#<n>)`, which is `.stories/<n>-*/`, and its issues from the commit bodies,
+   which name them ("Issue 05 of story 2"), or from the issue files the range moved into `done/`.
+3. If the story or its issues are still unclear, or the range spans two stories, ask. Never guess between them.
+
+Note the story and the issue numbers: step 6 records them. If the user says there's no spec, the **Spec**
+sub-agent skips and reports "no spec available", and step 6 records the review under the story the commits name.
 
 ### 3. Identify the standards sources
 
@@ -78,6 +82,44 @@ If the spec is missing, skip the Spec sub-agent and note this in the final repor
 Present the two reports under `## Standards` and `## Spec` headings, verbatim or lightly cleaned. Do **not** merge or rerank findings, because the two axes are deliberately separate (see _Why two axes_).
 
 End with a one-line summary: total findings per axis, and the worst issue _within each axis_ (if any). Don't pick a single winner across axes: that's the reranking the separation exists to prevent.
+
+### 6. Record the review
+
+Write the findings to `.stories/<story>/code-review.md` before discussing them, so they outlive the conversation. The
+conventions are in `docs/agents/issue-tracker.md` "Code review file". If the file doesn't exist, create it from the
+template below.
+
+- **One journal row** for this run: `Date` is the ISO datetime, `Kind` is `code-review`, `Reviewed` names the issues
+  and the range as `<issues> @ <fixed-point short sha>..<HEAD short sha>`, such as `04, 05 @ 862ddba..e2b740c`, `By`
+  names the model of each sub-agent, and `Findings` is `<n> new: <s> standards, <p> spec`.
+- **One findings row per finding**, appended in report order, standards first: the next free `C<n>`, status `open`,
+  axis `standards` or `spec`, `Affects` as the issue and the file (`05, cdk/app.py:17`), one sentence of
+  `Description` that starts with "Possible <smell>:" for a judgement call, and `Comments` of `<date>: found.`
+- Leave out what the reviewers checked and found sound. It belongs in the chat report, not the table.
+
+Then say in chat that the file was written, and that `/address-code-review-findings` works through the open rows.
+
+```markdown
+# <story>: code review
+
+Code reviews of this story's issues. The journal lists every pass: `code-review` runs of `/code-review`, and
+`walkthrough` passes of `/address-code-review-findings`. The findings table lists what each run found and what became
+of it. Rows are never deleted or renumbered: a fixed finding flips to `resolved`.
+
+Statuses: `open` / `resolved` / `wontfix` / `superseded`.
+Axes: `standards` / `spec`.
+Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
+
+## Review journal
+
+| Date | Kind | Reviewed | By | Findings | Notes |
+|---|---|---|---|---|---|
+
+## Findings
+
+| # | Status | Axis | Affects | Description | Comments |
+|---|---|---|---|---|---|
+```
 
 ## Why two axes
 
