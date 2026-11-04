@@ -42,6 +42,9 @@ This is stage 1, along with issues 03-09. Later stages add routes to the same st
   associate the key with it. Put `security` on every operation in `sfab.yaml`, because
   root-level `security` is ignored. Leave the key's `Name` unset, because changing `Value`
   replaces the key, and a named key can't be replaced. Filed from review finding R61.
+- **Target account:** every stack sets `env` to the config's `account_id` and `us-east-1`, so credentials for another
+  account fail, as spec.md "Delivery" says, with an assertion test. `cdk/app.py` loads the config but builds no
+  environment until there's a stack to use it. Filed from code review C25.
 - **Placeholders:** `sfab.yaml` holds two, `{{api_lambda_arn}}` and `{{api_host}}`, for the unknown-route `404`'s
   `detail`. Fill in both, and fail the synth if any `{{` is left in the document passed to `SpecRestApi`, with an
   assertion test, because a missed one deploys fine and shows agents the raw placeholder. Filed from code review C12.

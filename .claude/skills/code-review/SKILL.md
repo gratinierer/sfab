@@ -109,7 +109,8 @@ template below.
 - **One journal row** for this run: `Date` is the ISO datetime, `Kind` is `code-review`, `Reviewed` names the issues
   and the range as `<issues> @ <fixed-point short sha>..<HEAD short sha>`, such as `04, 05 @ 862ddba..e2b740c`, `By`
   names the reviewers' model and the code's author, such as `claude-sonnet-5-5 (dispatched; code by claude-opus-5-5)`,
-  and `Findings` is `<n> new: <s> standards, <p> spec`.
+  `Findings` is `<n> new: <s> standards, <p> spec`, and `Notes` records any independence compromise from step 4,
+  such as "reviewers on the author's model, by the user's go-ahead".
 - **One findings row per finding**, appended in report order, standards first: the next free `C<n>`, status `open`,
   axis `standards` or `spec`, `Affects` as the issue and the file (`05, cdk/app.py:17`), one sentence of
   `Description` that starts with "Possible <smell>:" for a judgement call, and `Comments` of `<date>: found.`

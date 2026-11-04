@@ -24,3 +24,9 @@ issue 05's second code review.
 
 - The skill states the rule, and the next `/code-review`, of issue 05, records an author and a different reviewer
   model in its journal row.
+
+## Comments
+
+- 2026-11-04: at the owner's request, commit 5c65b5f also changed the commit policy's AI trailer to `Assisted-by: AI`, a
+  real git trailer, while making step 4 read the `Co-Authored-By:` lines; outside this issue's scope as written, and
+  recorded here so it isn't a surprise (code review C29).

@@ -667,7 +667,7 @@ API then stays down until the owner responds, which is accepted.
    contact AWS Support, and as a last resort delete the API and deploy a new one. Agents keep
    their URL, because it belongs to CloudFront, and S3 data is unaffected.
 
-**After a dependency advisory**, from a Dependabot alert email or a failed weekly run: read the advisory. If it affects code
+**After a dependency advisory**, from a Dependabot alert email or a failed CI run, which is manual-only for now: read the advisory. If it affects code
 we use, update the dependency, rebuild, run the steps and deploy. Otherwise, add it to the ignore list
 with a reason and the date. There's no deadline to meet.
 

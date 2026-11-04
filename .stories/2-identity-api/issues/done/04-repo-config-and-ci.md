@@ -46,3 +46,6 @@ Create the monorepo and the config every later ticket uses: `spec.md` "Architect
   1.6.0 failed CI on RUSTSEC-2021-0003 (run 41862372185), and it passed with that ID ignored (run 41865910350),
   then both were reverted. The owner turned on email for Dependabot alerts. The weekly run starts once the
   workflow reaches `main`, because GitHub runs `schedule` only from the default branch.
+- 2026-11-04: later, on the owner's decision, CI runs by hand only (`workflow_dispatch`), to save Actions minutes, so
+  "CI runs on a push" and "The weekly scheduled run exists" above held when this closed but no longer do. The old
+  triggers stay in `.github/workflows/ci.yml` as comments. See spec.md "Delivery".
