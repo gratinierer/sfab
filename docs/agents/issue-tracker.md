@@ -217,7 +217,8 @@ ticket, scoped to a story.
   unblocked when every file it lists is in `issues/done/`. A ticket that
   depends on another story's ticket names it as `<story>#<NN>`, such as
   `Blocked by: 01, 2-identity-api#13`, and that one counts as done once
-  `.stories/<story>/issues/done/<NN>-*.md` exists. Every dependency goes on
+  `.stories/<story>/issues/done/<NN>-*.md` exists, or
+  `.stories/done/<story>/issues/done/<NN>-*.md` once the whole story is done. Every dependency goes on
   this line, never only in prose, so a frontier scan can check it.
 - **Frontier**: scan `.stories/<story>/issues/` (excluding `done/`) for files
   that are unblocked and unclaimed; first by number wins.

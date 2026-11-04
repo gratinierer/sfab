@@ -2,7 +2,7 @@
 
 The skills this repo's workflow uses, copied in once on 2026-11-04 and now this repo's own, so a session doesn't
 depend on what the devcontainer links in. Upstream changes are pulled in by hand when wanted. See
-`.stories/14-agent-skills/` and `docs/adr/0005-skills-live-in-the-repo.md`.
+`.stories/done/14-agent-skills/` and `docs/adr/0005-skills-live-in-the-repo.md`.
 
 Matt Pocock's skills are under the MIT licence in `LICENSE-mattpocock`, "Copyright (c) 2026 Matt Pocock". The
 skills from agentic_containers are the owner's.

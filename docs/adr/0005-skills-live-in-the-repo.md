@@ -5,7 +5,7 @@ Status: accepted
 The agent skills this repo's workflow uses are kept in `.claude/skills/`, as frozen copies the repo owns, and the
 repo's copy wins over any global skill of the same name. Every code review is recorded in the story's
 `code-review.md`, and an issue that changes code can't close until a review covers it and none of its findings is
-open. See `.stories/14-agent-skills/`.
+open. See `.stories/done/14-agent-skills/`.
 
 ## Why
 

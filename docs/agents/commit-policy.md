@@ -2,7 +2,7 @@
 
 How agents commit, push and create GitHub issues in this repo. It started as a copy of the owner's global
 `git-commit-policy.instructions.md`, and it wins over that file, or any other global commit policy a session
-also loads. See `.stories/14-agent-skills/`.
+also loads. See `.stories/done/14-agent-skills/`.
 
 Never run `git commit`, `git push`, or any command that writes to git history unless the user explicitly asks
 you to commit or push. Making file edits is fine; committing is the user's decision.
