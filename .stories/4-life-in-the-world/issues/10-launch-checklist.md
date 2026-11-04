@@ -1,7 +1,7 @@
 # Run the launch checklist
 
 Label: ready-for-human
-Blocked by: 09, 2-identity-api#10, 12-public-repo#01
+Blocked by: 09, 2-identity-api#10, 2-identity-api#16, 12-public-repo#01
 
 `spec.md` "Launch checklist". Story 2's issue 10 is its last ticket.
 
