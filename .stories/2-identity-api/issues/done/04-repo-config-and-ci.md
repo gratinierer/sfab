@@ -1,6 +1,5 @@
 # Set up the repo, config and CI
 
-Label: ready-for-agent
 
 Create the monorepo and the config every later ticket uses: `spec.md` "Architecture" (layout) and
 "Delivery" (local config, CI).
@@ -44,3 +43,7 @@ Create the monorepo and the config every later ticket uses: `spec.md` "Architect
   security fixes are on, with no `dependabot.yml`, so version updates stay off. Still open from "Done when":
   push and a passing CI run, repeating the advisory failure on CI, and the owner turning on email for
   Dependabot alerts under GitHub Settings → Notifications.
+- 2026-11-04: done. CI passes on a push (run 41857988371, after fixing how it installs zig). Pinning `smallvec`
+  1.6.0 failed CI on RUSTSEC-2021-0003 (run 41862372185), and it passed with that ID ignored (run 41865910350),
+  then both were reverted. The owner turned on email for Dependabot alerts. The weekly run starts once the
+  workflow reaches `main`, because GitHub runs `schedule` only from the default branch.
