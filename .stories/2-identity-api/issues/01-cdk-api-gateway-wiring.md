@@ -42,6 +42,9 @@ This is stage 1, along with issues 03-09. Later stages add routes to the same st
   associate the key with it. Put `security` on every operation in `sfab.yaml`, because
   root-level `security` is ignored. Leave the key's `Name` unset, because changing `Value`
   replaces the key, and a named key can't be replaced. Filed from review finding R61.
+- **Placeholders:** `sfab.yaml` holds two, `{{api_lambda_arn}}` and `{{api_host}}`, for the unknown-route `404`'s
+  `detail`. Fill in both, and fail the synth if any `{{` is left in the document passed to `SpecRestApi`, with an
+  assertion test, because a missed one deploys fine and shows agents the raw placeholder. Filed from code review C12.
 - **Origin path:** `RestApiOrigin` defaults its origin path to the stage name, but public URLs
   already include `/v1`, so requests would reach the origin as `/v1/v1/...`. Set the origin path
   to `/` explicitly, or use an `HttpOrigin`, and add a CDK assertion test. Filed from review

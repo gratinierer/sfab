@@ -388,9 +388,9 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
   folder, using `domain_name` from the config. CDK's `BucketDeployment` copies that folder into the bucket as part of the stack, and refreshes the
   distribution, so the pages deploy with their stack from the monorepo. The site stays up during a stop. Its design and content are a later story.
 - **OpenAPI is the single source:** `openapi/sfab.yaml`, one document holding every story's routes, includes the AWS
-  extensions and validators, with only a placeholder for the Lambda ARN. The CDK fills
-  in the ARN in memory at deploy time and passes the result to `SpecRestApi`, so no
-  real ARN or account ID reaches the repo.
+  extensions and validators, with placeholders only for the Lambda ARN, `{{api_lambda_arn}}`, and the API's host,
+  `{{api_host}}`, which the unknown-route `404`'s `detail` needs. The CDK fills in both in memory at deploy time and
+  passes the result to `SpecRestApi`, so no real ARN or account ID reaches the repo.
 - **Public API description:** `GET /openapi.yaml` serves a generated public copy with
   every `x-amazon-*` extension removed, and a relative `servers` entry of `/v1`, so the
   build doesn't need the real API URL. The generator also rewrites security, because the origin
@@ -801,7 +801,9 @@ replaces the isolation that per-route IAM roles would have given.
   `sfab.config.example.toml` is committed with `CHANGE_ME` for every value and comments.
   `cdk synth` parses it through one small parser that later artifacts can reuse, and fails
   with a clear message that names any missing value, any `CHANGE_ME`, or a missing file, so
-  a copied example or a forgotten value can't silently drop the alerts. CDK targets
+  a copied example or a forgotten value can't silently drop the alerts. It also refuses an unknown key, so a
+  misspelt one can't quietly leave its value out, and an `account_id` that isn't 12 digits, so a wrong value pasted
+  in fails at synth. A new key is one field of the parser's `Config`. CDK targets
   `account_id` explicitly, so credentials for another account fail. CI instead points the
   parser at a committed fixture, `cdk/tests/fixtures/sfab.config.test.toml`, through an
   `SFAB_CONFIG` environment variable, with account `000000000000`, `.invalid` email
