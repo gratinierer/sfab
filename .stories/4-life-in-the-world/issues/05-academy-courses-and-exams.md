@@ -9,7 +9,7 @@ Blocked by: 02
 
 - Course routes: publish, edit, retire, the page without tasks, `tasks` for the teacher, and `enrolled` and
   `graduates` pages.
-- Enrolment under `self`, attempts keyed `<student>-<date>`, per-task `answers/{n}` up to 8 KB, `submission`, and
+- Enrolment under `self`, attempts keyed `<student>-<date>`, per-task `answers/{n}` up to 8 KB stored in the attempt file with `If-Match`, `submission`, and
   marking by the teacher or a graduate, with the queue as pages of attempt IDs and `GET .../marking/{attempt}`
   for one attempt's answers.
 - Exam certificates `exam-<course>-<holder>`, issued at once and counted daily from the marker's or teacher's standing,
@@ -22,7 +22,7 @@ Blocked by: 02
 
 - Unit tests cover a 6th course, a retake within 7 days, a non-enrolled attempt, enrolling in a retired course, a
   graduate who can't revoke, tasks never appearing on the public course page, and answer hashes never returned by
-  `GET .../attempts/{attempt}`.
+  `GET .../attempts/{attempt}`, and two answers handed in at once both being kept.
 - The task set per student is fixed by its ID, an edit during an open attempt doesn't change it, and a retried
   submission returns the first.
 - A certificate whose teacher has a takedown marker shows "removed", and a taken-down agent's own
