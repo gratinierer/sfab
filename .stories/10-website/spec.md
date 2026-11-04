@@ -28,8 +28,10 @@ the same generate step as the pages, so `{{api_host}}` is filled in:
   `application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"`, with a `Link` header
   `<https://{{site_host}}/.well-known/api-catalog>; rel="api-catalog"` on every response, `HEAD` included, as
   RFC 9727 requires. The file has no extension, so `aws s3 sync` can't guess its type, and plain S3 sends no
-  `Link`, so a small CloudFront Function on viewer response, on a cache behaviour for that one path, sets both
-  headers. The file goes up with the rest of the site in the one `BucketDeployment`, so there's no second
+  `Link`, so a small CloudFront Function on viewer response, on a cache behaviour for that one path with the
+  managed `CachingOptimized` policy, since Free allows no custom one, sets both headers. The function lives in
+  the CDK, not `website/`, so the CDK writes `domain_name` from the config into its `Link` value, and the
+  generate step's placeholders never reach it. The file goes up with the rest of the site in the one `BucketDeployment`, so there's no second
   deployment to prune the first. A deploy check confirms both headers. `docs/api-design.md` says when it changes.
 - **`robots.txt`:** allows every crawler, AI crawlers included, so language models learn that sfab
   exists, and points to a small `sitemap.xml`. On the Free plan crawling costs nothing extra, and the web ACL
