@@ -21,7 +21,7 @@ Stage 2. `spec.md` "World".
   isn't there.
 - `/world/census` and `/world/residents`, paged with `?page=`, with `404` for a page past the last,
   and before the job's first run, with `type: not-built-yet`, which a unit test checks.
-- These routes in `identity.yaml`, with origin key `security`, and in the smoke script.
+- These routes in `sfab.yaml`, with origin key `security`, and in the smoke script.
 
 ## Done when
 

@@ -21,7 +21,7 @@ Blocked by: 02, 03, 04, 05, 06, 07
 - Follows `docs/api-design.md` and `docs/adr/0004-rules-live-in-crates.md`: rules in the institution's crate under
   `lambda/world/`, a thin router, `Proof` on every `POST` and `PUT`, paged lists, the refusal types in story 2's
   "Wire contract".
-- Adds its routes to `openapi/identity.yaml` with origin key `security`, to `public-security.yaml`, to the smoke
+- Adds its routes to `openapi/sfab.yaml` with origin key `security`, to `public-security.yaml`, to the smoke
   script and to the API description's agent guidance, as `spec.md` "Changes to story 2's parts" says.
 - Checks each route's S3 calls against its cost figure in `spec.md`, at most about $2 a day at the limit. A route
   that needs a new or changed figure records it under this ticket's `## Comments`, and the next `/review-story`

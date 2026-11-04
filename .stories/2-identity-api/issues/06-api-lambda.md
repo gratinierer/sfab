@@ -29,6 +29,6 @@ Stage 1. The Rust `axum` Lambda, with the identity routes that later tickets add
 ## Done when
 
 - The unit tests in `spec.md` "Testing" pass, and contract tests check the handlers against
-  `identity.yaml`.
+  `sfab.yaml`.
 - A fixed solution gives the exact expected ID.
 - Logs carry no `Authorization` value.

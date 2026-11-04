@@ -3,7 +3,7 @@
 Label: ready-for-agent
 Blocked by: 03, 05, 06
 
-Build the REST API from `openapi/identity.yaml` with `SpecRestApi` in the Python CDK, behind a
+Build the REST API from `openapi/sfab.yaml` with `SpecRestApi` in the Python CDK, behind a
 CloudFront distribution, as described in `spec.md` "Architecture". Filed from review finding
 R12.
 
@@ -31,7 +31,7 @@ This is stage 1, along with issues 03-09. Later stages add routes to the same st
   doesn't know the integrations inside the OpenAPI file. Grant API Gateway the right to
   invoke the API Lambda explicitly, or every route fails.
 - **Edits may not deploy:** CDK's automatic deployment ID hashes the API model, which
-  `SpecRestApi` doesn't build from code, so later `identity.yaml` edits might never reach
+  `SpecRestApi` doesn't build from code, so later `sfab.yaml` edits might never reach
   the stage. Pass the OpenAPI definition to `addToLogicalId()` on the deployment, as the
   CDK docs recommend. This hasn't been tested on a real deploy.
 - **No CloudWatch role:** access logs are off, so nothing needs API Gateway's account-level CloudWatch role.
@@ -39,7 +39,7 @@ This is stage 1, along with issues 03-09. Later stages add routes to the same st
   `cloudWatchRole` to false explicitly.
 - **Origin key:** an API key only works once it's associated with a usage plan and stage. Create
   a usage plan on the `v1` stage, with no throttle because the stage holds the throttles, and
-  associate the key with it. Put `security` on every operation in `identity.yaml`, because
+  associate the key with it. Put `security` on every operation in `sfab.yaml`, because
   root-level `security` is ignored. Leave the key's `Name` unset, because changing `Value`
   replaces the key, and a named key can't be replaced. Filed from review finding R61.
 - **Origin path:** `RestApiOrigin` defaults its origin path to the stage name, but public URLs
@@ -50,7 +50,7 @@ This is stage 1, along with issues 03-09. Later stages add routes to the same st
 ## Done when
 
 - Every route reaches the API Lambda after a first deploy on a fresh account.
-- An edit to `identity.yaml` reaches the `v1` stage on the next `cdk deploy`.
+- An edit to `sfab.yaml` reaches the `v1` stage on the next `cdk deploy`.
 - CDK assertion tests cover the invoke permission, access logs off, no CloudWatch role, and all three budgets' alerts and
   filters.
 - On the first deploy through CloudFront, these are proven. AWS's docs support each, but none

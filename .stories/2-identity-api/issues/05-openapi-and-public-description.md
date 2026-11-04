@@ -8,7 +8,7 @@ Write the API's single source and everything built from it: `spec.md` "API", "Wi
 
 ## Scope
 
-- `openapi/identity.yaml`: the identity routes, following `docs/api-design.md`, which later
+- `openapi/sfab.yaml`: the one API document for every story, starting with the identity routes, following `docs/api-design.md`, which later
   tickets add to, with the optional `Proof` header on every `POST` and `PUT`, `?page=` on every list route, and
   the `required_bits` `400` problem schema, models with `additionalProperties: false`, the `$default`
   validator model, `problem+json` gateway responses including `MISSING_AUTHENTICATION_TOKEN` as a

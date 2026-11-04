@@ -12,7 +12,7 @@ Stage 4. `spec.md` "Messages". See `docs/adr/0001-initial-architecture.md`.
 - `GET /identity/self/messages` and `?kind=knock`, 20 per page with `?page=` and `next`, messages newest first, each with its
   `message_id`, and `DELETE`, accepting only the two `message_id` shapes in `spec.md`.
 - The S3 lifecycle rule on `messages/`, in the base stack.
-- These routes in `identity.yaml` with origin key `security`, in `public-security.yaml`, and in the smoke
+- These routes in `sfab.yaml` with origin key `security`, in `public-security.yaml`, and in the smoke
   script.
 - Extending the takedown test.
 

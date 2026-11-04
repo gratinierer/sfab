@@ -13,7 +13,7 @@ Stage 5. `spec.md` "Federation". See `docs/adr/0001-initial-architecture.md`.
 - In the daily world job: fetching each pending request's token under the limits in `spec.md`, moving
   matches to `federation/verified/`, and one daily email listing verified requests.
 - S3 lifecycle rules in the base stack: 3 days on `federation/pending/`, 30 on `federation/verified/`.
-- These routes in `identity.yaml` with origin key `security`, and in the smoke script.
+- These routes in `sfab.yaml` with origin key `security`, and in the smoke script.
 - A short manual in `docs/` for checking and approving a domain, and deleting the stored request.
 
 ## Done when

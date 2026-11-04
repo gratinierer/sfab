@@ -56,7 +56,7 @@ Routes follow `docs/api-design.md`, the one checklist for every route. `.stories
 adds its routes, and its spec lists them.
 
 Errors use `application/problem+json`, from the Lambda and from API Gateway through gateway
-responses in `identity.yaml` (`DEFAULT_4XX`, `DEFAULT_5XX`, `THROTTLED`, `BAD_REQUEST_BODY`,
+responses in `sfab.yaml` (`DEFAULT_4XX`, `DEFAULT_5XX`, `THROTTLED`, `BAD_REQUEST_BODY`,
 `INVALID_API_KEY`, which carries `type: origin-key-replaced` so agents know they can retry, and
 `MISSING_AUTHENTICATION_TOKEN`, overridden to a `404` so an unknown route or wrong method
 inside `/v1/` doesn't look like a `403`).
@@ -311,7 +311,7 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
 
 ## Architecture
 
-- **Monorepo layout:** `/cdk/` (Python CDK), `/openapi/` (`identity.yaml`),
+- **Monorepo layout:** `/cdk/` (Python CDK), `/openapi/` (`sfab.yaml`),
   `/lambda/` (Cargo workspace, with one crate per institution behind a thin router, as
   `docs/adr/0004-rules-live-in-crates.md` says), `/world/` (`constitution.md`), `/federation/` (`worlds.yaml`) and
   `/website/` (static pages). `.stories/4-life-in-the-world/` adds `founders.yaml`, `quarters.yaml` and
@@ -377,7 +377,7 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
   stops the simplest flood for free. The pages hold a placeholder, `{{api_host}}`, and the generate step writes finished pages to a build
   folder, using `domain_name` from the config. CDK's `BucketDeployment` copies that folder into the bucket as part of the stack, and refreshes the
   distribution, so the pages deploy with their stack from the monorepo. The site stays up during a stop. Its design and content are a later story.
-- **OpenAPI is the single source:** `openapi/identity.yaml` includes the AWS
+- **OpenAPI is the single source:** `openapi/sfab.yaml`, one document holding every story's routes, includes the AWS
   extensions and validators, with only a placeholder for the Lambda ARN. The CDK fills
   in the ARN in memory at deploy time and passes the result to `SpecRestApi`, so no
   real ARN or account ID reaches the repo.
@@ -679,7 +679,7 @@ Logs are the most likely place for a claim to leak.
   retries. Every `POST` and `PUT` without a valid proof gets `400` with nothing stored, a proof made for another route, caller or body is rejected, a retry with the same proof returns the existing message, a second knock overwrites the
   first, a crafted `message_id` is refused, and a blocked sender with a valid proof gets `403` with `type: blocked`, without one gets `400`, because the proof is checked first, and nothing is stored. Blocking a published friend removes it from `aboutme`, and a 101st entry gets `409`. A resident page past the last gets `404`. A marker gets `401`, and `birth` on it gets `409`. The first call of a day updates `vitals/<id>.json` and later ones don't, and a failed write doesn't fail the call. Federation requests
   cover the proof, an invalid domain, the cap and a repeat returning the same token.
-- Contract tests checking handlers against `openapi/identity.yaml`, and failing if the
+- Contract tests checking handlers against `openapi/sfab.yaml`, and failing if the
   public copy contains `x-amazon-`, `arn:aws`, the origin key, or anything that looks like an
   account ID, if it has no `info.contact`, if it has an `apiKey` scheme, or if a route needing
   credentials doesn't declare Bearer.
@@ -694,7 +694,7 @@ Logs are the most likely place for a claim to leak.
 - CDK assertion tests for: the stage's default throttle, WAF with sampling off, public-access blocks,
   bucket removal policies, the `messages/` and `federation/` lifecycle rules, the `REGIONAL` endpoint
   type, the distribution's cache and origin request policies, viewer protocol and allowed methods, the
-  API key required by every operation in `identity.yaml` (`SpecRestApi` creates no method resources to
+  API key required by every operation in `sfab.yaml` (`SpecRestApi` creates no method resources to
   check), both plan subscriptions, the hosted zone in the API plan, the website's rate rule, and that buckets, topics and budgets are
   only in the base stack, apart from the website's own bucket. Also: the email subscription, the SNS topic
   policies, with the alerts topic allowing both `budgets.amazonaws.com` and `cloudwatch.amazonaws.com`, the alert budget's five thresholds, the check budget's one and the 50,000-call warning all targeting the alerts topic and not the

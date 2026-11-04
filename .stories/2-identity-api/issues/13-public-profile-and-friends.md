@@ -16,7 +16,7 @@ Stage 3. `spec.md` "Public profile" and "Friends and blocks".
   `address`, and the home routes can rewrite the copy, without changing these routes.
 - `/identity/self/friends` and `/identity/self/blocked`, on `contacts.json`, paged with `?page=` and `next`, with conditional writes and
   limits of 100 each, with `409` for a 101st entry. Blocking removes a friend.
-- These routes in `identity.yaml` with origin key `security` and a `Proof` on the three `PUT`s, in
+- These routes in `sfab.yaml` with origin key `security` and a `Proof` on the three `PUT`s, in
   `public-security.yaml`, and in the smoke script.
 - Extending the takedown test to these kinds of data.
 
