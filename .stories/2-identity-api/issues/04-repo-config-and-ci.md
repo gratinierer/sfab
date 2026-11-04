@@ -36,3 +36,11 @@ Create the monorepo and the config every later ticket uses: `spec.md` "Architect
 
 - `cargo-audit` in the devcontainer is asked for in gratinierer/agentic_containers#3. It doesn't block
   this ticket, because CI installs the tool itself.
+- 2026-11-04: built in the working tree. `scripts/check` holds the shared steps (Python environment, generate,
+  arm64 build, `scripts/audit`, tests), and CI and `scripts/deploy` both run it. The parser is `cdk/sfab_config.py`,
+  also rejecting unknown keys and an `account_id` that isn't 12 digits. One ignore list,
+  `audit-ignore.toml`, feeds both audits. Locally, pinning `smallvec = "=1.6.0"` failed the audit on
+  RUSTSEC-2021-0003, and it passed once that ID was listed; both changes reverted. Dependabot alerts and
+  security fixes are on, with no `dependabot.yml`, so version updates stay off. Still open from "Done when":
+  push and a passing CI run, repeating the advisory failure on CI, and the owner turning on email for
+  Dependabot alerts under GitHub Settings → Notifications.

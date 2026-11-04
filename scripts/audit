@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+"""Audit dependencies: `cargo audit` on lambda/Cargo.lock and pip-audit on
+cdk/requirements.txt. Any finding fails, unless its advisory ID is in
+audit-ignore.toml with a reason and a date. See .stories/2-identity-api/spec.md
+"Delivery".
+"""
+
+import re
+import subprocess
+import sys
+import tomllib
+from datetime import date
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+IGNORE_FILE = ROOT / "audit-ignore.toml"
+PIP_AUDIT = "pip-audit==2.10.1"
+ID = re.compile(r"(RUSTSEC-\d{4}-\d{4}|GHSA(-[a-z0-9]{4}){3}|PYSEC-\d{4}-\d+|CVE-\d{4}-\d+)")
+
+
+def ignored_ids() -> list[str]:
+    entries = tomllib.loads(IGNORE_FILE.read_text()).get("ignore", [])
+    problems = []
+    for i, entry in enumerate(entries, 1):
+        where = f"{IGNORE_FILE.name} entry {i}"
+        if not ID.fullmatch(str(entry.get("id", ""))):
+            problems.append(f"{where}: id must be a RUSTSEC, GHSA, PYSEC or CVE ID")
+        if not str(entry.get("reason", "")).strip():
+            problems.append(f"{where}: reason is missing")
+        if not isinstance(entry.get("date"), date):
+            problems.append(f"{where}: date must be a TOML date, such as 2026-11-04")
+    if problems:
+        sys.exit("\n".join(problems))
+    return [e["id"] for e in entries]
+
+
+def run(cmd: list[str]) -> bool:
+    print("+", " ".join(cmd), flush=True)
+    return subprocess.run(cmd, cwd=ROOT).returncode == 0
+
+
+def main() -> None:
+    ids = ignored_ids()
+    flags = lambda opt: [a for i in ids for a in (opt, i)]  # noqa: E731
+    cargo_ok = run(
+        ["cargo", "audit", "--file", "lambda/Cargo.lock", "--deny", "warnings", *flags("--ignore")]
+    )
+    pip_ok = run(
+        [
+            "uvx", PIP_AUDIT, "--strict", "--require-hashes", "--disable-pip",
+            "-r", "cdk/requirements.txt", *flags("--ignore-vuln"),
+        ]
+    )
+    if not (cargo_ok and pip_ok):
+        sys.exit("audit failed: fix the dependency, or add the advisory to audit-ignore.toml")
+
+
+if __name__ == "__main__":
+    main()

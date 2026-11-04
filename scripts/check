@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# The steps CI, the weekly run and the deploy script all run, in this order:
+# generate, build, audit, test. See .stories/2-identity-api/spec.md "Delivery".
+# Stops at the first failure.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+step() { printf '\n==> %s\n' "$*"; }
+
+step "Python environment (cdk/.venv)"
+[ -d cdk/.venv ] || (cd cdk && uv venv -q .venv)
+uv pip sync -q --python cdk/.venv/bin/python --require-hashes cdk/requirements.txt
+
+step "Generate"
+# The public API description (issue 05) and the website pages (issue 12) arrive later.
+echo "nothing to generate yet"
+
+step "Build the Lambdas (arm64)"
+(cd lambda && cargo lambda build --release --arm64 --locked)
+
+step "Audit dependencies"
+scripts/audit
+
+step "Test"
+(cd lambda && cargo test --workspace --locked)
+# Tests always use the committed fixture, never the owner's real config.
+(cd cdk && SFAB_CONFIG=tests/fixtures/sfab.config.test.toml .venv/bin/python -m pytest -q)

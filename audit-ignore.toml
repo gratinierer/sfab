@@ -1,0 +1,10 @@
+# Advisories the dependency audits may skip: spec.md "Delivery" in
+# .stories/2-identity-api/. Any other finding fails `scripts/audit`.
+# Each entry needs the advisory's ID (RUSTSEC-..., GHSA-..., PYSEC-... or CVE-...),
+# why it doesn't apply or can't be fixed yet, and the date it was added.
+# Remove an entry once the fix is in.
+#
+# [[ignore]]
+# id = "RUSTSEC-2000-0000"
+# reason = "Only reachable through a feature we don't enable."
+# date = "2026-11-04"

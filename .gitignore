@@ -1,0 +1,9 @@
+# Private per-owner values: never commit. See sfab.config.example.toml.
+/sfab.config.toml
+
+/lambda/target/
+/cdk/.venv/
+/cdk/cdk.out/
+/build/
+__pycache__/
+.pytest_cache/

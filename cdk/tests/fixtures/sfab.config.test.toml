@@ -1,0 +1,9 @@
+# Committed test config for CI and tests, used through SFAB_CONFIG.
+# Account 000000000000 doesn't exist, so this can never deploy, and the deploy
+# script refuses to run with SFAB_CONFIG set.
+account_id = "000000000000"
+alert_email = "alerts@example.invalid"
+abuse_contact = "abuse@example.invalid"
+domain_name = "sfab-test.invalid"
+hosted_zone_id = "Z00000000000000000000"
+origin_key = "testOriginKey0000000000000000000"

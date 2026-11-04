@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Deploy sfab: always runs every check first, audits included, and stops if any
+# fails. With no argument it deploys all stacks; name one for the first deploy.
+#   scripts/deploy [stack]
+# See .stories/2-identity-api/spec.md "Delivery" and "First deploy".
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+if [ -n "${SFAB_CONFIG:-}" ]; then
+  echo "deploy: SFAB_CONFIG is set ($SFAB_CONFIG); deploys only use sfab.config.toml. Unset it." >&2
+  exit 1
+fi
+
+scripts/check
+
+# Fails with a clear message on a missing or unfinished sfab.config.toml.
+cd cdk
+if [ $# -eq 0 ]; then
+  cdk deploy --all
+else
+  cdk deploy "$1"
+fi

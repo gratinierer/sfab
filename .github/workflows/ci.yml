@@ -1,0 +1,59 @@
+# Runs scripts/check, the same steps the devcontainer and the deploy script run:
+# generate, build, audit, test. See .stories/2-identity-api/spec.md "Delivery".
+# Actions are pinned by full commit hash, and only GitHub's own are used.
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+  # Weekly, so new advisories for unchanged code still fail a run. GitHub turns
+  # this off after 60 days without activity in a public repo; re-enable it in
+  # the Actions tab when wanted.
+  schedule:
+    - cron: "23 6 * * 1"
+
+permissions:
+  contents: read
+
+env:
+  SFAB_CONFIG: cdk/tests/fixtures/sfab.config.test.toml
+  UV_VERSION: "0.13.6"
+  CARGO_LAMBDA_VERSION: "1.9.2"
+  ZIGLANG_VERSION: "0.16.0" # the devcontainer's zig
+  CARGO_AUDIT_VERSION: "0.22.2"
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            ~/.cargo/bin/cargo-audit
+            lambda/target
+          key: cargo-${{ runner.os }}-${{ env.CARGO_AUDIT_VERSION }}-${{ hashFiles('lambda/rust-toolchain.toml', 'lambda/Cargo.lock') }}
+
+      - name: Install uv and cargo-lambda (with zig)
+        run: |
+          pipx install "uv==${UV_VERSION}"
+          pipx install "cargo-lambda==${CARGO_LAMBDA_VERSION}"
+          pipx inject --force cargo-lambda "ziglang==${ZIGLANG_VERSION}"
+
+      - name: Install the pinned Rust toolchain
+        working-directory: lambda
+        run: rustup toolchain install
+
+      - name: Install cargo-audit
+        run: |
+          if ! cargo-audit --version 2>/dev/null | grep -q " ${CARGO_AUDIT_VERSION}$"; then
+            cargo install cargo-audit --version "${CARGO_AUDIT_VERSION}" --locked --force
+          fi
+
+      - name: Check
+        run: scripts/check
