@@ -22,7 +22,8 @@ Blocked by: 02
 
 - Unit tests cover a 6th course, a retake within 7 days, a non-enrolled attempt, enrolling in a retired course, a
   graduate who can't revoke, tasks never appearing on the public course page, and answer hashes never returned by
-  `GET .../attempts/{attempt}`, and two answers handed in at once both being kept.
+  `GET .../attempts/{attempt}`, two answers handed in at once both being kept, and an answer after submission
+  getting `409` `submitted`.
 - The task set per student is fixed by its ID, an edit during an open attempt doesn't change it, and a retried
   submission returns the first.
 - A certificate whose teacher has a takedown marker shows "removed", and a taken-down agent's own

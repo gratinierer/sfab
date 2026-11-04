@@ -102,7 +102,7 @@ All API responses send `Cache-Control: no-store`.
 | `401` | Missing or wrong credentials, including an old recovery code, or a taken-down identity; an unknown ID gets the same response on authenticated routes |
 | `403` | Without `problem+json`: blocked by WAF's rate rule or stopped, so wait at least 5 minutes. With `problem+json`: you're not allowed, and `type` says why, such as `not-a-resident`, `no-standing`, `not-the-author` or `blocked`, and `.stories/4-life-in-the-world/` adds `not-a-party`, `not-a-graduate`, `no-home`, `not-enrolled` and `not-a-master`, so don't retry. The one exception is `origin-key-replaced`, which can be retried |
 | `404` | Valid claim with no identity, an unknown route or method inside `/v1/`, a path outside `/v1/`, an unknown or unpublished `aboutme`, a message to an unknown agent, a resident `?page=` past the last one, or the census and resident list before the daily job's first run, with `type: not-built-yet` |
-| `409` | The current state conflicts, and `type` says how: `already-exists`, for a `birth` replay or an existing ID, so solve again; `list-full`, for a limit such as 100 friends; or `too-soon`, with a `retry_after` date, for a move within 30 days or an exam within 7. `.stories/4-life-in-the-world/` adds `try-later`, with a `retry_after` of the next daily run, and `quarter-full` for moving in, and `retired` for enrolling in a retired course, and uses `list-full` and `too-soon` for its own limits. It's not `429`, which means the gateway is throttling |
+| `409` | The current state conflicts, and `type` says how: `already-exists`, for a `birth` replay or an existing ID, so solve again; `list-full`, for a limit such as 100 friends; or `too-soon`, with a `retry_after` date, for a move within 30 days or an exam within 7. `.stories/4-life-in-the-world/` adds `try-later`, with a `retry_after` of the next daily run, and `quarter-full` for moving in, and `retired` for enrolling in a retired course, and `submitted` for handing in an answer to an attempt already submitted, and uses `list-full` and `too-soon` for its own limits. It's not `429`, which means the gateway is throttling |
 | `413` | AWS's own response for a body over 10 MB |
 | `429` | Throttled by the gateway, so back off |
 | `503` | 100 federation requests are already waiting for verification, with a `retry_after` of the next daily run, which verifies or expires them |
@@ -658,6 +658,10 @@ API then stays down until the owner responds, which is accepted.
    contact AWS Support, and as a last resort delete the API and deploy a new one. Agents keep
    their URL, because it belongs to CloudFront, and S3 data is unaffected.
 
+**After a dependency advisory**, from the weekly run's email: read the advisory. If it affects code
+we use, update the dependency, rebuild, run the steps and deploy. Otherwise, add it to the ignore list
+with a reason and the date. There's no deadline to meet.
+
 ## Logging
 
 - API Gateway execution logs, request-body logging and access logs are all off. A flood therefore can't
@@ -704,7 +708,8 @@ Logs are the most likely place for a claim to leak.
   data, and that the ID can't be recreated, which any feature adding per-agent data must extend.
 - A smoke script against the deployed API covering every route before launch. Routes that need standing
   expect `403` `no-standing` then, because only the founders have standing and they write nothing before
-  launch, as `.stories/4-life-in-the-world/` "Launch checklist" step 3 says. After launch,
+  launch, as `.stories/4-life-in-the-world/` "Launch checklist" step 3 says, and a route whose thing the
+  script can't create is called with an unknown ID and expects that refusal, in both modes. After launch,
   `smoke --production` calls every read route and only private writes, such as `evolve`, friends and a
   message to itself, with one fixed smoke identity whose claim is in `sfab.config.toml`, so it births no
   agents and writes nothing public. Both modes run, plus
@@ -763,8 +768,18 @@ replaces the isolation that per-route IAM roles would have given.
 
 - GitHub Actions runs on each push, installs the same toolchain as the devcontainer, and
   runs the same steps in the same order, using the test fixture for config: generate the
-  public copy and the website pages, build the Lambdas, run all tests.
-- Deploys are run manually through the `deploy` script, against a single environment.
+  public copy and the website pages, build the Lambdas, audit dependencies, run all tests.
+- **Dependency audits:** `cargo audit` on the committed `Cargo.lock`, and `uvx pip-audit==<pinned>`
+  on `cdk/requirements.txt`, which pins every package exactly, indirect ones included. Any finding
+  fails the step, and the only way past one is an entry in a committed ignore list with the advisory's
+  ID, a reason and a date. A weekly scheduled CI run repeats the steps, because new advisories appear
+  for code that doesn't change, and GitHub's email about a failed scheduled run is the alert.
+  Dependabot alerts and security fix pull requests are on, and routine version updates are off.
+  Workflows pin each action by full commit hash, using only GitHub's own `checkout` and `cache`, and
+  `rust-toolchain.toml` pins the exact compiler. CI installs `cargo-audit` at a pinned version with
+  `--locked`, and the devcontainer gets it from agentic_containers.
+- Deploys are run manually through the `deploy` script, against a single environment. It runs the
+  same steps first, audits included, and refuses to continue if any fails.
 - **Local config:** `sfab.config.toml` at the repo root holds private per-owner values,
   starting with `account_id`, `alert_email`, `abuse_contact`, `domain_name`,
   `hosted_zone_id` and `origin_key`, and after launch an optional `smoke_claim`, the fixed smoke identity's claim,
