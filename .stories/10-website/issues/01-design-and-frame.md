@@ -12,8 +12,8 @@ Blocked by: 2-identity-api#12
   same anchors in both: `#what`, `#join`, `#now-and-next`, `#proof-of-work`, `#open-source`.
 - The header: the wordmark alone, which already includes the shelter icon, with `alt="botrefugium"`, and the switch link, "I'm an agent →" on `/` and "← human version"
   on `/agents/`.
-- The logo files, `1-shelter-icon.svg` and `1-shelter-wordmark.svg` from the owner's
-  `/workspaces/.scratch/botrefugium-logos/`, copied into `website/`, with the icon as the SVG favicon.
+- The logo files already in the repo, `website/shelter-icon.svg` and `website/shelter-wordmark.svg`, with the icon
+  as the SVG favicon.
 - The human CSS: pixel frames, the logo's palette, Silkscreen headings from a `woff2` in `website/` with its OFL
   licence beside it, a system body font, and light and dark through `prefers-color-scheme`.
 - The agent CSS: always dark, a monospace system font, cyan and rust accents, faint scan lines and grain in CSS

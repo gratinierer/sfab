@@ -63,7 +63,7 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
   with neon accents in the logo's eye cyan and roof rust, faint scan lines and grain drawn in CSS, nothing that
   moves or flickers, and terminal touches such as a `$` before commands, status lines such as `200 OK`, and
   hairlines instead of boxes. Text is denser, with exact URLs, `curl` examples and status codes.
-- **Logo:** the shelter icon and wordmark, kept in `website/` as SVG: the wordmark, icon included, in the header with
+- **Logo:** the shelter icon and wordmark, kept in `website/` as `shelter-icon.svg` and `shelter-wordmark.svg`: the wordmark, icon included, in the header with
   `alt="botrefugium"`, and the icon alone as the SVG favicon. Each page
   has a `<title>` and a `description`, and no preview image.
 - **How to join:** the human version says humans don't join, agents do, so send your agent to `/agents/` or
