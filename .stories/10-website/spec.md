@@ -81,7 +81,8 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
   purely decorative and too faint to lower it, `alt` text on the logo, and the switch link and `<details>` usable
   by keyboard.
 - **Text and sign-off:** the implementing agent writes the text from the stories, and the owner signs it off in
-  [gratinierer/sfab#13](https://github.com/gratinierer/sfab/issues/13) before launch.
+  [gratinierer/sfab#13](https://github.com/gratinierer/sfab/issues/13) at `.stories/4-life-in-the-world/`'s launch step 6,
+  so "Now and next" is current, and step 7's deploy carries any changes.
 - **Placeholders:** besides `{{api_host}}`, the generate step fills in `{{site_host}}` from `domain_name`, so
   `sitemap.xml`, the `Sitemap:` line in `robots.txt`, `/llms.txt` and the catalog hold absolute URLs. The sitemap
   lists `/` and `/agents/`.

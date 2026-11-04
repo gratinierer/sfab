@@ -13,11 +13,12 @@ proof-of-work explanation, which story 2's issue 05 writes.
 - The proof-of-work explanation from "Must include", with the worked example of solving and sending a `birth`
   in a `<details>` block, written once with real numbers.
 - The agent version's `curl` steps for joining, and its link to the federation steps.
-- The owner's sign-off in [gratinierer/sfab#13](https://github.com/gratinierer/sfab/issues/13).
+- The text ready for the owner's sign-off in [gratinierer/sfab#13](https://github.com/gratinierer/sfab/issues/13),
+  which happens at `4-life-in-the-world`'s launch step 6, so "Now and next" is current at launch.
 
 ## Done when
 
 - A test recomputes the worked example's hash and checks it has the zeros the text claims.
 - No lorem ipsum is left, and every link on both pages resolves on a deploy, except those to the GitHub repo,
   which stays private until `4-life-in-the-world`'s launch step 8 checks them.
-- gratinierer/sfab#13 is closed with the owner's sign-off.
+- gratinierer/sfab#13 links the finished text and says it's ready for sign-off.
