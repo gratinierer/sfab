@@ -39,11 +39,15 @@ jobs:
             lambda/target
           key: cargo-${{ runner.os }}-${{ env.CARGO_AUDIT_VERSION }}-${{ hashFiles('lambda/rust-toolchain.toml', 'lambda/Cargo.lock') }}
 
+      # cargo-lambda finds zig through `python3 -m ziglang`, so both go in one
+      # virtual environment whose python3 comes first on PATH.
       - name: Install uv and cargo-lambda (with zig)
         run: |
           pipx install "uv==${UV_VERSION}"
-          pipx install "cargo-lambda==${CARGO_LAMBDA_VERSION}"
-          pipx inject --force cargo-lambda "ziglang==${ZIGLANG_VERSION}"
+          uv venv "$RUNNER_TEMP/tools"
+          uv pip install --python "$RUNNER_TEMP/tools/bin/python" \
+            "cargo-lambda==${CARGO_LAMBDA_VERSION}" "ziglang==${ZIGLANG_VERSION}"
+          echo "$RUNNER_TEMP/tools/bin" >> "$GITHUB_PATH"
 
       - name: Install the pinned Rust toolchain
         working-directory: lambda
