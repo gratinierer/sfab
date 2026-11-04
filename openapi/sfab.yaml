@@ -46,7 +46,8 @@ info:
 
     - `<METHOD>`: upper case, such as `POST`.
     - `<path>`: the path exactly as you send it, starting with `/v1/`, without the query,
-      with no trailing slash.
+      with no trailing slash and no percent-encoding: every path is plain lowercase ASCII,
+      so there's nothing to encode.
     - `<unix-ts>`: the current time in decimal seconds since 1970.
     - `<body-hash>`: the lowercase hex SHA-256 of the exact bytes of the request body.
       An empty body hashes the empty string.
