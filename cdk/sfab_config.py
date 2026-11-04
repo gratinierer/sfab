@@ -14,7 +14,7 @@ from __future__ import annotations
 import os
 import re
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -22,14 +22,20 @@ DEFAULT_PATH = REPO_ROOT / "sfab.config.toml"
 EXAMPLE_PATH = REPO_ROOT / "sfab.config.example.toml"
 ENV_VAR = "SFAB_CONFIG"
 
-REQUIRED_KEYS = (
-    "account_id",
-    "alert_email",
-    "abuse_contact",
-    "domain_name",
-    "hosted_zone_id",
-    "origin_key",
-)
+
+@dataclass(frozen=True)
+class Config:
+    """Every required key; add a new one here and the parser requires it."""
+
+    account_id: str
+    alert_email: str
+    abuse_contact: str
+    domain_name: str
+    hosted_zone_id: str
+    origin_key: str
+
+
+REQUIRED_KEYS = tuple(f.name for f in fields(Config))
 # Read only by the smoke script, never by synth.
 IGNORED_KEYS = ("smoke_claim",)
 
@@ -40,16 +46,6 @@ _ACCOUNT_ID = re.compile(r"[0-9]{12}")
 
 class ConfigError(Exception):
     """The config can't be used; the message says why and where."""
-
-
-@dataclass(frozen=True)
-class Config:
-    account_id: str
-    alert_email: str
-    abuse_contact: str
-    domain_name: str
-    hosted_zone_id: str
-    origin_key: str
 
 
 def config_path(environ: dict[str, str] | None = None) -> Path:
