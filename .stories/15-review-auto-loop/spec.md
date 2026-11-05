@@ -20,7 +20,7 @@ a separate yes.
 - **Shape:** `review, (address, review) × up to X`. X counts address passes, and the loop always ends on a
   review, so the last fixes are reviewed, `review.md` isn't left stale for the implementation gate, and the
   code-review closing gate can be met.
-- **Early stop:** the loop stops before X when a review leaves no open rows, or when an address pass makes no
+- **Early stop:** the loop stops before X when a review leaves no open rows (for `code-review`, none against the reviewed issues), or when an address pass makes no
   progress: it changes no file outside the record file (`review.md` or `code-review.md`), so everything left needs
   a human and another review would repeat itself. Comments, status flips to `open`, and the `walkthrough` row
   don't count as progress. The final report names the stop reason.
