@@ -19,6 +19,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-05T17:30:00+00:00 | code-review | 01 @ 5390f1d..841306e | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, fixes by the orchestrator claude-opus-5-5) | 0 new: 0 standards, 0 spec | auto loop round 3; C14, C15 fixes and record commits verified |
 | 2026-11-05T18:00:00+00:00 | walkthrough | 01 @ b4bfc4b..HEAD | claude-opus-5-5, with the owner | 0 new, 3 resolved, 3 wontfix, 0 still open | walkthrough, not a review pass |
 | 2026-11-05T19:30:00+00:00 | code-review | 02 @ 4f1bdaa..77612a0 | claude-fable-5-1 (dispatched; code by claude-opus-5-5) | 11 new: 7 standards, 4 spec | auto loop round 1 of up to 4; range also holds the R23 fix (179b012) |
+| 2026-11-05T20:00:00+00:00 | walkthrough | 02 @ 6f40d08..dad49d7 | claude-opus-5-5, auto (in loop) | 0 new, 9 resolved, 2 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
