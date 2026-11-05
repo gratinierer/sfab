@@ -16,7 +16,7 @@ In this repo the issue tracker is `docs/agents/issue-tracker.md`, with stories a
 
 ### 1. Pin the fixed point
 
-Whatever the user said is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). If they didn't specify one, ask for it. The keywords `auto`, an optional X after it, and `nocommit` are never the fixed point: `/code-review auto` has none, and a branch literally named `auto` is given as `refs/heads/auto`. See "Auto mode".
+Whatever the user said is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). If they didn't specify one, ask for it. The keywords `auto`, an optional X after it, and `nocommit` are never the fixed point: `/code-review auto` has none. See "Auto mode".
 
 Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so the comparison is against the merge-base). Also note the list of commits via `git log <fixed-point>..HEAD --oneline`.
 
@@ -144,6 +144,7 @@ are in `docs/adr/0006-review-skills-commit-by-default.md`.
   `review, (address, review) × up to X`, so it always ends on a review: the last fixes get reviewed, and the closing
   gate can be met.
 - `auto 0`, `auto -1`, `auto foo`: invalid, asked about up front.
+- A branch literally named `auto` is given as `refs/heads/auto`.
 - `auto nocommit` is refused up front: the fix range and the progress check need commits. Plain `nocommit` works for a
   single pass.
 
