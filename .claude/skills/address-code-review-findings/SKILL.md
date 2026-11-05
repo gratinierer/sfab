@@ -143,9 +143,9 @@ For each open finding, in order, still re-reading the current state first:
   waiver, an important finding) starts `needs the user (<HEAD short sha>):`. One left open because its file had
   unrelated edits, or its check failed, starts `blocked:` instead, because that can clear without anyone touching the
   row.
-- **Skip what still waits.** A row whose newest comment is a `needs the user (<sha>):` note, where neither the row nor
-  the files its `Affects` names have changed since `<sha>` (`git log <sha>..HEAD -- <files>` is empty), is not treated
-  again: no comment, no commit. List it as still waiting. Interactive passes never skip, since that is where the user
+- **Skip what still waits.** A row whose newest comment is a `needs the user (<sha>):` note, and whose `Affects` files
+  have no commits since `<sha>` (`git log <sha>..HEAD -- <files>` is empty), is not treated again: no comment, no
+  commit. List it as still waiting. Interactive passes never skip, since that is where the user
   settles these rows.
 - **Record each outcome** with a dated `Comments` note, and run the cheapest relevant check for any code you changed.
 - **A failing check**: revert that finding's change by restoring only the paths it touched (`git restore --

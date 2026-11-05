@@ -83,7 +83,7 @@ In every mode, interactive and `auto`, in all four skills:
   treated finding gets a commit; only a finding skipped untouched (the user stopped) gets none. In `auto`, a
   comment leaving a finding open for the owner starts `needs the user (<HEAD short sha>):`, and one left open for a
   dirty file or a failed check starts `blocked:`. A later `auto` pass skips a row whose newest comment is a
-  `needs the user` note when neither the row nor the files its `Affects` names changed since that sha: no comment,
+  `needs the user` note when its `Affects` files have no commits since that sha: no comment,
   no commit, listed as still waiting. Interactive passes never skip. The closing `walkthrough` journal row gets its
   own commit.
 - **Staging:** only the paths that finding or review touched, never `git add -A`. A finding whose file already has
