@@ -105,7 +105,7 @@ In every mode, interactive and `auto`, in all four skills:
 ## Where the work happens
 
 On `2-identity-api-birth-evolve-self-and-reclaim`, by the owner's ruling, so its commits end with `(#15)` per
-`commit-policy.md` "Which number a commit carries". The uncommitted `lambda/` work on that branch is untouched.
+`commit-policy.md` "Which number a commit carries". The `lambda/` work that was uncommitted when the story began was committed separately, in a54ef38.
 
 ## Clarifications
 
