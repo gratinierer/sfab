@@ -61,3 +61,15 @@ Stage 1. The Rust `axum` Lambda, with the identity routes that later tickets add
   to the test fixture with no config (R165), and `scripts/deploy` refusing to start without `sfab.config.toml`
   (R176), committed after e9e8391.
 - Logs carry no `Authorization` value.
+
+## Comments
+
+- 2026-11-05: started on the owner's explicit go-ahead, though R177-R179's walkthrough edited issues 01, 06 and
+  14 after the newest review row in `review.md`.
+- 2026-11-05: implemented, uncommitted. `lambda/core` gained `id` (`AgentId`, `Caller`), `credentials`, `gate` (proof,
+  then the 32 KB limit), `problem`, `storage` (the `Store` trait and `MemoryStore`), `daily`, `takedown`, and `s3`
+  behind a feature, so issue 08's program can use it too. `lambda/identity` has the four routes and `takedown()`;
+  `lambda/api` is the axum router and the Lambda binary, which reads `REQUIRED_BITS`, `IDENTITIES_BUCKET` and
+  `CLAIMS_BUCKET` (now in issue 01's Scope). Proof failures use `type: about:blank` with `required_bits` and
+  `server_time`, since the spec names no type for them. `scripts/check` passes. Still open from "Done when": the
+  first `/code-review`, from at or before `39c2bed`.

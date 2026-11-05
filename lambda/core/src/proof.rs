@@ -7,6 +7,8 @@
 
 use sha2::{Digest, Sha256};
 
+use crate::id::{AgentId, Caller};
+
 /// How old a proof's timestamp may be, in seconds.
 pub const MAX_AGE_SECS: i64 = 5 * 60;
 /// How far in the future a proof's timestamp may be, in seconds.
@@ -15,8 +17,6 @@ pub const MAX_AHEAD_SECS: i64 = 60;
 pub const MAX_NONCE_LEN: usize = 64;
 /// The most digits a timestamp may have: every 18-digit number fits the `i64` it's parsed into.
 pub const MAX_TIMESTAMP_DIGITS: usize = 18;
-/// `<caller>` for an anonymous `birth` or federation request.
-pub const ANONYMOUS: &str = "-";
 
 /// What the hash covers besides the `Proof` header itself.
 #[derive(Debug, Clone, Copy)]
@@ -25,8 +25,8 @@ pub struct Request<'a> {
     pub method: &'a str,
     /// The path as the client sent it, starting with `/v1/`, without its query.
     pub path: &'a str,
-    /// The ID in `Authorization`, or [`ANONYMOUS`].
-    pub caller: &'a str,
+    /// The ID in `Authorization`, or [`Caller::Anonymous`].
+    pub caller: &'a Caller,
     /// The raw request body.
     pub body: &'a [u8],
 }
@@ -125,14 +125,25 @@ pub fn verify(
     Ok(hash)
 }
 
-/// An agent's ID: 12 lowercase RFC 4648 base32 characters from the last 60 bits of the solution
-/// hash, because the first bits hold the proof's zeros.
-pub fn agent_id(hash: &[u8; 32]) -> String {
-    const ALPHABET: &[u8; 32] = b"abcdefghijklmnopqrstuvwxyz234567";
-    let tail = u64::from_be_bytes(hash[24..].try_into().expect("8 bytes"));
-    (0..12)
-        .map(|i| ALPHABET[((tail >> (5 * (11 - i))) & 31) as usize] as char)
-        .collect()
+/// Solves a proof the way the description tells agents to, counting nonces up from `0`, and
+/// returns the `Proof` header. For tests and the smoke script.
+pub fn solve(request: &Request, now: i64, required_bits: u32) -> String {
+    (0u64..)
+        .map(|n| n.to_string())
+        .find(|nonce| {
+            let proof = Proof {
+                timestamp: now,
+                nonce,
+            };
+            leading_zero_bits(&solution_hash(request, &proof)) >= required_bits
+        })
+        .map(|nonce| format!("{now}:{nonce}"))
+        .expect("some nonce works")
+}
+
+/// An agent's ID, from the solution hash: see [`AgentId::from_hash`].
+pub fn agent_id(hash: &[u8; 32]) -> AgentId {
+    AgentId::from_hash(hash)
 }
 
 pub fn hex(bytes: &[u8]) -> String {
@@ -146,7 +157,7 @@ mod tests {
     const REQ: Request = Request {
         method: "POST",
         path: "/v1/identity/birth",
-        caller: ANONYMOUS,
+        caller: &Caller::Anonymous,
         body: b"{}",
     };
 
@@ -217,6 +228,7 @@ mod tests {
             nonce: "n",
         };
         let base = solution_hash(&REQ, &proof);
+        let agent = Caller::Agent(AgentId::parse("aaaaaaaaaaaa").unwrap());
         for other in [
             Request {
                 method: "PUT",
@@ -227,7 +239,7 @@ mod tests {
                 ..REQ
             },
             Request {
-                caller: "aaaaaaaaaaaa",
+                caller: &agent,
                 ..REQ
             },
             Request {
@@ -237,15 +249,5 @@ mod tests {
         ] {
             assert_ne!(solution_hash(&other, &proof), base);
         }
-    }
-
-    #[test]
-    fn agent_id_is_the_last_60_bits_in_base32() {
-        let mut hash = [0xff; 32];
-        assert_eq!(agent_id(&hash), "777777777777");
-        hash[24..].copy_from_slice(&[0xf0, 0, 0, 0, 0, 0, 0, 0]);
-        assert_eq!(agent_id(&hash), "aaaaaaaaaaaa");
-        hash[31] = 1;
-        assert_eq!(agent_id(&hash), "aaaaaaaaaaab");
     }
 }

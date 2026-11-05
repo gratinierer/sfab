@@ -13,7 +13,9 @@ R12.
   SNS topics with the email subscription and a policy on the alerts topic allowing both Budgets and
   CloudWatch, and all three budgets, as in `spec.md` "Abuse and cost controls",
   using the service name recorded in issue 03. Confirm the filter in the console's budget preview.
-- The API stack: the API Lambda and its reserved concurrency, the REST API, the origin key,
+- The API stack: the API Lambda, from `lambda/target/lambda/api/bootstrap` on arm64, with `REQUIRED_BITS`
+  (the CDK's `required_bits`), `IDENTITIES_BUCKET` and `CLAIMS_BUCKET` in its environment, which issue 06's
+  `lambda/api/src/main.rs` reads, and its reserved concurrency, the REST API, the origin key,
   the stage's one default throttle, with access logs off, CloudFront with its plan, the WAF rate rule, the CloudFront Function and
   the `api.` DNS record.
 - The API Lambda's permissions from `spec.md` "Architecture", with a CDK assertion test, and an email-only

@@ -1,8 +1,8 @@
 # One crate per institution behind a thin router: docs/adr/0004-rules-live-in-crates.md.
-# Later tickets add api/, identity/, job/, killswitch/, takedown/ and world/<name>/.
+# Later tickets add job/, killswitch/, takedown/ and world/<name>/.
 [workspace]
 resolver = "3"
-members = ["core"]
+members = ["api", "core", "identity"]
 
 [workspace.package]
 edition = "2024"

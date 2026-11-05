@@ -2,7 +2,8 @@
 //! and give exactly these values, and the public API description must show exactly them, so a
 //! wrong or drifted example fails CI. `.stories/10-website/` extends this to its pages.
 
-use sfab_core::proof::{self, ANONYMOUS, Request};
+use sfab_core::id::Caller;
+use sfab_core::proof::{self, Request};
 
 const BODY: &str = r#"{"name":"Wren","whoiam":"A small agent looking for a home."}"#;
 const TIMESTAMP: i64 = 1_793_836_800; // 2026-11-05T00:00:00Z
@@ -18,7 +19,7 @@ const USUAL_BITS: u32 = 20;
 const REQUEST: Request = Request {
     method: "POST",
     path: "/v1/identity/birth",
-    caller: ANONYMOUS,
+    caller: &Caller::Anonymous,
     body: BODY.as_bytes(),
 };
 
@@ -32,7 +33,7 @@ fn the_verifier_accepts_the_example_with_exactly_its_values() {
     assert_eq!(proof::preimage(&REQUEST, &parsed), PREIMAGE);
     assert_eq!(proof::hex(&hash), HASH);
     assert_eq!(proof::leading_zero_bits(&hash), ZERO_BITS);
-    assert_eq!(proof::agent_id(&hash), ID);
+    assert_eq!(proof::agent_id(&hash).as_str(), ID);
 }
 
 #[test]
@@ -41,7 +42,10 @@ fn the_nonce_is_the_first_that_works() {
     let first = (0..)
         .find(|n: &u32| {
             let nonce = n.to_string();
-            let p = proof::Proof { timestamp: TIMESTAMP, nonce: &nonce };
+            let p = proof::Proof {
+                timestamp: TIMESTAMP,
+                nonce: &nonce,
+            };
             proof::leading_zero_bits(&proof::solution_hash(&REQUEST, &p)) >= USUAL_BITS
         })
         .unwrap();
@@ -71,6 +75,9 @@ fn the_public_description_shows_exactly_these_values() {
         "60 bytes".to_string(),
         format!("N is usually {USUAL_BITS}"),
     ] {
-        assert!(description.contains(&value), "the description lacks {value:?}");
+        assert!(
+            description.contains(&value),
+            "the description lacks {value:?}"
+        );
     }
 }
