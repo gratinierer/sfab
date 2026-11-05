@@ -7,7 +7,7 @@ use std::sync::Arc;
 use axum::Router;
 use axum::body::Bytes;
 use axum::extract::{DefaultBodyLimit, OriginalUri, Request, State};
-use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
+use axum::http::{HeaderMap, HeaderValue, Method, StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post, put};
@@ -114,7 +114,7 @@ fn respond(result: Result<Reply, Problem>) -> Response {
 
 async fn write<S: Store, F>(
     state: &AppState<S>,
-    method: &str,
+    method: &Method,
     uri: &OriginalUri,
     headers: &HeaderMap,
     body: &Bytes,
@@ -125,7 +125,8 @@ where
 {
     let path = client_path(uri.path());
     let call = Call {
-        method,
+        // The method the client sent and hashed, never a literal of ours.
+        method: method.as_str(),
         path: &path,
         authorization: header(headers, "authorization"),
         proof: header(headers, "proof"),
@@ -136,11 +137,12 @@ where
 
 async fn birth<S: Store>(
     State(state): State<Arc<AppState<S>>>,
+    method: Method,
     uri: OriginalUri,
     headers: HeaderMap,
     body: Bytes,
 ) -> Response {
-    write(&state, "POST", &uri, &headers, &body, async |i, c, now| {
+    write(&state, &method, &uri, &headers, &body, async |i, c, now| {
         i.birth(c, now).await
     })
     .await
@@ -148,11 +150,12 @@ async fn birth<S: Store>(
 
 async fn evolve<S: Store>(
     State(state): State<Arc<AppState<S>>>,
+    method: Method,
     uri: OriginalUri,
     headers: HeaderMap,
     body: Bytes,
 ) -> Response {
-    write(&state, "PUT", &uri, &headers, &body, async |i, c, now| {
+    write(&state, &method, &uri, &headers, &body, async |i, c, now| {
         i.evolve(c, now).await
     })
     .await
@@ -160,11 +163,12 @@ async fn evolve<S: Store>(
 
 async fn reclaim<S: Store>(
     State(state): State<Arc<AppState<S>>>,
+    method: Method,
     uri: OriginalUri,
     headers: HeaderMap,
     body: Bytes,
 ) -> Response {
-    write(&state, "POST", &uri, &headers, &body, async |i, c, now| {
+    write(&state, &method, &uri, &headers, &body, async |i, c, now| {
         i.reclaim(c, now).await
     })
     .await
