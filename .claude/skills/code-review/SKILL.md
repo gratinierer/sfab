@@ -106,7 +106,7 @@ End with a one-line summary: total findings per axis, and the worst issue _withi
 
 Write the findings to `.stories/<story>/code-review.md` before discussing them, so they outlive the conversation. The
 conventions are in `docs/agents/issue-tracker.md` "Code review file". If the file doesn't exist, create it from the
-template below.
+template in "Record template" at the end of this file.
 
 - **One journal row** for this run: `Date` is the ISO datetime, `Kind` is `code-review`, `Reviewed` names the issues
   and the range as `<issues> @ <fixed-point short sha>..<HEAD short sha>`, such as `04, 05 @ 862ddba..e2b740c`, `By`
@@ -194,6 +194,8 @@ One chat summary, in this order:
 4. Every autonomous decision: finding, outcome, why.
 5. Story issues the loop filed, as unreviewed, and, if an address pass edited `spec.md` or `issues/`, that the story's
    `review.md` is now stale for the implementation gate and wants a `/review-story`.
+
+## Record template
 
 ```markdown
 # <story>: code review
