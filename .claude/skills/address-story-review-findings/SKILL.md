@@ -180,9 +180,12 @@ For each open finding, in order, still re-reading the current state first:
   had unrelated edits, or its check failed, starts `blocked:` instead, because
   that can clear without anyone touching the row.
 - **Skip what still waits.** A row whose newest comment is a `needs the user
-  (<sha>):` note, and whose `Affects` files (a story issue number means that
-  issue's file) have no commits since `<sha>` (`git log <sha>..HEAD --
-  <files>` is empty), is not treated again: no comment, no commit. List it as still waiting. Interactive passes never skip,
+  (<sha>):` note, and whose `Affects` files have no commits since `<sha>`
+  (`git log <sha>..HEAD -- <files>` is empty), is not treated again: no
+  comment, no commit. To get the files, drop any `:line`, and read `spec.md`
+  or an issue number as that file under `.stories/<story>/`. An `Affects`
+  value that names no single file (prose, a glob, a partial path matching
+  several) counts as changed, so the row is treated as usual. List it as still waiting. Interactive passes never skip,
   since that is where the user settles these rows.
 - **Record each outcome** with a dated `Comments` note exactly as in
   interactive mode, and run the cheapest relevant check for any code you
