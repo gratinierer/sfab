@@ -143,9 +143,10 @@ When every open finding has been handled, or the user stops:
 
 **Inside a review loop**, do step 1 only, then hand back to `/review-story`
 with: each finding's outcome and why, which findings need the user (rows
-skipped as still waiting included), which issues were filed, and whether the pass made **progress**, meaning it changed
-a file other than `review.md` and kept the change. The loop runs the next
-review itself, so don't recommend one.
+skipped as still waiting included), which issues were filed, and whether the
+pass made **progress**, meaning it changed a file other than `review.md` and
+kept the change. The loop runs the next review itself, so don't recommend
+one.
 
 ## Auto mode
 
