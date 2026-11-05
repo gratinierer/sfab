@@ -260,7 +260,8 @@ edits, fixes whose check failed) and carries on.
 
 One chat summary, in this order:
 
-1. Findings that need the user, each with why.
+1. Findings that need the user, each with why, including rows step 4 found
+   still waiting.
 2. Rounds run, and the stop reason: clean, limit, no progress, or a failing
    check.
 3. The commits made, as short shas with subjects.
