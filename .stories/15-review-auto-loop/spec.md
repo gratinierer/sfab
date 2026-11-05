@@ -23,8 +23,8 @@ a separate yes.
 - **Early stop:** the loop stops before X when a review leaves no open rows (for `code-review`, none against the reviewed issues), or when an address pass makes no
   progress: it changes no file outside the record file (`review.md` or `code-review.md`), so everything left needs
   a human and another review would repeat itself. Comments, status flips to `open`, and the `walkthrough` row
-  don't count as progress. The loop also stops with **no progress**, without running the pass, when the last
-  review added no new finding and every open row is still waiting on the owner with nothing changed (see "Commits
+  don't count as progress. The loop also stops with **no progress**, without running the pass, when every
+  open row is still waiting on the owner with nothing changed (see "Commits
   by default"). The final report names the stop reason.
 - **Up front, then unattended:** everything the loop could need to ask is asked before round 1: the commit-policy
   branch check, a missing fixed point, an unresolvable story or reviewer model, a record file with uncommitted
