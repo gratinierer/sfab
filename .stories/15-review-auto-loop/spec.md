@@ -58,7 +58,7 @@ a separate yes.
   asked up front: fix it first, or run without check gating, in which case no finding is reverted for a failure
   the baseline already showed. A review-story loop changes only documents and runs no check.
 - **Failing checks:** an address pass runs the cheapest relevant check after every finding that changes code, and
-  `scripts/check` before each round's closing review. When a finding's check fails, `auto` reverts that finding's
+  the loop runs `scripts/check` before each round's closing review. When a finding's check fails, `auto` reverts that finding's
   change by restoring only its own paths (never a blanket reset), leaves it open with a comment quoting the
   failure, commits only that comment, and lists it as needing the owner. A reverted change isn't progress.
   Interactive mode shows the failure and asks instead of reverting.
