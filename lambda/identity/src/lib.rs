@@ -229,6 +229,7 @@ impl<S: Store> Identity<S> {
         if !call.body.is_empty() {
             return Err(Problem::bad_request("reclaim takes no body"));
         }
+        // Only whether it exists: a claim with no identity gets `404` here too, as from `self`.
         self.read_identity(&agent.id).await?;
         let (record, secrets) = ClaimRecord::fresh(agent.record.born_at);
         let write = self
