@@ -185,7 +185,8 @@ For each open finding, in order, still re-reading the current state first:
   comment, no commit. List it as still waiting. Interactive passes never
   skip, since that is where the user settles these rows.
   - **The files**: split `Affects` at commas and drop any `:line`. Read
-    `spec.md` or an issue number as that file under `.stories/<story>/`.
+    `spec.md` as `.stories/<story>/spec.md`, and an issue number as that
+    issue's file in `issues/` or `issues/done/`.
     Every part must be unchanged for the row to be skipped.
   - **Fallback**: a part that names no single file (prose, a glob, a partial
     path matching several) counts as changed, so the row is treated as usual.

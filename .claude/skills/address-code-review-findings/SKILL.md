@@ -146,8 +146,9 @@ For each open finding, in order, still re-reading the current state first:
 - **Skip what still waits.** A row whose newest comment is a `needs the user (<sha>):` note, and whose `Affects` files
   have no commits since `<sha>` (`git log <sha>..HEAD -- <files>` is empty), is not treated again: no comment, no
   commit. List it as still waiting. Interactive passes never skip, since that is where the user settles these rows.
-  - **The files**: split `Affects` at commas and drop any `:line`. Read an issue number as that issue's file under
-    `.stories/<story>/`. Every part must be unchanged for the row to be skipped.
+  - **The files**: split `Affects` at commas and drop any `:line`. Read an issue number as that issue's file in
+    `.stories/<story>/issues/` or `issues/done/`, and `spec.md` as `.stories/<story>/spec.md`; any other part is a
+    repo path. Every part must be unchanged for the row to be skipped.
   - **Fallback**: a part that names no single file (prose, a glob, a partial path matching several) counts as
     changed, so the row is treated as usual.
 - **Record each outcome** with a dated `Comments` note, and run the cheapest relevant check for any code you changed.
