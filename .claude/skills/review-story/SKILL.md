@@ -211,6 +211,7 @@ asking the user only about what needs them. The decisions behind it are in
 Ask everything the loop could need before round 1, in one go, and never
 mid-loop:
 
+- a story the argument doesn't resolve to exactly one `.stories/` directory;
 - an invalid X or `auto nocommit`, as above;
 - the branch, as in step 5, including the owner's ruling when the story isn't
   the branch's own. Without it the loop doesn't start;
