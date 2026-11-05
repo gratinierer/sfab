@@ -14,6 +14,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 |---|---|---|---|---|---|
 | 2026-11-05T16:00:00+00:00 | code-review | 01 @ 334b3f3..a4a1aee | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 13 new: 7 standards, 6 spec | auto loop round 1 of up to 4 |
 | 2026-11-05T16:30:00+00:00 | walkthrough | 01 @ e214bc6..e5685bc | claude-opus-5-5, auto (in loop) | 0 new, 6 resolved, 1 superseded, 6 still open | auto walkthrough, not a review pass |
+| 2026-11-05T17:00:00+00:00 | code-review | 01 @ a4a1aee..5390f1d | claude-fable-5-1 (dispatched; code by claude-opus-5-5, fixes by the orchestrator claude-opus-5-5) | 2 new: 2 standards, 0 spec | auto loop round 2; spec fixes C1-C13 verified sound |
 
 ## Findings
 
@@ -32,3 +33,5 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | C11 | open | spec | 01, address-*/SKILL.md "Committing" | Beyond the spec: standalone address passes offer to commit uncommitted story documents and carry on as `nocommit` on decline; spec scoped the offer to the loop's up-front stage. | 2026-11-05: found. 2026-11-05: left open (auto): behaviour beyond the spec that the owner hasn't approved; also decides how C12 reads for story documents. |
 | C12 | resolved | spec | 01, .claude/skills/address-code-review-findings/SKILL.md:96 | The dirty-file leave-open rule applies to any file, not code files only as R10 narrowed it; address-story says "code file". | 2026-11-05: found. 2026-11-05: resolved (auto): address-code's dirty-file rule now says "a code file", matching R10 and address-story. |
 | C13 | resolved | spec | 01, .claude/skills/review-story/SKILL.md:80 | "the user is in the loop on every one" stays unqualified right before the auto-mode exception, so the note reads self-contradictory. | 2026-11-05: found. 2026-11-05: resolved (auto): the note now says the address skill needs no guard "when run interactively", before the auto-mode exception. |
+| C14 | open | standards | 01, .claude/skills/code-review/SKILL.md:109 | Step 7 says the template is "at the end of this file", but `## Why two axes` follows `## Record template`. | 2026-11-05: found. |
+| C15 | open | standards | 01, .claude/skills/address-story-review-findings/SKILL.md:153, address-code-review-findings/SKILL.md:126 | Possible noise: the C1 edit left the Auto-mode paragraphs unreflowed, with a short orphan line. | 2026-11-05: found. |
