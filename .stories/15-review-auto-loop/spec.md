@@ -62,6 +62,9 @@ a separate yes.
   change by restoring only its own paths (never a blanket reset), leaves it open with a comment quoting the
   failure, commits only that comment, and lists it as needing the owner. A reverted change isn't progress.
   Interactive mode shows the failure and asks instead of reverting.
+  If the `scripts/check` before a closing review fails beyond the baseline, the loop stops after that review and
+  lists the failure as needing the owner, rather than addressing on a broken tree. A standalone code-review
+  walkthrough runs `scripts/check` once at the end, before its walkthrough commit, and reports a failure.
 - **Final report:** in order: findings needing the owner, each with why; rounds run and the stop reason; the
   commits made as short shas; every autonomous decision. It also names every story issue the loop filed, as
   unreviewed, and, for the code-review loop, says when an address pass edited `spec.md` or `issues/`, since that
@@ -135,6 +138,8 @@ Decided later, in the review walkthroughs recorded in `review.md`:
 - R14 (owner): `auto nocommit` is refused up front.
 - R16 (owner): a code-review loop runs a baseline `scripts/check` before round 1, a failing baseline is asked up
   front (fix first, or run without check gating); review-story loops run no check.
+- C10 (owner, from the code review): a `scripts/check` failure beyond the baseline stops the loop after the next
+  review; a standalone code-review walkthrough runs `scripts/check` once at the end.
 - R1–R8, R11–R13 (auto walkthroughs, audited by the following review): progress excludes the record file, every
   round uses a different model even for human-authored stories, recorded ranges and HEADs, the foreign-story
   ruling, `auto`/`nocommit` as keywords and invalid X asked up front, final-report additions, subjects marked as a
