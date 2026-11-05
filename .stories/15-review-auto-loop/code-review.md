@@ -23,6 +23,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-05T20:30:00+00:00 | code-review | 02 @ 77612a0..a96ab25 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, fixes by the orchestrator claude-opus-5-5) | 5 new: 3 standards, 2 spec | auto loop round 2; duplication of the skip rule not recorded, as owner-waived C4 covers it |
 | 2026-11-05T21:00:00+00:00 | walkthrough | 02 @ 212dabf..HEAD | claude-opus-5-5, auto (in loop) | 0 new, 5 resolved, 2 still open | auto walkthrough, not a review pass |
 | 2026-11-05T21:30:00+00:00 | code-review | 02 @ a96ab25..91fd122 | claude-fable-5-1 (dispatched; code by claude-opus-5-5, fixes by the orchestrator claude-opus-5-5) | 3 new: 2 standards, 1 spec | auto loop round 3; dry run: C22 and C24 would be skipped |
+| 2026-11-05T22:00:00+00:00 | walkthrough | 02 @ 141ecf4..HEAD | claude-opus-5-5, auto (in loop) | 0 new, 3 resolved, 2 still open | auto walkthrough, not a review pass; C22, C24 skipped as still waiting |
 
 ## Findings
 
