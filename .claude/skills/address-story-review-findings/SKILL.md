@@ -176,9 +176,9 @@ For each open finding, in order, still re-reading the current state first:
   decide.
 - **Mark what waits on the user.** A comment that leaves a finding open for
   the user (ambiguity, a design decision, a waiver, an important finding)
-  starts `needs the user (<HEAD short sha>):`. One left open because its file
-  had unrelated edits, or its check failed, starts `blocked:` instead, because
-  that can clear without anyone touching the row.
+  starts, after its date, with `needs the user (<HEAD short sha>):`. One left
+  open because its file had unrelated edits, or its check failed, starts
+  `blocked:` instead, because that can clear without anyone touching the row.
 - **Skip what still waits.** A row whose newest comment is a `needs the user
   (<sha>):` note, and whose `Affects` files have no commits since `<sha>`
   (`git log <sha>..HEAD -- <files>` is empty), is not treated again: no

@@ -140,9 +140,9 @@ For each open finding, in order, still re-reading the current state first:
 - **Leave open important findings**, too, even when the fix looks clear: a security or cost risk, a fix that would
   change an ADR, or one that would rewrite a story's scope. The comment says which, and why the user should decide.
 - **Mark what waits on the user.** A comment that leaves a finding open for the user (ambiguity, a design decision, a
-  waiver, an important finding) starts `needs the user (<HEAD short sha>):`. One left open because its file had
-  unrelated edits, or its check failed, starts `blocked:` instead, because that can clear without anyone touching the
-  row.
+  waiver, an important finding) starts, after its date, with `needs the user (<HEAD short sha>):`. One left open
+  because its file had unrelated edits, or its check failed, starts `blocked:` instead, because that can clear without
+  anyone touching the row.
 - **Skip what still waits.** A row whose newest comment is a `needs the user (<sha>):` note, and whose `Affects` files
   have no commits since `<sha>` (`git log <sha>..HEAD -- <files>` is empty), is not treated again: no comment, no
   commit. To get the files, drop any `:line`, and read an issue number as that issue's file under `.stories/<story>/`.
