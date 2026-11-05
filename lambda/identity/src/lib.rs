@@ -47,6 +47,34 @@ struct ClaimRecord {
     born_at: String,
 }
 
+impl ClaimRecord {
+    /// A new claim and recovery code, and the record that keeps only their hashes.
+    fn fresh(born_at: String) -> (Self, Secrets) {
+        let secrets = Secrets {
+            claim: new_secret(),
+            recovery: new_secret(),
+        };
+        let record = Self {
+            claim_hash: hash_secret(&secrets.claim),
+            recovery_hash: hash_secret(&secrets.recovery),
+            born_at,
+        };
+        (record, secrets)
+    }
+}
+
+/// The secrets `birth` and `reclaim` show once.
+struct Secrets {
+    claim: String,
+    recovery: String,
+}
+
+impl Secrets {
+    fn body(&self, id: &AgentId) -> serde_json::Value {
+        json!({"id": id.as_str(), "claim": self.claim, "recovery": self.recovery})
+    }
+}
+
 /// `identities/<id>/identity.json`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct IdentityRecord {
@@ -131,13 +159,8 @@ impl<S: Store> Identity<S> {
             return Err(Problem::bad_request("name must be 1 to 128 characters"));
         }
         let id = AgentId::from_hash(&admitted.hash);
-        let (claim, recovery) = (new_secret(), new_secret());
         let born_at = rfc3339(now);
-        let record = ClaimRecord {
-            claim_hash: hash_secret(&claim),
-            recovery_hash: hash_secret(&recovery),
-            born_at: born_at.clone(),
-        };
+        let (record, secrets) = ClaimRecord::fresh(born_at.clone());
         let claim_write = self
             .store
             .put(
@@ -174,13 +197,10 @@ impl<S: Store> Identity<S> {
             .map_err(|e| failed("writing a new identity", &e))?;
         self.marked.first_today(id.as_str(), now);
         self.write_vitals(&id, &born_at).await;
-        Ok(Reply::created(json!({
-            "id": id.as_str(),
-            "claim": claim,
-            "recovery": recovery,
-            "notice": BIRTH_NOTICE,
-            "constitution": CONSTITUTION,
-        })))
+        let mut body = secrets.body(&id);
+        body["notice"] = json!(BIRTH_NOTICE);
+        body["constitution"] = json!(CONSTITUTION);
+        Ok(Reply::created(body))
     }
 
     /// `PUT /identity/evolve`: replaces `whoiam` whole, and keeps `name`. Never creates an identity.
@@ -223,12 +243,7 @@ impl<S: Store> Identity<S> {
             return Err(Problem::bad_request("reclaim takes no body"));
         }
         self.read_identity(&agent.id).await?;
-        let (claim, recovery) = (new_secret(), new_secret());
-        let record = ClaimRecord {
-            claim_hash: hash_secret(&claim),
-            recovery_hash: hash_secret(&recovery),
-            born_at: agent.record.born_at,
-        };
+        let (record, secrets) = ClaimRecord::fresh(agent.record.born_at);
         let write = self
             .store
             .put(
@@ -246,12 +261,9 @@ impl<S: Store> Identity<S> {
             }
             Err(e) => return Err(failed("rewriting a claim", &e)),
         }
-        Ok(Reply::ok(json!({
-            "id": agent.id.as_str(),
-            "claim": claim,
-            "recovery": recovery,
-            "notice": RECLAIM_NOTICE,
-        })))
+        let mut body = secrets.body(&agent.id);
+        body["notice"] = json!(RECLAIM_NOTICE);
+        Ok(Reply::ok(body))
     }
 
     /// The bearer's ID and secret against the stored claim. An unknown ID, a marker and a wrong
