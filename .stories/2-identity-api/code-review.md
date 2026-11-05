@@ -24,6 +24,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-05T10:30:13+00:00 | code-review | 06, and R165, R171, R176 @ 39c2bed..b10a267 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 14 new: 10 standards, 4 spec | paths `lambda/`, `openapi/`, `scripts/` only (e9e8391, 7b533de, a54ef38); the range's other commits are stories 14-16 |
 | 2026-11-05T10:39:47+00:00 | walkthrough | 06 | claude-opus-5-5, auto, in `/code-review auto 5` | 0 new, 9 resolved, 1 superseded, 4 still open | auto walkthrough, not a review pass |
 | 2026-11-05T10:43:18+00:00 | code-review | 06 @ b10a267..ef67ff5 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 4 new: 3 standards, 1 spec | round 2 of `/code-review auto 5`, fix commits only; a spec finding that the 32 KB check should follow the caller check was dropped, since issue 06 puts it straight after the proof |
+| 2026-11-05T10:45:26+00:00 | walkthrough | 06 | claude-opus-5-5, auto, in `/code-review auto 5` | 0 new, 4 resolved, 4 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
