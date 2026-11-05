@@ -29,6 +29,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-05T10:49:50+00:00 | walkthrough | 06 | claude-opus-5-5, auto, in `/code-review auto 5` | 0 new, 2 resolved, 4 still open | auto walkthrough, not a review pass; C39, C40, C41 and C45 skipped as still waiting |
 | 2026-11-05T10:52:50+00:00 | code-review | 06 @ 974e001..6ce14d2 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 0 new: 0 standards, 0 spec | round 4 of `/code-review auto 5`, fix commits only; both replies match `Birth` and `Reclaim` |
 | 2026-11-05T15:31:39+00:00 | walkthrough | 06 | claude-opus-5-5, with the owner deciding each finding | 0 new, 1 resolved, 3 wontfix, 0 still open | walkthrough, not a review pass |
+| 2026-11-05T15:33:51+00:00 | code-review | 06 @ 6ce14d2..2bee15a | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 0 new: 0 standards, 0 spec | round 1 of `/code-review 6ce14d2 auto 2`: the C41 fix; only `POST` and `PUT` reach the write handlers, so the hashed method is always the route's |
 
 ## Findings
 
