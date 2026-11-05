@@ -54,9 +54,10 @@ a separate yes.
 - **`auto nocommit` is refused:** the loop needs commits for its ranges and its progress check, so that
   combination is asked about up front and the loop doesn't start with it. `nocommit` alone still works for a
   single review or address pass.
-- **Baseline check:** a code-review loop runs `scripts/check` once before round 1. If it already fails, that is
-  asked up front: fix it first, or run without check gating, in which case no finding is reverted for a failure
-  the baseline already showed. A review-story loop changes only documents and runs no check.
+- **Baseline check:** both loops run `scripts/check` once before round 1; a review-story loop too, because its
+  address passes may change code. If it already fails, that is asked up front: fix it first, or run without check
+  gating, in which case no finding is reverted for a failure the baseline already showed. A review-story loop runs
+  the closing `scripts/check` only after a pass that changed a file outside `.stories/` and `docs/`.
 - **Failing checks:** an address pass runs the cheapest relevant check after every finding that changes code, and
   the loop runs `scripts/check` before each round's closing review. When a finding's check fails, `auto` reverts that finding's
   change by restoring only its own paths (never a blanket reset), leaves it open with a comment quoting the
@@ -140,7 +141,9 @@ Decided later, in the review walkthroughs recorded in `review.md`:
   without it. This narrows Q8: its leave-open rule now covers code files only.
 - R14 (owner): `auto nocommit` is refused up front.
 - R16 (owner): a code-review loop runs a baseline `scripts/check` before round 1, a failing baseline is asked up
-  front (fix first, or run without check gating); review-story loops run no check.
+  front (fix first, or run without check gating); review-story loops run no check. Amended by R23.
+- R23 (owner): a review-story loop runs the baseline too, up front rather than before the first code-changing
+  finding, so a failing baseline is never asked mid-loop; its closing check runs only when a pass changed code.
 - C10 (owner, from the code review): a `scripts/check` failure beyond the baseline stops the loop after the next
   review; a standalone code-review walkthrough runs `scripts/check` once at the end.
 - C11 (owner, from the code review): standalone address passes offer to commit uncommitted story documents

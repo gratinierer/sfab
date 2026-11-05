@@ -221,7 +221,11 @@ mid-loop:
 - uncommitted story documents (`spec.md`, `issues/**`, `review.md`): offer to
   commit them as one commit, `Commit story <n> documents before review
   (#<n>)`. If the user declines, the loop doesn't start, because every finding
-  on a dirty document would stay open.
+  on a dirty document would stay open;
+- the **baseline**: run `scripts/check` once, because an address pass may
+  change code as well as documents. If it already fails, ask: fix it first, or
+  run without check gating. In the latter case the address passes don't
+  revert a finding for a failure the baseline already showed.
 
 ### The loop
 
@@ -238,20 +242,23 @@ mid-loop:
 5. **Stop, no progress**, if it made none. Everything left needs the user, so
    another review would repeat itself. `spec.md` and `issues/` are unchanged
    since the last review, so it isn't stale.
-6. Otherwise go to 1.
+6. **Check**, if the pass changed a file outside `.stories/` and `docs/`: run
+   `scripts/check`. If it fails beyond what the baseline showed, stop after
+   the next review and list the failure as needing the user.
+7. Otherwise go to 1.
 
 The address pass leaves open whatever needs the user (design or product
 decisions the story doesn't record, ambiguity, waivers, destructive or
 out-of-scope fixes, important findings, files with unrelated uncommitted
-edits, fixes whose check failed) and carries on. A review-story loop changes
-only documents, so it runs no `scripts/check`.
+edits, fixes whose check failed) and carries on.
 
 ### Final report
 
 One chat summary, in this order:
 
 1. Findings that need the user, each with why.
-2. Rounds run, and the stop reason: clean, limit, or no progress.
+2. Rounds run, and the stop reason: clean, limit, no progress, or a failing
+   check.
 3. The commits made, as short shas with subjects.
 4. Every autonomous decision: finding, outcome, why.
 5. Story issues the loop filed, as unreviewed.
