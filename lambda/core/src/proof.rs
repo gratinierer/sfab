@@ -128,17 +128,6 @@ pub fn check_hash(
     Ok(hash)
 }
 
-/// Checks a `Proof` header with one hash, before anything is read or written, and returns the
-/// solution hash.
-pub fn verify(
-    header: Option<&str>,
-    request: &Request,
-    now: i64,
-    required_bits: u32,
-) -> Result<[u8; 32], Rejection> {
-    check_hash(request, &check_header(header, now)?, required_bits)
-}
-
 /// Solves a proof the way the description tells agents to, counting nonces up from `0`, and
 /// returns the `Proof` header. For tests and the smoke script.
 pub fn solve(request: &Request, now: i64, required_bits: u32) -> String {
@@ -167,6 +156,16 @@ pub fn hex(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Both checks, in the gate's order but with a fixed caller.
+    fn verify(
+        header: Option<&str>,
+        request: &Request,
+        now: i64,
+        required_bits: u32,
+    ) -> Result<[u8; 32], Rejection> {
+        check_hash(request, &check_header(header, now)?, required_bits)
+    }
 
     const REQ: Request = Request {
         method: "POST",

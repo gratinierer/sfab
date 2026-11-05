@@ -26,7 +26,8 @@ const REQUEST: Request = Request {
 #[test]
 fn the_verifier_accepts_the_example_with_exactly_its_values() {
     let header = format!("{TIMESTAMP}:{NONCE}");
-    let hash = proof::verify(Some(&header), &REQUEST, TIMESTAMP, USUAL_BITS).expect("valid proof");
+    let checked = proof::check_header(Some(&header), TIMESTAMP).expect("a sound header");
+    let hash = proof::check_hash(&REQUEST, &checked, USUAL_BITS).expect("valid proof");
     assert_eq!(BODY.len(), 60);
     assert_eq!(proof::body_hash(REQUEST.body), BODY_HASH);
     let parsed = proof::Proof::parse(&header).unwrap();
