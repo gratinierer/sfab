@@ -172,14 +172,17 @@ Ask everything the loop could need before round 1, in one go, and never mid-loop
    `.stories/`, so the next range including it is harmless.
 2. **Stop, clean**, if no finding against the reviewed issues is `open`.
 3. **Stop, limit**, if X address passes have run.
-4. **Address**: run `/address-code-review-findings <story> <issues> auto` inline, through the Skill tool, so this
+4. **Stop, no progress**, without an address pass, if this review added no new finding and every open finding against
+   the reviewed issues would be skipped as still waiting (see "Skip what still waits" in
+   `address-code-review-findings`): the pass could only repeat itself.
+5. **Address**: run `/address-code-review-findings <story> <issues> auto` inline, through the Skill tool, so this
    session stays the only writer of `code-review.md` and of the commits. It commits per finding and hands back its
    outcomes, whether it edited `spec.md` or `issues/`, and whether it made **progress**: changed a file other than
    `code-review.md` and kept the change.
-5. **Stop, no progress**, if it made none. Everything left needs the user, so another review would repeat itself.
-6. **Check**: run `scripts/check`. If it fails beyond what the baseline showed, stop after the next review and list
+6. **Stop, no progress**, if it made none. Everything left needs the user, so another review would repeat itself.
+7. **Check**: run `scripts/check`. If it fails beyond what the baseline showed, stop after the next review and list
    the failure as needing the user, rather than addressing on a broken tree.
-7. Go to 1.
+8. Go to 1.
 
 The address pass leaves open whatever needs the user (design or product decisions the story doesn't record,
 ambiguity, waivers, destructive or out-of-scope fixes, important findings, files with unrelated uncommitted edits,

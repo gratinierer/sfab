@@ -30,3 +30,11 @@ nothing it may act on still costs one commit per open finding.
 - A loop whose open rows all wait on the owner stops without running another address pass, and the final report
   names the stop reason.
 - Re-walking an unchanged left-open finding produces no commit.
+
+## Comments
+
+- 2026-11-05: implemented, uncommitted, on the owner's "implement" over a stale review (R20-R25 walked, R23
+  implemented first in 179b012). Both address skills mark `needs the user (<sha>):` and `blocked:`, and skip an
+  unchanged waiting row in `auto`; both loops gained a step 4 that stops before a pass that could only repeat
+  itself; spec and issue-tracker.md updated. The R22 choices (the marker, and `blocked:` rows being retried) are the
+  implementer's, recorded in spec "Decided later" for the owner to confirm. Needs a `/code-review` before closing.

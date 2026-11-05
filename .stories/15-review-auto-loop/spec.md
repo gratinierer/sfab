@@ -23,7 +23,9 @@ a separate yes.
 - **Early stop:** the loop stops before X when a review leaves no open rows (for `code-review`, none against the reviewed issues), or when an address pass makes no
   progress: it changes no file outside the record file (`review.md` or `code-review.md`), so everything left needs
   a human and another review would repeat itself. Comments, status flips to `open`, and the `walkthrough` row
-  don't count as progress. The final report names the stop reason.
+  don't count as progress. The loop also stops with **no progress**, without running the pass, when the last
+  review added no new finding and every open row is still waiting on the owner with nothing changed (see "Commits
+  by default"). The final report names the stop reason.
 - **Up front, then unattended:** everything the loop could need to ask is asked before round 1: the commit-policy
   branch check, a missing fixed point, an unresolvable story or reviewer model, a record file with uncommitted
   changes. When the story isn't the branch's own (story 8 reviewed from `2-…`), the branch check asks for the
@@ -78,8 +80,12 @@ In every mode, interactive and `auto`, in all four skills:
 - **Review skills** commit the record file once, after the review is written.
 - **Address skills** commit once per treated finding, including outcomes that only edit the record file
   (`wontfix`, leave open with a comment, `superseded`, filed). Every outcome writes a dated comment, so every
-  treated finding gets a commit; only a finding skipped untouched (the user stopped) gets none. The closing
-  `walkthrough` journal row gets its own commit.
+  treated finding gets a commit; only a finding skipped untouched (the user stopped) gets none. In `auto`, a
+  comment leaving a finding open for the owner starts `needs the user (<HEAD short sha>):`, and one left open for a
+  dirty file or a failed check starts `blocked:`. A later `auto` pass skips a row whose newest comment is a
+  `needs the user` note when neither the row nor the files its `Affects` names changed since that sha: no comment,
+  no commit, listed as still waiting. Interactive passes never skip. The closing `walkthrough` journal row gets its
+  own commit.
 - **Staging:** only the paths that finding or review touched, never `git add -A`. A finding whose file already has
   unrelated uncommitted edits stays open with a comment.
 - **Standalone address passes**, outside a loop, offer before the first finding to commit the story's uncommitted
@@ -144,6 +150,9 @@ Decided later, in the review walkthroughs recorded in `review.md`:
   front (fix first, or run without check gating); review-story loops run no check. Amended by R23.
 - R23 (owner): a review-story loop runs the baseline too, up front rather than before the first code-changing
   finding, so a failing baseline is never asked mid-loop; its closing check runs only when a pass changed code.
+- Issue 02 (implemented on the owner's "implement"; the R22 choices are the implementer's, for the owner to
+  confirm): the marker is `needs the user (<sha>):`; rows left open for a dirty file or a failed check use
+  `blocked:` and are retried, because they can clear without the row changing.
 - C10 (owner, from the code review): a `scripts/check` failure beyond the baseline stops the loop after the next
   review; a standalone code-review walkthrough runs `scripts/check` once at the end.
 - C11 (owner, from the code review): standalone address passes offer to commit uncommitted story documents

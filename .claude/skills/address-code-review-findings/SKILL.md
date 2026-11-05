@@ -92,7 +92,8 @@ the explicit ask to commit; see the exception in `docs/agents/commit-policy.md`.
     them first as `Commit story <n> documents before review (#<n>)`. If the user declines, carry on as `nocommit`.
 - **One commit per treated finding.** Every outcome writes a dated comment, so every treated finding gets a commit,
   including those that only edit `code-review.md` (filed, waived, superseded, left open). A finding the user stopped
-  before treating gets none. Per-finding commits keep the history bisectable.
+  before treating gets none, nor does one `auto` skips as still waiting (see "Auto mode"). Per-finding commits keep
+  the history bisectable.
 - **Stage only the paths this finding touched**, by name. Never `git add -A` or `git commit -a`. If a code file the fix
   needs already has unrelated uncommitted edits, don't fix it: **Leave open** with a comment saying so, and list it at
   the end as needing the user.
@@ -116,9 +117,9 @@ When every open finding has been handled, or the user stops:
    edited `spec.md` or `issues/`, say the story's `review.md` is now stale for the implementation gate.
 
 **Inside a review loop**, do step 1 only, then hand back to `/code-review` with: each finding's outcome and why, which
-findings need the user, which issues were filed, whether `spec.md` or `issues/` were edited, and whether the pass made
-**progress**, meaning it changed a file other than `code-review.md` and kept the change. The loop runs the next review
-and names the range itself, so don't.
+findings need the user (rows skipped as still waiting included), which issues were filed, whether `spec.md` or
+`issues/` were edited, and whether the pass made **progress**, meaning it changed a file other than `code-review.md`
+and kept the change. The loop runs the next review and names the range itself, so don't.
 
 ## Auto mode
 
@@ -138,6 +139,14 @@ For each open finding, in order, still re-reading the current state first:
   anything whose fix would be destructive or reach beyond the story and the code it names.
 - **Leave open important findings**, too, even when the fix looks clear: a security or cost risk, a fix that would
   change an ADR, or one that would rewrite a story's scope. The comment says which, and why the user should decide.
+- **Mark what waits on the user.** A comment that leaves a finding open for the user (ambiguity, a design decision, a
+  waiver, an important finding) starts `needs the user (<HEAD short sha>):`. One left open because its file had
+  unrelated edits, or its check failed, starts `blocked:` instead, because that can clear without anyone touching the
+  row.
+- **Skip what still waits.** A row whose newest comment is a `needs the user (<sha>):` note, where neither the row nor
+  the files its `Affects` names have changed since `<sha>` (`git log <sha>..HEAD -- <files>` is empty), is not treated
+  again: no comment, no commit. List it as still waiting. Interactive passes never skip, since that is where the user
+  settles these rows.
 - **Record each outcome** with a dated `Comments` note, and run the cheapest relevant check for any code you changed.
 - **A failing check**: revert that finding's change by restoring only the paths it touched (`git restore --
   <paths>`, and delete files it created), never a blanket reset. Leave the finding open with a comment quoting the

@@ -111,7 +111,8 @@ the exception in `docs/agents/commit-policy.md`.
 - **One commit per treated finding.** Every outcome writes a dated comment, so
   every treated finding gets a commit, including those that only edit
   `review.md` (filed, waived, superseded, left open). A finding the user
-  stopped before treating gets none. Per-finding commits keep the history
+  stopped before treating gets none, nor does one `auto` skips as still
+  waiting (see "Auto mode"). Per-finding commits keep the history
   bisectable, which is most of the value of doing this one at a time.
 - **Stage only the paths this finding touched**, by name. Never `git add -A`
   or `git commit -a`. If a code file the fix needs already has unrelated
@@ -141,8 +142,8 @@ When every open finding has been handled, or the user stops:
    themselves unreviewed.
 
 **Inside a review loop**, do step 1 only, then hand back to `/review-story`
-with: each finding's outcome and why, which findings need the user, which
-issues were filed, and whether the pass made **progress**, meaning it changed
+with: each finding's outcome and why, which findings need the user (rows
+skipped as still waiting included), which issues were filed, and whether the pass made **progress**, meaning it changed
 a file other than `review.md` and kept the change. The loop runs the next
 review itself, so don't recommend one.
 
@@ -172,6 +173,17 @@ For each open finding, in order, still re-reading the current state first:
   security or cost risk, a fix that would change an ADR, or one that would
   rewrite a story's scope. The comment says which, and why the user should
   decide.
+- **Mark what waits on the user.** A comment that leaves a finding open for
+  the user (ambiguity, a design decision, a waiver, an important finding)
+  starts `needs the user (<HEAD short sha>):`. One left open because its file
+  had unrelated edits, or its check failed, starts `blocked:` instead, because
+  that can clear without anyone touching the row.
+- **Skip what still waits.** A row whose newest comment is a `needs the user
+  (<sha>):` note, where neither the row nor the files its `Affects` names (a
+  story issue number means that issue's file) have changed since `<sha>`
+  (`git log <sha>..HEAD -- <files>` is empty), is not treated again: no
+  comment, no commit. List it as still waiting. Interactive passes never skip,
+  since that is where the user settles these rows.
 - **Record each outcome** with a dated `Comments` note exactly as in
   interactive mode, and run the cheapest relevant check for any code you
   changed.

@@ -234,18 +234,22 @@ mid-loop:
    commit.
 2. **Stop, clean**, if no row is `open`.
 3. **Stop, limit**, if X address passes have run.
-4. **Address**: run `/address-story-review-findings <story> auto` inline,
+4. **Stop, no progress**, without an address pass, if this review added no
+   new finding and every open row would be skipped as still waiting (see
+   "Skip what still waits" in `address-story-review-findings`): the pass could
+   only repeat itself.
+5. **Address**: run `/address-story-review-findings <story> auto` inline,
    through the Skill tool, so this session stays the only writer of
    `review.md` and of the commits. It commits per finding and hands back its
    outcomes and whether it made **progress**: changed a file other than
    `review.md` and kept the change.
-5. **Stop, no progress**, if it made none. Everything left needs the user, so
+6. **Stop, no progress**, if it made none. Everything left needs the user, so
    another review would repeat itself. `spec.md` and `issues/` are unchanged
    since the last review, so it isn't stale.
-6. **Check**, if the pass changed a file outside `.stories/` and `docs/`: run
+7. **Check**, if the pass changed a file outside `.stories/` and `docs/`: run
    `scripts/check`. If it fails beyond what the baseline showed, stop after
    the next review and list the failure as needing the user.
-7. Otherwise go to 1.
+8. Otherwise go to 1.
 
 The address pass leaves open whatever needs the user (design or product
 decisions the story doesn't record, ambiguity, waivers, destructive or

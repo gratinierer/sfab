@@ -130,7 +130,9 @@ Rules:
   a blanket "yes, fix things" is not consent for the next eight findings.
   It commits each treated finding without asking, and `/review-story`
   commits `review.md` after each pass, unless the user said `nocommit`; see
-  the exception in `commit-policy.md`.
+  the exception in `commit-policy.md`. In `auto`, a row still waiting on the
+  user since an earlier pass, with nothing changed, isn't treated again, so it
+  gets no comment and no commit.
   - **`auto` exception**: when the user passes an explicit `auto` argument,
     that is standing consent and the skill works through the findings
     unattended. The guards stay: it never waives (a `wontfix` always needs
