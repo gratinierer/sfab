@@ -49,7 +49,7 @@ struct ClaimRecord {
 
 impl ClaimRecord {
     /// A new claim and recovery code, and the record that keeps only their hashes.
-    fn fresh(born_at: String) -> (Self, Secrets) {
+    fn with_new_secrets(born_at: String) -> (Self, Secrets) {
         let secrets = Secrets {
             claim: new_secret(),
             recovery: new_secret(),
@@ -184,7 +184,7 @@ impl<S: Store> Identity<S> {
         }
         let id = AgentId::from_hash(&admitted.hash);
         let born_at = rfc3339(now);
-        let (record, secrets) = ClaimRecord::fresh(born_at.clone());
+        let (record, secrets) = ClaimRecord::with_new_secrets(born_at.clone());
         let claim_write = self
             .store
             .put(
@@ -252,7 +252,7 @@ impl<S: Store> Identity<S> {
         }
         // Only whether it exists: a claim with no identity gets `404` here too, as from `self`.
         self.read_identity(&agent.id).await?;
-        let (record, secrets) = ClaimRecord::fresh(agent.record.born_at);
+        let (record, secrets) = ClaimRecord::with_new_secrets(agent.record.born_at);
         let write = self
             .store
             .put(
