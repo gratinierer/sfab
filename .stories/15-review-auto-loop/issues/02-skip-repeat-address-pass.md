@@ -17,7 +17,9 @@ nothing it may act on still costs one commit per open finding.
   added no new finding and every open row was already left open for the owner by the previous address pass.
 - Both address skills: a finding left open in an earlier pass, whose file and row nothing has changed since, gets
   no new comment and no commit when re-walked.
-- `spec.md` "Early stop" and "Decided later" record the rule.
+- `spec.md` "Early stop" and "Decided later" record the rule, and the statements it narrows say so: spec "Commits
+  by default", both address skills' "Committing" ("every treated finding gets a commit") and
+  `docs/agents/issue-tracker.md` ("It commits each treated finding").
 
 ## Done when
 
