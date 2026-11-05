@@ -185,14 +185,7 @@ impl<S: Store> Identity<S> {
             name: request.name,
             whoiam: request.whoiam.filter(|w| !w.is_empty()),
         };
-        self.store
-            .put(
-                Bucket::Identities,
-                &identity_key(&id),
-                to_json(&identity),
-                Metadata::new(),
-                Condition::Always,
-            )
+        self.put_plain(&identity_key(&id), to_json(&identity))
             .await
             .map_err(|e| failed("writing a new identity", &e))?;
         self.marked.first_today(id.as_str(), now);
@@ -212,14 +205,7 @@ impl<S: Store> Identity<S> {
         let request: EvolveRequest = serde_json::from_slice(call.body).map_err(|_| malformed())?;
         let mut identity = self.read_identity(&agent.id).await?;
         identity.whoiam = Some(request.whoiam).filter(|w| !w.is_empty());
-        self.store
-            .put(
-                Bucket::Identities,
-                &identity_key(&agent.id),
-                to_json(&identity),
-                Metadata::new(),
-                Condition::Always,
-            )
+        self.put_plain(&identity_key(&agent.id), to_json(&identity))
             .await
             .map_err(|e| failed("writing an identity", &e))?;
         Ok(Reply::ok(identity_body(&agent.id, &identity)))
@@ -322,20 +308,24 @@ impl<S: Store> Identity<S> {
         })
     }
 
-    /// Rewrites `vitals/<id>.json` with the same content, which moves its `LastModified`. A failed
-    /// write is ignored, because a call must never fail for this.
-    async fn write_vitals(&self, id: &AgentId, born_at: &str) {
-        let body = to_json(&Vitals { born_at });
-        let result = self
-            .store
+    /// An unconditional write to the identities bucket, with no metadata.
+    async fn put_plain(&self, key: &str, body: Vec<u8>) -> Result<(), StoreError> {
+        self.store
             .put(
                 Bucket::Identities,
-                &vitals_key(id),
+                key,
                 body,
                 Metadata::new(),
                 Condition::Always,
             )
-            .await;
+            .await
+    }
+
+    /// Rewrites `vitals/<id>.json` with the same content, which moves its `LastModified`. A failed
+    /// write is ignored, because a call must never fail for this.
+    async fn write_vitals(&self, id: &AgentId, born_at: &str) {
+        let body = to_json(&Vitals { born_at });
+        let result = self.put_plain(&vitals_key(id), body).await;
         if let Err(e) = result {
             tracing::warn!(error = ?e, "writing vitals failed, ignored");
         }
