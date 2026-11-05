@@ -47,7 +47,8 @@ impl HttpStatus for aws_sdk_s3::config::http::HttpResponse {
     }
 }
 
-fn other<E: std::error::Error>(err: E) -> StoreError {
+/// Any other S3 failure, as text for the logs.
+fn store_error<E: std::error::Error>(err: E) -> StoreError {
     StoreError::Other(DisplayErrorContext(err).to_string())
 }
 
@@ -63,7 +64,7 @@ impl Store for S3Store {
         {
             Ok(out) => out,
             Err(e) if e.as_service_error().is_some_and(|s| s.is_no_such_key()) => return Ok(None),
-            Err(e) => return Err(other(e)),
+            Err(e) => return Err(store_error(e)),
         };
         let etag = out.e_tag().unwrap_or_default().to_owned();
         let metadata: Metadata = out
@@ -74,7 +75,7 @@ impl Store for S3Store {
             .body
             .collect()
             .await
-            .map_err(other)?
+            .map_err(store_error)?
             .into_bytes()
             .to_vec();
         Ok(Some(Object {
@@ -111,7 +112,7 @@ impl Store for S3Store {
             Err(e) => Err(match status(&e) {
                 Some(412 | 409) => StoreError::ConditionFailed,
                 Some(404) => StoreError::Missing,
-                _ => other(e),
+                _ => store_error(e),
             }),
         }
     }
@@ -124,7 +125,7 @@ impl Store for S3Store {
             .send()
             .await
             .map(|_| ())
-            .map_err(other)
+            .map_err(store_error)
     }
 
     async fn list(&self, bucket: Bucket, prefix: &str) -> Result<Vec<String>, StoreError> {
@@ -137,7 +138,7 @@ impl Store for S3Store {
             .into_paginator()
             .send();
         while let Some(page) = pages.next().await {
-            let page = page.map_err(other)?;
+            let page = page.map_err(store_error)?;
             keys.extend(
                 page.contents()
                     .iter()
