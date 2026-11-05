@@ -29,7 +29,8 @@ nothing it may act on still costs one commit per open finding.
 
 - A loop whose open rows all wait on the owner stops without running another address pass, and the final report
   names the stop reason.
-- Re-walking an unchanged left-open finding produces no commit.
+- Re-walking a left-open finding whose `Affects` files are unchanged produces no commit. A change to a shared file
+  such as `spec.md` retries every row naming it; the owner accepted that (C24).
 
 ## Comments
 
