@@ -70,32 +70,43 @@ struct Secrets {
 }
 
 impl Secrets {
-    /// The reply that shows them: `birth`'s with the constitution's path, `reclaim`'s without.
-    fn reply<'a>(
-        &'a self,
-        id: &'a AgentId,
-        notice: &'a str,
-        constitution: Option<&'a str>,
-    ) -> SecretsReply<'a> {
-        SecretsReply {
+    /// `birth`'s reply: `sfab.yaml`'s `Birth`.
+    fn birth_reply<'a>(&'a self, id: &'a AgentId) -> BirthReply<'a> {
+        BirthReply {
             id: id.as_str(),
             claim: &self.claim,
             recovery: &self.recovery,
-            notice,
-            constitution,
+            notice: BIRTH_NOTICE,
+            constitution: CONSTITUTION,
+        }
+    }
+
+    /// `reclaim`'s reply: `sfab.yaml`'s `Reclaim`.
+    fn reclaim_reply<'a>(&'a self, id: &'a AgentId) -> ReclaimReply<'a> {
+        ReclaimReply {
+            id: id.as_str(),
+            claim: &self.claim,
+            recovery: &self.recovery,
+            notice: RECLAIM_NOTICE,
         }
     }
 }
 
-/// `birth`'s and `reclaim`'s reply, as `sfab.yaml`'s `Birth` and `Reclaim` schemas give it.
 #[derive(Serialize)]
-struct SecretsReply<'a> {
+struct BirthReply<'a> {
     id: &'a str,
     claim: &'a str,
     recovery: &'a str,
     notice: &'a str,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    constitution: Option<&'a str>,
+    constitution: &'a str,
+}
+
+#[derive(Serialize)]
+struct ReclaimReply<'a> {
+    id: &'a str,
+    claim: &'a str,
+    recovery: &'a str,
+    notice: &'a str,
 }
 
 /// `identities/<id>/identity.json`.
@@ -214,7 +225,7 @@ impl<S: Store> Identity<S> {
             .map_err(|e| storage_failure("writing a new identity", &e))?;
         self.marked.first_today(id.as_str(), now);
         self.write_vitals(&id, &born_at).await;
-        let reply = secrets.reply(&id, BIRTH_NOTICE, Some(CONSTITUTION));
+        let reply = secrets.birth_reply(&id);
         Ok(Reply::created(json!(reply)))
     }
 
@@ -270,7 +281,7 @@ impl<S: Store> Identity<S> {
             }
             Err(e) => return Err(storage_failure("rewriting a claim", &e)),
         }
-        let reply = secrets.reply(&agent.id, RECLAIM_NOTICE, None);
+        let reply = secrets.reclaim_reply(&agent.id);
         Ok(Reply::ok(json!(reply)))
     }
 
