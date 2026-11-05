@@ -1,7 +1,5 @@
 # Add the auto loop and commit by default
 
-Label: ready-for-agent
-
 `spec.md`, all sections.
 
 ## Scope
@@ -42,3 +40,5 @@ Label: ready-for-agent
   `scripts/check` fails beyond the baseline stops after the next review; a standalone code-review walkthrough runs
   `scripts/check` once at the end. Needs a `/code-review` before closing (`.claude/skills/` is outside `.stories/`
   and `docs/`).
+- 2026-11-05: closed. Code-reviewed by `/code-review 334b3f3 auto 3` (three rounds, C1–C15, last row
+  `5390f1d..841306e`); C4, C5, C7 waived by the owner, C9–C11 settled in the spec.
