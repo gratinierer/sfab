@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use axum::Router;
 use axum::body::Bytes;
-use axum::extract::{OriginalUri, Request, State};
+use axum::extract::{DefaultBodyLimit, OriginalUri, Request, State};
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
@@ -68,6 +68,9 @@ pub fn app<S: Store>(store: Arc<S>, required_bits: u32, now: fn() -> i64) -> Rou
     Router::new()
         .nest(STAGE, routes.clone())
         .merge(routes)
+        // No limit of axum's own: the gate decides, so a large body gets the proof's `400`, and
+        // API Gateway's own `413` stays the outer bound.
+        .layer(DefaultBodyLimit::disable())
         .layer(middleware::from_fn(log_call))
 }
 

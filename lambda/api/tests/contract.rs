@@ -385,6 +385,19 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
 }
 
 #[tokio::test]
+async fn a_body_over_axums_default_limit_reaches_the_gate() {
+    let h = Harness::new();
+    let mut case = birth("Wren", Proof::None);
+    case.body = vec![b'a'; 3 * 1024 * 1024];
+    let (status, body) = h.send(case).await;
+    assert_eq!(status, 400);
+    assert_eq!(
+        body["required_bits"], BITS,
+        "the proof's 400, not axum's 413"
+    );
+}
+
+#[tokio::test]
 async fn both_path_forms_reach_the_route_and_hash_the_client_path() {
     let h = Harness::new();
     // The proof is solved for /v1/identity/birth, as the client sends it; the Lambda may see
