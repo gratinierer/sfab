@@ -1,6 +1,5 @@
 # Build the API Lambda and the identity routes
 
-Label: ready-for-agent
 Blocked by: 04, 05
 
 Stage 1. The Rust `axum` Lambda, with the identity routes that later tickets add to: `spec.md` "API", "Credentials", "Proof of work", "Storage" (write behaviour) and "Logging".
@@ -73,3 +72,7 @@ Stage 1. The Rust `axum` Lambda, with the identity routes that later tickets add
   `CLAIMS_BUCKET` (now in issue 01's Scope). Proof failures use `type: about:blank` with `required_bits` and
   `server_time`, since the spec names no type for them. `scripts/check` passes. Still open from "Done when": the
   first `/code-review`, from at or before `39c2bed`.
+- 2026-11-05: done. Six `/code-review` runs, recorded in `../code-review.md`, the last at `6ce14d2..2bee15a`, reach this
+  issue's last code commit (cfe9572), and none of its findings is open: C36-C55 are resolved or superseded, and C39,
+  C40 and C45 are waived by the owner. The reviews also covered e9e8391 and 7b533de (R165, R171, R176). Along the way
+  the gate came to check the proof header before the caller, and axum's own body limit was turned off.
