@@ -147,10 +147,11 @@ For each open finding, in order, still re-reading the current state first:
   have no commits since `<sha>` (`git log <sha>..HEAD -- <files>` is empty), is not treated again: no comment, no
   commit. List it as still waiting. Interactive passes never skip, since that is where the user settles these rows.
   - **The files**: split `Affects` at commas and drop any `:line`. Read an issue number as that issue's file in
-    `.stories/<story>/issues/` or `issues/done/`, and `spec.md` as `.stories/<story>/spec.md`; any other part is a
-    repo path. Every part must be unchanged for the row to be skipped.
-  - **Fallback**: a part that names no single file (prose, a glob, a partial path matching several) counts as
-    changed, so the row is treated as usual.
+    `.stories/<story>/issues/` or `issues/done/`, and `spec.md` as `.stories/<story>/spec.md`. Read any other part as
+    a path, and resolve it to the one tracked file it names or ends (`git ls-files` matching `*<part>`). Every part
+    must be unchanged for the row to be skipped.
+  - **Fallback**: a part that resolves to no tracked file or to several (prose, a glob, an ambiguous partial path)
+    counts as changed, so the row is treated as usual.
 - **Record each outcome** with a dated `Comments` note, and run the cheapest relevant check for any code you changed.
 - **A failing check**: revert that finding's change by restoring only the paths it touched (`git restore --
   <paths>`, and delete files it created), never a blanket reset. Leave the finding open with a comment quoting the
