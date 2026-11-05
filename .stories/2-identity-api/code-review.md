@@ -22,6 +22,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-04T19:21:42+00:00 | walkthrough | working tree | claude-opus-5-5, with the owner deciding each finding | 0 new, 3 resolved, 0 still open | walkthrough, not a review pass |
 | 2026-11-04T19:25:00+00:00 | code-review | 05, 17 @ 1587a57..3505471 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 1 new: 1 standards, 0 spec | one commit; the standards reviewer's claim that `docs/api-design.md` "Changes" has no pre-launch exception was dropped as wrong, since its "When it applies" line allows breaking changes until hypercare ends |
 | 2026-11-05T10:30:13+00:00 | code-review | 06, and R165, R171, R176 @ 39c2bed..b10a267 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 14 new: 10 standards, 4 spec | paths `lambda/`, `openapi/`, `scripts/` only (e9e8391, 7b533de, a54ef38); the range's other commits are stories 14-16 |
+| 2026-11-05T10:39:47+00:00 | walkthrough | 06 | claude-opus-5-5, auto, in `/code-review auto 5` | 0 new, 9 resolved, 1 superseded, 4 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
