@@ -7,6 +7,12 @@ also loads. See `.stories/done/14-agent-skills/`.
 Never run `git commit`, `git push`, or any command that writes to git history unless the user explicitly asks
 you to commit or push. Making file edits is fine; committing is the user's decision.
 
+**Exception, the review skills:** running `/review-story`, `/code-review`, `/address-story-review-findings` or
+`/address-code-review-findings` is the explicit ask to commit for that skill's own commits: the record file after a
+review, and one commit per treated finding. They stage only the paths they touched, follow the rest of this policy
+for the number and trailers, and never push. `nocommit` in the skill's arguments turns this off. See
+`docs/adr/0006-review-skills-commit-by-default.md`.
+
 ## Whenever a new GitHub issue is created
 
 This applies every time any instruction, skill or ad-hoc request creates a GitHub issue, not only inside the

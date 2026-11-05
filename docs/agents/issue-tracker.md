@@ -118,28 +118,38 @@ Rules:
   closure made since the last `Kind = review` row and reopening the original
   row if the evidence does not hold — but it is not the only thing allowed to
   make them.
-- Only `/review-story` writes findings; it never edits `spec.md` or the issue
-  files. A wrong `spec.md` becomes a finding, and fixing it is a separate,
-  explicitly requested step.
+- Only `/review-story` writes findings; its review steps never edit `spec.md`
+  or the issue files. A wrong `spec.md` becomes a finding, and fixing it is a
+  separate step: `/address-story-review-findings`, run by the user or by the
+  `auto` loop below.
 - **Acting on findings** is `/address-story-review-findings`: it walks the
   open rows one at a time with the user, like `github-pr-review` does with PR
   comments. Each finding ends as fixed, filed as a new story issue, waived,
   superseded, or explicitly left open — never silently. That skill *may* edit
-  the story and the code, but by default only on a per-finding go-ahead:
+  the story and the code, but interactively only on a per-finding go-ahead:
   a blanket "yes, fix things" is not consent for the next eight findings.
+  It commits each treated finding without asking, and `/review-story`
+  commits `review.md` after each pass, unless the user said `nocommit`; see
+  the exception in `commit-policy.md`.
   - **`auto` exception**: when the user passes an explicit `auto` argument,
     that is standing consent and the skill works through the findings
     unattended. The guards stay: it never waives (a `wontfix` always needs
     the user's own reason, so a finding it would waive stays open), never
-    commits unless the user also said `auto commit`, never pushes, and
-    leaves anything ambiguous or destructive open rather than guessing.
+    pushes, and leaves anything ambiguous, destructive or important (a
+    security or cost risk, an ADR change, a scope change) open rather than
+    guessing.
     Running under the CLI's own autopilot is **not** `auto` — only the
     typed argument is. See the skill for the full rules.
+  - **The `auto` loop**: `/review-story <story> auto [X]` reviews, runs the
+    `auto` walkthrough, and reviews again, up to X walkthroughs (default 3),
+    always ending on a review. It asks everything up front and reports what
+    needs the user at the end. See the skill's "Auto mode".
 - **Reviewer independence**: `spec.md` carries an
   `Authored: <ISO date> by <model or "human">` line. A model may not review a
   story it wrote — `/review-story` dispatches the pass to a different model
   instead, and records both in the journal's `By` column. Human-authored
-  stories are exempt.
+  stories are exempt, except in the `auto` loop, where every review runs on a
+  model other than the author's and the orchestrator's.
 
 ## Code review file
 
@@ -157,6 +167,9 @@ outlive the conversation. It holds the same two tables as `review.md`:
 The statuses and the rules for rows are those of the review file: rows are never deleted or renumbered, `wontfix`
 needs the user's own reason, and anyone may flip a row to `resolved` with a dated comment. Acting on the findings is
 `/address-code-review-findings`, which walks the open rows one at a time with the user, or unattended with `auto`.
+Both skills commit their own work without asking unless told `nocommit`: `/code-review` the record file, the
+walkthrough each treated finding. `/code-review <fixed-point> auto [X]` loops review and `auto` walkthrough up to X
+times (default 3), re-reviewing only the fix commits and always ending on a review; see its "Auto mode".
 
 ## Before implementing a story
 

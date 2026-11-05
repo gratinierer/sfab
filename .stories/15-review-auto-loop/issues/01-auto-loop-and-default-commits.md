@@ -33,3 +33,12 @@ Label: ready-for-agent
 - Both address skills document per-finding commits in every mode, `nocommit`, the important-findings rule, the
   failing-check rule, and the in-loop hand-back in `Finishing`.
 - `commit-policy.md` carries the exception, and ADR 0006 exists and is linked from the spec.
+
+## Comments
+
+- 2026-11-05: implemented, uncommitted. ADR 0006, the commit-policy exception, both review skills (step 5/8
+  commit, "Auto mode") and both address skills (per-finding commits, `nocommit`, important findings, failing
+  checks, in-loop hand-back), and issue-tracker.md. Two choices beyond the spec: a code-review loop whose
+  `scripts/check` fails beyond the baseline stops after the next review; a standalone code-review walkthrough runs
+  `scripts/check` once at the end. Needs a `/code-review` before closing (`.claude/skills/` is outside `.stories/`
+  and `docs/`).

@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents, reports them side by side, and records the findings in the story's `code-review.md`. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \"review since X\"."
+description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents, reports them side by side, and records the findings in the story's `code-review.md`. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \"review since X\". With `auto [X]`, loops review and an unattended `address-code-review-findings` pass up to X times (default 3), committing as it goes and asking only about what needs a human."
 ---
 
 Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
@@ -16,7 +16,7 @@ In this repo the issue tracker is `docs/agents/issue-tracker.md`, with stories a
 
 ### 1. Pin the fixed point
 
-Whatever the user said is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). If they didn't specify one, ask for it.
+Whatever the user said is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). If they didn't specify one, ask for it. The keywords `auto`, an optional X after it, and `nocommit` are never the fixed point: `/code-review auto` has none, and a branch literally named `auto` is given as `refs/heads/auto`. See "Auto mode".
 
 Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so the comparison is against the merge-base). Also note the list of commits via `git log <fixed-point>..HEAD --oneline`.
 
@@ -71,7 +71,9 @@ than the code's author, as `review-story` does for planning reviews.
 2. **Pick a different model** for both sub-agents and name it in chat. A different model of the same vendor is
    enough, such as Sonnet or Fable for code by Opus. If the commits have several author models, pick one that wrote
    none of them, or say which overlap remains.
-3. **If the author is unknown, or no other model is available**, say which of the two it is, and continue only on
+3. **In `auto` rounds 2+**, the range is the orchestrator's own fix commits, so the orchestrating model counts as an
+   author too: pick a model other than both. That holds even when a human wrote the original code.
+4. **If the author is unknown, or no other model is available**, say which of the two it is, and continue only on
    the user's go-ahead. Record the compromise in the journal's `Notes` in step 7, so a later reader knows the
    review wasn't independent. A human author needs no other model.
 
@@ -117,6 +119,81 @@ template below.
 - Leave out what the reviewers checked and found sound. It belongs in the chat report, not the table.
 
 Then say in chat that the file was written, and that `/address-code-review-findings` works through the open rows.
+
+### 8. Commit `code-review.md`
+
+Commit it without asking, unless `nocommit` was given: running this skill is the explicit ask, per the exception in
+`docs/agents/commit-policy.md`.
+
+- Check the branch per `commit-policy.md` before step 5, not after it. If it has no `<n>-` prefix, or the story isn't
+  the branch's own and the owner hasn't ruled that its commits go here, ask then. If `code-review.md` already had
+  uncommitted changes, ask then whether to commit them first.
+- Stage `code-review.md` alone, by name. The subject is `Code-review issues <issues> and record C<a>-C<b> (#<n>)`,
+  such as `Code-review issues 04, 05 and record C12-C15 (#2)`, or `Code-review issues <issues>, no findings (#<n>)`.
+  The trailers follow `commit-policy.md`. Never push.
+
+## Auto mode
+
+`/code-review <fixed-point> auto [X]` reviews, addresses the findings with `/address-code-review-findings <story>
+auto`, and reviews the fixes again, unattended, asking the user only about what needs them. The decisions behind it
+are in `docs/adr/0006-review-skills-commit-by-default.md`.
+
+### Arguments
+
+- **X** is the maximum number of address passes, an integer of at least 1, default 3. The loop runs
+  `review, (address, review) × up to X`, so it always ends on a review: the last fixes get reviewed, and the closing
+  gate can be met.
+- `auto 0`, `auto -1`, `auto foo`: invalid, asked about up front.
+- `auto nocommit` is refused up front: the fix range and the progress check need commits. Plain `nocommit` works for a
+  single pass.
+
+### Up front, then unattended
+
+Ask everything the loop could need before round 1, in one go, and never mid-loop:
+
+- a missing fixed point, an invalid X or `auto nocommit`;
+- the story and issues, when step 2 can't settle them;
+- the branch, as in step 8, including the owner's ruling when the story isn't the branch's own. Without it the loop
+  doesn't start;
+- the reviewers' model: one other than the code's author **and** the orchestrator's, as in step 4. If none is
+  available, say so and stop;
+- uncommitted story documents (`spec.md`, `issues/**`, `code-review.md`): offer to commit them as one commit,
+  `Commit story <n> documents before review (#<n>)`. If the user declines, the loop doesn't start;
+- the **baseline**: run `scripts/check` once. If it already fails, ask: fix it first, or run without check gating. In
+  the latter case the address passes don't revert a finding for a failure the baseline already showed.
+
+### The loop
+
+1. **Review**: steps 1–8 on the current range, with both sub-agents on the chosen model. Round 1's range starts at
+   the given fixed point. Later rounds review only the fix commits, `<previous review's HEAD>..HEAD`, and their
+   journal rows still name round 1's issues, as `<issues> @ <prev>..<HEAD>`, so the closing gate sees a row reaching
+   each issue's last commit. `<HEAD>` is the one reviewed, before the review's own commit; that commit touches only
+   `.stories/`, so the next range including it is harmless.
+2. **Stop, clean**, if no finding against the reviewed issues is `open`.
+3. **Stop, limit**, if X address passes have run.
+4. **Address**: run `/address-code-review-findings <story> <issues> auto` inline, through the Skill tool, so this
+   session stays the only writer of `code-review.md` and of the commits. It commits per finding and hands back its
+   outcomes, whether it edited `spec.md` or `issues/`, and whether it made **progress**: changed a file other than
+   `code-review.md` and kept the change.
+5. **Stop, no progress**, if it made none. Everything left needs the user, so another review would repeat itself.
+6. **Check**: run `scripts/check`. If it fails beyond what the baseline showed, stop after the next review and list
+   the failure as needing the user, rather than addressing on a broken tree.
+7. Go to 1.
+
+The address pass leaves open whatever needs the user (design or product decisions the story doesn't record,
+ambiguity, waivers, destructive or out-of-scope fixes, important findings, files with unrelated uncommitted edits,
+fixes whose check failed) and carries on.
+
+### Final report
+
+One chat summary, in this order:
+
+1. Findings that need the user, each with why.
+2. Rounds run, and the stop reason: clean, limit, no progress, or a failing check.
+3. The commits made, as short shas with subjects.
+4. Every autonomous decision: finding, outcome, why.
+5. Story issues the loop filed, as unreviewed, and, if an address pass edited `spec.md` or `issues/`, that the story's
+   `review.md` is now stale for the implementation gate and wants a `/review-story`.
 
 ```markdown
 # <story>: code review

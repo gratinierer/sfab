@@ -9,7 +9,7 @@ Work through the open rows of a story's `review.md`, one finding at a time,
 with the user. `review-story` produces findings; this skill consumes them.
 
 The shape is deliberately the same as `github-pr-review`: one item, a
-decision, an optional change, an optional commit, then the next item. The
+decision, an optional change, a commit, then the next item. The
 conversation is the point — a batch pass that waves through nine findings has
 done nothing a grep couldn't.
 
@@ -22,11 +22,17 @@ done nothing a grep couldn't.
   rules below are lifted *only* where "Auto mode" says so; see that section
   for what stays off-limits. Running in the CLI's autopilot mode is **not**
   `auto`: without the explicit `auto` argument, ask and wait as usual.
+- **`nocommit`**: in either mode, make no commits; leave every change
+  uncommitted and say so at the end. Without it, the skill commits per
+  finding (see "Committing").
+- **Inside a review loop**: `/review-story <story> auto [X]` runs this skill
+  as its address pass, with `auto`. Everything below applies, except the
+  in-loop finish in "Finishing".
 
 ## Finding the story
 
-1. An argument, if given: a story number (`2`), a story directory name (`2-identity-api`), or a path (and
-   optionally `auto`, which is not a story).
+1. An argument, if given: a story number (`2`), a story directory name (`2-identity-api`), or a path, and
+   optionally the keywords `auto` and `nocommit`, which are never a story.
 2. Otherwise infer from the current branch: `2-identity-api-birth-evolve-self-and-reclaim`
    → `.stories/2-*/`.
 3. Otherwise, or if more than one story matches, **ask**. Never guess between
@@ -83,19 +89,38 @@ The guard:
   finding**. A general "yes, fix things" is not consent for the next eight.
 - Suggest freely; apply only when told. Even in autopilot mode, ask and wait.
 - Keep each change minimal and scoped to the finding in hand.
+- **Run the cheapest relevant check** (lint, test, synth) after any finding
+  that changed code. If it fails, interactive mode shows the failure and asks;
+  `auto` follows "Auto mode". Never mark a finding `resolved` over a failing
+  check.
 
 ## Committing
 
-After a finding that produced a change, ask whether to commit it before
-moving to the next one. Even in autopilot mode, ask and wait.
+Commit after every treated finding, without asking, in both modes, unless
+`nocommit` was given. Running this skill is the explicit ask to commit; see
+the exception in `docs/agents/commit-policy.md`.
 
-- Per-finding commits keep the history bisectable, which is most of the value
-  of doing this one at a time.
-- Follow `docs/agents/commit-policy.md` for the issue number and trailers.
+- **Before the first finding**, check once:
+  - the branch, per `commit-policy.md`. If it has no `<n>-` prefix, or the
+    story isn't the branch's own and the owner hasn't ruled that its commits
+    go here, ask then, not mid-walk;
+  - the story's documents (`spec.md`, `issues/**`, `review.md`). If any has
+    uncommitted changes, offer to commit them first as `Commit story <n>
+    documents before review (#<n>)`. If the user declines, carry on as
+    `nocommit`.
+- **One commit per treated finding.** Every outcome writes a dated comment, so
+  every treated finding gets a commit, including those that only edit
+  `review.md` (filed, waived, superseded, left open). A finding the user
+  stopped before treating gets none. Per-finding commits keep the history
+  bisectable, which is most of the value of doing this one at a time.
+- **Stage only the paths this finding touched**, by name. Never `git add -A`
+  or `git commit -a`. If a code file the fix needs already has unrelated
+  uncommitted edits, don't fix it: **Leave open** with a comment saying so,
+  and list it at the end as needing the user.
+- **Subject** `Address R<n>: <short outcome> (#<story>)`, such as
+  `Address R181: file the path-item filter in issue 04 (#2)`. The body carries
+  the finding, and the trailers follow `docs/agents/commit-policy.md`.
 - **Never push** without an explicit instruction.
-
-If the user prefers one commit at the end, that is fine — but ask, don't
-assume it.
 
 ## Finishing
 
@@ -108,10 +133,18 @@ When every open finding has been handled, or the user stops:
    implementation gates ignore `walkthrough` rows when deciding whether a
    review is stale. A walkthrough edits the story documents without
    re-examining them, so it must never make a story look freshly reviewed.
+   Commit the row on its own, as `Record walkthrough of story <n> findings
+   (#<n>)`, unless `nocommit`.
 2. Summarise in chat: what was resolved, what was filed as issues, what is
    still open and why.
 3. If findings were filed as new issues, remind the user those issues are
    themselves unreviewed.
+
+**Inside a review loop**, do step 1 only, then hand back to `/review-story`
+with: each finding's outcome and why, which findings need the user, which
+issues were filed, and whether the pass made **progress**, meaning it changed
+a file other than `review.md` and kept the change. The loop runs the next
+review itself, so don't recommend one.
 
 ## Auto mode
 
@@ -135,16 +168,25 @@ For each open finding, in order, still re-reading the current state first:
   decision the story does not already record, and anything whose fix would be
   destructive or reach beyond the story and the code it names. Do not guess to
   keep the run moving.
+- **Leave open important findings**, too, even when the fix looks clear: a
+  security or cost risk, a fix that would change an ADR, or one that would
+  rewrite a story's scope. The comment says which, and why the user should
+  decide.
 - **Record each outcome** with a dated `Comments` note exactly as in
-  interactive mode, and run the cheapest relevant check (lint, test, synth)
-  for any code you changed. Report failures; do not mark the finding
-  `resolved` over a failing check.
-- **Commits**: do not commit and never push unless the user also said to
-  (e.g. `auto commit`). With `auto commit`, make one commit per finding that
-  produced a change, following `docs/agents/commit-policy.md`. Otherwise leave the
-  changes uncommitted and say so at the end.
+  interactive mode, and run the cheapest relevant check for any code you
+  changed.
+- **A failing check**: revert that finding's change by restoring only the
+  paths it touched (`git restore -- <paths>`, and delete files it created),
+  never a blanket reset. Leave the finding open with a comment quoting the
+  failure, commit only that comment, and list it as needing the user. A
+  reverted change is not progress. If the loop's baseline check already
+  failed and the user chose to run without check gating, don't revert for a
+  failure the baseline already showed.
+- **Commits**: as in "Committing", one per treated finding, unless
+  `nocommit`. Never push.
 
 Finish as in "Finishing", with `Notes` = "auto walkthrough, not a review
 pass", and add to the chat summary an explicit list of every autonomous
 decision (finding, outcome, why), since the user was not in the loop. Findings
-left open in auto mode are listed first.
+left open in auto mode are listed first, each with why it needs the user.
+Inside a review loop, hand back as "Finishing" says instead.

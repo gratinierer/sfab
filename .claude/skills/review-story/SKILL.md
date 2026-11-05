@@ -1,6 +1,6 @@
 ---
 name: review-story
-description: "Review a `.stories/` story — its `spec.md` and numbered issues — against the codebase and the tracker conventions, and record the result in the story's `review.md`. Use when asked to review a story, a story spec, or a story's issues. This reviews planning documents, not code changes: for reviewing a diff, branch or PR, use `code-review` instead."
+description: "Review a `.stories/` story — its `spec.md` and numbered issues — against the codebase and the tracker conventions, and record the result in the story's `review.md`. Use when asked to review a story, a story spec, or a story's issues. This reviews planning documents, not code changes: for reviewing a diff, branch or PR, use `code-review` instead. With `auto [X]`, loops review and an unattended `address-story-review-findings` pass up to X times (default 3), committing as it goes and asking only about what needs a human."
 ---
 
 # Review Story
@@ -17,10 +17,17 @@ restating itself.
 - **Reads**: `.stories/<story>/spec.md`, `.stories/<story>/issues/**`
   (including `done/`), and whatever source, config, docs and ADRs the story
   makes claims about.
-- **Writes**: `.stories/<story>/review.md` only.
+- **Writes**: `.stories/<story>/review.md` only, and commits it (step 5).
 - **Never**: edits `spec.md`, the issue files, or any source. If the review
   says `spec.md` section X is wrong, that becomes a finding — fixing it is a
   separate, explicitly requested step.
+- **Except in `auto`**: `/review-story <story> auto [X]` also runs
+  `/address-story-review-findings` between reviews, which does edit the story
+  and its code. The review steps themselves still only write `review.md`.
+  See "Auto mode".
+- **Arguments**: the story (a number, directory name or path), and the
+  keywords `auto`, an optional X after it, and `nocommit`. Keywords are never
+  a story.
 
 ## Reviewer independence
 
@@ -73,6 +80,12 @@ persisted. The journal's `By` cell then records both sides, e.g.
 This guard applies to `review-story` only. `address-story-review-findings`
 does not need it: the findings already exist and the user is in the loop on
 every one.
+
+In `auto` mode the user is not in the loop, and from round 2 the
+orchestrating model has written the fixes under review. So **every** review
+round there is dispatched to a fresh sub-agent on a model other than both the
+story's author and the orchestrator's, even for a human-authored story. See
+"Auto mode".
 
 ## Process
 
@@ -160,6 +173,87 @@ Then show the user the open rows as a table in chat and offer to act on them.
 Rows are durable, not authoritative: the user can argue any finding down to
 `wontfix` afterwards, and that is a normal outcome, not a failure of the
 review.
+
+### 5. Commit `review.md`
+
+Commit it without asking, unless `nocommit` was given: running this skill is
+the explicit ask, per the exception in `docs/agents/commit-policy.md`.
+
+- Check the branch per `commit-policy.md` before the pass, not after it. If it
+  has no `<n>-` prefix, or the story isn't the branch's own and the owner
+  hasn't ruled that its commits go here, ask then.
+- If `review.md` already had uncommitted changes before the pass, ask before
+  the pass whether to commit them first.
+- Stage `review.md` alone, by name. The subject is `Review story <n> and
+  record R<a>-R<b> (#<n>)`, or `Review story <n>, no new findings (#<n>)`;
+  the body says what the closure audit did, and the trailers follow
+  `commit-policy.md`. Never push.
+
+## Auto mode
+
+`/review-story <story> auto [X]` reviews, addresses the findings with
+`/address-story-review-findings <story> auto`, and reviews again, unattended,
+asking the user only about what needs them. The decisions behind it are in
+`docs/adr/0006-review-skills-commit-by-default.md`.
+
+### Arguments
+
+- **X** is the maximum number of address passes, an integer of at least 1,
+  default 3. The loop runs `review, (address, review) × up to X`, so it always
+  ends on a review: the last fixes get reviewed, and `review.md` isn't left
+  stale for the implementation gate.
+- `auto 0`, `auto -1`, `auto foo`: invalid, asked about up front.
+- `auto nocommit` is refused up front: the loop needs commits to measure
+  progress. Plain `nocommit` works for a single pass.
+
+### Up front, then unattended
+
+Ask everything the loop could need before round 1, in one go, and never
+mid-loop:
+
+- an invalid X or `auto nocommit`, as above;
+- the branch, as in step 5, including the owner's ruling when the story isn't
+  the branch's own. Without it the loop doesn't start;
+- the reviewer model: one other than the story's author **and** the
+  orchestrator's, as in "Reviewer independence". If none is available, say so
+  and stop;
+- uncommitted story documents (`spec.md`, `issues/**`, `review.md`): offer to
+  commit them as one commit, `Commit story <n> documents before review
+  (#<n>)`. If the user declines, the loop doesn't start, because every finding
+  on a dirty document would stay open.
+
+### The loop
+
+1. **Review**: steps 1–5, dispatched to a fresh sub-agent on the chosen
+   model, without step 4's offer to act on the rows. `Reviewed` is the short sha of `HEAD` before the review's own
+   commit.
+2. **Stop, clean**, if no row is `open`.
+3. **Stop, limit**, if X address passes have run.
+4. **Address**: run `/address-story-review-findings <story> auto` inline,
+   through the Skill tool, so this session stays the only writer of
+   `review.md` and of the commits. It commits per finding and hands back its
+   outcomes and whether it made **progress**: changed a file other than
+   `review.md` and kept the change.
+5. **Stop, no progress**, if it made none. Everything left needs the user, so
+   another review would repeat itself. `spec.md` and `issues/` are unchanged
+   since the last review, so it isn't stale.
+6. Otherwise go to 1.
+
+The address pass leaves open whatever needs the user (design or product
+decisions the story doesn't record, ambiguity, waivers, destructive or
+out-of-scope fixes, important findings, files with unrelated uncommitted
+edits, fixes whose check failed) and carries on. A review-story loop changes
+only documents, so it runs no `scripts/check`.
+
+### Final report
+
+One chat summary, in this order:
+
+1. Findings that need the user, each with why.
+2. Rounds run, and the stop reason: clean, limit, or no progress.
+3. The commits made, as short shas with subjects.
+4. Every autonomous decision: finding, outcome, why.
+5. Story issues the loop filed, as unreviewed.
 
 ## File format
 

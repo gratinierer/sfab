@@ -7,7 +7,7 @@ description: "Walk through a story's open code-review findings one at a time, in
 
 Work through the open rows of a story's `code-review.md`, one finding at a time, with the user. `code-review`
 produces the findings; this skill consumes them. It's the sibling of `address-story-review-findings`, which does the
-same for `review.md`, and has the same shape: one item, a decision, an optional change, an optional commit, then the
+same for `review.md`, and has the same shape: one item, a decision, an optional change, a commit, then the
 next item.
 
 The conventions are in `docs/agents/issue-tracker.md`, sections "Code review file" and "Closing an issue or story".
@@ -19,11 +19,16 @@ The conventions are in `docs/agents/issue-tracker.md`, sections "Code review fil
   agent works through the findings without asking, deciding and fixing each one itself. The ask-and-wait rules below
   are lifted *only* where "Auto mode" says so. Running in the CLI's autopilot mode is **not** `auto`: without the
   explicit `auto` argument, ask and wait as usual.
+- **`nocommit`**: in either mode, make no commits; leave every change uncommitted and say so at the end. Without it,
+  the skill commits per finding (see "Committing").
+- **Inside a review loop**: `/code-review <fixed-point> auto [X]` runs this skill as its address pass, with `auto`.
+  Everything below applies, except the in-loop finish in "Finishing".
 
 ## Finding the story
 
 1. An argument, if given: a story number (`2`), a story directory name (`2-identity-api`), or a path, optionally
-   with issue numbers to limit the walk to findings against them (`2-identity-api 05`), and optionally `auto`.
+   with issue numbers to limit the walk to findings against them (`2-identity-api 05`), and optionally the keywords
+   `auto` and `nocommit`, which are never a story or an issue.
 2. Otherwise infer from the current branch: `2-identity-api-birth-evolve-self-and-reclaim` → `.stories/2-*/`.
 3. Otherwise, or if more than one story matches, **ask**. Never guess between two stories.
 
@@ -69,19 +74,31 @@ This skill **may** edit the code, the tests and the story documents. The guard:
   consent for the next eight.
 - Suggest freely; apply only when told. Even in autopilot mode, ask and wait.
 - Keep each change minimal and scoped to the finding in hand.
-- **Run the cheapest check that covers the change**, such as one test file, and `scripts/check` before the last
-  commit. Never mark a finding `resolved` over a failing check.
+- **Run the cheapest check that covers the change**, such as one test file, after every finding that changed code.
+  If it fails, interactive mode shows the failure and asks; `auto` follows "Auto mode". Never mark a finding
+  `resolved` over a failing check.
+- **Run `scripts/check` once at the end** of a standalone walkthrough, before the walkthrough row's commit, and
+  report a failure as needing the user. Inside a review loop the loop runs it before each closing review instead.
 
 ## Committing
 
-After a finding that produced a change, ask whether to commit it before moving to the next one. Even in autopilot
-mode, ask and wait.
+Commit after every treated finding, without asking, in both modes, unless `nocommit` was given. Running this skill is
+the explicit ask to commit; see the exception in `docs/agents/commit-policy.md`.
 
-- Per-finding commits keep the history bisectable.
-- Follow `docs/agents/commit-policy.md` for the issue number and trailers.
+- **Before the first finding**, check once:
+  - the branch, per `commit-policy.md`. If it has no `<n>-` prefix, or the story isn't the branch's own and the owner
+    hasn't ruled that its commits go here, ask then, not mid-walk;
+  - the story's documents (`spec.md`, `issues/**`, `code-review.md`). If any has uncommitted changes, offer to commit
+    them first as `Commit story <n> documents before review (#<n>)`. If the user declines, carry on as `nocommit`.
+- **One commit per treated finding.** Every outcome writes a dated comment, so every treated finding gets a commit,
+  including those that only edit `code-review.md` (filed, waived, superseded, left open). A finding the user stopped
+  before treating gets none. Per-finding commits keep the history bisectable.
+- **Stage only the paths this finding touched**, by name. Never `git add -A` or `git commit -a`. If a file the fix
+  needs already has unrelated uncommitted edits, don't fix it: **Leave open** with a comment saying so, and list it at
+  the end as needing the user.
+- **Subject** `Address C<n>: <short outcome> (#<story>)`, such as `Address C13: return 404 for unknown handles (#2)`.
+  The body carries the finding, and the trailers follow `docs/agents/commit-policy.md`.
 - **Never push** without an explicit instruction.
-
-If the user prefers one commit at the end, that is fine, but ask, don't assume it.
 
 ## Finishing
 
@@ -89,12 +106,19 @@ When every open finding has been handled, or the user stops:
 
 1. Append **one** journal row to `code-review.md`, with `Kind` = `walkthrough`: `Findings` = `0 new, 3 resolved,
    2 still open`; `Notes` = "walkthrough, not a review pass". A walkthrough changes code without re-reviewing it, so
-   it never counts as a `code-review` row.
+   it never counts as a `code-review` row. Commit the row on its own, as `Record walkthrough of story <n> code
+   review (#<n>)`, unless `nocommit`.
 2. Summarise in chat: what was resolved, what was filed as issues, what is still open and why.
 3. **Say what the closing gate still needs.** An issue closes only when no finding against it is open and a
    `code-review` row's range reaches its last commit outside `.stories/` and `docs/`. Fixes made here are new
    commits, so name the range a fresh `/code-review` must cover, such as `e2b740c..HEAD`.
-4. If findings were filed as new issues, remind the user those issues are themselves unreviewed.
+4. If findings were filed as new issues, remind the user those issues are themselves unreviewed. If the walkthrough
+   edited `spec.md` or `issues/`, say the story's `review.md` is now stale for the implementation gate.
+
+**Inside a review loop**, do step 1 only, then hand back to `/code-review` with: each finding's outcome and why, which
+findings need the user, which issues were filed, whether `spec.md` or `issues/` were edited, and whether the pass made
+**progress**, meaning it changed a file other than `code-review.md` and kept the change. The loop runs the next review
+and names the range itself, so don't.
 
 ## Auto mode
 
@@ -112,11 +136,16 @@ For each open finding, in order, still re-reading the current state first:
   In auto mode a finding you would waive stays **Leave open**, with a dated comment saying why.
 - **Leave open** anything ambiguous, anything that needs a product or design decision the story doesn't record, and
   anything whose fix would be destructive or reach beyond the story and the code it names.
+- **Leave open important findings**, too, even when the fix looks clear: a security or cost risk, a fix that would
+  change an ADR, or one that would rewrite a story's scope. The comment says which, and why the user should decide.
 - **Record each outcome** with a dated `Comments` note, and run the cheapest relevant check for any code you changed.
-  Report failures; don't mark the finding `resolved` over a failing check.
-- **Commits**: don't commit and never push unless the user also said to (e.g. `auto commit`). With `auto commit`,
-  make one commit per finding that produced a change, following `docs/agents/commit-policy.md`. Otherwise leave the
-  changes uncommitted and say so at the end.
+- **A failing check**: revert that finding's change by restoring only the paths it touched (`git restore --
+  <paths>`, and delete files it created), never a blanket reset. Leave the finding open with a comment quoting the
+  failure, commit only that comment, and list it as needing the user. A reverted change is not progress. If the
+  loop's baseline `scripts/check` already failed and the user chose to run without check gating, don't revert for a
+  failure the baseline already showed.
+- **Commits**: as in "Committing", one per treated finding, unless `nocommit`. Never push.
 
 Finish as in "Finishing", with `Notes` = "auto walkthrough, not a review pass", and add to the chat summary an
-explicit list of every autonomous decision (finding, outcome, why). Findings left open are listed first.
+explicit list of every autonomous decision (finding, outcome, why). Findings left open are listed first, each with
+why it needs the user. Inside a review loop, hand back as "Finishing" says instead.
