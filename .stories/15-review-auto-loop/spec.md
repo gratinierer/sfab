@@ -81,6 +81,9 @@ In every mode, interactive and `auto`, in all four skills:
   `walkthrough` journal row gets its own commit.
 - **Staging:** only the paths that finding or review touched, never `git add -A`. A finding whose file already has
   unrelated uncommitted edits stays open with a comment.
+- **Standalone address passes**, outside a loop, offer before the first finding to commit the story's uncommitted
+  documents, as `Commit story <n> documents before review (#<n>)`; if the owner declines, the pass carries on as
+  `nocommit`.
 - **Never push.** Pushing stays a separate request.
 - **Opt-out:** `nocommit` in any of the four skills. `auto commit` is removed, since `auto` now commits.
 - **Subjects**, as agreed in Q13: `Review story 2 and record R180-R183 (#2)`, `Code-review issues 04, 05 and
@@ -140,6 +143,8 @@ Decided later, in the review walkthroughs recorded in `review.md`:
   front (fix first, or run without check gating); review-story loops run no check.
 - C10 (owner, from the code review): a `scripts/check` failure beyond the baseline stops the loop after the next
   review; a standalone code-review walkthrough runs `scripts/check` once at the end.
+- C11 (owner, from the code review): standalone address passes offer to commit uncommitted story documents
+  first, and carry on as `nocommit` if declined.
 - R1–R8, R11–R13 (auto walkthroughs, audited by the following review): progress excludes the record file, every
   round uses a different model even for human-authored stories, recorded ranges and HEADs, the foreign-story
   ruling, `auto`/`nocommit` as keywords and invalid X asked up front, final-report additions, subjects marked as a
