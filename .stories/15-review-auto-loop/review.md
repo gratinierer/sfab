@@ -22,6 +22,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-05T15:00:00+00:00 | walkthrough | working tree | claude-opus-5-5, auto | 0 new, 4 resolved, 2 still open | auto walkthrough, not a review pass |
 | 2026-11-05T15:15:00+00:00 | walkthrough | working tree | claude-opus-5-5, with the owner | 0 new, 2 resolved, 0 still open | walkthrough, not a review pass |
 | 2026-11-05T18:30:00+00:00 | review | 1c00404 | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5) | 6 new, 0 resolved, 6 still open | R14-R19 closures audited, all hold; first review after 01 was implemented |
+| 2026-11-05T19:00:00+00:00 | walkthrough | working tree | claude-opus-5-5, auto | 0 new, 5 resolved, 1 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
