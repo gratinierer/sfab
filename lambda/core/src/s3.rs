@@ -33,18 +33,8 @@ impl S3Store {
 }
 
 /// S3's status for a failed call, when it got that far.
-fn status<E, R: HttpStatus>(err: &SdkError<E, R>) -> Option<u16> {
-    err.raw_response().map(HttpStatus::status_code)
-}
-
-trait HttpStatus {
-    fn status_code(&self) -> u16;
-}
-
-impl HttpStatus for aws_sdk_s3::config::http::HttpResponse {
-    fn status_code(&self) -> u16 {
-        self.status().as_u16()
-    }
+fn status<E>(err: &SdkError<E>) -> Option<u16> {
+    err.raw_response().map(|r| r.status().as_u16())
 }
 
 /// Any other S3 failure, as text for the logs.
