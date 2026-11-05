@@ -27,6 +27,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-05T22:30:00+00:00 | code-review | 02 @ 91fd122..e391e56 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, fixes by the orchestrator claude-opus-5-5) | 2 new: 2 standards, 0 spec | auto loop round 4, final (limit); spec fixes verified, dry run: C22 skipped, C24 retried as designed |
 | 2026-11-05T23:00:00+00:00 | walkthrough | 02 @ 8c30931..HEAD | claude-opus-5-5, with the owner | 0 new, 3 resolved, 1 wontfix, 0 still open | walkthrough, not a review pass |
 | 2026-11-05T23:30:00+00:00 | code-review | 02 @ e391e56..9ce96a7 | claude-fable-5-1 (dispatched; code by claude-opus-5-5) | 2 new: 2 standards, 0 spec | single pass over the C35, C36 fixes |
+| 2026-11-05T23:45:00+00:00 | walkthrough | 02 @ e1bb468..HEAD | claude-opus-5-5, with the owner | 0 new, 0 resolved, 2 wontfix, 0 still open | walkthrough, not a review pass |
 
 ## Findings
 
