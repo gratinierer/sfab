@@ -186,10 +186,10 @@ impl<S: Store> Identity<S> {
     /// `PUT /identity/evolve`: replaces `whoiam` whole, and keeps `name`. Never creates an identity.
     pub async fn evolve(&self, call: &Call<'_>, now: i64) -> Result<Reply, Problem> {
         admit_write(call, now, self.required_bits)?;
-        let request: EvolveRequest = serde_json::from_slice(call.body).map_err(|_| malformed())?;
         let agent = self
             .authenticate(call.authorization, Secret::Claim, now)
             .await?;
+        let request: EvolveRequest = serde_json::from_slice(call.body).map_err(|_| malformed())?;
         let mut identity = self.read_identity(&agent.id).await?;
         identity.whoiam = Some(request.whoiam).filter(|w| !w.is_empty());
         self.store
@@ -216,12 +216,12 @@ impl<S: Store> Identity<S> {
     /// once. A lost race, or a takedown in between, gets `401`.
     pub async fn reclaim(&self, call: &Call<'_>, now: i64) -> Result<Reply, Problem> {
         admit_write(call, now, self.required_bits)?;
-        if !call.body.is_empty() {
-            return Err(Problem::bad_request("reclaim takes no body"));
-        }
         let agent = self
             .authenticate(call.authorization, Secret::Recovery, now)
             .await?;
+        if !call.body.is_empty() {
+            return Err(Problem::bad_request("reclaim takes no body"));
+        }
         self.read_identity(&agent.id).await?;
         let (claim, recovery) = (new_secret(), new_secret());
         let record = ClaimRecord {

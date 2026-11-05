@@ -430,6 +430,23 @@ async fn the_largest_whoiam_that_fits_32_kb_is_stored_and_one_byte_more_gets_400
 }
 
 #[tokio::test]
+async fn who_is_calling_is_checked_before_the_body() {
+    let w = world();
+    let a = born(&w, "Wren").await;
+    let wrong = bearer(&a.id, &sfab_core::credentials::new_secret());
+    let evolve = write(
+        "PUT",
+        "/v1/identity/evolve",
+        wrong.clone(),
+        b"not json",
+        NOW,
+    );
+    assert_eq!(status(&w.identity.evolve(&evolve.call(), NOW).await), 401);
+    let reclaim = write("POST", "/v1/identity/reclaim", wrong, b"{}", NOW);
+    assert_eq!(status(&w.identity.reclaim(&reclaim.call(), NOW).await), 401);
+}
+
+#[tokio::test]
 async fn malformed_bodies_get_400() {
     let w = world();
     let a = born(&w, "Wren").await;
