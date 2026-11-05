@@ -30,9 +30,12 @@ pub struct Admitted {
     pub hash: [u8; 32],
 }
 
-/// The proof, checked with one hash, then the body's size. A malformed `Authorization` can't
-/// name a caller, so it gets `401` before the proof; that reads nothing either.
+/// The proof, checked with one hash, then the body's size. The header's own checks come first,
+/// so a missing or stale proof always gets the proof's `400`. Only then is the caller read: a
+/// malformed `Authorization` names no caller to hash, so it gets `401`, with nothing read.
 pub fn admit_write(call: &Call, now: i64, required_bits: u32) -> Result<Admitted, Problem> {
+    let refused = |r| Problem::proof(r, required_bits, now);
+    let proof = proof::check_header(call.proof, now).map_err(refused)?;
     let caller = caller_of(call.authorization).ok_or_else(Problem::unauthorized)?;
     let request = Request {
         method: call.method,
@@ -40,8 +43,7 @@ pub fn admit_write(call: &Call, now: i64, required_bits: u32) -> Result<Admitted
         caller: &caller,
         body: call.body,
     };
-    let hash = proof::verify(call.proof, &request, now, required_bits)
-        .map_err(|r| Problem::proof(r, required_bits, now))?;
+    let hash = proof::check_hash(&request, &proof, required_bits).map_err(refused)?;
     if call.body.len() > MAX_BODY_BYTES {
         return Err(Problem::bad_request(
             "The request body is over 32 KB (32,768 bytes)",
@@ -87,6 +89,23 @@ mod tests {
         let err = admit_write(&call(&over), 1000, 0).unwrap_err();
         assert_eq!(err.status, 400);
         assert!(!err.extra.contains_key("required_bits"));
+    }
+
+    #[test]
+    fn a_missing_or_stale_proof_gets_400_even_with_a_malformed_authorization() {
+        for proof in [None, Some("1:x"), Some("x")] {
+            let c = Call {
+                authorization: Some("Bearer nope"),
+                proof,
+                ..call(b"")
+            };
+            let err = admit_write(&c, 1000, 0).unwrap_err();
+            assert_eq!(
+                (err.status, &err.extra["required_bits"]),
+                (400, &0.into()),
+                "{proof:?}"
+            );
+        }
     }
 
     #[test]

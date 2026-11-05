@@ -103,14 +103,8 @@ pub fn leading_zero_bits(hash: &[u8]) -> u32 {
     bits
 }
 
-/// Checks a `Proof` header with one hash, before anything is read or written, and returns the
-/// solution hash, from which creates take their keys.
-pub fn verify(
-    header: Option<&str>,
-    request: &Request,
-    now: i64,
-    required_bits: u32,
-) -> Result<[u8; 32], Rejection> {
+/// The checks that need no caller: the header is there, well formed, and in its time window.
+pub fn check_header(header: Option<&str>, now: i64) -> Result<Proof<'_>, Rejection> {
     let proof = Proof::parse(header.ok_or(Rejection::Missing)?)?;
     if proof.timestamp < now - MAX_AGE_SECS {
         return Err(Rejection::Stale);
@@ -118,11 +112,31 @@ pub fn verify(
     if proof.timestamp > now + MAX_AHEAD_SECS {
         return Err(Rejection::Future);
     }
-    let hash = solution_hash(request, &proof);
+    Ok(proof)
+}
+
+/// The one hash, which returns the solution hash that creates take their keys from.
+pub fn check_hash(
+    request: &Request,
+    proof: &Proof,
+    required_bits: u32,
+) -> Result<[u8; 32], Rejection> {
+    let hash = solution_hash(request, proof);
     if leading_zero_bits(&hash) < required_bits {
         return Err(Rejection::Insufficient);
     }
     Ok(hash)
+}
+
+/// Checks a `Proof` header with one hash, before anything is read or written, and returns the
+/// solution hash.
+pub fn verify(
+    header: Option<&str>,
+    request: &Request,
+    now: i64,
+    required_bits: u32,
+) -> Result<[u8; 32], Rejection> {
+    check_hash(request, &check_header(header, now)?, required_bits)
 }
 
 /// Solves a proof the way the description tells agents to, counting nonces up from `0`, and
