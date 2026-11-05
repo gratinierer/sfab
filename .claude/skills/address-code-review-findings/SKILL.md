@@ -93,7 +93,7 @@ the explicit ask to commit; see the exception in `docs/agents/commit-policy.md`.
 - **One commit per treated finding.** Every outcome writes a dated comment, so every treated finding gets a commit,
   including those that only edit `code-review.md` (filed, waived, superseded, left open). A finding the user stopped
   before treating gets none. Per-finding commits keep the history bisectable.
-- **Stage only the paths this finding touched**, by name. Never `git add -A` or `git commit -a`. If a file the fix
+- **Stage only the paths this finding touched**, by name. Never `git add -A` or `git commit -a`. If a code file the fix
   needs already has unrelated uncommitted edits, don't fix it: **Leave open** with a comment saying so, and list it at
   the end as needing the user.
 - **Subject** `Address C<n>: <short outcome> (#<story>)`, such as `Address C13: return 404 for unknown handles (#2)`.
