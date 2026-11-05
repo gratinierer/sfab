@@ -78,8 +78,8 @@ persisted. The journal's `By` cell then records both sides, e.g.
 `claude-fable-5-1 (dispatched; story authored by claude-sonnet-5-5)`.
 
 This guard applies to `review-story` only. `address-story-review-findings`
-does not need it: the findings already exist and the user is in the loop on
-every one.
+does not need it when run interactively: the findings already exist and the
+user is in the loop on every one.
 
 In `auto` mode the user is not in the loop, and from round 2 the
 orchestrating model has written the fixes under review. So **every** review
