@@ -30,17 +30,30 @@ Stage 1. The Rust `axum` Lambda, with the identity routes that later tickets add
   `lambda/core/tests/worked_example.rs` too, which builds `Request` with `caller: ANONYMOUS`.
 - The workspace layout from `docs/adr/0004-rules-live-in-crates.md`: `core` with the shared rules and narrow storage
   interfaces, with an in-memory fake for tests, `identity` with these routes' rules, and a thin `api` router.
+- `identity`'s takedown function, which ADR 0004 says every crate exports and issue 08's program calls: its
+  locations for an agent and the action on each, so its key formats live only here. The claim becomes a
+  zero-byte marker that keeps `born_at` in its S3 metadata, `identities/<id>/` is deleted last, and
+  `vitals/<id>.json` is deleted. A unit test against the in-memory fake, filled through `identity`'s own write
+  functions, checks the list (review R178).
 
-- An email-only alarm on this function's errors, to the alerts topic, like the kill switch's and the daily job's.
 - The hashed `<path>` is the path the client sent, starting with `/v1/`. What the Lambda sees depends on the
   stage, CloudFront's origin path and `lambda_http`'s `AWS_LAMBDA_HTTP_IGNORE_STAGE_IN_PATH`, so the function
-  rebuilds the client's path explicitly, and an integration test on the deployed API checks a real write.
-- The API Lambda's permissions from `spec.md` "Architecture", with a CDK assertion test.
+  rebuilds the client's path explicitly, with unit tests for each form it can arrive in. Issue 01 checks a real
+  write on the deployed API.
+- The CDK side of this function (its errors alarm, its permissions and the deployed write) is issue 01's,
+  because the stacks and the alerts topic are built there.
 
 ## Done when
 
-- The unit tests in `spec.md` "Testing" pass, and contract tests check the handlers against
-  `sfab.yaml`.
+- The identity unit tests from `spec.md` "Testing" pass, against the in-memory fake (the rest of that list
+  belongs to issues 11, 13, 14 and 15):
+  - `reclaim` invalidates the old secrets, and a second use of the old code gets `401`.
+  - Every `POST` and `PUT` without a valid proof gets `400` with nothing stored, and a proof made for another
+    route, caller or body is rejected.
+  - A marker gets `401`, and `birth` on a marker gets `409`.
+  - The first call of a day updates `vitals/<id>.json` and later ones don't, and a failed write doesn't fail
+    the call.
+- Contract tests check the handlers against `sfab.yaml`.
 - A fixed solution gives the exact expected ID, which `worked_example.rs` already checks; keep it passing.
 - This issue's first `/code-review` starts at or before `39c2bed`, so it also covers the review walkthrough's
   changes in e9e8391, made after issue 05 closed, and findings on them are filed against this issue:

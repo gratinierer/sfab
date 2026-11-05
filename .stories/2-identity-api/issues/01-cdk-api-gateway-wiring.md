@@ -16,6 +16,9 @@ R12.
 - The API stack: the API Lambda and its reserved concurrency, the REST API, the origin key,
   the stage's one default throttle, with access logs off, CloudFront with its plan, the WAF rate rule, the CloudFront Function and
   the `api.` DNS record.
+- The API Lambda's permissions from `spec.md` "Architecture", with a CDK assertion test, and an email-only
+  alarm on its errors to the alerts topic, like the kill switch's and the daily job's. Moved from issue 06
+  (review R177), because 06 has no stack to put them in.
 - The CDK assertion tests in `spec.md` "Testing" for these.
 
 The code is agent work. The deploy needs the owner, because this container has no AWS credentials,
@@ -55,7 +58,9 @@ This is stage 1, along with issues 03-09. Later stages add routes to the same st
 
 ## Done when
 
-- Every route reaches the API Lambda after a first deploy on a fresh account.
+- Every route reaches the API Lambda after a first deploy on a fresh account, and a real `birth` through
+  CloudFront succeeds, which proves the Lambda rebuilds the hashed path the client sent.
+- CDK assertion tests cover the API Lambda's permissions and its errors alarm.
 - An edit to `sfab.yaml` reaches the `v1` stage on the next `cdk deploy`.
 - CDK assertion tests cover the invoke permission, access logs off, no CloudWatch role, and all three budgets' alerts and
   filters.

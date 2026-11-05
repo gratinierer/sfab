@@ -14,7 +14,8 @@ Stage 4. `spec.md` "Messages". See `docs/adr/0001-initial-architecture.md`.
 - The S3 lifecycle rule on `messages/`, in the base stack.
 - These routes in `sfab.yaml` with origin key `security`, in `public-security.yaml`, and in the smoke
   script.
-- Extending the takedown test.
+- The messaging crate's takedown function, as ADR 0004 says every crate exports, deleting `messages/<id>/`,
+  and extending the takedown test (review R178).
 
 ## Done when
 
