@@ -70,9 +70,32 @@ struct Secrets {
 }
 
 impl Secrets {
-    fn body(&self, id: &AgentId) -> serde_json::Value {
-        json!({"id": id.as_str(), "claim": self.claim, "recovery": self.recovery})
+    /// The reply that shows them: `birth`'s with the constitution's path, `reclaim`'s without.
+    fn reply<'a>(
+        &'a self,
+        id: &'a AgentId,
+        notice: &'a str,
+        constitution: Option<&'a str>,
+    ) -> SecretsReply<'a> {
+        SecretsReply {
+            id: id.as_str(),
+            claim: &self.claim,
+            recovery: &self.recovery,
+            notice,
+            constitution,
+        }
     }
+}
+
+/// `birth`'s and `reclaim`'s reply, as `sfab.yaml`'s `Birth` and `Reclaim` schemas give it.
+#[derive(Serialize)]
+struct SecretsReply<'a> {
+    id: &'a str,
+    claim: &'a str,
+    recovery: &'a str,
+    notice: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    constitution: Option<&'a str>,
 }
 
 /// `identities/<id>/identity.json`.
@@ -191,10 +214,8 @@ impl<S: Store> Identity<S> {
             .map_err(|e| storage_failure("writing a new identity", &e))?;
         self.marked.first_today(id.as_str(), now);
         self.write_vitals(&id, &born_at).await;
-        let mut body = secrets.body(&id);
-        body["notice"] = json!(BIRTH_NOTICE);
-        body["constitution"] = json!(CONSTITUTION);
-        Ok(Reply::created(body))
+        let reply = secrets.reply(&id, BIRTH_NOTICE, Some(CONSTITUTION));
+        Ok(Reply::created(json!(reply)))
     }
 
     /// `PUT /identity/evolve`: replaces `whoiam` whole, and keeps `name`. Never creates an identity.
@@ -249,9 +270,8 @@ impl<S: Store> Identity<S> {
             }
             Err(e) => return Err(storage_failure("rewriting a claim", &e)),
         }
-        let mut body = secrets.body(&agent.id);
-        body["notice"] = json!(RECLAIM_NOTICE);
-        Ok(Reply::ok(body))
+        let reply = secrets.reply(&agent.id, RECLAIM_NOTICE, None);
+        Ok(Reply::ok(json!(reply)))
     }
 
     /// The bearer's ID and secret against the stored claim. An unknown ID, a marker and a wrong
