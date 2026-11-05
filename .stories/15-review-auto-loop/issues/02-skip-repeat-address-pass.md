@@ -15,8 +15,12 @@ nothing it may act on still costs one commit per open finding.
 
 - Both review skills' "The loop": before an address pass, stop with reason **no progress** when the last review
   added no new finding and every open row was already left open for the owner by the previous address pass.
-- Both address skills: a finding left open in an earlier pass, whose file and row nothing has changed since, gets
-  no new comment and no commit when re-walked.
+- Both address skills, in `auto` only: a finding left open in an earlier pass, whose file and row nothing has
+  changed since, gets no new comment and no commit when re-walked. Interactive passes still present every open
+  row, since that is where the owner settles them.
+- Define how a pass recognises such a row, such as a fixed marker in the `Comments` note (today it is free text
+  like "left open (auto): …"), and settle with the owner whether rows left open for a dirty file or a failed check
+  count, since those can change without the row being edited.
 - `spec.md` "Early stop" and "Decided later" record the rule, and the statements it narrows say so: spec "Commits
   by default", both address skills' "Committing" ("every treated finding gets a commit") and
   `docs/agents/issue-tracker.md` ("It commits each treated finding").
