@@ -174,7 +174,7 @@ Ask everything the loop could need before round 1, in one go, and never mid-loop
 3. **Stop, limit**, if X address passes have run.
 4. **Stop, no progress**, without an address pass, if every open finding against the reviewed issues would be skipped
    as still waiting (see "Skip what still waits" in `address-code-review-findings`): the pass could only repeat
-   itself. A new finding has no such note, so this never skips one.
+   itself.
 5. **Address**: run `/address-code-review-findings <story> <issues> auto` inline, through the Skill tool, so this
    session stays the only writer of `code-review.md` and of the commits. It commits per finding and hands back its
    outcomes, whether it edited `spec.md` or `issues/`, and whether it made **progress**: changed a file other than

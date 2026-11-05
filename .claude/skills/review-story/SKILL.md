@@ -236,8 +236,7 @@ mid-loop:
 3. **Stop, limit**, if X address passes have run.
 4. **Stop, no progress**, without an address pass, if every open row would
    be skipped as still waiting (see "Skip what still waits" in
-   `address-story-review-findings`): the pass could only repeat itself. A new
-   finding has no such note, so this never skips one.
+   `address-story-review-findings`): the pass could only repeat itself.
 5. **Address**: run `/address-story-review-findings <story> auto` inline,
    through the Skill tool, so this session stays the only writer of
    `review.md` and of the commits. It commits per finding and hands back its
