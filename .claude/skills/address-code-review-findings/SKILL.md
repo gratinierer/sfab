@@ -123,8 +123,8 @@ and names the range itself, so don't.
 ## Auto mode
 
 `auto` is the user's standing instruction to fix findings without asking, so the "explicit instruction for that
-specific finding" guard and the ask-and-wait rules (decision, change) are satisfied for
-the outcomes below. Everything else keeps its guard.
+specific finding" guard and the ask-and-wait rules (decision, change) are satisfied for the outcomes below.
+Everything else keeps its guard.
 
 For each open finding, in order, still re-reading the current state first:
 
