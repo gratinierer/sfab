@@ -449,7 +449,7 @@ Write behaviour:
 - `birth` writes the claim first with `If-None-Match: *`, which is what rejects
   replays, then the identity, then `vitals/<id>.json`. A failure between the two leaves an unusable orphan
   claim, which is accepted.
-- `reclaim` overwrites the claim with `If-Match` on the ETag. On `412` or `409` the old code has
+- `reclaim` takes no body, so a request with one gets `400`. It overwrites the claim with `If-Match` on the ETag. On `412` or `409` the old code has
   already been spent, so the caller gets `401`. A `404` on the write, or a missing claim or marker, means
   a takedown won the race, and also returns `401`. `self` never writes.
 - **The last active day:** the first authenticated call of a UTC day rewrites `vitals/<id>.json` with the
