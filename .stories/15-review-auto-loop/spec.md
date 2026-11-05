@@ -81,9 +81,9 @@ In every mode, interactive and `auto`, in all four skills:
 - **Address skills** commit once per treated finding, including outcomes that only edit the record file
   (`wontfix`, leave open with a comment, `superseded`, filed). Every outcome writes a dated comment, so every
   treated finding gets a commit; only a finding skipped untouched (the user stopped) gets none. In `auto`, a
-  comment leaving a finding open for the owner starts, after its date, with `needs the user (<HEAD short sha>):`, and one left open for a
-  dirty file or a failed check starts `blocked:`. A later `auto` pass skips a row whose newest comment is a
-  `needs the user` note when its `Affects` files have no commits since that sha: no comment,
+  comment leaving a finding open for the owner starts, after its date, with `needs the user (<HEAD short sha>):`,
+  and one left open for a dirty file or a failed check starts `blocked:`. A later `auto` pass skips a row whose
+  newest comment is a `needs the user` note when its `Affects` files have no commits since that sha: no comment,
   no commit, listed as still waiting. Interactive passes never skip. The closing `walkthrough` journal row gets its
   own commit.
 - **Staging:** only the paths that finding or review touched, never `git add -A`. A finding whose file already has
