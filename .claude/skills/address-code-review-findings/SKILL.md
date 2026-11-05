@@ -148,8 +148,8 @@ For each open finding, in order, still re-reading the current state first:
   commit. List it as still waiting. Interactive passes never skip, since that is where the user settles these rows.
   - **The files**: split `Affects` at commas and drop any `:line`. Read an issue number as that issue's file in
     `.stories/<story>/issues/` or `issues/done/`, and `spec.md` as `.stories/<story>/spec.md`. Read any other part as
-    a path, and resolve it to the one tracked file it names or ends (`git ls-files` matching `*<part>`). Every part
-    must be unchanged for the row to be skipped.
+    a path, and resolve it to the one tracked file it names, in full or as a path suffix (`git ls-files`
+    matching `*<part>`). Every part must be unchanged for the row to be skipped.
   - **Fallback**: a part that resolves to no tracked file or to several (prose, a glob, an ambiguous partial path)
     counts as changed, so the row is treated as usual.
 - **Record each outcome** with a dated `Comments` note, and run the cheapest relevant check for any code you changed.
