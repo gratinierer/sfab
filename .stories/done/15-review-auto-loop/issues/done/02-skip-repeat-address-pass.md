@@ -1,7 +1,5 @@
 # Skip an address pass that can only repeat itself
 
-Label: ready-for-agent
-
 `spec.md` "The auto loop", "Early stop".
 
 ## Why
@@ -39,3 +37,5 @@ nothing it may act on still costs one commit per open finding.
   unchanged waiting row in `auto`; both loops gained a step 4 that stops before a pass that could only repeat
   itself; spec and issue-tracker.md updated. The R22 choices (the marker, and `blocked:` rows being retried) are the
   implementer's, recorded in spec "Decided later" for the owner to confirm. Needs a `/code-review` before closing.
+- 2026-11-05: closed. Code-reviewed by `/code-review 4f1bdaa auto` (four rounds, C16-C36) and a single pass over
+  `e391e56..9ce96a7` (C37-C38); C24, C37, C38 waived and C22 confirmed by the owner.
