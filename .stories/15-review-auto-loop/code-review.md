@@ -15,6 +15,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-05T16:00:00+00:00 | code-review | 01 @ 334b3f3..a4a1aee | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 13 new: 7 standards, 6 spec | auto loop round 1 of up to 4 |
 | 2026-11-05T16:30:00+00:00 | walkthrough | 01 @ e214bc6..e5685bc | claude-opus-5-5, auto (in loop) | 0 new, 6 resolved, 1 superseded, 6 still open | auto walkthrough, not a review pass |
 | 2026-11-05T17:00:00+00:00 | code-review | 01 @ a4a1aee..5390f1d | claude-fable-5-1 (dispatched; code by claude-opus-5-5, fixes by the orchestrator claude-opus-5-5) | 2 new: 2 standards, 0 spec | auto loop round 2; spec fixes C1-C13 verified sound |
+| 2026-11-05T17:15:00+00:00 | walkthrough | 01 @ ef0fd05..bc41db6 | claude-opus-5-5, auto (in loop) | 0 new, 2 resolved, 6 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
