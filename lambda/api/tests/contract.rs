@@ -206,7 +206,7 @@ impl Harness {
         let store = Arc::new(MemoryStore::new());
         Self {
             spec: spec(),
-            app: sfab_api::app(store.clone(), BITS, now),
+            app: sfab_api::app(store.clone(), BITS, now, here()),
             store,
             seen: Mutex::new(BTreeSet::new()),
         }
@@ -281,6 +281,24 @@ impl Harness {
             .unwrap()
             .insert((operation.to_owned(), status));
         (status, body)
+    }
+}
+
+fn here() -> sfab_federation::Here {
+    sfab_federation::Here {
+        domain: "sfab.example.org".into(),
+        contact: "abuse@sfab.example.org".into(),
+    }
+}
+
+fn federation_request(domain: &str, proof: Proof) -> Case {
+    Case {
+        operation: "requestFederation",
+        method: "POST",
+        path: "/v1/federation/requests".into(),
+        authorization: None,
+        proof,
+        body: serde_json::to_vec(&json!({ "domain": domain })).unwrap(),
     }
 }
 
@@ -526,6 +544,44 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
     ] {
         assert_eq!(h.send(world("residents", path)).await.0, expected, "{path}");
     }
+
+    // Federation: the directory, compiled in, and requests.
+    let (status, world) = h
+        .send(get("federationWorld", "/v1/federation/world", None))
+        .await;
+    assert_eq!(
+        (status, &world["domain"]),
+        (200, &json!("sfab.example.org"))
+    );
+    let worlds = |path: &str| get("federationWorlds", path, None);
+    for (path, expected) in [
+        ("/v1/federation/worlds", 200),
+        ("/v1/federation/worlds?page=x", 400),
+        ("/v1/federation/worlds?page=20", 404),
+    ] {
+        assert_eq!(h.send(worlds(path)).await.0, expected, "{path}");
+    }
+    let (status, first) = h
+        .send(federation_request("other.example.org", Proof::Valid))
+        .await;
+    assert_eq!(status, 202);
+    let (status, again) = h
+        .send(federation_request("other.example.org", Proof::Valid))
+        .await;
+    assert_eq!((status, &again["token"]), (200, &first["token"]));
+    let none = federation_request("other.example.org", Proof::None);
+    assert_eq!(h.send(none).await.0, 400);
+    let bad = federation_request("localhost", Proof::Valid);
+    assert_eq!(h.send(bad).await.0, 400);
+    for i in 1..100 {
+        let case = federation_request(&format!("w{i}.example.org"), Proof::Valid);
+        assert_eq!(h.send(case).await.0, 202);
+    }
+    let (status, full) = h
+        .send(federation_request("late.example.org", Proof::Valid))
+        .await;
+    assert_eq!(status, 503);
+    assert!(full["retry_after"].is_string());
 
     // Every operation in sfab.yaml was exercised.
     let seen: BTreeSet<String> = h

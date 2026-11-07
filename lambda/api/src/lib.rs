@@ -16,6 +16,7 @@ use sfab_census::Census;
 use sfab_core::gate::Call;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::Store;
+use sfab_federation::{Federation, Here};
 use sfab_identity::{Identity, List};
 
 /// The public API description, generated before the build, so a missing copy fails it.
@@ -30,6 +31,7 @@ const STAGE: &str = "/v1";
 pub struct AppState<S> {
     identity: Identity<S>,
     census: Census<S>,
+    federation: Federation<S>,
     /// The current Unix time, so tests can fix it.
     now: fn() -> i64,
 }
@@ -52,11 +54,12 @@ pub fn client_path(seen: &str) -> String {
     }
 }
 
-/// The router, answering both path forms.
-pub fn app<S: Store>(store: Arc<S>, required_bits: u32, now: fn() -> i64) -> Router {
+/// The router, answering both path forms. `here` is this world, for the federation directory.
+pub fn app<S: Store>(store: Arc<S>, required_bits: u32, now: fn() -> i64, here: Here) -> Router {
     let state = Arc::new(AppState {
         identity: Identity::new(store.clone(), required_bits),
-        census: Census::new(store),
+        census: Census::new(store.clone()),
+        federation: Federation::new(store, required_bits, here),
         now,
     });
     let routes = Router::new()
@@ -82,6 +85,9 @@ pub fn app<S: Store>(store: Arc<S>, required_bits: u32, now: fn() -> i64) -> Rou
             "/identity/self/blocked/{id}",
             put(block::<S>).delete(unblock::<S>),
         )
+        .route("/federation/world", get(federation_world::<S>))
+        .route("/federation/worlds", get(federation_worlds::<S>))
+        .route("/federation/requests", post(request_federation::<S>))
         .route("/openapi.yaml", get(openapi))
         .fallback(no_route)
         .method_not_allowed_fallback(no_route)
@@ -346,6 +352,35 @@ async fn unblock<S: Store>(
     headers: HeaderMap,
 ) -> Response {
     remove_contact(&state, List::Blocked, &id, &headers).await
+}
+
+async fn federation_world<S: Store>(State(state): State<Arc<AppState<S>>>) -> Response {
+    respond(Ok(state.federation.world()))
+}
+
+async fn federation_worlds<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    uri: OriginalUri,
+) -> Response {
+    respond(state.federation.worlds(page(&uri).as_deref()))
+}
+
+async fn request_federation<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    method: Method,
+    uri: OriginalUri,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    let path = client_path(uri.path());
+    let call = Call {
+        method: method.as_str(),
+        path: &path,
+        authorization: header(&headers, "authorization"),
+        proof: header(&headers, "proof"),
+        body: &body,
+    };
+    respond(state.federation.request(&call, (state.now)()).await)
 }
 
 async fn openapi() -> Response {

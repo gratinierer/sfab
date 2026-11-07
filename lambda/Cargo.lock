@@ -2223,6 +2223,7 @@ dependencies = [
  "sfab-census",
  "sfab-constitution",
  "sfab-core",
+ "sfab-federation",
  "sfab-identity",
  "tokio",
  "tower",
