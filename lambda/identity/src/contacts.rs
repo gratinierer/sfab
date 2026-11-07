@@ -78,8 +78,9 @@ impl Contacts {
         self.list_mut(list).retain(|e| e.id != id.as_str());
     }
 
-    /// The friends still in `after`, so a copy drops leavers but never shows a newcomer early.
-    fn friends_in_both(&self, after: &Contacts) -> Contacts {
+    /// These contacts with only the friends still in `after`, for the copy written before a
+    /// save: it drops leavers but never shows a newcomer early.
+    fn keeping_only_lasting_friends(&self, after: &Contacts) -> Contacts {
         let friends = self
             .friends
             .iter()
@@ -88,7 +89,7 @@ impl Contacts {
             .collect();
         Contacts {
             friends,
-            blocked: Vec::new(),
+            blocked: self.blocked.clone(),
         }
     }
 }
@@ -102,10 +103,6 @@ pub enum Relation {
     Blocked,
     /// Anyone else.
     Stranger,
-}
-
-fn entry_body(entry: &Entry) -> Value {
-    json!(entry)
 }
 
 fn bad_id() -> Problem {
@@ -132,7 +129,7 @@ impl<S: Store> Identity<S> {
             let (before, etag) = self.read_contacts(id).await?;
             if let Some(entry) = before.find(list, &other) {
                 // A retry: redo only the copy's rebuild.
-                let body = entry_body(entry);
+                let body = json!(entry);
                 self.refresh_copy(id).await?;
                 return Ok(Reply::ok(body));
             }
@@ -157,7 +154,7 @@ impl<S: Store> Identity<S> {
                 Saved::Raced => continue,
             }
             self.refresh_copy(id).await?;
-            return Ok(Reply::created(entry_body(&entry)));
+            return Ok(Reply::created(json!(entry)));
         }
         Err(crate::lost_races("contacts"))
     }
@@ -208,7 +205,7 @@ impl<S: Store> Identity<S> {
         let (contacts, _) = self.read_contacts(&agent.id).await?;
         let entries = contacts.list(list);
         let page = offset_page(entries.len(), page, OFFSET_PAGE, list.path())?;
-        let items: Vec<Value> = entries[page.range].iter().map(entry_body).collect();
+        let items: Vec<Value> = entries[page.range].iter().map(|e| json!(e)).collect();
         Ok(Reply::ok(json!({"items": items, "next": page.next})))
     }
 
@@ -267,7 +264,7 @@ impl<S: Store> Identity<S> {
         after: &Contacts,
         etag: Option<String>,
     ) -> Result<Saved, Problem> {
-        let kept = before.friends_in_both(after);
+        let kept = before.keeping_only_lasting_friends(after);
         if kept.friends.len() < before.friends.len() {
             let (identity, _) = self.read_identity_tagged(id).await?;
             if identity.public.contains(&Field::Friends) {
