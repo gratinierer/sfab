@@ -73,6 +73,9 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | OpenAPI import accepts `$default` as a `requestBody` content type, giving a model that validates every content type, beside `application/json` | memory | Why `openapi/sfab.yaml` lists both; issue 01 of story `2-identity-api` proves it on import | 2026-11-04 |
 | OpenAPI import doesn't resolve a `$ref` inside `x-amazon-apigateway-integration`, so `openapi/sfab.yaml` repeats it with a YAML anchor instead | memory | Issue 01 of story `2-identity-api` checks it on import | 2026-11-04 |
 | REST requests cost $3.50 per million | docs | AWS's pricing page | 2026-11-01 |
+| A CloudFormation `RestApi` with both `Body` and `Name` is named `Name`, not the OpenAPI `info.title`, so CDK's `metricCount()` names the right `ApiName` | memory | AWS doesn't say which wins; the kill switch reads the name with `GetRestApi`, and issue 10's alarm check confirms the 50,000-call warning | 2026-11-07 |
+| `disableExecuteApiEndpoint` affects all stages, returns `403`, and takes effect only after a stage update | memory | spec.md "Kill switch" says AWS documents it; not rechecked. CloudFormation's `RestApi` page only says it disables the default endpoint | 2026-11-07 |
+| `CreateDeployment` with a `stageName` points that existing stage at the new deployment | memory | The kill switch's stop step and the restart list rely on it; issue 10's drill proves it | 2026-11-07 |
 | Failed authentication, missing or invalid API keys and throttled requests aren't charged | docs | [old-pricing], a 2021 archive of a removed page, so possibly out of date; issue 02 of story `2-identity-api` confirms it | 2026-11-01 |
 
 ## CDK
@@ -103,11 +106,13 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `GetObject` on a missing key returns `404` only with `s3:ListBucket` on the bucket, and `403` without it, so the API Lambda has `ListBucket` | docs | [s3-getobject] | 2026-11-07 |
 | An alarm with a period of at least one hour can evaluate up to 7 days | docs | [alarms] | 2026-11-01 |
 | An alarm is evaluated every minute over a sliding window by default, or a wall clock window if set | docs | [alarm-evaluation], [alarm-window] | 2026-11-01 |
+| An alarm's `EvaluationWindow` set to a `WallClockWindow` aligns its period to clock boundaries in a time zone, UTC unless set, so a one-day alarm counts from midnight | docs | CDK 2.275.0's `CfnAlarm` reference, from the CloudFormation schema; that a partial day can breach is memory, and issue 10's alarm check forces the alarm only | 2026-11-07 |
 | An alarm acts only when its state changes | docs | [alarms] | 2026-11-01 |
 | The missing-data setting is ignored when enough older real datapoints exist, and an alarm may re-evaluate old data after a metric stops | docs | [alarms-missing] | 2026-11-01 |
 | A standard alarm costs $0.10 per metric per month, with 10 free | docs | [cw-pricing], from search results | 2026-11-01 |
 | Lambda `Invocations` equals the requests billed, and excludes throttled invocations | docs | [lambda-metrics] | 2026-11-01 |
-| API Gateway `Count` is "the total number API requests", without saying if rejected or throttled requests count | docs | [apigw-metrics]; issue 02 of story `2-identity-api` tests it | 2026-11-01 |
+| API Gateway `Count` is "the total number API requests", without saying if rejected or throttled requests count, and its documented statistic is `SampleCount`, which the kill switch and the 50,000-call warning use | docs | [apigw-metrics]; issue 02 of story `2-identity-api` tests it | 2026-11-07 |
+| API Gateway's `ApiName` metric dimension is the REST API's name, with non-ASCII characters removed | docs | [apigw-metrics] | 2026-11-07 |
 | API Gateway's account-level limit is about 10,000 requests per second | memory | | 2026-11-01 |
 | API Gateway's per-API metrics are sent at one-minute periods, and are free | docs | [apigw-monitoring], [cw-pricing], from search results | 2026-11-01 |
 | DynamoDB on-demand writes cost about $0.625 per million | docs | [dynamodb-pricing], from search results | 2026-11-01 |
@@ -122,6 +127,10 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | Each SNS email has an unsubscribe link needing no login, and the subscription attribute `ConfirmationWasAuthenticated` shows how it was confirmed | memory | Issue 01 of story `2-identity-api` confirms it | 2026-11-01 |
 | Domain charges appear under the service name "Amazon Registrar" | memory | The first purchase's bill decides | 2026-11-01 |
 | Updating a budget replaces all of it, so a filter must be sent again | memory | | 2026-11-01 |
+| `DescribeBudget` returns `CalculatedSpend.ActualSpend` and `BudgetLimit` as strings, and needs `budgets:ViewBudget` on `arn:aws:budgets::<account>:budget/<name>` | memory | The kill switch's daily spend check | 2026-11-07 |
+| WAF's `UpdateWebACL` replaces the whole web ACL and needs the `LockToken` from `GetWebACL`, so a change of default action sends the rules back too | memory | The kill switch and `docs/restart-after-a-stop.md` | 2026-11-07 |
+| A web ACL's CloudFormation `Ref` is `name\|id\|scope` | memory | The kill switch splits it | 2026-11-07 |
+| SNS invokes a subscribed Lambda asynchronously, and EventBridge schedules too, so Lambda retries a failed run twice by default | memory | Why the kill switch keeps the default retries | 2026-11-07 |
 | A hosted zone costs about $0.50 per month without a plan | docs | The Route 53 pricing page, the reviewer's reading | 2026-11-01 |
 | Route 53 bills every query answered except alias records, at $0.40 per million up to a billion | docs | The Route 53 pricing page | 2026-11-01 |
 | S3 and Lambda prices used in cost tables | memory | | 2026-11-01 |
