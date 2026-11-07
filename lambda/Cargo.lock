@@ -2115,6 +2115,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "sfab-constitution"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sfab-core",
+]
+
+[[package]]
 name = "sfab-core"
 version = "0.1.0"
 dependencies = [
