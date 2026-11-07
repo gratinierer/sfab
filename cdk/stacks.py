@@ -468,6 +468,7 @@ class ApiStack(cdk.Stack):
                 origin=origins.RestApiOrigin(
                     self.rest_api,
                     # RestApiOrigin defaults to the stage, but public URLs already hold /v1.
+                    # CDK writes "/" as an empty OriginPath (docs/aws-facts.md "CDK").
                     origin_path="/",
                     custom_headers={"x-api-key": config.origin_key},
                 ),
