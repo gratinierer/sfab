@@ -41,6 +41,8 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `BucketDeployment`'s `contentType` applies to every object that deployment uploads | docs | CDK s3-deployment README, the reviewer's reading | 2026-11-04 |
 | `BucketDeployment` prunes by default, deleting files not in its source, and only its own deployment-level `exclude` protects one, so two deployments on one bucket delete each other's files | docs | CDK s3-deployment README ("Prune", "Exclude and Include Filters"), the reviewer's reading; why story `10-website` uses one | 2026-11-04 |
 | A CloudFront Function on viewer response can set `Content-Type` and add a `Link` header | memory | Ticket 03 of story `10-website` proves it on a deploy | 2026-11-04 |
+| `S3BucketOrigin.with_origin_access_control` gives a private bucket an origin access control and the bucket policy that lets only that distribution read it | memory | `cdk/website_stack.py` relies on it; issue 12 of story `2-identity-api` proves it on a deploy | 2026-11-07 |
+| A `cloudfront-js-2.0` viewer-request function can rewrite `request.uri` before the origin sees it, or answer with its own response, such as a `301` | memory | `cdk/website_stack.py`'s `paths` function relies on it; issue 12 of story `2-identity-api` proves it on a deploy | 2026-11-07 |
 | `CachingDisabled` is accepted on Free | memory | Not stated by AWS; issue 01 of story `2-identity-api` proves it | 2026-11-01 |
 | `HTTPS_ONLY` answers `http://` with `403` | docs | [https-viewers], the reviewer's reading; issue 01 of story `2-identity-api` proves it | 2026-11-01 |
 | Port 80 can't be closed on a distribution | memory | | 2026-11-01 |
@@ -85,7 +87,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `RestApiOrigin` defaults its origin path to the stage name | docs | [rest-api-origin], v2.275.0, line 44 | 2026-11-01 |
 | CDK drops a trailing `/` from an origin path, so `origin_path="/"` synthesizes an empty `OriginPath`, which CloudFront's rule that a path mustn't end in `/` allows | docs | CDK v2.275.0's synth, pinned by `cdk/tests/test_stacks.py` (`test_the_origin_is_the_api_without_a_doubled_stage…`) | 2026-11-07 |
 | A distribution defaults to `ALLOW_GET_HEAD`, and to `ALLOW_ALL` for the viewer protocol unless a flag makes it redirect | docs | [cdk-behavior] | 2026-11-01 |
-| `BucketDeployment` copies a folder during `cdk deploy`, can refresh a distribution, and needs no Docker | memory | Issue 12 of story `2-identity-api` proves it | 2026-11-01 |
+| `BucketDeployment` copies a folder during `cdk deploy`, refreshes a distribution's `distribution_paths` with an invalidation, and needs no Docker | memory | Issue 12 of story `2-identity-api` proves it; `cdk/website_stack.py` relies on the refresh | 2026-11-07 |
 | `SpecRestApi` adds no Lambda invoke permission, and creates no method resources | docs | Earlier review, R12 and R61 | 2026-10-30 |
 | `cdk bootstrap aws://<account>/<region>` still synthesizes the app when run beside a `cdk.json`, though it names the target, so run it where there's none | docs | CDK CLI 2.1147.0 source, `defineEnvironments` in `lib/cli/cdk-toolkit.js`; corrected from "doesn't need the app" | 2026-11-04 |
 
