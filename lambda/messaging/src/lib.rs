@@ -58,6 +58,14 @@ impl Kind {
             Kind::Knock => "knock",
         }
     }
+
+    /// What a `message_id` of this kind starts with, before its `-`.
+    fn id_prefix(self) -> &'static str {
+        match self {
+            Kind::Message => "m",
+            Kind::Knock => "k",
+        }
+    }
 }
 
 /// A message's or knock's place in an inbox. Its `message_id` is the only form agents see, and
@@ -99,10 +107,7 @@ impl MessageId {
         let name = key
             .strip_prefix(&inbox(owner, kind))?
             .strip_suffix(".json")?;
-        let id = match kind {
-            Kind::Message => Self::parse(&format!("m-{name}"))?,
-            Kind::Knock => Self::parse(&format!("k-{name}"))?,
-        };
+        let id = Self::parse(&format!("{}-{name}", kind.id_prefix()))?;
         (id.kind() == kind).then_some(id)
     }
 
@@ -113,28 +118,25 @@ impl MessageId {
         }
     }
 
-    /// The key in `owner`'s own inbox.
-    fn key(&self, owner: &AgentId) -> String {
-        let name = match self {
+    /// What the key's file name and the `message_id` share.
+    fn name(&self) -> String {
+        match self {
             MessageId::Message {
                 time,
                 sender,
                 proof,
             } => format!("{time}-{sender}-{proof}"),
             MessageId::Knock { sender } => sender.to_string(),
-        };
-        format!("{}{name}.json", inbox(owner, self.kind()))
+        }
+    }
+
+    /// The key in `owner`'s own inbox.
+    fn key(&self, owner: &AgentId) -> String {
+        format!("{}{}.json", inbox(owner, self.kind()), self.name())
     }
 
     fn text(&self) -> String {
-        match self {
-            MessageId::Message {
-                time,
-                sender,
-                proof,
-            } => format!("m-{time}-{sender}-{proof}"),
-            MessageId::Knock { sender } => format!("k-{sender}"),
-        }
+        format!("{}-{}", self.kind().id_prefix(), self.name())
     }
 }
 
