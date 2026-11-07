@@ -379,7 +379,70 @@ fn marker_metadata(claim: &[u8]) -> Option<Metadata> {
     Some(Metadata::from([("born_at".to_owned(), record.born_at)]))
 }
 
-/// This crate's locations for an agent, and the action on each, for issue 08's program. The
+/// An agent's `born_at`, read from its claim or from its takedown marker's metadata.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Born {
+    pub id: AgentId,
+    /// `None` for a claim that doesn't parse.
+    pub born_at: Option<String>,
+    /// The claim is already a takedown marker.
+    pub taken_down: bool,
+}
+
+fn born_of(id: AgentId, object: &Object) -> Born {
+    if object.body.is_empty() {
+        let born_at = object.metadata.get("born_at").cloned();
+        return Born {
+            id,
+            born_at,
+            taken_down: true,
+        };
+    }
+    let born_at = serde_json::from_slice::<ClaimRecord>(&object.body)
+        .ok()
+        .map(|r| r.born_at);
+    Born {
+        id,
+        born_at,
+        taken_down: false,
+    }
+}
+
+/// One agent's `born_at`, for the takedown program. `None` when there's no claim or marker.
+pub async fn born<S: Store>(store: &S, id: &AgentId) -> Result<Option<Born>, StoreError> {
+    let object = store.get(Bucket::Claims, &claim_key(id)).await?;
+    Ok(object.map(|o| born_of(id.clone(), &o)))
+}
+
+/// Every agent, claims and markers alike, whose `born_at` is at or after `from` and before `to`.
+/// Both are RFC 3339 in UTC to the second, as `born_at` is, so they compare as text. The window
+/// can't use S3's `LastModified`, which every overwrite changes.
+pub async fn born_between<S: Store>(
+    store: &S,
+    from: &str,
+    to: &str,
+) -> Result<Vec<Born>, StoreError> {
+    let mut found = Vec::new();
+    for key in store.list(Bucket::Claims, "claims/").await? {
+        let Some(id) = key
+            .strip_prefix("claims/")
+            .and_then(|k| k.strip_suffix("/claim.json"))
+            .and_then(AgentId::parse)
+        else {
+            continue;
+        };
+        let Some(object) = store.get(Bucket::Claims, &key).await? else {
+            continue;
+        };
+        let born = born_of(id, &object);
+        if born.born_at.as_deref().is_some_and(|b| from <= b && b < to) {
+            found.push(born);
+        }
+    }
+    Ok(found)
+}
+
+/// This crate's locations for an agent, and the action on each, for the takedown program. The
 /// claim becomes a zero-byte marker that keeps `born_at`, so the ID can never be born again.
 pub fn takedown(id: &AgentId) -> Vec<Location> {
     vec![
@@ -400,6 +463,14 @@ pub fn takedown(id: &AgentId) -> Vec<Location> {
             bucket: Bucket::Identities,
             key: vitals_key(id),
             action: Action::Delete,
+        },
+        // The inbox, which issue 14 writes. Messages this agent sent to others stay until they
+        // expire.
+        Location {
+            phase: Phase::Other,
+            bucket: Bucket::Identities,
+            key: format!("messages/{id}/"),
+            action: Action::DeletePrefix,
         },
         Location {
             phase: Phase::Last,
