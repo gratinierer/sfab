@@ -2,12 +2,12 @@
 //! filled through each crate's own write functions.
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use sfab_core::gate::Call;
 use sfab_core::id::AgentId;
 use sfab_core::proof::{self, Request};
-use sfab_core::storage::{Bucket, Condition, MemoryStore, Metadata, Store};
+use sfab_core::storage::{Bucket, Condition, MemoryStore, Metadata, Object, Store, StoreError};
 use sfab_identity::Identity;
 use sfab_takedown::{Mode, execute, plan};
 
@@ -279,6 +279,116 @@ async fn a_dry_run_shows_the_window_and_writes_nothing() {
     assert!(!t.taken_down);
     let found: Vec<_> = t.found.iter().map(|(_, k)| k.clone()).collect();
     assert_eq!(sorted(found), sorted(keys_of(&w.store, &first.id)));
+}
+
+/// The fake, with deletes under `vitals/` failing while `broken` is set: a run cut off after
+/// step 1 wrote the markers.
+struct Flaky {
+    inner: Arc<MemoryStore>,
+    broken: AtomicBool,
+}
+
+impl Store for Flaky {
+    async fn get(&self, bucket: Bucket, key: &str) -> Result<Option<Object>, StoreError> {
+        self.inner.get(bucket, key).await
+    }
+
+    async fn put(
+        &self,
+        bucket: Bucket,
+        key: &str,
+        body: Vec<u8>,
+        metadata: Metadata,
+        condition: Condition,
+    ) -> Result<(), StoreError> {
+        self.inner.put(bucket, key, body, metadata, condition).await
+    }
+
+    async fn delete(&self, bucket: Bucket, key: &str) -> Result<(), StoreError> {
+        if self.broken.load(Ordering::SeqCst) && key.starts_with("vitals/") {
+            return Err(StoreError::Other("cut off".to_owned()));
+        }
+        self.inner.delete(bucket, key).await
+    }
+
+    async fn list(&self, bucket: Bucket, prefix: &str) -> Result<Vec<String>, StoreError> {
+        self.inner.list(bucket, prefix).await
+    }
+}
+
+#[tokio::test]
+async fn a_window_run_cut_off_after_the_markers_finishes_on_a_rerun() {
+    let w = world();
+    let [before, first, second, after] = four_agents(&w).await;
+    let untouched = [keys_of(&w.store, &before.id), keys_of(&w.store, &after.id)];
+    let flaky = Flaky {
+        inner: w.store.clone(),
+        broken: AtomicBool::new(true),
+    };
+
+    let targets = plan(&flaky, &flood()).await.unwrap();
+    let waits = AtomicUsize::new(0);
+    assert!(execute(&flaky, &targets, counting(&waits)).await.is_err());
+    let claim = w
+        .store
+        .object(Bucket::Claims, &format!("claims/{}/claim.json", first.id))
+        .unwrap();
+    assert!(claim.body.is_empty(), "the markers were written");
+
+    // The rerun lists again, finding the markers by their born_at.
+    flaky.broken.store(false, Ordering::SeqCst);
+    let targets = plan(&flaky, &flood()).await.unwrap();
+    assert_eq!(
+        sorted_ids(targets.iter().map(|t| &t.id)),
+        sorted_ids([&first.id, &second.id])
+    );
+    assert!(targets.iter().all(|t| t.taken_down));
+    execute(&flaky, &targets, counting(&waits)).await.unwrap();
+
+    assert_taken_down(&w, &first, "2026-11-05T12:00:00Z").await;
+    assert_taken_down(&w, &second, "2026-11-05T13:00:00Z").await;
+    assert_eq!(
+        [keys_of(&w.store, &before.id), keys_of(&w.store, &after.id)],
+        untouched
+    );
+}
+
+#[tokio::test]
+async fn writes_in_flight_during_the_wait_are_removed_too() {
+    let w = world();
+    let agent = full_agent(&w, "Wren", NOW).await;
+    let targets = plan(&*w.store, &Mode::One(agent.id.clone())).await.unwrap();
+
+    // Writes that passed the claim check just before step 1 land during the wait.
+    let in_flight = async {
+        for key in ["aboutme.json", "identity.json"] {
+            let key = format!("identities/{}/{key}", agent.id);
+            let body = b"{}".to_vec();
+            let (b, m, c) = (Bucket::Identities, Metadata::new(), Condition::Always);
+            w.store.put(b, &key, body, m, c).await.unwrap();
+        }
+    };
+    execute(&*w.store, &targets, in_flight).await.unwrap();
+
+    assert_taken_down(&w, &agent, "2026-11-05T12:00:00Z").await;
+}
+
+#[tokio::test]
+async fn a_rerun_of_a_finished_takedown_succeeds_and_changes_nothing() {
+    let w = world();
+    let agent = full_agent(&w, "Wren", NOW).await;
+    let mode = Mode::One(agent.id.clone());
+    let waits = AtomicUsize::new(0);
+    let targets = plan(&*w.store, &mode).await.unwrap();
+    execute(&*w.store, &targets, counting(&waits)).await.unwrap();
+    let stored = snapshot(&w.store);
+
+    let targets = plan(&*w.store, &mode).await.unwrap();
+    assert!(targets[0].taken_down);
+    execute(&*w.store, &targets, counting(&waits)).await.unwrap();
+
+    assert_eq!(snapshot(&w.store), stored);
+    assert_taken_down(&w, &agent, "2026-11-05T12:00:00Z").await;
 }
 
 #[tokio::test]
