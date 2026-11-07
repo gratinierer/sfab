@@ -27,6 +27,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | Pro costs $15 per month, and Business $200 | docs | [plans] | 2026-10-30 |
 | Creating a subscription fails with `ValidationException` if an associated resource uses features outside the plan's tier | docs | [plan-api] | 2026-11-01 |
 | CloudFormation can't change a plan's tier, and creates paid plans in `PENDING_APPROVAL` | docs | [plan-cfn] | 2026-11-01 |
+| A CloudFront plan's `ResourceArns` must hold one distribution and one WAF web ACL, and may add a hosted zone; `PlanTier` is `FREE` and `UsageLevel` `DEFAULT` | docs | [plan-cfn] | 2026-11-07 |
 | Cancelling or downgrading a paid plan takes effect at the end of the month, while a downgrade's features go at once | docs | [plan-api] | 2026-11-01 |
 | Free Tier accounts can't use flat-rate plans | docs | [plans] | 2026-10-30 |
 | Each plan covers one distribution with up to one apex domain, and an account can have 3 Free plans | docs | [plans] | 2026-11-01 |
@@ -99,6 +100,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `PutObject` with `If-Match` fails with `412` on a changed ETag and `404` on a deleted key, and `GetObject` returns the ETag that `If-Match` takes | memory | `reclaim`, in `lambda/identity`, and `lambda/core/src/s3.rs` | 2026-11-05 |
 | S3 rounds a lifecycle expiry up to the next midnight UTC, and removes expired objects some time later, so a route must filter by date itself | docs | [s3-expire], the reviewer's reading | 2026-11-01 |
 | A listing returns up to 1,000 keys per request, with each object's size | memory | | 2026-11-01 |
+| `GetObject` on a missing key returns `404` only with `s3:ListBucket` on the bucket, and `403` without it, so the API Lambda has `ListBucket` | docs | [s3-getobject] | 2026-11-07 |
 | An alarm with a period of at least one hour can evaluate up to 7 days | docs | [alarms] | 2026-11-01 |
 | An alarm is evaluated every minute over a sliding window by default, or a wall clock window if set | docs | [alarm-evaluation], [alarm-window] | 2026-11-01 |
 | An alarm acts only when its state changes | docs | [alarms] | 2026-11-01 |
@@ -114,7 +116,8 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `RECORD_TYPE` is a budget filter key, and "Credit" is a charge type | docs | [budgets-values], [budgets-filters] | 2026-11-01 |
 | Credits are excluded by a `RECORD_TYPE` value of exactly `Credit` | memory | Issue 01 of story `2-identity-api` confirms it in the console | 2026-11-01 |
 | Changing a budget resets its calculated spend to zero until new usage data arrives | docs | [budgets-update] | 2026-11-01 |
-| A budget can have up to five notifications, each with one SNS subscriber and up to 10 email subscribers | docs | [budgets-create] | 2026-11-01 |
+| A budget can have up to ten notifications, each with one SNS subscriber and up to 10 email subscribers. Corrected from five: the `Notification` page now says ten, while spec.md "How the budgets measure spend" still gives five as a reason for three budgets | docs | [budgets-notification] | 2026-11-07 |
+| CloudFormation's schema for `AWS::Budgets::Budget` refuses a notification `Threshold` below 0.1, though the Budgets API allows 0, so the check budget alerts at 1% of $1 rather than at an absolute $0.01 | docs | CDK 2.275.0's synth validation against the resource schema (rule F3034); [budgets-notification] | 2026-11-07 |
 | `ConfirmSubscription` with `AuthenticateOnUnsubscribe` true disallows unauthenticated unsubscribes | docs | [sns-confirm] | 2026-11-01 |
 | Each SNS email has an unsubscribe link needing no login, and the subscription attribute `ConfirmationWasAuthenticated` shows how it was confirmed | memory | Issue 01 of story `2-identity-api` confirms it | 2026-11-01 |
 | Domain charges appear under the service name "Amazon Registrar" | memory | The first purchase's bill decides | 2026-11-01 |
@@ -123,6 +126,8 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | Route 53 bills every query answered except alias records, at $0.40 per million up to a billion | docs | The Route 53 pricing page | 2026-11-01 |
 | S3 and Lambda prices used in cost tables | memory | | 2026-11-01 |
 
+[budgets-notification]: https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_Notification.html
+[s3-getobject]: https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html
 [s3-lifecycle]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html
 [s3-expire]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-expire-general-considerations.html
 [plans]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/flat-rate-pricing-plan.html
