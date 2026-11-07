@@ -11,6 +11,7 @@ pub use args::{Args, USAGE, parse_args};
 use sfab_core::id::AgentId;
 use sfab_core::storage::{Bucket, Condition, Store, StoreError};
 use sfab_core::takedown::{Action, Location, Phase};
+use sfab_identity::Born;
 
 /// Which agents to take down.
 #[derive(Debug, Clone)]
@@ -27,11 +28,8 @@ pub enum Mode {
 /// One agent the takedown would handle, and what it found of the agent's data.
 #[derive(Debug, Clone)]
 pub struct Target {
-    pub id: AgentId,
-    /// `None` when there's no claim, or it doesn't parse.
-    pub born_at: Option<String>,
-    /// The claim is already a marker, from an earlier run.
-    pub taken_down: bool,
+    /// Its ID and `born_at`; `born_at` is `None` when there's no claim, or it doesn't parse.
+    pub born: Born,
     /// Every key the takedown would touch that exists now.
     pub found: Vec<(Bucket, String)>,
 }
@@ -51,24 +49,15 @@ pub async fn plan<S: Store>(store: &S, mode: &Mode) -> Result<Vec<Target>, Store
             vec![
                 sfab_identity::born(store, id)
                     .await?
-                    .unwrap_or(sfab_identity::Born {
-                        id: id.clone(),
-                        born_at: None,
-                        taken_down: false,
-                    }),
+                    .unwrap_or_else(|| Born::unclaimed(id.clone())),
             ]
         }
         Mode::Window { from, to } => sfab_identity::born_between(store, from, to).await?,
     };
     let mut targets = Vec::with_capacity(born.len());
-    for b in born {
-        let found = found(store, &b.id).await?;
-        targets.push(Target {
-            id: b.id,
-            born_at: b.born_at,
-            taken_down: b.taken_down,
-            found,
-        });
+    for born in born {
+        let found = found(store, &born.id).await?;
+        targets.push(Target { born, found });
     }
     Ok(targets)
 }
@@ -105,7 +94,7 @@ pub async fn execute<S: Store, W: Future<Output = ()>>(
     targets: &[Target],
     wait: W,
 ) -> Result<(), StoreError> {
-    let all: Vec<Vec<Location>> = targets.iter().map(|t| locations(&t.id)).collect();
+    let all: Vec<Vec<Location>> = targets.iter().map(|t| locations(&t.born.id)).collect();
     let in_phase = |phase: Phase| all.iter().flatten().filter(move |l| l.phase == phase);
     // (1) End private access and public reading at once.
     for l in in_phase(Phase::First) {

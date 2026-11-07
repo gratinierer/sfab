@@ -348,12 +348,12 @@ async fn a_dry_run_shows_the_window_and_writes_nothing() {
 
     assert_eq!(snapshot(&w.store), stored);
     assert_eq!(
-        sorted_ids(targets.iter().map(|t| &t.id)),
+        sorted_ids(targets.iter().map(|t| &t.born.id)),
         sorted_ids([&first.id, &second.id])
     );
-    let t = targets.iter().find(|t| t.id == first.id).unwrap();
-    assert_eq!(t.born_at.as_deref(), Some("2026-11-05T12:00:00Z"));
-    assert!(!t.taken_down);
+    let t = targets.iter().find(|t| t.born.id == first.id).unwrap();
+    assert_eq!(t.born.born_at.as_deref(), Some("2026-11-05T12:00:00Z"));
+    assert!(!t.born.taken_down);
     let found: Vec<_> = t.found.iter().map(|(_, k)| k.clone()).collect();
     assert_eq!(sorted(found), sorted(keys_of(&w.store, &first.id)));
 }
@@ -416,10 +416,10 @@ async fn a_window_run_cut_off_after_the_markers_finishes_on_a_rerun() {
     flaky.broken.store(false, Ordering::SeqCst);
     let targets = plan(&flaky, &flood()).await.unwrap();
     assert_eq!(
-        sorted_ids(targets.iter().map(|t| &t.id)),
+        sorted_ids(targets.iter().map(|t| &t.born.id)),
         sorted_ids([&first.id, &second.id])
     );
-    assert!(targets.iter().all(|t| t.taken_down));
+    assert!(targets.iter().all(|t| t.born.taken_down));
     execute(&flaky, &targets, counting(&waits)).await.unwrap();
 
     assert_taken_down(&w, &first, "2026-11-05T12:00:00Z").await;
@@ -463,7 +463,7 @@ async fn a_rerun_of_a_finished_takedown_succeeds_and_changes_nothing() {
     let stored = snapshot(&w.store);
 
     let targets = plan(&*w.store, &mode).await.unwrap();
-    assert!(targets[0].taken_down);
+    assert!(targets[0].born.taken_down);
     execute(&*w.store, &targets, counting(&waits))
         .await
         .unwrap();

@@ -40,14 +40,14 @@ async fn run() -> Result<(), String> {
         .await
         .map_err(|e| format!("listing failed: {e:?}"))?;
     for t in &targets {
-        let state = if t.taken_down { "marker" } else { "live" };
-        let born_at = t.born_at.as_deref().unwrap_or("no born_at");
-        println!("{} {state} born {born_at}", t.id);
+        let state = if t.born.taken_down { "marker" } else { "live" };
+        let born_at = t.born.born_at.as_deref().unwrap_or("no born_at");
+        println!("{} {state} born {born_at}", t.born.id);
         for (_, key) in &t.found {
             println!("  {key}");
         }
     }
-    let live = targets.iter().filter(|t| !t.taken_down).count();
+    let live = targets.iter().filter(|t| !t.born.taken_down).count();
     println!(
         "{} agents, {live} live and {} already markers",
         targets.len(),

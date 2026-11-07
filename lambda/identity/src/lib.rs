@@ -439,6 +439,17 @@ pub struct Born {
     pub taken_down: bool,
 }
 
+impl Born {
+    /// An ID with no claim or marker.
+    pub fn unclaimed(id: AgentId) -> Self {
+        Self {
+            id,
+            born_at: None,
+            taken_down: false,
+        }
+    }
+}
+
 fn born_of(id: AgentId, object: &Object) -> Born {
     if object.body.is_empty() {
         let born_at = object.metadata.get("born_at").cloned();
