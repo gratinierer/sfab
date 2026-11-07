@@ -8,6 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import aws_cdk as cdk
+from aws_cdk import aws_certificatemanager as acm
 from aws_cdk import aws_cloudfront as cloudfront
 from aws_cdk import aws_cloudfront_origins as origins
 from aws_cdk import aws_route53 as route53
@@ -59,7 +60,7 @@ class WebsiteStack(cdk.Stack):
         id: str,
         *,
         config: Config,
-        certificate,
+        certificate: acm.ICertificate,
         hosted_zone: route53.IHostedZone,
         source: Path,
         **kwargs,
