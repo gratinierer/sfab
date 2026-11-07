@@ -14,6 +14,10 @@ the identity routes, and each later ticket adds its routes to the smoke script.
   `execute-api` request without the key, one with a wrong key that must get the `problem+json` `403` with
   `type: origin-key-replaced`, a malformed body whose `400` must be valid `problem+json` (code review C31), and treating WAF's plain `403` as "wait and rerun".
 - The separate WAF check: about one request per second for up to 5 minutes, passing at the first plain `403`.
+- Later tickets extend the smoke script with their routes: issues 11 (world and census, with the
+  census's `404` before the first daily run), 13 (profile, friends and blocks), 14 (messages) and 15
+  (federation), each saying so in its scope, and `.stories/4-life-in-the-world/` "Routes" adds the
+  `403` `no-standing` and unknown-ID cases. Filed from code review C96.
 
 ## Done when
 
