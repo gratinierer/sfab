@@ -71,9 +71,6 @@ pub fn app<S: Store>(store: Arc<S>, required_bits: u32, now: fn() -> i64, here: 
         .route("/identity/evolve", put(evolve::<S>))
         .route("/identity/self", get(read_self::<S>))
         .route("/identity/reclaim", post(reclaim::<S>))
-        .route("/world/constitution", get(constitution))
-        .route("/world/census", get(census::<S>))
-        .route("/world/residents", get(residents::<S>))
         .route(
             "/identity/self/publication",
             get(read_publication::<S>).put(publish::<S>),
@@ -95,6 +92,9 @@ pub fn app<S: Store>(store: Arc<S>, required_bits: u32, now: fn() -> i64, here: 
             "/identity/self/messages/{message_id}",
             delete(remove_message::<S>),
         )
+        .route("/world/constitution", get(constitution))
+        .route("/world/census", get(census::<S>))
+        .route("/world/residents", get(residents::<S>))
         .route("/federation/world", get(federation_world::<S>))
         .route("/federation/worlds", get(federation_worlds::<S>))
         .route("/federation/requests", post(request_federation::<S>))
