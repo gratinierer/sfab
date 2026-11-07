@@ -69,6 +69,10 @@ API_DELETE_PREFIXES = ("messages/",)
 # The identities bucket's prefixes the API Lambda reads and writes, and those it only reads.
 API_READ_WRITE_PREFIXES = ("identities/", "messages/", "vitals/", "federation/pending/")
 API_READ_PREFIXES = ("world/",)
+# Days before S3 deletes a federation request: one waiting for its token, and one waiting for
+# the owner (spec.md "Federation" and "Storage").
+FEDERATION_PENDING_DAYS = 3
+FEDERATION_VERIFIED_DAYS = 30
 
 
 STAGE = "v1"
@@ -157,16 +161,28 @@ class BaseStack(cdk.Stack):
             validation=acm.CertificateValidation.from_dns(self.hosted_zone),
         )
 
-        # Inboxes can't grow forever: spec.md "Messages". The API hides anything older itself,
-        # because S3 removes expired objects some time later (docs/aws-facts.md).
+        # Inboxes can't grow forever: spec.md "Messages". Federation requests expire too:
+        # spec.md "Federation". The API and the daily world job hide or delete anything older
+        # themselves, because S3 removes expired objects some time later (docs/aws-facts.md).
         self.identities_bucket = self._bucket(
             "Identities",
             [
                 s3.LifecycleRule(
                     prefix="messages/", expiration=cdk.Duration.days(MESSAGE_DAYS)
-                )
+                ),
+                s3.LifecycleRule(
+                    id="FederationPending",
+                    prefix="federation/pending/",
+                    expiration=cdk.Duration.days(FEDERATION_PENDING_DAYS),
+                ),
+                s3.LifecycleRule(
+                    id="FederationVerified",
+                    prefix="federation/verified/",
+                    expiration=cdk.Duration.days(FEDERATION_VERIFIED_DAYS),
+                ),
             ],
         )
+        # Claims never expire: identities live indefinitely.
         self.claims_bucket = self._bucket("Claims")
 
         # The only thing the owner's email subscribes to. Nothing on it can stop the API.
@@ -261,7 +277,9 @@ class BaseStack(cdk.Stack):
             )
         )
 
-    def _bucket(self, id: str, lifecycle_rules: list[s3.LifecycleRule] | None = None) -> s3.Bucket:
+    def _bucket(
+        self, id: str, lifecycle_rules: list[s3.LifecycleRule] | None = None
+    ) -> s3.Bucket:
         # Deleting the stack can never delete identities: retained, no autoDeleteObjects.
         return s3.Bucket(
             self,
@@ -305,6 +323,9 @@ class ApiStack(cdk.Stack):
                 "REQUIRED_BITS": str(REQUIRED_BITS),
                 "IDENTITIES_BUCKET": base.identities_bucket.bucket_name,
                 "CLAIMS_BUCKET": base.claims_bucket.bucket_name,
+                # This world, which GET /federation/world publishes.
+                "DOMAIN_NAME": config.domain_name,
+                "ABUSE_CONTACT": config.abuse_contact,
             },
             reserved_concurrent_executions=API_RESERVED_CONCURRENCY,
             timeout=cdk.Duration.seconds(API_TIMEOUT_SECONDS),

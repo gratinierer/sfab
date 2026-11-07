@@ -11,6 +11,15 @@ pub fn utc_day(now: i64) -> i64 {
     now.div_euclid(DAY)
 }
 
+/// When the daily world job runs, in seconds after 00:00 UTC: `cdk/world_job.py`'s `SCHEDULE`.
+pub const DAILY_RUN_OFFSET: i64 = 5 * 60;
+
+/// The daily world job's next run after `now`, for a `retry_after` that waits for it.
+pub fn next_daily_run(now: i64) -> i64 {
+    let today = utc_day(now) * DAY + DAILY_RUN_OFFSET;
+    if now < today { today } else { today + DAY }
+}
+
 /// A Unix time as RFC 3339 in UTC, to the second, such as `2026-11-05T00:00:00Z`.
 pub fn rfc3339(now: i64) -> String {
     let (days, secs) = (now.div_euclid(DAY), now.rem_euclid(DAY));
@@ -79,6 +88,24 @@ mod tests {
         assert_eq!(rfc3339(1_793_836_800), "2026-11-05T00:00:00Z");
         assert_eq!(rfc3339(951_782_400 + 3_661), "2000-02-29T01:01:01Z");
         assert_eq!(rfc3339(4_102_444_799), "2099-12-31T23:59:59Z");
+    }
+
+    #[test]
+    fn the_next_daily_run_is_the_next_00_05_utc() {
+        let midnight = 1_793_836_800;
+        assert_eq!(rfc3339(next_daily_run(midnight)), "2026-11-05T00:05:00Z");
+        assert_eq!(
+            rfc3339(next_daily_run(midnight + 299)),
+            "2026-11-05T00:05:00Z"
+        );
+        assert_eq!(
+            rfc3339(next_daily_run(midnight + 300)),
+            "2026-11-06T00:05:00Z"
+        );
+        assert_eq!(
+            rfc3339(next_daily_run(midnight + 43_200)),
+            "2026-11-06T00:05:00Z"
+        );
     }
 
     #[test]

@@ -1,0 +1,19 @@
+[package]
+name = "sfab-federation"
+version = "0.1.0"
+edition.workspace = true
+publish.workspace = true
+
+# No HTTP client here: the routes never call out, and the daily world job brings the one
+# outbound check (`lambda/job/src/outbound.rs`) through `Fetch`.
+[dependencies]
+futures-util = { version = "0.3.34", default-features = false, features = ["alloc"] }
+getrandom = "0.3.4"
+saphyr = "0.3.3"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+sfab-core = { path = "../../core" }
+tracing = "0.1.44"
+
+[dev-dependencies]
+tokio = { version = "1.52.3", features = ["macros", "rt"] }

@@ -86,7 +86,11 @@ async fn logs_carry_no_authorization_value() {
     let _guard = tracing::subscriber::set_default(subscriber);
 
     let store = Arc::new(MemoryStore::new());
-    let app = sfab_api::app(store.clone(), BITS, now);
+    let here = sfab_federation::Here {
+        domain: "sfab.example.org".into(),
+        contact: "abuse@sfab.example.org".into(),
+    };
+    let app = sfab_api::app(store.clone(), BITS, now, here);
     let (_, born) = send(
         &app,
         "POST",

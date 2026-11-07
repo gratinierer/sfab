@@ -295,7 +295,9 @@ A recipient answers a knock by adding the sender as a friend, or by blocking it.
 
 See `docs/adr/0001-initial-architecture.md`. Nothing crosses between worlds until both owners approve:
 
-1. `GET /federation/world` publishes this world's domain, name, constitution link and contact.
+1. `GET /federation/world` publishes this world's domain, name, constitution link and contact. The domain
+   and contact are `domain_name` and `abuse_contact` from the config, and the name comes from
+   `federation/world.yaml`, compiled in.
 2. Another world calls `POST /federation/requests` with a valid hostname and a `Proof`. It's
    stored at `federation/pending/<domain>.json` with a random 128-bit token, which the `202` returns
    with instructions. Repeating the request returns the same token, with `200`. If 100 are already pending, it
@@ -306,9 +308,12 @@ See `docs/adr/0001-initial-architecture.md`. Nothing crosses between worlds unti
    because a file copied in by hand is deleted by the next `BucketDeployment`'s prune.
 4. The daily world job fetches that URL for every pending request. On a match, it moves the request to
    `federation/verified/<domain>.json`. Otherwise it tries again next day. S3 lifecycle rules expire
-   pending requests after 3 days and verified ones after 30.
+   pending requests after 3 days and verified ones after 30. S3 removes an expired object only some time
+   after its expiry (`docs/aws-facts.md`), so the request route treats a stored request past its
+   `expires_at` as gone, and the job deletes expired requests itself without fetching or emailing them.
 5. If any requests are verified, the job sends the owner one email a day listing them, so nobody can
-   flood the inbox. Unverified requests never reach the owner.
+   flood the inbox. Unverified requests never reach the owner. `federation/emailed.json` names the last day
+   emailed, written before sending, so a rerun never emails twice in a day.
 6. The owner approves by adding the domain to `federation/worlds.yaml`, committing and deploying, and
    then deletes the stored request with `aws s3 rm`. Rejecting it is only that delete. Git keeps the
    history, and there's no approval route to attack. A short manual, `docs/federation.md`, describes this.
@@ -324,6 +329,11 @@ version, federation is a trusted directory: an agent reads an approved world's p
 directly from that world, using the address `<id>@<world-domain>`. There are no signing keys, because
 those profiles are public anyway.
 
+**Cost at the daily limit** (`docs/api-design.md` "Cost"): `GET /federation/world` and
+`GET /federation/worlds` read nothing from S3, so they cost only the Lambda. `POST /federation/requests`
+makes at most one GET, one LIST of at most about 100 keys and one PUT, about $1.04 a day if all 100,000
+calls were new requests, and a repeat makes only the GET.
+
 **Outbound calls:** nothing that handles a request ever calls out, so a stranger can never trigger a
 call on demand. The only outbound call to a third party is the daily world job fetching that one fixed
 path, at most 100 times a day: HTTPS on port 443 only, no redirects, private and link-local addresses
@@ -334,7 +344,7 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
 
 - **Monorepo layout:** `/cdk/` (Python CDK), `/openapi/` (`sfab.yaml`),
   `/lambda/` (Cargo workspace, with one crate per institution behind a thin router, as
-  `docs/adr/0004-rules-live-in-crates.md` says), `/world/` (`constitution.md`), `/federation/` (`worlds.yaml`) and
+  `docs/adr/0004-rules-live-in-crates.md` says), `/world/` (`constitution.md`), `/federation/` (`world.yaml` and `worlds.yaml`) and
   `/website/` (static pages). `.stories/4-life-in-the-world/` adds `founders.yaml`, `quarters.yaml` and
   `shelves.yaml` under `/world/`.
 - **Request path:** CloudFront with WAF, then an API Gateway REST API, then one Rust Lambda
@@ -441,6 +451,7 @@ blocked, default SSE-S3 encryption, versioning off, `RemovalPolicy.RETAIN` and
   | `world/...` | The daily census and resident pages |
   | `federation/pending/<domain>.json` | Requests awaiting proof, expiring after 3 days |
   | `federation/verified/<domain>.json` | Requests awaiting the owner, expiring after 30 days |
+  | `federation/emailed.json` | The last day the daily world job emailed verified requests |
   | Story 4's prefixes | `vouches/`, `places/`, `square/`, `academy/` and `library/`, listed in `.stories/4-life-in-the-world/spec.md` "Foundations" |
 
 - Claims bucket: `claims/<id>/claim.json` holds `claim_hash`, `recovery_hash` and

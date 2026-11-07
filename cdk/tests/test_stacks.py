@@ -111,6 +111,21 @@ def test_messages_expire_after_30_days_and_nothing_else_does(base):
     assert rules[claims] == []
 
 
+def expiry_rules(base: Template, bucket: str) -> dict[str, int]:
+    """Each enabled lifecycle rule's prefix and the days after which it expires objects."""
+    props = base.find_resources("AWS::S3::Bucket")[bucket_export(base, bucket)]["Properties"]
+    rules = props.get("LifecycleConfiguration", {}).get("Rules", [])
+    assert all(r["Status"] == "Enabled" for r in rules)
+    return {r["Prefix"]: r["ExpirationInDays"] for r in rules}
+
+
+def test_federation_requests_expire_3_days_pending_and_30_verified(base):
+    rules = expiry_rules(base, "Identities")
+    assert rules["federation/pending/"] == 3
+    assert rules["federation/verified/"] == 30
+    assert expiry_rules(base, "Claims") == {}, "claims never expire"
+
+
 # The base stack: topics
 
 
@@ -292,11 +307,20 @@ def test_the_api_lambda_runs_the_rust_binary_on_arm64_with_reserved_concurrency(
     assert props["ReservedConcurrentExecutions"] == 5
 
 
-def test_the_api_lambda_gets_required_bits_and_both_buckets(api, base):
+def test_the_api_lambda_gets_required_bits_both_buckets_and_this_world(api, base, config):
     _, function = api_function(api)
     env = function["Properties"]["Environment"]["Variables"]
-    assert set(env) == {"REQUIRED_BITS", "IDENTITIES_BUCKET", "CLAIMS_BUCKET"}
+    assert set(env) == {
+        "REQUIRED_BITS",
+        "IDENTITIES_BUCKET",
+        "CLAIMS_BUCKET",
+        "DOMAIN_NAME",
+        "ABUSE_CONTACT",
+    }
     assert env["REQUIRED_BITS"] == "20"
+    # GET /federation/world publishes both.
+    assert env["DOMAIN_NAME"] == config.domain_name
+    assert env["ABUSE_CONTACT"] == config.abuse_contact
     assert bucket_export(base, "Identities") in str(env["IDENTITIES_BUCKET"])
     assert bucket_export(base, "Claims") in str(env["CLAIMS_BUCKET"])
 

@@ -25,6 +25,10 @@ async fn main() -> Result<(), lambda_http::Error> {
         env("IDENTITIES_BUCKET"),
         env("CLAIMS_BUCKET"),
     );
-    let app = sfab_api::app(Arc::new(store), required_bits, sfab_api::system_now);
+    let here = sfab_federation::Here {
+        domain: env("DOMAIN_NAME"),
+        contact: env("ABUSE_CONTACT"),
+    };
+    let app = sfab_api::app(Arc::new(store), required_bits, sfab_api::system_now, here);
     lambda_http::run(app).await
 }

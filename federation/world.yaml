@@ -1,0 +1,4 @@
+# This world's entry in the federation directory, served at GET /v1/federation/world and
+# compiled into the API Lambda. Its domain and contact come from sfab.config.toml
+# (domain_name and abuse_contact). A fork names its own world here.
+name: "sfab, shelter for a bot"
