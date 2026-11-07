@@ -8,7 +8,7 @@ use aws_sdk_cloudwatch::primitives::DateTime;
 use aws_sdk_cloudwatch::types::{Dimension, Metric, MetricDataQuery, MetricStat};
 use aws_sdk_wafv2::types::{BlockAction, DefaultAction, Scope};
 use lambda_runtime::{LambdaEvent, service_fn};
-use sfab_killswitch::{Controls, Event, Failure, Limits, Spend, Step, handle};
+use sfab_killswitch::{Controls, Event, Failure, Limits, Spend, Step, WebAclRef, handle};
 
 /// The description the kill switch gives its stage deployment, which is how a later check knows
 /// the stage was deployed after `disableExecuteApiEndpoint` was set.
@@ -29,9 +29,7 @@ struct Aws {
     cloudwatch: aws_sdk_cloudwatch::Client,
     budgets: aws_sdk_budgets::Client,
     sns: aws_sdk_sns::Client,
-    /// The web ACL's CloudFormation `Ref`: `name|id|scope`.
-    web_acl_name: String,
-    web_acl_id: String,
+    web_acl: WebAclRef,
     api_function: String,
     job_function: String,
     rest_api_id: String,
@@ -46,8 +44,8 @@ impl Aws {
         let out = self
             .waf
             .get_web_acl()
-            .name(&self.web_acl_name)
-            .id(&self.web_acl_id)
+            .name(&self.web_acl.name)
+            .id(&self.web_acl.id)
             .scope(Scope::Cloudfront)
             .send()
             .await
@@ -136,8 +134,8 @@ impl Controls for Aws {
                 let (acl, lock_token) = self.web_acl().await?;
                 self.waf
                     .update_web_acl()
-                    .name(&self.web_acl_name)
-                    .id(&self.web_acl_id)
+                    .name(&self.web_acl.name)
+                    .id(&self.web_acl.id)
                     .scope(Scope::Cloudfront)
                     .lock_token(lock_token)
                     .default_action(
@@ -295,11 +293,8 @@ async fn main() -> Result<(), lambda_runtime::Error> {
         .without_time()
         .with_max_level(tracing::Level::INFO)
         .init();
-    let web_acl = env("WEB_ACL");
-    let mut parts = web_acl.split('|');
-    let (Some(web_acl_name), Some(web_acl_id)) = (parts.next(), parts.next()) else {
-        panic!("WEB_ACL is the web ACL's Ref, name|id|scope");
-    };
+    let web_acl =
+        WebAclRef::parse(&env("WEB_ACL")).expect("WEB_ACL is the web ACL's Ref, name|id|scope");
     let limits = Limits {
         daily_calls: env("DAILY_CALL_LIMIT")
             .parse()
@@ -313,8 +308,7 @@ async fn main() -> Result<(), lambda_runtime::Error> {
         cloudwatch: aws_sdk_cloudwatch::Client::new(&config),
         budgets: aws_sdk_budgets::Client::new(&config),
         sns: aws_sdk_sns::Client::new(&config),
-        web_acl_name: web_acl_name.to_owned(),
-        web_acl_id: web_acl_id.to_owned(),
+        web_acl,
         api_function: env("API_FUNCTION_NAME"),
         job_function: env("JOB_FUNCTION_NAME"),
         rest_api_id: env("REST_API_ID"),

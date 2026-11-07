@@ -47,6 +47,28 @@ impl Event {
     }
 }
 
+/// The CloudFront web ACL, from its CloudFormation `Ref`, `name|id|scope`, which the CDK passes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WebAclRef {
+    pub name: String,
+    pub id: String,
+}
+
+impl WebAclRef {
+    pub fn parse(r: &str) -> Option<WebAclRef> {
+        let mut parts = r.split('|');
+        match (parts.next(), parts.next(), parts.next(), parts.next()) {
+            (Some(name), Some(id), Some(_scope), None) if !name.is_empty() && !id.is_empty() => {
+                Some(WebAclRef {
+                    name: name.to_owned(),
+                    id: id.to_owned(),
+                })
+            }
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct Limits {
     /// API Gateway calls per UTC day; more than this stops the API.
@@ -196,4 +218,29 @@ fn body(trigger: Trigger) -> String {
          incomplete, and the next 5-minute check retries the missing steps.\n",
         trigger.name()
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_web_acl_ref_is_name_id_and_scope() {
+        assert_eq!(
+            WebAclRef::parse("sfab-acl|0123-abcd|CLOUDFRONT"),
+            Some(WebAclRef {
+                name: "sfab-acl".into(),
+                id: "0123-abcd".into()
+            })
+        );
+        for bad in [
+            "",
+            "sfab-acl",
+            "sfab-acl|0123-abcd",
+            "|0123|CLOUDFRONT",
+            "a|b|c|d",
+        ] {
+            assert_eq!(WebAclRef::parse(bad), None, "{bad:?}");
+        }
+    }
 }
