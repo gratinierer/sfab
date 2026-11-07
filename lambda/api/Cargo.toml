@@ -16,6 +16,8 @@ axum = { version = "0.8.9", default-features = false, features = ["original-uri"
 lambda_http = { version = "1.3.2", default-features = false, features = ["apigw_rest"] }
 serde_json = "1.0.149"
 sfab-core = { path = "../core", features = ["s3"] }
+sfab-census = { path = "../world/census" }
+sfab-constitution = { path = "../world/constitution" }
 sfab-identity = { path = "../identity" }
 tokio = { version = "1.52.3", features = ["macros", "rt"] }
 tracing = "0.1.44"

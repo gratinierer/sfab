@@ -2094,6 +2094,8 @@ dependencies = [
  "regex",
  "saphyr",
  "serde_json",
+ "sfab-census",
+ "sfab-constitution",
  "sfab-core",
  "sfab-identity",
  "tokio",

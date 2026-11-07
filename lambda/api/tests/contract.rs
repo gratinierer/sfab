@@ -12,6 +12,7 @@ use regex::Regex;
 use saphyr::{LoadableYamlNode, Scalar, Yaml};
 use serde_json::{Value, json};
 use sfab_core::credentials::caller_of;
+use sfab_core::id::AgentId;
 use sfab_core::proof;
 use sfab_core::storage::{Bucket, MemoryStore, Store};
 use tower::ServiceExt;
@@ -77,7 +78,23 @@ fn validate(spec: &Value, schema: &Value, value: &Value, at: &str, errors: &mut 
             validate(spec, part, value, at, errors);
         }
     }
+    if value.is_null() && schema.get("nullable") == Some(&Value::Bool(true)) {
+        return;
+    }
     match schema.get("type").and_then(Value::as_str) {
+        Some("array") => {
+            let Some(items) = value.as_array() else {
+                return errors.push(format!("{at}: not an array"));
+            };
+            if let Some(max) = schema.get("maxItems").and_then(Value::as_u64)
+                && items.len() as u64 > max
+            {
+                errors.push(format!("{at}: more than {max} items"));
+            }
+            for (i, item) in items.iter().enumerate() {
+                validate(spec, &schema["items"], item, &format!("{at}[{i}]"), errors);
+            }
+        }
         Some("object") => {
             let Some(obj) = value.as_object() else {
                 return errors.push(format!("{at}: not an object"));
@@ -202,6 +219,7 @@ impl Harness {
         let headers = response.headers().clone();
         let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
         let route = path.strip_prefix("/v1").unwrap();
+        let route = route.split_once('?').map_or(route, |(r, _)| r);
         let op = &self.spec["paths"][route][method.to_lowercase()];
         assert_eq!(op["operationId"], operation, "{method} {route}");
         let responses = &op["responses"];
@@ -281,6 +299,18 @@ fn reclaim(auth: Option<String>, proof: Proof) -> Case {
         path: "/v1/identity/reclaim",
         authorization: auth,
         proof,
+        body: Vec::new(),
+    }
+}
+
+/// An anonymous read.
+fn read(operation: &'static str, path: &'static str) -> Case {
+    Case {
+        operation,
+        method: "GET",
+        path,
+        authorization: None,
+        proof: Proof::None,
         body: Vec::new(),
     }
 }
@@ -365,6 +395,34 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
         .await;
     assert_eq!(status, 200);
     assert_eq!(text, sfab_api::OPENAPI);
+
+    // The world routes: before the daily job's first run, then after it.
+    assert_eq!(
+        h.send(read("constitution", "/v1/world/constitution"))
+            .await
+            .0,
+        200
+    );
+    let (status, body) = h.send(read("census", "/v1/world/census")).await;
+    assert_eq!((status, &body["type"]), (404, &json!("not-built-yet")));
+    let (status, body) = h.send(read("residents", "/v1/world/residents")).await;
+    assert_eq!((status, &body["type"]), (404, &json!("not-built-yet")));
+    let ids: Vec<AgentId> = sfab_identity::residents(&*h.store).await.unwrap();
+    sfab_census::snapshot(&*h.store, &ids, "2026-11-05T00:05:00Z")
+        .await
+        .unwrap();
+    let (status, census) = h.send(read("census", "/v1/world/census")).await;
+    assert_eq!((status, &census["residents"]), (200, &json!(ids.len())));
+    let (status, page) = h.send(read("residents", "/v1/world/residents")).await;
+    assert_eq!((status, &page["next"]), (200, &Value::Null));
+    assert_eq!(page["items"].as_array().unwrap().len(), ids.len());
+    for (path, expected) in [
+        ("/v1/world/residents?page=1", 200),
+        ("/v1/world/residents?page=2", 404),
+        ("/v1/world/residents?page=x", 400),
+    ] {
+        assert_eq!(h.send(read("residents", path)).await.0, expected, "{path}");
+    }
 
     // Every operation in sfab.yaml was exercised.
     let seen: BTreeSet<String> = h
