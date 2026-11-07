@@ -97,26 +97,33 @@ def test_the_job_keeps_logs_for_14_days(api):
     assert api.find_resources("AWS::Logs::LogGroup")[group]["Properties"]["RetentionInDays"] == 14
 
 
-def test_the_job_gets_both_buckets(api):
+def test_the_job_gets_both_buckets_and_the_alerts_topic(api, base):
     _, function = world_job(api)
-    assert set(function["Properties"]["Environment"]["Variables"]) == {
-        "IDENTITIES_BUCKET",
-        "CLAIMS_BUCKET",
-    }
+    env = function["Properties"]["Environment"]["Variables"]
+    assert set(env) == {"IDENTITIES_BUCKET", "CLAIMS_BUCKET", "ALERTS_TOPIC_ARN"}
+    # The federation email goes to the owner's alerts topic, never the stop topic.
+    assert topic_id(base, "Alerts") in json.dumps(env["ALERTS_TOPIC_ARN"])
 
 
-def test_the_job_may_list_claims_and_write_only_world(api, base):
-    assert grants(api, base, "WorldJobFunctionServiceRole") == {
+def test_the_job_may_list_claims_and_write_only_world_and_federation(api, base):
+    found = grants(api, base, "WorldJobFunctionServiceRole")
+    publish = {g for g in found if g[0] == "sns:Publish"}
+    assert found - publish == {
         ("s3:ListBucket", "Claims"),
         ("s3:ListBucket", "Identities"),
         ("s3:GetObject", "Identities/world/*"),
         ("s3:PutObject", "Identities/world/*"),
         ("s3:DeleteObject", "Identities/world/*"),
+        ("s3:GetObject", "Identities/federation/*"),
+        ("s3:PutObject", "Identities/federation/*"),
+        ("s3:DeleteObject", "Identities/federation/*"),
     }
+    assert len(publish) == 1
+    assert topic_id(base, "Alerts") in next(iter(publish))[1]
 
 
-def test_the_job_lists_only_world_in_the_identities_bucket(api):
-    function_id, _ = world_job(api)
+def test_the_job_lists_only_world_and_federation_in_the_identities_bucket(api):
+    conditions = []
     for policy in api.find_resources("AWS::IAM::Policy").values():
         if "WorldJobFunctionServiceRole" not in json.dumps(policy["Properties"]["Roles"]):
             continue
@@ -124,7 +131,15 @@ def test_the_job_lists_only_world_in_the_identities_bucket(api):
             if statement["Action"] == "s3:ListBucket" and "Identities" in json.dumps(
                 statement["Resource"]
             ):
-                assert statement["Condition"] == {"StringLike": {"s3:prefix": ["world/*"]}}
+                conditions.append(statement["Condition"])
+    assert conditions == [{"StringLike": {"s3:prefix": ["world/*", "federation/*"]}}]
+
+
+def test_only_the_job_may_touch_verified_federation_requests(api, base):
+    for role in ("ApiFunctionServiceRole", "KillSwitchFunctionServiceRole"):
+        for _, resource in grants(api, base, role):
+            assert "federation/verified" not in resource, role
+            assert resource != "Identities/federation/*", role
 
 
 def test_the_job_s_errors_alarm_only_emails(api, base):

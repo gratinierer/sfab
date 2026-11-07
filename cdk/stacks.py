@@ -64,6 +64,10 @@ API_TIMEOUT_SECONDS = 10
 # The identities bucket's prefixes the API Lambda reads and writes, and those it only reads.
 API_READ_WRITE_PREFIXES = ("identities/", "messages/", "vitals/", "federation/pending/")
 API_READ_PREFIXES = ("world/",)
+# Days before S3 deletes a federation request: one waiting for its token, and one waiting for
+# the owner (spec.md "Federation" and "Storage").
+FEDERATION_PENDING_DAYS = 3
+FEDERATION_VERIFIED_DAYS = 30
 
 
 STAGE = "v1"
@@ -152,7 +156,22 @@ class BaseStack(cdk.Stack):
             validation=acm.CertificateValidation.from_dns(self.hosted_zone),
         )
 
-        self.identities_bucket = self._bucket("Identities")
+        self.identities_bucket = self._bucket(
+            "Identities",
+            lifecycle_rules=[
+                s3.LifecycleRule(
+                    id="FederationPending",
+                    prefix="federation/pending/",
+                    expiration=cdk.Duration.days(FEDERATION_PENDING_DAYS),
+                ),
+                s3.LifecycleRule(
+                    id="FederationVerified",
+                    prefix="federation/verified/",
+                    expiration=cdk.Duration.days(FEDERATION_VERIFIED_DAYS),
+                ),
+            ],
+        )
+        # Claims never expire: identities live indefinitely.
         self.claims_bucket = self._bucket("Claims")
 
         # The only thing the owner's email subscribes to. Nothing on it can stop the API.
@@ -247,7 +266,9 @@ class BaseStack(cdk.Stack):
             )
         )
 
-    def _bucket(self, id: str) -> s3.Bucket:
+    def _bucket(
+        self, id: str, lifecycle_rules: list[s3.LifecycleRule] | None = None
+    ) -> s3.Bucket:
         # Deleting the stack can never delete identities: retained, no autoDeleteObjects.
         return s3.Bucket(
             self,
@@ -258,6 +279,7 @@ class BaseStack(cdk.Stack):
             versioned=False,
             removal_policy=cdk.RemovalPolicy.RETAIN,
             auto_delete_objects=False,
+            lifecycle_rules=lifecycle_rules,
         )
 
 
@@ -290,6 +312,9 @@ class ApiStack(cdk.Stack):
                 "REQUIRED_BITS": str(REQUIRED_BITS),
                 "IDENTITIES_BUCKET": base.identities_bucket.bucket_name,
                 "CLAIMS_BUCKET": base.claims_bucket.bucket_name,
+                # This world, which GET /federation/world publishes.
+                "DOMAIN_NAME": config.domain_name,
+                "ABUSE_CONTACT": config.abuse_contact,
             },
             reserved_concurrent_executions=API_RESERVED_CONCURRENCY,
             timeout=cdk.Duration.seconds(API_TIMEOUT_SECONDS),
