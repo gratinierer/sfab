@@ -40,6 +40,10 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
     assert not result.blocked
     assert set(api.labels) == {
         "openapi",
+        "constitution",
+        "census",
+        "residents",
+        "residents past the last",
         "outside v1",
         "unknown route",
         "no proof",
@@ -96,6 +100,20 @@ JSON = {"content-type": "application/json", "cache-control": "no-store"}
         ),
         ("execute-api no key", ok(200, {}), "execute-api without the origin key is rejected"),
         (
+            "constitution",
+            ok(200, {"version": "v", "text": "no terms"}),
+            "GET /v1/world/constitution",
+        ),
+        ("census", ok(200, {"as_of": "2026-11-05T00:05:00Z"}), "GET /v1/world/census"),
+        ("census", problem(404, "about:blank"), "GET /v1/world/census"),
+        ("residents", ok(200, {"items": []}), "GET /v1/world/residents"),
+        ("residents", problem(404, "about:blank"), "GET /v1/world/residents"),
+        (
+            "residents past the last",
+            ok(200, {"items": [], "next": None}),
+            "a resident page past the last",
+        ),
+        (
             "openapi",
             Response(200, {"content-type": "application/yaml"}, b"openapi: 3.0.1\n"),
             "GET /v1/openapi.yaml",
@@ -108,6 +126,16 @@ def test_a_broken_behaviour_fails_its_check(label, response, failed):
     api.override[label] = response
 
     assert failed in failing_checks(api, clock)
+
+
+def test_the_census_and_residents_may_be_not_built_yet_before_the_job_s_first_run():
+    clock = Clock()
+    api = FakeApi(clock)
+    api.override["census"] = problem(404, "not-built-yet")
+    api.override["residents"] = problem(404, "not-built-yet")
+    api.override["residents past the last"] = problem(404, "not-built-yet")
+
+    assert smoke(api, clock).failures == []
 
 
 def test_a_birth_whose_id_isnt_from_the_proof_fails_and_skips_the_identity_checks():
@@ -185,6 +213,10 @@ def test_production_births_nothing_and_writes_only_privately():
     }
     assert {
         "openapi",
+        "constitution",
+        "census",
+        "residents",
+        "residents past the last",
         "outside v1",
         "unknown route",
         "no proof",
