@@ -19,9 +19,10 @@ step "Python environment (cdk/.venv)"
 uv pip sync -q --python cdk/.venv/bin/python --require-hashes cdk/requirements.txt
 
 step "Generate"
-# The public API description, from the active config (SFAB_CONFIG or sfab.config.toml),
-# so a deploy publishes the real abuse_contact. The website pages arrive with issue 12.
+# The public API description and the website pages, from the active config (SFAB_CONFIG or
+# sfab.config.toml), so a deploy publishes the real abuse_contact and API host.
 cdk/.venv/bin/python cdk/generate_public_openapi.py
+cdk/.venv/bin/python cdk/generate_website.py
 
 step "Build the Lambdas (arm64)"
 (cd lambda && cargo lambda build --release --arm64 --locked)
