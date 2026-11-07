@@ -7,6 +7,8 @@ the day's calls, any message on the stop topic, or the daily spend check. Its ru
 
 from __future__ import annotations
 
+from typing import cast
+
 import aws_cdk as cdk
 from aws_cdk import aws_apigateway as apigw
 from aws_cdk import aws_cloudwatch as cloudwatch
@@ -195,8 +197,7 @@ class KillSwitch(Construct):
         )
         warning.add_alarm_action(email)
         # Aligned to midnight UTC, like the daily limit, rather than a rolling 24 hours.
-        cfn = warning.node.default_child
-        assert isinstance(cfn, cloudwatch.CfnAlarm)
+        cfn = cast(cloudwatch.CfnAlarm, warning.node.default_child)
         cfn.evaluation_window = cloudwatch.CfnAlarm.EvaluationWindowProperty(
             wall_clock_window=cloudwatch.CfnAlarm.WallClockWindowProperty(timezone="UTC")
         )

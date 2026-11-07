@@ -181,7 +181,8 @@ class BaseStack(cdk.Stack):
         self.alerts_topic = sns.Topic(self, "Alerts")
         self.alerts_topic.add_subscription(subs.EmailSubscription(config.alert_email))
         self._let_publish(self.alerts_topic, "budgets.amazonaws.com", "cloudwatch.amazonaws.com")
-        # Receives only the stop budget's alert; any message on it stops the API (kill_switch).
+        # Receives only the stop budget's alert; any message on it stops the API: KillSwitch in
+        # kill_switch.py subscribes to it.
         self.stop_topic = sns.Topic(self, "Stop")
         self._let_publish(self.stop_topic, "budgets.amazonaws.com")
 
@@ -413,7 +414,7 @@ class ApiStack(cdk.Stack):
 
     def _front_door(self, config: Config, base: BaseStack) -> None:
         """CloudFront on the Free flat-rate plan, with WAF, in front of the REST API."""
-        # The kill switch flips its default action to Block (kill_switch.py).
+        # The kill switch flips its default action to Block: Step::Waf in lambda/killswitch.
         self.web_acl = front_door.rate_limited_web_acl(
             self,
             metric_name="sfabApi",
