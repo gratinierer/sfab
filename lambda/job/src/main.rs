@@ -4,6 +4,8 @@
 
 use lambda_runtime::{LambdaEvent, service_fn};
 use sfab_core::s3::S3Store;
+use sfab_federation::Notify;
+use sfab_job::outbound::Outbound;
 
 fn env(name: &str) -> String {
     std::env::var(name).unwrap_or_else(|_| panic!("{name} must be set by the CDK"))
@@ -14,6 +16,26 @@ fn now() -> i64 {
         .duration_since(std::time::UNIX_EPOCH)
         .expect("the clock is after 1970")
         .as_secs() as i64
+}
+
+/// The owner's email: a message on the alerts topic, which only the owner subscribes to.
+struct AlertsTopic {
+    sns: aws_sdk_sns::Client,
+    topic_arn: String,
+}
+
+impl Notify for AlertsTopic {
+    async fn notify(&self, subject: &str, message: &str) -> Result<(), String> {
+        self.sns
+            .publish()
+            .topic_arn(&self.topic_arn)
+            .subject(subject)
+            .message(message)
+            .send()
+            .await
+            .map(|_| ())
+            .map_err(|e| format!("sns Publish: {:?}", e.into_service_error()))
+    }
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -29,16 +51,25 @@ async fn main() -> Result<(), lambda_runtime::Error> {
         env("IDENTITIES_BUCKET"),
         env("CLAIMS_BUCKET"),
     );
-    let store = &store;
+    let alerts = AlertsTopic {
+        sns: aws_sdk_sns::Client::new(&config),
+        topic_arn: env("ALERTS_TOPIC_ARN"),
+    };
+    let outbound = Outbound::production();
+    let (store, alerts, outbound) = (&store, &alerts, &outbound);
     lambda_runtime::run(service_fn(
         move |_: LambdaEvent<serde_json::Value>| async move {
-            match sfab_job::run(store, now()).await {
+            match sfab_job::run(store, outbound, alerts, now()).await {
                 Ok(report) => {
+                    let (census, federation) = (report.census, report.federation);
                     tracing::info!(
-                        residents = report.residents,
-                        pages = report.pages,
-                        written = report.written,
-                        deleted = report.deleted,
+                        residents = census.residents,
+                        pages = census.pages,
+                        written = census.written,
+                        deleted = census.deleted,
+                        federation_checked = federation.checked,
+                        federation_verified = federation.verified,
+                        federation_emailed = federation.emailed,
                         "daily world job done"
                     );
                     Ok(serde_json::json!({}))

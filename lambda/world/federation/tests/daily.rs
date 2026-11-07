@@ -84,9 +84,15 @@ async fn a_published_token_moves_its_request_to_verified() {
     let mut web = FakeWeb::default();
     let shown = ask(&store, "shown.example.org").await;
     ask(&store, "hidden.example.org").await;
-    publish(&mut web, &shown, shown["token"].as_str().unwrap().as_bytes());
+    publish(
+        &mut web,
+        &shown,
+        shown["token"].as_str().unwrap().as_bytes(),
+    );
 
-    let report = daily(&*store, &web, &FakeEmail::default(), RUN).await.unwrap();
+    let report = daily(&*store, &web, &FakeEmail::default(), RUN)
+        .await
+        .unwrap();
 
     assert_eq!((report.checked, report.verified), (2, 1));
     assert_eq!(
@@ -98,7 +104,10 @@ async fn a_published_token_moves_its_request_to_verified() {
         ]
     );
     let verified = store
-        .object(Bucket::Identities, "federation/verified/shown.example.org.json")
+        .object(
+            Bucket::Identities,
+            "federation/verified/shown.example.org.json",
+        )
         .unwrap();
     let verified: Value = serde_json::from_slice(&verified.body).unwrap();
     assert_eq!(verified["token"], shown["token"]);
@@ -117,7 +126,11 @@ async fn verified_requests_are_emailed_once_a_day_listing_them() {
     let mut web = FakeWeb::default();
     for domain in ["a.example.org", "b.example.org"] {
         let reply = ask(&store, domain).await;
-        publish(&mut web, &reply, reply["token"].as_str().unwrap().as_bytes());
+        publish(
+            &mut web,
+            &reply,
+            reply["token"].as_str().unwrap().as_bytes(),
+        );
     }
     let email = FakeEmail::default();
 
@@ -144,7 +157,9 @@ async fn nothing_verified_sends_no_email() {
     ask(&store, "hidden.example.org").await;
     let email = FakeEmail::default();
 
-    let report = daily(&*store, &FakeWeb::default(), &email, RUN).await.unwrap();
+    let report = daily(&*store, &FakeWeb::default(), &email, RUN)
+        .await
+        .unwrap();
 
     assert!(!report.emailed);
     assert!(email.sent.lock().unwrap().is_empty());
@@ -155,7 +170,11 @@ async fn running_twice_changes_nothing_more() {
     let store = Arc::new(MemoryStore::new());
     let mut web = FakeWeb::default();
     let reply = ask(&store, "shown.example.org").await;
-    publish(&mut web, &reply, reply["token"].as_str().unwrap().as_bytes());
+    publish(
+        &mut web,
+        &reply,
+        reply["token"].as_str().unwrap().as_bytes(),
+    );
     let email = FakeEmail::default();
     daily(&*store, &web, &email, RUN).await.unwrap();
     let before: Vec<_> = store

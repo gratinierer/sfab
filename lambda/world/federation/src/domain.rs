@@ -21,7 +21,8 @@ pub fn valid_domain(domain: &str) -> bool {
     let labels: Vec<&str> = domain.split('.').collect();
     let label_ok = |l: &&str| {
         (1..=63).contains(&l.len())
-            && l.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
+            && l.bytes()
+                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
             && !l.starts_with('-')
             && !l.ends_with('-')
     };

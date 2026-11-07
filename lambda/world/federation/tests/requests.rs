@@ -43,7 +43,11 @@ fn solved(body: &[u8], now: i64) -> String {
     proof::solve(&request, now, BITS)
 }
 
-async fn send(f: &Federation<MemoryStore>, body: &[u8], proof: Option<&str>) -> Result<Reply, Problem> {
+async fn send(
+    f: &Federation<MemoryStore>,
+    body: &[u8],
+    proof: Option<&str>,
+) -> Result<Reply, Problem> {
     let call = Call {
         method: "POST",
         path: PATH,
@@ -69,7 +73,11 @@ async fn a_request_with_a_proof_is_stored_pending_and_returns_a_token_to_publish
     assert_eq!(reply.status, 202);
     let token = reply.body["token"].as_str().unwrap();
     assert_eq!(token.len(), 32, "128 bits in hex");
-    assert!(token.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase()));
+    assert!(
+        token
+            .bytes()
+            .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
+    );
     assert_eq!(
         reply.body["url"],
         format!("https://other.example.org/.well-known/sfab-federation/{token}")
@@ -77,7 +85,12 @@ async fn a_request_with_a_proof_is_stored_pending_and_returns_a_token_to_publish
     assert_eq!(reply.body["expires_at"], "2026-11-08T12:00:00Z");
     let instructions = reply.body["instructions"].as_str().unwrap();
     assert!(instructions.contains("website/.well-known/sfab-federation/"));
-    assert!(reply.body["manual"].as_str().unwrap().ends_with("docs/federation.md"));
+    assert!(
+        reply.body["manual"]
+            .as_str()
+            .unwrap()
+            .ends_with("docs/federation.md")
+    );
     assert_eq!(
         store.keys(Bucket::Identities),
         ["federation/pending/other.example.org.json"]
@@ -92,7 +105,10 @@ async fn a_request_without_a_valid_proof_gets_400_and_stores_nothing() {
 
     for proof in [None, Some(for_another_body.as_str())] {
         let err = send(&f, &b, proof).await.unwrap_err();
-        assert_eq!((err.status, &err.extra["required_bits"]), (400, &json!(BITS)));
+        assert_eq!(
+            (err.status, &err.extra["required_bits"]),
+            (400, &json!(BITS))
+        );
     }
     assert!(store.keys(Bucket::Identities).is_empty());
 }
@@ -153,7 +169,12 @@ async fn a_body_that_is_not_one_domain_gets_400() {
 async fn a_valid_hostname_is_accepted() {
     let (_, f) = federation();
     let longest_label = format!("{}.org", "a".repeat(63));
-    for domain in ["a.co", "xn--bcher-kva.de", "w0rld-2.sub.example.org", longest_label.as_str()] {
+    for domain in [
+        "a.co",
+        "xn--bcher-kva.de",
+        "w0rld-2.sub.example.org",
+        longest_label.as_str(),
+    ] {
         assert_eq!(ask(&f, domain).await.unwrap().status, 202, "{domain}");
     }
 }
@@ -182,7 +203,10 @@ async fn a_repeat_returns_the_same_token_with_200() {
 async fn at_100_pending_a_new_domain_gets_503_until_the_next_daily_run() {
     let (store, f) = federation();
     for i in 0..100 {
-        assert_eq!(ask(&f, &format!("w{i}.example.org")).await.unwrap().status, 202);
+        assert_eq!(
+            ask(&f, &format!("w{i}.example.org")).await.unwrap().status,
+            202
+        );
     }
 
     let err = ask(&f, "late.example.org").await.unwrap_err();
@@ -203,7 +227,10 @@ async fn the_stored_request_holds_the_token_and_when_it_was_made() {
     let reply = ask(&f, "other.example.org").await.unwrap();
 
     let object = store
-        .object(Bucket::Identities, "federation/pending/other.example.org.json")
+        .object(
+            Bucket::Identities,
+            "federation/pending/other.example.org.json",
+        )
         .unwrap();
     let stored: Value = serde_json::from_slice(&object.body).unwrap();
 

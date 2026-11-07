@@ -8,9 +8,26 @@ use sfab_census::Census;
 use sfab_core::id::AgentId;
 use sfab_core::storage::{Bucket, Condition, MemoryStore, Store};
 use sfab_core::takedown::Action;
+use sfab_federation::{Fetch, Notify};
 
 /// 2026-11-07T00:05:00Z.
 const NOW: i64 = 1_794_009_600 + 300;
+
+/// No server answers, and no email is sent: this file tests the census, and `outbound.rs` and
+/// the federation crate test the rest.
+struct Offline;
+
+impl Fetch for Offline {
+    async fn fetch(&self, _: &str, _: &str) -> Option<Vec<u8>> {
+        None
+    }
+}
+
+impl Notify for Offline {
+    async fn notify(&self, _: &str, _: &str) -> Result<(), String> {
+        Err("no email expected".into())
+    }
+}
 
 async fn claim(store: &MemoryStore, id: &str) {
     // A claim as `birth` leaves it; the job never opens one, so its content doesn't matter.
@@ -55,9 +72,11 @@ async fn the_job_counts_residents_without_markers_as_of_its_run() {
     claim(&store, "bbbbbbbbbbbb").await;
     marker(&store, "cccccccccccc").await;
 
-    let report = sfab_job::run(&*store, NOW).await.unwrap();
+    let report = sfab_job::run(&*store, &Offline, &Offline, NOW)
+        .await
+        .unwrap();
 
-    assert_eq!(report.residents, 2);
+    assert_eq!(report.census.residents, 2);
     let census = Census::new(store.clone());
     assert_eq!(
         census.census().await.unwrap().body,

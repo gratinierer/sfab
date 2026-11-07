@@ -94,9 +94,18 @@ mod tests {
     fn the_next_daily_run_is_the_next_00_05_utc() {
         let midnight = 1_793_836_800;
         assert_eq!(rfc3339(next_daily_run(midnight)), "2026-11-05T00:05:00Z");
-        assert_eq!(rfc3339(next_daily_run(midnight + 299)), "2026-11-05T00:05:00Z");
-        assert_eq!(rfc3339(next_daily_run(midnight + 300)), "2026-11-06T00:05:00Z");
-        assert_eq!(rfc3339(next_daily_run(midnight + 43_200)), "2026-11-06T00:05:00Z");
+        assert_eq!(
+            rfc3339(next_daily_run(midnight + 299)),
+            "2026-11-05T00:05:00Z"
+        );
+        assert_eq!(
+            rfc3339(next_daily_run(midnight + 300)),
+            "2026-11-06T00:05:00Z"
+        );
+        assert_eq!(
+            rfc3339(next_daily_run(midnight + 43_200)),
+            "2026-11-06T00:05:00Z"
+        );
     }
 
     #[test]

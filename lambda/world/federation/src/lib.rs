@@ -116,9 +116,8 @@ impl<S: Store> Federation<S> {
     /// `POST /federation/requests`: the proof, then a repeat, then the cap, then the write.
     pub async fn request(&self, call: &Call<'_>, now: i64) -> Result<Reply, Problem> {
         let admitted = admit_write(call, now, self.required_bits)?;
-        let body: RequestBody = serde_json::from_slice(call.body).map_err(|_| {
-            Problem::bad_request(r#"The body must be {"domain": "<hostname>"}"#)
-        })?;
+        let body: RequestBody = serde_json::from_slice(call.body)
+            .map_err(|_| Problem::bad_request(r#"The body must be {"domain": "<hostname>"}"#))?;
         let domain = body.domain;
         if !valid_domain(&domain) {
             return Err(Problem::bad_request(
@@ -154,7 +153,13 @@ impl<S: Store> Federation<S> {
         let bytes = serde_json::to_vec(&stored).expect("a request serializes");
         match self
             .store
-            .put(Bucket::Identities, &key, bytes, Metadata::new(), Condition::IfAbsent)
+            .put(
+                Bucket::Identities,
+                &key,
+                bytes,
+                Metadata::new(),
+                Condition::IfAbsent,
+            )
             .await
         {
             Ok(()) => Ok(Reply {
@@ -171,7 +176,12 @@ impl<S: Store> Federation<S> {
     }
 
     async fn read(&self, key: &str) -> Result<Option<Stored>, Problem> {
-        let Some(object) = self.store.get(Bucket::Identities, key).await.map_err(internal)? else {
+        let Some(object) = self
+            .store
+            .get(Bucket::Identities, key)
+            .await
+            .map_err(internal)?
+        else {
             return Ok(None);
         };
         serde_json::from_slice(&object.body).map(Some).map_err(|_| {

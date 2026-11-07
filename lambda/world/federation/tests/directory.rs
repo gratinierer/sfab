@@ -46,8 +46,12 @@ fn worlds_yaml_lists_domains() {
     assert_eq!(
         parse_worlds(text).unwrap(),
         [
-            Approved { domain: "a.example.org".into() },
-            Approved { domain: "b.example.org".into() },
+            Approved {
+                domain: "a.example.org".into()
+            },
+            Approved {
+                domain: "b.example.org".into()
+            },
         ]
     );
     assert_eq!(parse_worlds("worlds: []\n").unwrap(), []);
@@ -71,7 +75,12 @@ fn a_bad_worlds_yaml_is_refused() {
 #[test]
 fn a_bad_world_yaml_is_refused() {
     assert_eq!(parse_world("name: Somewhere\n").unwrap(), "Somewhere");
-    for text in ["", "name: ''\n", "title: x\n", &format!("name: {}\n", "x".repeat(129))] {
+    for text in [
+        "",
+        "name: ''\n",
+        "title: x\n",
+        &format!("name: {}\n", "x".repeat(129)),
+    ] {
         assert!(parse_world(text).is_err(), "{text:?}");
     }
 }
