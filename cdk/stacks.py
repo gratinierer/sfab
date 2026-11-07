@@ -394,7 +394,7 @@ class ApiStack(cdk.Stack):
             source_arn=self.rest_api.arn_for_execute_api(),
         )
 
-        self._front_door(config, base, origin_key=config.origin_key)
+        self._front_door(config, base)
 
         self.world_job = WorldJob(
             self,
@@ -419,7 +419,7 @@ class ApiStack(cdk.Stack):
             web_acl=self.web_acl,
         )
 
-    def _front_door(self, config: Config, base: BaseStack, *, origin_key: str) -> None:
+    def _front_door(self, config: Config, base: BaseStack) -> None:
         """CloudFront on the Free flat-rate plan, with WAF, in front of the REST API."""
         self.web_acl = wafv2.CfnWebACL(
             self,
@@ -466,7 +466,7 @@ class ApiStack(cdk.Stack):
                     self.rest_api,
                     # RestApiOrigin defaults to the stage, but public URLs already hold /v1.
                     origin_path="/",
-                    custom_headers={"x-api-key": origin_key},
+                    custom_headers={"x-api-key": config.origin_key},
                 ),
                 # Not a redirect: that would come after the token was already sent.
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
