@@ -178,6 +178,9 @@ impl<S: Store> Identity<S> {
         for _ in 0..MAX_TRIES {
             let (before, etag) = self.read_contacts(id).await?;
             if before.find(list, &other).is_none() {
+                // Already gone, perhaps by an earlier try: redo only the copy's rebuild, as
+                // `add_contact` does, in case that try failed after saving.
+                self.refresh_copy(id).await?;
                 return Ok(Reply::ok(removed));
             }
             let mut after = before.clone();
