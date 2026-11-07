@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The CDK app: story 2's base and API stacks (see stacks.py)."""
+"""The CDK app: story 2's base, API and website stacks (see stacks.py)."""
 
 import sys
 
@@ -24,6 +24,12 @@ def main() -> None:
         sys.exit(
             f"sfab build missing: {API_LAMBDA_BUILD / 'bootstrap'}. Run scripts/check, "
             "which builds the Lambdas, or scripts/deploy."
+        )
+
+    if not (stacks.WEBSITE_BUILD / "index.html").is_file():
+        sys.exit(
+            f"sfab build missing: {stacks.WEBSITE_BUILD}. Run scripts/check, "
+            "which generates the website pages, or scripts/deploy."
         )
 
     app = cdk.App()
