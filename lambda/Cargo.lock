@@ -2151,6 +2151,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "sfab-job"
+version = "0.1.0"
+dependencies = [
+ "aws-config",
+ "aws-sdk-s3",
+ "lambda_runtime",
+ "serde_json",
+ "sfab-census",
+ "sfab-core",
+ "sfab-identity",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "sfab-killswitch"
 version = "0.1.0"
 dependencies = [
