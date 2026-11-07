@@ -69,6 +69,15 @@ impl WebAclRef {
     }
 }
 
+/// Where the day's count starts: midnight UTC of the day holding `now`, both in Unix seconds.
+pub fn utc_midnight(now: i64) -> i64 {
+    now - now.rem_euclid(86_400)
+}
+
+/// The statistic of API Gateway's `Count` that gives the number of calls, as AWS documents it
+/// (`docs/aws-facts.md`, the row on API Gateway `Count`).
+pub const COUNT_STATISTIC: &str = "SampleCount";
+
 #[derive(Debug, Clone, Copy)]
 pub struct Limits {
     /// API Gateway calls per UTC day; more than this stops the API.
@@ -223,6 +232,14 @@ fn body(trigger: Trigger) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_day_starts_at_midnight_utc() {
+        let midnight = 1_793_836_800; // 2026-11-05T00:00:00Z
+        assert_eq!(utc_midnight(midnight), midnight);
+        assert_eq!(utc_midnight(midnight + 86_399), midnight);
+        assert_eq!(utc_midnight(midnight - 1), midnight - 86_400);
+    }
 
     #[test]
     fn a_web_acl_ref_is_name_id_and_scope() {

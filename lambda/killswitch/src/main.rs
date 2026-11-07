@@ -8,7 +8,9 @@ use aws_sdk_cloudwatch::primitives::DateTime;
 use aws_sdk_cloudwatch::types::{Dimension, Metric, MetricDataQuery, MetricStat};
 use aws_sdk_wafv2::types::{BlockAction, DefaultAction, Scope};
 use lambda_runtime::{LambdaEvent, service_fn};
-use sfab_killswitch::{Controls, Event, Failure, Limits, Spend, Step, WebAclRef, handle};
+use sfab_killswitch::{
+    COUNT_STATISTIC, Controls, Event, Failure, Limits, Spend, Step, WebAclRef, handle, utc_midnight,
+};
 
 /// The description the kill switch gives its stage deployment, which is how a later check knows
 /// the stage was deployed after `disableExecuteApiEndpoint` was set.
@@ -197,7 +199,7 @@ impl Controls for Aws {
             .duration_since(UNIX_EPOCH)
             .expect("the clock is after 1970")
             .as_secs() as i64;
-        let midnight = now - now.rem_euclid(86_400);
+        let midnight = utc_midnight(now);
         // The ApiName dimension is the REST API's name as API Gateway holds it, which is read
         // rather than assumed, because a wrong name would silently count nothing.
         let api = self.rest_api().await?;
@@ -218,8 +220,7 @@ impl Controls for Aws {
                             .build(),
                     )
                     .period(300)
-                    // AWS documents Count's statistic as SampleCount.
-                    .stat("SampleCount")
+                    .stat(COUNT_STATISTIC)
                     .build(),
             )
             .build();
