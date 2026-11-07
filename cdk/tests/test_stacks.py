@@ -97,6 +97,20 @@ def test_the_base_stack_holds_two_private_retained_buckets(base):
         assert "VersioningConfiguration" not in props
 
 
+def test_messages_expire_after_30_days_and_nothing_else_does(base):
+    buckets = base.find_resources("AWS::S3::Bucket")
+    rules = {
+        name: bucket["Properties"].get("LifecycleConfiguration", {}).get("Rules", [])
+        for name, bucket in buckets.items()
+    }
+    identities = next(n for n in rules if n.startswith("Identities"))
+    claims = next(n for n in rules if n.startswith("Claims"))
+    # Story 4 and issue 15 add their own prefixes; each rule names exactly one.
+    messages = [r for r in rules[identities] if r.get("Prefix") == "messages/"]
+    assert messages == [{"ExpirationInDays": 30, "Prefix": "messages/", "Status": "Enabled"}]
+    assert rules[claims] == []
+
+
 # The base stack: topics
 
 
@@ -336,6 +350,8 @@ def test_the_api_lambda_may_touch_only_its_own_prefixes(api, base):
     ]
     expected = {(a, r) for r in read_write for a in ("s3:GetObject", "s3:PutObject")}
     expected |= {("s3:GetObject", "Identities/world/*")}
+    # Only a message or knock is ever deleted by the API (spec.md "Messages").
+    expected |= {("s3:DeleteObject", "Identities/messages/*")}
     # Without ListBucket, S3 answers a missing key with 403 instead of 404 (docs/aws-facts.md).
     expected |= {("s3:ListBucket", "Identities"), ("s3:ListBucket", "Claims")}
     assert grants(api, base, "ApiFunctionServiceRole") == expected
