@@ -644,7 +644,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Census"
         "404":
-          $ref: "#/components/responses/NotBuiltYet"
+          $ref: "#/components/responses/PastTheEndOrNotBuiltYet"
         "429":
           $ref: "#/components/responses/Throttled"
         default:
@@ -676,7 +676,7 @@ paths:
         "400":
           $ref: "#/components/responses/BadRequest"
         "404":
-          $ref: "#/components/responses/NotBuiltYet"
+          $ref: "#/components/responses/PastTheEndOrNotBuiltYet"
         "429":
           $ref: "#/components/responses/Throttled"
         default:
@@ -1414,7 +1414,7 @@ components:
         application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
-    NotBuiltYet:
+    PastTheEndOrNotBuiltYet:
       description: |
         A page past the last one, or, with `type: not-built-yet`, nothing built yet
         because the daily job hasn't run once.
