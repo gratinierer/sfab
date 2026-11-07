@@ -14,7 +14,11 @@ at or after FROM and before TO, given as UTC to the second, such as 2026-11-05T1
 catches real agents born then. --wait-seconds must be at least the API Lambda's timeout (default
 60). Needs IDENTITIES_BUCKET, CLAIMS_BUCKET and the owner's AWS credentials.";
 
-/// The API Lambda's timeout is 10 seconds (`API_TIMEOUT_SECONDS` in cdk/stacks.py) and API Gateway gives up at 29, so 60 leaves room.
+/// The API Lambda's timeout: `API_TIMEOUT_SECONDS` in cdk/stacks.py. The spec's wait must last at
+/// least this long, so `--wait-seconds` refuses less.
+const API_TIMEOUT_SECONDS: u64 = 10;
+
+/// API Gateway gives up at 29 seconds, so 60 leaves room.
 const DEFAULT_WAIT_SECONDS: u64 = 60;
 
 #[derive(Debug, Clone)]
@@ -38,6 +42,11 @@ pub fn parse_args(args: &[String]) -> Result<Args, String> {
                     .next()
                     .and_then(|n| n.parse().ok())
                     .ok_or("--wait-seconds takes a whole number")?;
+                if wait_seconds < API_TIMEOUT_SECONDS {
+                    return Err(format!(
+                        "--wait-seconds must be at least the API Lambda's timeout, {API_TIMEOUT_SECONDS}"
+                    ));
+                }
             }
             flag if flag.starts_with("--") => return Err(format!("unknown option {flag}")),
             _ => positional.push(arg.as_str()),

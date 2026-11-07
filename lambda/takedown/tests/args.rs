@@ -29,6 +29,16 @@ fn a_window_with_execute_and_a_wait() {
 }
 
 #[test]
+fn the_wait_may_be_exactly_the_lambda_timeout() {
+    assert_eq!(
+        parse("id abcdefghijkl --wait-seconds 10")
+            .unwrap()
+            .wait_seconds,
+        10
+    );
+}
+
+#[test]
 fn bad_lines_are_refused() {
     for line in [
         "",
@@ -41,6 +51,8 @@ fn bad_lines_are_refused() {
         "window 2026-11-05T12:00:00Z",
         "id abcdefghijkl --wait-seconds",
         "id abcdefghijkl --wait-seconds soon",
+        "id abcdefghijkl --wait-seconds 0",
+        "id abcdefghijkl --wait-seconds 9",
         "id abcdefghijkl --force",
     ] {
         assert!(parse(line).is_err(), "{line:?} should be refused");
