@@ -37,6 +37,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-07T16:12:41+00:00 | code-review | 07 @ 8652db6..8763da9 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 9 new: 5 standards, 4 spec | |
 | 2026-11-07T16:24:53+00:00 | code-review | 13 @ 0e2d3c1..b31538e | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 13 new: 8 standards, 5 spec | |
 | 2026-11-07T20:12:41+00:00 | code-review | 11 @ a17bfcb..46ef07f | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 10 new: 6 standards, 4 spec | |
+| 2026-11-07T20:19:56+00:00 | code-review | 14 @ bf041a1..7816867 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 9 new: 5 standards, 4 spec | the spec reviewer confirms 14 moves `messages/<id>/` into the messaging crate, which C56 asked for |
 
 ## Findings
 
@@ -170,3 +171,12 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | C126 | open | spec | 11, spec.md "Testing" | The job's `world/` listing rests on a `memory` row of `docs/aws-facts.md`, that a missing key answers `403` without a prefix-conditioned `ListBucket`, and nothing before deploy checks it, so "Testing"'s census check should name it. | 2026-11-07: found. |
 | C127 | open | spec | 11, spec.md "World" | The constitution's `version` is a 16-character hash of its text, so even a whitespace edit gives agents a new version, which the spec doesn't say. | 2026-11-07: found. |
 | C128 | open | spec | 11, cdk/smoke.py | The smoke script doesn't request a residents page past the last one, so its `404` is checked only by unit tests, and spec "Testing"'s census check doesn't name it either. | 2026-11-07: found. |
+| C129 | open | standards | 14, docs/adr/ | The new `lambda/messaging` crate changes ADR 0004's layout, which lists messages under `identity/`, and `spec.md` calls it a refinement, but AGENTS.md "End-of-task" asks for a new ADR marking the old one, since ADRs are immutable. | 2026-11-07: found. |
+| C130 | open | standards | 14, openapi/sfab.yaml | `docs/api-design.md` "Changes" asks each `sfab.yaml` change to set `info.version` to the date and add a `CHANGELOG.md` line, and the diff does neither, which may be excused before launch, when "the changelog starts with the launch". | 2026-11-07: found. |
+| C131 | open | standards | 14, docs/aws-facts.md | The routes' cost figures ($0.66, $1.34 and $0.04 a day) use S3 prices "from memory" with no `docs/aws-facts.md` row, and the `StartAfter` ordering row that paging relies on is `memory` too. | 2026-11-07: found. |
+| C132 | open | standards | 14, lambda/api/src/lib.rs | Possible Duplicated Code: `send_message` builds the `Call` struct from method, path, authorization, proof and body as the other `POST`/`PUT` handlers do. | 2026-11-07: found. |
+| C133 | open | standards | 14, lambda/messaging/src/lib.rs | Possible Repeated Switches: the message ID format is split across `Kind::folder`/`name` and `MessageId`'s `parse`/`text`/`key`/`of_key`, with a fourth copy in the OpenAPI regex. | 2026-11-07: found. |
+| C134 | open | spec | 14, cdk/smoke.py | Spec "Testing" says unknown-ID refusals run "in both modes", but `aboutme` of an unknown agent and `self` with a wrong claim now run only with `--production`, "self with the new claim" was dropped, and the spec isn't amended. | 2026-11-07: found. |
+| C135 | open | spec | 14, cdk/smoke.py | The smoke script never sends a message to an unknown agent or between friends, so those paths are checked only by unit tests. | 2026-11-07: found. |
+| C136 | open | spec | 14, spec.md "Wire contract" | The implementer rewrote "Lists" so the live-listing token is the last item's ID passed as `StartAfter`, replacing "S3's continuation token", a wire-contract change the issue didn't ask for. | 2026-11-07: found. |
+| C137 | open | spec | 14, lambda/messaging/src/lib.rs | Reading hides messages older than 30 days (`KEEP_DAYS`), beyond the lifecycle rule the issue asks for, so a page can hold fewer than 20 items with no `next`. | 2026-11-07: found. |
