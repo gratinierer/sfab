@@ -32,6 +32,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-05T15:33:51+00:00 | code-review | 06 @ 6ce14d2..2bee15a | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 0 new: 0 standards, 0 spec | round 1 of `/code-review 6ce14d2 auto 2`: the C41 fix; only `POST` and `PUT` reach the write handlers, so the hashed method is always the route's |
 | 2026-11-07T15:40:14+00:00 | code-review | 08 @ 6ac7f2f..15cd567 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 10 new: 6 standards, 4 spec | |
 | 2026-11-07T15:48:56+00:00 | code-review | 01 @ 1a11d30..d4542cb | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 11 new: 6 standards, 5 spec | |
+| 2026-11-07T15:57:19+00:00 | code-review | 12 @ bd6799f..3c3500d | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 8 new: 6 standards, 2 spec | |
 
 ## Findings
 
@@ -113,3 +114,11 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | C74 | open | spec | 01, cdk/stacks.py | The API Lambda's timeout is set to 10 s, and the takedown program's wait depends on it, but the spec names no value. | 2026-11-07: found. |
 | C75 | open | spec | 01, cdk/stacks.py | `origin_path="/"` follows the issue, but CloudFront's docs say an origin path must not end in `/`, so the deploy may reject it; the issue's first-deploy proofs should cover it, with `""` as the fallback. | 2026-11-07: found. |
 | C76 | open | spec | 01, cdk/cdk.json, cdk/stacks.py | Unasked for: the `@aws-cdk/core:validateAgainstDefaultRules` flag, `enforce_ssl=True` on the buckets, which spec "Storage" omits, `aws:SourceAccount` conditions on the topic policies, and an `AAAA` record; harmless, but the spec doesn't record them. | 2026-11-07: found. |
+| C77 | open | standards | 12, docs/aws-facts.md | The website stack relies on AWS behaviour with no `docs/aws-facts.md` row, as AGENTS.md "Reference files" asks: OAC through `S3BucketOrigin.with_origin_access_control`, a `cloudfront-js-2.0` viewer-request function rewriting `request.uri`, and `BucketDeployment` refreshing `distribution_paths`. | 2026-11-07: found. |
+| C78 | open | standards | 12, cdk/website_stack.py | Possible Duplicated Code: a third `HostedZone.from_hosted_zone_attributes(self, "Zone", ...)` import, where `base.hosted_zone` exists, as C66 found in the API stack. | 2026-11-07: found. |
+| C79 | open | standards | 12, cdk/website_stack.py | Possible Duplicated Code: the web ACL's rate rule and `_visibility`, the Free plan's `CfnSubscription` and the `A`/`AAAA` record pair repeat the API stack line for line, apart from the limit, with bare strings such as `scope="CLOUDFRONT"` as in C69. | 2026-11-07: found. |
+| C80 | open | standards | 12, cdk/website_stack.py, cdk/generate_website.py | Possible Mysterious Name: the CloudFront Function is named `paths`, and `left` in `generate()` holds the unfilled placeholders, as C70 noted for `fill_openapi`. | 2026-11-07: found. |
+| C81 | open | standards | 12, cdk/tests/test_website_stack.py | Possible Duplicated Code: the stand-in asset and site folders and the `stacks.build(...)` call repeat four times across `test_stacks.py` and `test_website_stack.py`, where a shared fixture would say them once. | 2026-11-07: found. |
+| C82 | open | standards | 12, cdk/website_stack.py | `certificate` in `WebsiteStack.__init__` has no type hint, unlike the rest of `cdk/`. | 2026-11-07: found. |
+| C83 | open | spec | 12, cdk/website_stack.py | The `301` from `/agents` to `/agents/` drops any query string; it's within the letter of the spec, but neither the spec nor the issue records it as an accepted limit. | 2026-11-07: found. |
+| C84 | open | spec | 12, cdk/website_stack.py | The website bucket keeps CDK's default of being retained when the stack is deleted, which the spec doesn't say, so a teardown leaves a bucket to empty and delete by hand. | 2026-11-07: found. |
