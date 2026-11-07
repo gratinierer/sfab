@@ -97,22 +97,28 @@ pub async fn execute<S: Store, W: Future<Output = ()>>(
     let all: Vec<Vec<Location>> = targets.iter().map(|t| locations(&t.born.id)).collect();
     let in_phase = |phase: Phase| all.iter().flatten().filter(move |l| l.phase == phase);
     // (1) End private access and public reading at once.
-    for l in in_phase(Phase::First) {
-        apply(store, l).await?;
-    }
+    apply_each(store, in_phase(Phase::First)).await?;
     // (2) Once per batch.
     wait.await;
     // (3) Reading the agent's files for pointers elsewhere arrives with story 4, whose pointers
     // they are. (4) Every other location.
-    for l in in_phase(Phase::Other) {
-        apply(store, l).await?;
-    }
+    apply_each(store, in_phase(Phase::Other)).await?;
     // (5) The agent's own files last, then the first deletes again, in case a write in flight
     // recreated one.
-    for l in in_phase(Phase::Last) {
-        apply(store, l).await?;
-    }
-    for l in in_phase(Phase::First).filter(|l| matches!(l.action, Action::Delete)) {
+    apply_each(store, in_phase(Phase::Last)).await?;
+    apply_each(
+        store,
+        in_phase(Phase::First).filter(|l| matches!(l.action, Action::Delete)),
+    )
+    .await?;
+    Ok(())
+}
+
+async fn apply_each<'a, S: Store>(
+    store: &S,
+    locations: impl Iterator<Item = &'a Location>,
+) -> Result<(), StoreError> {
+    for l in locations {
         apply(store, l).await?;
     }
     Ok(())
