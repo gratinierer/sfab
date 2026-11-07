@@ -571,6 +571,7 @@ def build(
         "SfabWebsite",
         config=config,
         certificate=base.certificate,
+        hosted_zone=base.hosted_zone,
         source=website_source,
         env=env,
     )

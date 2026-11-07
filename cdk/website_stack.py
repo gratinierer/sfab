@@ -71,6 +71,7 @@ class WebsiteStack(cdk.Stack):
         *,
         config: Config,
         certificate,
+        hosted_zone: route53.IHostedZone,
         source: Path,
         **kwargs,
     ) -> None:
@@ -156,9 +157,10 @@ class WebsiteStack(cdk.Stack):
             resource_arns=[distribution.distribution_arn, web_acl.attr_arn],
         )
 
-        zone = route53.HostedZone.from_hosted_zone_attributes(
-            self, "Zone", hosted_zone_id=config.hosted_zone_id, zone_name=config.domain_name
-        )
         target = route53.RecordTarget.from_alias(targets.CloudFrontTarget(distribution))
-        route53.ARecord(self, "ApexA", zone=zone, record_name=config.domain_name, target=target)
-        route53.AaaaRecord(self, "ApexAaaa", zone=zone, record_name=config.domain_name, target=target)
+        route53.ARecord(
+            self, "ApexA", zone=hosted_zone, record_name=config.domain_name, target=target
+        )
+        route53.AaaaRecord(
+            self, "ApexAaaa", zone=hosted_zone, record_name=config.domain_name, target=target
+        )
