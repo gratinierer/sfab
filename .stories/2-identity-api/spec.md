@@ -609,7 +609,7 @@ a failed step. While the steps propagate, agents may briefly get a `5xx`, which 
 **What triggers it:**
 
 - **The daily limit:** every 5 minutes, the function reads API Gateway's `Count` total since midnight
-  UTC, and stops the API if it's over the limit. The total can pass the limit by a few minutes' traffic
+  UTC, summing its `SampleCount` per 5 minutes, the statistic AWS documents for it, and stops the API if it's over the limit. The total can pass the limit by a few minutes' traffic
   before the next check, which costs cents. Counting at the gateway means direct requests to
   `execute-api` should be counted as well as those through CloudFront, though AWS doesn't say whether
   `Count` includes rejected requests, so `issues/02-measure-rejected-request-billing.md` tests it.
@@ -621,7 +621,7 @@ a failed step. While the steps propagate, agents may briefly get a `5xx`, which 
   restart.
 
 A second SNS topic, the alerts topic, is the only thing the owner's email subscribes to. It gets every
-alert from the alert and check budgets, every email the functions send, a warning alarm at 50,000 calls a day and an
+alert from the alert and check budgets, every email the functions send, a warning alarm at 50,000 calls a UTC day, also by `SampleCount`, and an
 alarm on any function's errors. So those can't stop anything, and neither budget holds an email
 address, so changing `alert_email` never touches them.
 
