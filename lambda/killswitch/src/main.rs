@@ -56,14 +56,19 @@ impl Aws {
         }
     }
 
-    async fn execute_api_closed(&self) -> Result<bool, Failure> {
-        let api = self
-            .apigateway
+    async fn rest_api(
+        &self,
+    ) -> Result<aws_sdk_apigateway::operation::get_rest_api::GetRestApiOutput, Failure> {
+        self.apigateway
             .get_rest_api()
             .rest_api_id(&self.rest_api_id)
             .send()
             .await
-            .map_err(|e| fail("apigateway GetRestApi", e.into_service_error()))?;
+            .map_err(|e| fail("apigateway GetRestApi", e.into_service_error()))
+    }
+
+    async fn execute_api_closed(&self) -> Result<bool, Failure> {
+        let api = self.rest_api().await?;
         if !api.disable_execute_api_endpoint {
             return Ok(false);
         }
@@ -195,13 +200,7 @@ impl Controls for Aws {
         let midnight = now - now.rem_euclid(86_400);
         // The ApiName dimension is the REST API's name as API Gateway holds it, which is read
         // rather than assumed, because a wrong name would silently count nothing.
-        let api = self
-            .apigateway
-            .get_rest_api()
-            .rest_api_id(&self.rest_api_id)
-            .send()
-            .await
-            .map_err(|e| fail("apigateway GetRestApi", e.into_service_error()))?;
+        let api = self.rest_api().await?;
         let api_name = api
             .name
             .ok_or_else(|| Failure("apigateway GetRestApi: no name".into()))?;
