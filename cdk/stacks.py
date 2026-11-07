@@ -62,7 +62,8 @@ DOMAIN_SERVICE_NAME = "Amazon Registrar"
 REQUIRED_BITS = 20
 # Enforced by AWS at no charge, and the kill switch sets it to 0 to stop the API.
 API_RESERVED_CONCURRENCY = 5
-# CDK's default is 3 seconds; a request makes a few S3 calls. The takedown waits at least this.
+# CDK's default is 3 seconds; a request makes a few S3 calls. The takedown waits at least this:
+# API_TIMEOUT_SECONDS in lambda/takedown/src/args.rs, which a test ties to this one.
 API_TIMEOUT_SECONDS = 10
 # How long messages and knocks wait before the lifecycle rule on `messages/` expires them; the
 # messaging crate's KEEP_DAYS hides them from the same day.

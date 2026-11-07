@@ -6,6 +6,7 @@ own tests are in test_website_stack.py.
 """
 
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -645,3 +646,10 @@ def test_the_api_stack_outputs_the_stage_url_the_smoke_script_takes(api):
     assert len(endpoints) == 1
     assert ".execute-api." in json.dumps(endpoints[0])
     assert "DeploymentStagev1" in json.dumps(endpoints[0])
+
+
+def test_the_takedown_program_waits_at_least_the_api_lambda_s_timeout():
+    # lambda/takedown/src/args.rs refuses a shorter --wait-seconds, so the two must agree.
+    args = (sfab_config.REPO_ROOT / "lambda" / "takedown" / "src" / "args.rs").read_text()
+    found = re.search(r"const API_TIMEOUT_SECONDS: u64 = (\d+);", args)
+    assert found and int(found[1]) == stacks.API_TIMEOUT_SECONDS
