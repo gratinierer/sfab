@@ -7,6 +7,9 @@ import hashlib
 import json
 import re
 
+import yaml
+
+import sfab_config
 from api_client import Request, Response, agent_id, leading_zero_bits
 
 
@@ -69,6 +72,21 @@ _SEND = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/messages")
 _MESSAGE = re.compile(r"/v1/identity/self/messages/(?P<message_id>k-[a-z2-7]{12}|m-[0-9a-z-]+)")
 
 
+def _routes() -> list[tuple[str, re.Pattern]]:
+    """Every method and path in openapi/sfab.yaml, under /v1, so the fake knows the same routes
+    as the API and a new route needs no second list here."""
+    document = yaml.safe_load((sfab_config.REPO_ROOT / "openapi" / "sfab.yaml").read_text())
+    return [
+        (method.upper(), re.compile("/v1" + re.sub(r"\{[^}]+\}", "[^/]+", path)))
+        for path, operations in document["paths"].items()
+        for method in operations
+        if method in ("get", "put", "post", "delete")
+    ]
+
+
+ROUTES = _routes()
+
+
 class FakeApi:
     """Stage 1 as deployed, behind CloudFront and API Gateway: just enough of each layer for the
     smoke script to tell a working API from a broken one. A test breaks one behaviour at a time
@@ -116,36 +134,12 @@ class FakeApi:
         path = r.url[len(API_HOST) :].partition("?")[0]
         if not path.startswith("/v1/"):
             return "outside v1", problem(404, detail=START)
-        known = {
-            ("GET", "/v1/openapi.yaml"),
-            ("GET", "/v1/world/constitution"),
-            ("GET", "/v1/world/census"),
-            ("GET", "/v1/world/residents"),
-            ("GET", "/v1/federation/world"),
-            ("GET", "/v1/federation/worlds"),
-            ("POST", "/v1/federation/requests"),
-            ("POST", "/v1/identity/birth"),
-            ("PUT", "/v1/identity/evolve"),
-            ("GET", "/v1/identity/self"),
-            ("POST", "/v1/identity/reclaim"),
-            ("GET", "/v1/identity/self/publication"),
-            ("PUT", "/v1/identity/self/publication"),
-            ("GET", "/v1/identity/self/friends"),
-            ("GET", "/v1/identity/self/blocked"),
-            ("GET", "/v1/identity/self/messages"),
-        }
-        bare = path.split("?", 1)[0]
+        if not any(m == r.method and route.fullmatch(path) for m, route in ROUTES):
+            return "unknown route", problem(404, detail=START)
         contact = _CONTACT.fullmatch(path)
         about = _ABOUTME.fullmatch(path)
         send = _SEND.fullmatch(path)
         message = _MESSAGE.fullmatch(path)
-        if (r.method, bare) not in known and not (
-            (contact and r.method in ("PUT", "DELETE"))
-            or (about and r.method == "GET")
-            or (send and r.method == "POST")
-            or (message and r.method == "DELETE")
-        ):
-            return "unknown route", problem(404, detail=START)
         if path == "/v1/openapi.yaml":
             return "openapi", Response(
                 200,
@@ -267,7 +261,7 @@ class FakeApi:
             return "self", ok(200, {"id": agent, **identity})
         if send:
             return self._send(agent, send["id"], json.loads(r.body)["text"], now)
-        if bare == "/v1/identity/self/messages":
+        if path == "/v1/identity/self/messages":
             items = [
                 {"message_id": f"k-{sender}", "sender": sender, "text": text,
                  "sent_at": "2026-11-05T00:00:00Z"}
