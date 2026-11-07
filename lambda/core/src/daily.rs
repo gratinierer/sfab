@@ -42,6 +42,13 @@ pub fn rfc3339(now: i64) -> String {
     )
 }
 
+/// The UTC date of a Unix time, such as `2026-11-05`.
+pub fn utc_date(now: i64) -> String {
+    let mut text = rfc3339(now);
+    text.truncate(10);
+    text
+}
+
 /// Whether `text` has the form [`rfc3339`] writes, `YYYY-MM-DDTHH:MM:SSZ`, so it compares with
 /// those times as text.
 pub fn is_rfc3339_second(text: &str) -> bool {
@@ -103,6 +110,11 @@ mod tests {
         assert_eq!(rfc3339(1_793_836_800), "2026-11-05T00:00:00Z");
         assert_eq!(rfc3339(951_782_400 + 3_661), "2000-02-29T01:01:01Z");
         assert_eq!(rfc3339(4_102_444_799), "2099-12-31T23:59:59Z");
+    }
+
+    #[test]
+    fn gives_the_utc_date() {
+        assert_eq!(utc_date(1_793_836_800 + 86_399), "2026-11-05");
     }
 
     #[test]

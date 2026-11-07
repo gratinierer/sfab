@@ -15,7 +15,7 @@ use std::future::Future;
 use futures_util::{StreamExt, TryStreamExt, stream};
 use serde::{Deserialize, Serialize};
 
-use sfab_core::daily::{DAY, rfc3339, utc_day};
+use sfab_core::daily::{DAY, rfc3339, utc_date};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 
 use crate::{
@@ -180,7 +180,7 @@ async fn email<S: Store, N: Notify>(
     if domains.is_empty() {
         return Ok(false);
     }
-    let today = rfc3339(utc_day(now) * DAY)[..10].to_owned();
+    let today = utc_date(now);
     if let Some(object) = store.get(Bucket::Identities, EMAILED_KEY).await?
         && serde_json::from_slice::<Emailed>(&object.body).is_ok_and(|e| e.day == today)
     {
