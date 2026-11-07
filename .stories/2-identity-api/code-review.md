@@ -38,6 +38,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-07T16:24:53+00:00 | code-review | 13 @ 0e2d3c1..b31538e | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 13 new: 8 standards, 5 spec | |
 | 2026-11-07T20:12:41+00:00 | code-review | 11 @ a17bfcb..46ef07f | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 10 new: 6 standards, 4 spec | |
 | 2026-11-07T20:19:56+00:00 | code-review | 14 @ bf041a1..7816867 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 9 new: 5 standards, 4 spec | the spec reviewer confirms 14 moves `messages/<id>/` into the messaging crate, which C56 asked for |
+| 2026-11-07T20:42:15+00:00 | code-review | 15 @ 58d5d04..95e7fc1 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 10 new: 4 standards, 6 spec | |
 
 ## Findings
 
@@ -180,3 +181,13 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | C135 | open | spec | 14, cdk/smoke.py | The smoke script never sends a message to an unknown agent or between friends, so those paths are checked only by unit tests. | 2026-11-07: found. |
 | C136 | open | spec | 14, spec.md "Wire contract" | The implementer rewrote "Lists" so the live-listing token is the last item's ID passed as `StartAfter`, replacing "S3's continuation token", a wire-contract change the issue didn't ask for. | 2026-11-07: found. |
 | C137 | open | spec | 14, lambda/messaging/src/lib.rs | Reading hides messages older than 30 days (`KEEP_DAYS`), beyond the lifecycle rule the issue asks for, so a page can hold fewer than 20 items with no `next`. | 2026-11-07: found. |
+| C138 | open | standards | 15, lambda/world/federation/src/lib.rs, cdk/stacks.py | Possible Duplicated Code: the 3-day and 30-day lifetimes are written in both `PENDING_DAYS`/`VERIFIED_DAYS` and `FEDERATION_PENDING_DAYS`/`FEDERATION_VERIFIED_DAYS`, with no test pinning one to the other, and `const DAY: i64 = 86_400` appears in both `lib.rs` and `daily.rs`, which also writes `86_400` literally. | 2026-11-07: found. |
+| C139 | open | standards | 15, lambda/world/federation/src/daily.rs | Possible Divergent Change: `email()` returns `(bool, usize)` and also deletes verified requests older than 30 days, two jobs in one function. | 2026-11-07: found. |
+| C140 | open | standards | 15, lambda/world/federation/src/lib.rs | Possible Primitive Obsession: `Stored` keeps `requested_at`, `expires_at` and `verified_at` as `String`, `expired` compares RFC 3339 text, and `daily()` slices `rfc3339(..)[..10]` for a day. | 2026-11-07: found. |
+| C141 | open | standards | 15, lambda/job/src/outbound.rs | Possible Speculative Generality: `port()`, `timeout()` and `limit()` exist only for tests, and `limit()` returns the exported `LIMIT`. | 2026-11-07: found. |
+| C142 | open | spec | 15, spec.md "Testing" | The smoke run now sends 38 requests, but spec "Testing" still says "It sends about 35 requests" and doesn't list the federation cases. | 2026-11-07: found. |
+| C143 | open | spec | 15, lambda/world/federation/src/lib.rs | The `503` at 100 pending uses `type: about:blank`, though `docs/api-design.md` keeps `about:blank` for "an error with no reason beyond its status" and this one has a reason, the cap. | 2026-11-07: found. |
+| C144 | open | spec | 15, lambda/world/federation/src/lib.rs | The cap counts every object under `federation/pending/`, including expired ones S3 hasn't removed yet, so stale requests hold places, against the spec's "expired counts as gone". | 2026-11-07: found. |
+| C145 | open | spec | 15, lambda/job/src/outbound.rs | `is_public` refuses NAT64 `64:ff9b::/96` but not 6to4 `2002::/16` or Teredo `2001::/32`, which embed IPv4 addresses, so "private and link-local addresses refused after resolving" has a gap. | 2026-11-07: found. |
+| C146 | open | spec | 15, spec.md "Federation" | The spec doesn't say that a failed send after `emailed.json` is written loses that day's email, or that a verified request is listed in the email every day for up to 30 days. | 2026-11-07: found. |
+| C147 | open | spec | 15, lambda/world/federation/src/lib.rs | Unasked for: the `202`'s `instructions` text, an `api` field in `GET /federation/world` beyond "domain, name, constitution link and contact", and a `User-Agent` with a GitHub URL. | 2026-11-07: found. |
