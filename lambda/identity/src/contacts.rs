@@ -127,34 +127,38 @@ impl<S: Store> Identity<S> {
         let id = &agent.id;
         for _ in 0..MAX_TRIES {
             let (before, etag) = self.read_contacts(id).await?;
-            if let Some(entry) = before.find(list, &other) {
-                // A retry: redo only the copy's rebuild.
-                let body = json!(entry);
-                self.refresh_copy(id).await?;
-                return Ok(Reply::ok(body));
-            }
-            if before.list(list).len() >= MAX_ENTRIES {
+            let existing = before.find(list, &other).cloned();
+            if existing.is_none() && before.list(list).len() >= MAX_ENTRIES {
                 return Err(Problem::conflict(
                     "list-full",
                     format!("This list already holds {MAX_ENTRIES} agents"),
                 ));
             }
-            let entry = Entry {
+            let mut after = before.clone();
+            let entry = existing.clone().unwrap_or_else(|| Entry {
                 id: other.as_str().to_owned(),
                 added_at: rfc3339(now),
                 more: Map::new(),
-            };
-            let mut after = before.clone();
-            after.list_mut(list).push(entry.clone());
+            });
+            if existing.is_none() {
+                after.list_mut(list).push(entry.clone());
+            }
             if list == List::Blocked {
                 after.remove(List::Friends, &other);
             }
-            match self.save_contacts(id, &before, &after, etag).await? {
-                Saved::Yes => {}
-                Saved::Raced => continue,
+            // A retry, with nothing left to change: redo only the copy's rebuild.
+            let unchanged = existing.is_some() && after.friends.len() == before.friends.len();
+            if !unchanged {
+                match self.save_contacts(id, &before, &after, etag).await? {
+                    Saved::Yes => {}
+                    Saved::Raced => continue,
+                }
             }
             self.refresh_copy(id).await?;
-            return Ok(Reply::created(json!(entry)));
+            return Ok(match existing {
+                Some(_) => Reply::ok(json!(entry)),
+                None => Reply::created(json!(entry)),
+            });
         }
         Err(crate::lost_races("contacts"))
     }

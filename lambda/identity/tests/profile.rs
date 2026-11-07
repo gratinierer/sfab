@@ -455,6 +455,21 @@ async fn adding_a_friend_is_safe_to_retry_and_removing_one_is_too() {
 }
 
 #[tokio::test]
+async fn blocking_again_still_removes_a_friend_added_after_the_first_block() {
+    let w = world();
+    let a = born(&w, "Wren").await;
+    let other = other_id(0);
+    add(&w, &a, List::Blocked, &other).await.unwrap();
+    add(&w, &a, List::Friends, &other).await.unwrap();
+
+    let again = add(&w, &a, List::Blocked, &other).await.unwrap();
+
+    assert_eq!(again.status, 200);
+    assert_eq!(listed(&w, &a, List::Friends).await, Vec::<String>::new());
+    assert_eq!(listed(&w, &a, List::Blocked).await, vec![other]);
+}
+
+#[tokio::test]
 async fn each_list_holds_100_and_a_101st_gets_409_but_a_retry_still_200() {
     for list in [List::Friends, List::Blocked] {
         let w = world();
