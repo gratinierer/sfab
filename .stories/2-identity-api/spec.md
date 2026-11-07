@@ -411,6 +411,10 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
   stops the simplest flood for free. The pages hold a placeholder, `{{api_host}}`, and the generate step writes finished pages to a build
   folder, using `domain_name` from the config. CDK's `BucketDeployment` copies that folder into the bucket as part of the stack, and refreshes the
   distribution, so the pages deploy with their stack from the monorepo. The site stays up during a stop. Its design and content are a later story.
+- **Defaults the code adds:** every bucket refuses plain HTTP (`enforce_ssl`), the topics' policies let
+  Budgets and CloudWatch publish only for this account (`aws:SourceAccount`), each DNS name has an `AAAA`
+  record beside its `A` record, and `cdk/cdk.json` sets `@aws-cdk/core:validateAgainstDefaultRules`, so a
+  value outside a resource's CloudFormation schema fails the synth rather than the deploy.
 - **OpenAPI is the single source:** `openapi/sfab.yaml`, one document holding every story's routes, includes the AWS
   extensions and validators, with placeholders only for the Lambda ARN, `{{api_lambda_arn}}`, and the API's host,
   `{{api_host}}`, which the unknown-route `404`'s `detail` needs. The CDK fills in both in memory at deploy time and
