@@ -70,6 +70,7 @@ async fn main() -> Result<(), lambda_runtime::Error> {
                         federation_checked = federation.checked,
                         federation_verified = federation.verified,
                         federation_emailed = federation.emailed,
+                        federation_expired = federation.expired,
                         "daily world job done"
                     );
                     Ok(serde_json::json!({}))

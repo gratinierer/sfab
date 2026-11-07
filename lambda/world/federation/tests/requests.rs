@@ -238,3 +238,26 @@ async fn the_stored_request_holds_the_token_and_when_it_was_made() {
     assert_eq!(stored["token"], reply.body["token"]);
     assert_eq!(stored["requested_at"], "2026-11-05T12:00:00Z");
 }
+
+#[tokio::test]
+async fn a_request_past_its_expiry_that_s3_hasnt_removed_yet_is_made_anew() {
+    // S3 removes expired objects some time after their expiry (docs/aws-facts.md).
+    let (_, f) = federation();
+    let first = ask(&f, "other.example.org").await.unwrap();
+    let later = NOW + 3 * 86_400;
+    let b = body("other.example.org");
+    let proof = solved(&b, later);
+    let call = Call {
+        method: "POST",
+        path: PATH,
+        authorization: None,
+        proof: Some(&proof),
+        body: &b,
+    };
+
+    let again = f.request(&call, later).await.unwrap();
+
+    assert_eq!(again.status, 202);
+    assert_ne!(again.body["token"], first.body["token"]);
+    assert_eq!(again.body["expires_at"], "2026-11-11T12:00:00Z");
+}

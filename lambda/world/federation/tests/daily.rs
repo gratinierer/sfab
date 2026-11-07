@@ -213,3 +213,45 @@ fn a_body_matches_only_as_the_token_with_at_most_one_trailing_newline() {
         assert!(!matches(body.as_bytes(), token), "{body:?}");
     }
 }
+
+#[tokio::test]
+async fn an_expired_request_is_deleted_without_fetching() {
+    // S3 removes expired objects some time after their expiry, so the job doesn't rely on it.
+    let store = Arc::new(MemoryStore::new());
+    let mut web = FakeWeb::default();
+    let reply = ask(&store, "late.example.org").await;
+    publish(
+        &mut web,
+        &reply,
+        reply["token"].as_str().unwrap().as_bytes(),
+    );
+
+    let report = daily(&*store, &web, &FakeEmail::default(), RUN + 3 * DAY)
+        .await
+        .unwrap();
+
+    assert_eq!((report.checked, report.verified, report.expired), (0, 0, 1));
+    assert!(web.asked.lock().unwrap().is_empty());
+    assert!(store.keys(Bucket::Identities).is_empty());
+}
+
+#[tokio::test]
+async fn a_verified_request_older_than_30_days_is_deleted_and_not_emailed() {
+    let store = Arc::new(MemoryStore::new());
+    let mut web = FakeWeb::default();
+    let reply = ask(&store, "old.example.org").await;
+    publish(
+        &mut web,
+        &reply,
+        reply["token"].as_str().unwrap().as_bytes(),
+    );
+    let email = FakeEmail::default();
+    daily(&*store, &web, &email, RUN).await.unwrap();
+
+    let report = daily(&*store, &web, &email, RUN + 30 * DAY).await.unwrap();
+
+    assert!(!report.emailed);
+    assert_eq!(report.expired, 1);
+    assert_eq!(email.sent.lock().unwrap().len(), 1, "only the first day's");
+    assert_eq!(store.keys(Bucket::Identities), ["federation/emailed.json"]);
+}

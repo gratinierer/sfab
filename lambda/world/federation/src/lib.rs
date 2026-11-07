@@ -37,6 +37,8 @@ pub use domain::valid_domain;
 pub const MAX_PENDING: usize = 100;
 /// How long a request waits for its token: the `federation/pending/` lifecycle rule's 3 days.
 pub const PENDING_DAYS: i64 = 3;
+/// How long a verified request waits for the owner: the `federation/verified/` rule's 30 days.
+pub const VERIFIED_DAYS: i64 = 30;
 /// The requester's manual, which the `202`'s instructions link.
 pub const MANUAL: &str = "https://github.com/gratinierer/sfab/blob/main/docs/federation.md";
 /// Where the requester publishes the token, under its domain.
@@ -126,8 +128,14 @@ impl<S: Store> Federation<S> {
             ));
         }
         let key = pending_key(&domain);
-        if let Some(existing) = self.read(&key).await? {
-            return Ok(Reply::ok(reply_body(&existing)));
+        // S3 removes an expired request some time after its expiry, so one still here past
+        // `expires_at` counts as gone, and is replaced (docs/aws-facts.md).
+        let mut condition = Condition::IfAbsent;
+        if let Some((existing, etag)) = self.read(&key).await? {
+            if !expired(&existing.expires_at, now) {
+                return Ok(Reply::ok(reply_body(&existing)));
+            }
+            condition = Condition::IfMatch(etag);
         }
         let waiting = self
             .store
@@ -153,13 +161,7 @@ impl<S: Store> Federation<S> {
         let bytes = serde_json::to_vec(&stored).expect("a request serializes");
         match self
             .store
-            .put(
-                Bucket::Identities,
-                &key,
-                bytes,
-                Metadata::new(),
-                Condition::IfAbsent,
-            )
+            .put(Bucket::Identities, &key, bytes, Metadata::new(), condition)
             .await
         {
             Ok(()) => Ok(Reply {
@@ -167,15 +169,18 @@ impl<S: Store> Federation<S> {
                 body: reply_body(&stored),
             }),
             // A concurrent request for the same domain won: answer with its token.
-            Err(StoreError::ConditionFailed) => match self.read(&key).await? {
-                Some(existing) => Ok(Reply::ok(reply_body(&existing))),
-                None => Err(Problem::internal()),
-            },
+            Err(StoreError::ConditionFailed | StoreError::Missing) => {
+                match self.read(&key).await? {
+                    Some((existing, _)) => Ok(Reply::ok(reply_body(&existing))),
+                    None => Err(Problem::internal()),
+                }
+            }
             Err(e) => Err(internal(e)),
         }
     }
 
-    async fn read(&self, key: &str) -> Result<Option<Stored>, Problem> {
+    /// The stored request and its ETag.
+    async fn read(&self, key: &str) -> Result<Option<(Stored, String)>, Problem> {
         let Some(object) = self
             .store
             .get(Bucket::Identities, key)
@@ -184,11 +189,17 @@ impl<S: Store> Federation<S> {
         else {
             return Ok(None);
         };
-        serde_json::from_slice(&object.body).map(Some).map_err(|_| {
+        let stored = serde_json::from_slice(&object.body).map_err(|_| {
             tracing::error!("{key} in storage doesn't parse");
             Problem::internal()
-        })
+        })?;
+        Ok(Some((stored, object.etag)))
     }
+}
+
+/// Whether a stored RFC 3339 time in UTC is at or before `now`. The format sorts as text.
+pub(crate) fn expired(at: &str, now: i64) -> bool {
+    at <= rfc3339(now).as_str()
 }
 
 fn internal(e: StoreError) -> Problem {
