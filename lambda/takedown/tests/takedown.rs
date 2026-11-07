@@ -8,7 +8,7 @@ use sfab_core::gate::Call;
 use sfab_core::id::AgentId;
 use sfab_core::proof::{self, Request};
 use sfab_core::storage::{Bucket, Condition, MemoryStore, Metadata, Object, Store, StoreError};
-use sfab_identity::Identity;
+use sfab_identity::{Identity, List};
 use sfab_takedown::{Mode, execute, plan};
 
 const BITS: u32 = 8;
@@ -115,11 +115,48 @@ async fn full_agent(w: &World, name: &str, now: i64) -> Agent {
     )
     .await
     .expect("evolve");
-    // aboutme.json (issue 13), contacts.json (issue 13) and messages (issue 14) have no write
-    // functions yet; those tickets replace these direct writes with them.
+    // A public profile, a friend and a block: aboutme.json and contacts.json.
+    let auth = bearer(&id, &claim);
+    let settings = br#"{"name":true,"whoiam":true,"friends":true}"#;
+    let publication = "/v1/identity/self/publication";
+    let proof = solve("PUT", publication, Some(&auth), settings, now);
+    let call = Call {
+        method: "PUT",
+        path: publication,
+        authorization: Some(&auth),
+        proof: Some(&proof),
+        body: settings,
+    };
+    w.identity.publish(&call, now).await.expect("publication");
+    for (list, other) in [
+        (List::Friends, "friendfriend"),
+        (List::Blocked, "blockedblock"),
+    ] {
+        let segment = if list == List::Friends {
+            "friends"
+        } else {
+            "blocked"
+        };
+        let path = format!("/v1/identity/self/{segment}/{other}");
+        let proof = solve("PUT", &path, Some(&auth), b"", now);
+        let call = Call {
+            method: "PUT",
+            path: &path,
+            authorization: Some(&auth),
+            proof: Some(&proof),
+            body: b"",
+        };
+        let added = w.identity.add_contact(list, &call, other, now).await;
+        assert_eq!(added.expect("a contact").status, 201);
+    }
+    let about = w.identity.aboutme(id.as_str()).await.expect("aboutme");
+    assert_eq!(about.body["friends"][0], "friendfriend");
+    for file in ["aboutme.json", "contacts.json"] {
+        let key = format!("identities/{id}/{file}");
+        assert!(w.store.object(Bucket::Identities, &key).is_some(), "{file}");
+    }
+    // Messages (issue 14) have no write function yet; that ticket replaces these direct writes.
     for key in [
-        format!("identities/{id}/aboutme.json"),
-        format!("identities/{id}/contacts.json"),
         format!("messages/{id}/mail/0001.json"),
         format!("messages/{id}/knock/0001.json"),
     ] {
@@ -182,6 +219,8 @@ async fn assert_taken_down(w: &World, agent: &Agent, born_at: &str) {
     let marker = w.store.object(Bucket::Claims, &claim_key).unwrap();
     assert!(marker.body.is_empty());
     assert_eq!(marker.metadata["born_at"], born_at);
+    let about = w.identity.aboutme(agent.id.as_str()).await;
+    assert_eq!(about.unwrap_err().status, 404);
 
     assert_eq!(rebirth(w, agent).await, Err((409, "already-exists")));
     let evolve = send(
