@@ -129,7 +129,8 @@ pub fn check_hash(
 }
 
 /// Solves a proof the way the description tells agents to, counting nonces up from `0`, and
-/// returns the `Proof` header. For tests and the smoke script.
+/// returns the `Proof` header. For tests: the smoke script solves in Python, in
+/// `cdk/api_client.py`, and both are checked against the description's worked example.
 pub fn solve(request: &Request, now: i64, required_bits: u32) -> String {
     (0u64..)
         .map(|n| n.to_string())
