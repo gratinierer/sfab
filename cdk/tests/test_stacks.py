@@ -5,6 +5,7 @@ stand-in Lambda asset, so they need no build.
 """
 
 import json
+import subprocess
 from pathlib import Path
 
 import aws_cdk as cdk
@@ -16,6 +17,10 @@ import sfab_config
 import stacks
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "sfab.config.test.toml"
+# The same context `cdk synth` reads from cdk.json.
+CDK_CONTEXT = json.loads((Path(__file__).resolve().parent.parent / "cdk.json").read_text())[
+    "context"
+]
 
 
 @pytest.fixture(scope="module")
@@ -39,6 +44,17 @@ def base(built):
 @pytest.fixture(scope="module")
 def api(built):
     return Template.from_stack(built.api)
+
+
+def test_the_stacks_pass_cloudformation_s_schema_rules(config, tmp_path):
+    # A value outside a resource's schema, such as a budget threshold under 0.1, would
+    # otherwise only warn at synth and fail at deploy.
+    asset = tmp_path / "api"
+    asset.mkdir()
+    (asset / "bootstrap").write_text("stand-in")
+    app = cdk.App(context=CDK_CONTEXT, outdir=str(tmp_path / "out"))
+    stacks.build(app, config, api_code=lambda_.Code.from_asset(str(asset)))
+    app.synth()
 
 
 def test_every_stack_targets_the_config_account_in_us_east_1(built, config):
@@ -216,8 +232,10 @@ def test_the_alert_budget_emails_at_five_thresholds_including_domain_charges(bas
 def test_the_check_budget_emails_at_one_cent_including_domain_charges(base):
     props = budget(base, "sfab-check")
     assert props["Budget"]["FilterExpression"] == {"Not": NO_CREDITS}
+    # 1% of $1: CloudFormation's schema refuses a threshold below 0.1 (docs/aws-facts.md).
+    assert props["Budget"]["BudgetLimit"] == {"Amount": 1, "Unit": "USD"}
     assert notifications(props) == [
-        ("ACTUAL", "GREATER_THAN", 0.01, "ABSOLUTE_VALUE", sns_to(base, "Alerts"))
+        ("ACTUAL", "GREATER_THAN", 1, "PERCENTAGE", sns_to(base, "Alerts"))
     ]
 
 
@@ -445,6 +463,114 @@ def test_the_origin_key_is_unnamed_and_in_a_usage_plan_on_v1_without_a_throttle(
         "AWS::ApiGateway::UsagePlanKey",
         {"KeyId": {"Ref": key_id}, "KeyType": "API_KEY", "UsagePlanId": {"Ref": plan_id}},
     )
+
+
+# The API stack: the front door
+
+CACHING_DISABLED = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+ALL_VIEWER_EXCEPT_HOST_HEADER = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
+
+
+def only(template: Template, kind: str) -> tuple[str, dict]:
+    found = template.find_resources(kind)
+    assert len(found) == 1, (kind, list(found))
+    logical_id, resource = next(iter(found.items()))
+    return logical_id, resource["Properties"]
+
+
+def test_the_web_acl_rate_limits_each_ip_with_waf_s_plain_403_and_no_samples(api):
+    _, acl = only(api, "AWS::WAFv2::WebACL")
+    assert acl["Scope"] == "CLOUDFRONT"
+    assert acl["DefaultAction"] == {"Allow": {}}
+    assert acl["VisibilityConfig"]["SampledRequestsEnabled"] is False
+    (rule,) = acl["Rules"]
+    assert rule["Statement"] == {
+        "RateBasedStatement": {"Limit": 100, "EvaluationWindowSec": 300, "AggregateKeyType": "IP"}
+    }
+    # No custom response: Free has none, and agents read a plain 403 as "blocked".
+    assert rule["Action"] == {"Block": {}}
+    assert rule["VisibilityConfig"]["SampledRequestsEnabled"] is False
+    assert "CustomResponseBodies" not in acl
+
+
+def test_the_distribution_passes_every_request_uncached_over_https_only(api, config):
+    _, props = only(api, "AWS::CloudFront::Distribution")
+    dist = props["DistributionConfig"]
+    assert dist["Aliases"] == [f"api.{config.domain_name}"]
+    behavior = dist["DefaultCacheBehavior"]
+    assert behavior["ViewerProtocolPolicy"] == "https-only"
+    assert sorted(behavior["AllowedMethods"]) == sorted(
+        ["GET", "HEAD", "OPTIONS", "PUT", "PATCH", "POST", "DELETE"]
+    )
+    assert behavior["CachePolicyId"] == CACHING_DISABLED
+    assert behavior["OriginRequestPolicyId"] == ALL_VIEWER_EXCEPT_HOST_HEADER
+    acl_id, _ = only(api, "AWS::WAFv2::WebACL")
+    assert dist["WebACLId"] == {"Fn::GetAtt": [acl_id, "Arn"]}
+    function_id, _ = only(api, "AWS::CloudFront::Function")
+    assert behavior["FunctionAssociations"] == [
+        {"EventType": "viewer-request", "FunctionARN": {"Fn::GetAtt": [function_id, "FunctionARN"]}}
+    ]
+
+
+def test_the_origin_is_the_api_without_a_doubled_stage_and_with_the_origin_key(api, config):
+    _, props = only(api, "AWS::CloudFront::Distribution")
+    (origin,) = props["DistributionConfig"]["Origins"]
+    assert "execute-api" in json.dumps(origin["DomainName"])
+    # Public URLs already hold /v1, so an origin path of /v1 would send /v1/v1/...
+    assert origin.get("OriginPath", "") == ""
+    assert origin["CustomOriginConfig"]["OriginProtocolPolicy"] == "https-only"
+    assert origin["OriginCustomHeaders"] == [
+        {"HeaderName": "x-api-key", "HeaderValue": config.origin_key}
+    ]
+
+
+def run_viewer_function(code: str, uri: str) -> dict:
+    script = code + "\nconsole.log(JSON.stringify(handler({request: {uri: %s, method: 'GET'}})));" % (
+        json.dumps(uri)
+    )
+    out = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=True)
+    return json.loads(out.stdout)
+
+
+@pytest.mark.parametrize("uri", ["/", "/v2/identity/self", "/v1", "/favicon.ico", "/v1x/a"])
+def test_the_viewer_function_answers_a_path_outside_v1_with_a_problem_404(api, config, uri):
+    _, props = only(api, "AWS::CloudFront::Function")
+    assert props["FunctionConfig"]["Runtime"] == "cloudfront-js-2.0"
+    response = run_viewer_function(props["FunctionCode"], uri)
+    assert response["statusCode"] == 404
+    assert response["headers"]["content-type"] == {"value": "application/problem+json"}
+    body = json.loads(response["body"]["data"])
+    assert body["status"] == 404
+    assert body["type"] == "about:blank"
+    assert body["detail"] == f"Start at https://api.{config.domain_name}/v1/openapi.yaml"
+
+
+@pytest.mark.parametrize("uri", ["/v1/", "/v1/identity/self", "/v1/openapi.yaml"])
+def test_the_viewer_function_passes_a_path_inside_v1(api, uri):
+    _, props = only(api, "AWS::CloudFront::Function")
+    assert run_viewer_function(props["FunctionCode"], uri) == {"uri": uri, "method": "GET"}
+
+
+def test_the_free_flat_rate_plan_covers_the_distribution_web_acl_and_zone(api, config):
+    _, plan = only(api, "AWS::PricingPlanManager::Subscription")
+    assert plan["PlanFamily"] == "CloudFront"
+    assert plan["PlanTier"] == "FREE"
+    arns = json.dumps(plan["ResourceArns"])
+    dist_id, _ = only(api, "AWS::CloudFront::Distribution")
+    acl_id, _ = only(api, "AWS::WAFv2::WebACL")
+    assert len(plan["ResourceArns"]) == 3
+    assert dist_id in arns and acl_id in arns
+    assert f"hostedzone/{config.hosted_zone_id}" in arns
+
+
+def test_api_dns_records_alias_the_distribution(api, config):
+    dist_id, _ = only(api, "AWS::CloudFront::Distribution")
+    records = [r["Properties"] for r in api.find_resources("AWS::Route53::RecordSet").values()]
+    assert sorted(r["Type"] for r in records) == ["A", "AAAA"]
+    for record in records:
+        assert record["Name"] == f"api.{config.domain_name}."
+        assert record["HostedZoneId"] == config.hosted_zone_id
+        assert dist_id in json.dumps(record["AliasTarget"]["DNSName"])
 
 
 def test_buckets_topics_and_budgets_are_only_in_the_base_stack(api):
