@@ -147,7 +147,10 @@ def test_only_the_job_may_write_or_delete_world(api, base):
     for role in ("ApiFunctionServiceRole", "KillSwitchFunctionServiceRole"):
         found = grants(api, base, role)
         assert ("s3:PutObject", "Identities/world/*") not in found, role
-        assert not any(action == "s3:DeleteObject" for action, _ in found), role
+        # The API deletes only in `messages/` (issue 14); nothing but the job deletes in `world/`.
+        assert ("s3:DeleteObject", "Identities/world/*") not in found, role
+        deletes = {resource for action, resource in found if action == "s3:DeleteObject"}
+        assert deletes <= {"Identities/messages/*"}, role
 
 
 # The kill switch's fourth stop step

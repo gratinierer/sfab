@@ -19,6 +19,7 @@ sfab-core = { path = "../core", features = ["s3"] }
 sfab-census = { path = "../world/census" }
 sfab-constitution = { path = "../world/constitution" }
 sfab-identity = { path = "../identity" }
+sfab-messaging = { path = "../messaging" }
 tokio = { version = "1.52.3", features = ["macros", "rt"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", default-features = false, features = ["fmt", "std"] }

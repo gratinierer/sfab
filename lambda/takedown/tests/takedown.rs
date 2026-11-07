@@ -9,6 +9,7 @@ use sfab_core::id::AgentId;
 use sfab_core::proof::{self, Request};
 use sfab_core::storage::{Bucket, Condition, MemoryStore, Metadata, Object, Store, StoreError};
 use sfab_identity::{Identity, List};
+use sfab_messaging::Messaging;
 use sfab_takedown::{Mode, execute, plan};
 
 const BITS: u32 = 8;
@@ -19,13 +20,16 @@ type Answer = Result<serde_json::Value, (u16, &'static str)>;
 
 struct World {
     store: Arc<MemoryStore>,
-    identity: Identity<MemoryStore>,
+    identity: Arc<Identity<MemoryStore>>,
+    messaging: Messaging<MemoryStore>,
 }
 
 fn world() -> World {
     let store = Arc::new(MemoryStore::new());
+    let identity = Arc::new(Identity::new(store.clone(), BITS));
     World {
-        identity: Identity::new(store.clone(), BITS),
+        messaging: Messaging::new(store.clone(), identity.clone(), BITS),
+        identity,
         store,
     }
 }
@@ -155,21 +159,45 @@ async fn full_agent(w: &World, name: &str, now: i64) -> Agent {
         let key = format!("identities/{id}/{file}");
         assert!(w.store.object(Bucket::Identities, &key).is_some(), "{file}");
     }
-    // Messages (issue 14) have no write function yet; that ticket replaces these direct writes.
-    for key in [
-        format!("messages/{id}/mail/0001.json"),
-        format!("messages/{id}/knock/0001.json"),
-    ] {
-        w.store
-            .put(
-                Bucket::Identities,
-                &key,
-                b"{}".to_vec(),
-                Metadata::new(),
-                Condition::Always,
-            )
+    // A knock and a message in its inbox, both from itself, so no other agent's inbox holds its
+    // ID: a knock while it's a stranger to itself, then a message once it's its own friend.
+    let path = format!("/v1/identity/{id}/messages");
+    for (expected, text) in [("knock", "knock"), ("message", "message")] {
+        if expected == "message" {
+            let friend = format!("/v1/identity/self/friends/{id}");
+            let proof = solve("PUT", &friend, Some(&auth), b"", now);
+            let call = Call {
+                method: "PUT",
+                path: &friend,
+                authorization: Some(&auth),
+                proof: Some(&proof),
+                body: b"",
+            };
+            let added = w
+                .identity
+                .add_contact(List::Friends, &call, id.as_str(), now);
+            added.await.expect("itself as a friend");
+        }
+        let body = format!(r#"{{"text":"{text}"}}"#);
+        let proof = solve("POST", &path, Some(&auth), body.as_bytes(), now);
+        let call = Call {
+            method: "POST",
+            path: &path,
+            authorization: Some(&auth),
+            proof: Some(&proof),
+            body: body.as_bytes(),
+        };
+        let sent = w
+            .messaging
+            .send(&call, id.as_str(), now)
             .await
-            .unwrap();
+            .expect("sent");
+        assert_eq!(sent.body["kind"], expected);
+    }
+    for folder in ["mail", "knock"] {
+        let inbox = format!("messages/{id}/{folder}/");
+        let found = w.store.list(Bucket::Identities, &inbox).await.unwrap();
+        assert_eq!(found.len(), 1, "{folder}");
     }
     Agent {
         id,

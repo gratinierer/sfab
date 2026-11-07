@@ -28,6 +28,8 @@ pub struct Admitted {
     pub caller: Caller,
     /// The solution hash, from which creates take their keys.
     pub hash: [u8; 32],
+    /// The proof's timestamp, in Unix seconds: when a message was sent.
+    pub timestamp: i64,
 }
 
 /// The proof, checked with one hash, then the body's size. The header's own checks come first,
@@ -49,7 +51,11 @@ pub fn admit_write(call: &Call, now: i64, required_bits: u32) -> Result<Admitted
             "The request body is over 32 KB (32,768 bytes)",
         ));
     }
-    Ok(Admitted { caller, hash })
+    Ok(Admitted {
+        caller,
+        hash,
+        timestamp: proof.timestamp,
+    })
 }
 
 #[cfg(test)]

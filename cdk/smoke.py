@@ -176,12 +176,14 @@ def run(
         if production:
             _identity(s, target.credential, birthed=False)
             _profile(s, target.credential, public=False)
+            _messages(s, target.credential)
         else:
             credential = _birth(s)
             if credential:
                 credential = _identity(s, credential, birthed=True)
             if credential:
                 _profile(s, credential, public=True)
+                _messages(s, credential)
         _execute_api(s)
     except Blocked:
         log(BLOCKED_MESSAGE)
@@ -317,12 +319,14 @@ def _identity(s: _Session, credential: str, *, birthed: bool) -> str | None:
         200,
         check=is_agent,
     )
-    s.check(
-        "self with a wrong claim",
-        s.api("GET", "/v1/identity/self", _headers(wrong)),
-        401,
-        problem=True,
-    )
+    if not birthed:
+        # A test agent's run checks a refused claim after `reclaim` instead, within the budget.
+        s.check(
+            "self with a wrong claim",
+            s.api("GET", "/v1/identity/self", _headers(wrong)),
+            401,
+            problem=True,
+        )
 
     body = f'{{"whoiam":"{SMOKE_WHOIAM}"}}'.encode()
     response, _, _ = s.write("PUT", "/v1/identity/evolve", body, credential=credential)
@@ -389,14 +393,8 @@ def _reclaim(s: _Session, old_credential: str) -> str | None:
     )
     response, _, _ = s.write("POST", "/v1/identity/reclaim", b"", credential=old_recovery)
     s.check("reclaim with the spent recovery code", response, 401, problem=True)
-    credential = f"{agent}.{new['claim']}"
-    if not s.check(
-        "self with the new claim",
-        s.api("GET", "/v1/identity/self", _headers(credential)),
-        200,
-    ):
-        return None
-    return credential
+    # The next request, reading the publication, uses the new claim, so it checks it too.
+    return f"{agent}.{new['claim']}"
 
 
 def _profile(s: _Session, credential: str, *, public: bool) -> None:
@@ -466,11 +464,42 @@ def _profile(s: _Session, credential: str, *, public: bool) -> None:
         response, _, _ = s.write("PUT", publication, b"{}", credential=credential)
         s.check("unpublish", response, 200, check=_has(name=False, friends=False))
         s.check("aboutme after unpublishing", s.api("GET", me), 404, problem=True)
+    if not public:
+        # A test agent's run checks a `404` after unpublishing instead, within the budget.
+        s.check(
+            "aboutme of an unknown agent",
+            s.api("GET", f"/v1/identity/{UNKNOWN_ID}/aboutme"),
+            404,
+            problem=True,
+        )
+
+
+def _messages(s: _Session, credential: str) -> None:
+    """A knock on itself, which nobody else sees, read back with `?kind=knock` and removed.
+    It isn't its own friend, so it's a knock; the unit tests cover messages between friends."""
+    agent = credential.split(".", 1)[0]
+    body = b'{"text":"smoke"}'
+    response, _, _ = s.write("POST", f"/v1/identity/{agent}/messages", body, credential=credential)
+    s.check("knock on itself", response, 202, check=_has(to=agent, kind="knock"))
+    knock = f"k-{agent}"
+
+    def holds_the_knock(r: Response) -> str | None:
+        items = [i for i in _json(r).get("items", []) if isinstance(i, dict)]
+        if not any(i.get("message_id") == knock and i.get("text") == "smoke" for i in items):
+            return f"{knock} with its text not in {items!r}"
+        return None
+
     s.check(
-        "aboutme of an unknown agent",
-        s.api("GET", f"/v1/identity/{UNKNOWN_ID}/aboutme"),
-        404,
-        problem=True,
+        "read knocks",
+        s.api("GET", "/v1/identity/self/messages?kind=knock", _headers(credential)),
+        200,
+        check=holds_the_knock,
+    )
+    s.check(
+        "remove the knock",
+        s.api("DELETE", f"/v1/identity/self/messages/{knock}", _headers(credential)),
+        200,
+        check=_has(message_id=knock),
     )
 
 

@@ -61,6 +61,11 @@ REQUIRED_BITS = 20
 API_RESERVED_CONCURRENCY = 5
 # CDK's default is 3 seconds; a request makes a few S3 calls. The takedown waits at least this.
 API_TIMEOUT_SECONDS = 10
+# How long messages and knocks wait before the lifecycle rule on `messages/` expires them; the
+# messaging crate's KEEP_DAYS hides them from the same day.
+MESSAGE_DAYS = 30
+# The only prefix where the API Lambda deletes: `DELETE /identity/self/messages/{message_id}`.
+API_DELETE_PREFIXES = ("messages/",)
 # The identities bucket's prefixes the API Lambda reads and writes, and those it only reads.
 API_READ_WRITE_PREFIXES = ("identities/", "messages/", "vitals/", "federation/pending/")
 API_READ_PREFIXES = ("world/",)
@@ -152,7 +157,16 @@ class BaseStack(cdk.Stack):
             validation=acm.CertificateValidation.from_dns(self.hosted_zone),
         )
 
-        self.identities_bucket = self._bucket("Identities")
+        # Inboxes can't grow forever: spec.md "Messages". The API hides anything older itself,
+        # because S3 removes expired objects some time later (docs/aws-facts.md).
+        self.identities_bucket = self._bucket(
+            "Identities",
+            [
+                s3.LifecycleRule(
+                    prefix="messages/", expiration=cdk.Duration.days(MESSAGE_DAYS)
+                )
+            ],
+        )
         self.claims_bucket = self._bucket("Claims")
 
         # The only thing the owner's email subscribes to. Nothing on it can stop the API.
@@ -247,11 +261,12 @@ class BaseStack(cdk.Stack):
             )
         )
 
-    def _bucket(self, id: str) -> s3.Bucket:
+    def _bucket(self, id: str, lifecycle_rules: list[s3.LifecycleRule] | None = None) -> s3.Bucket:
         # Deleting the stack can never delete identities: retained, no autoDeleteObjects.
         return s3.Bucket(
             self,
             id,
+            lifecycle_rules=lifecycle_rules,
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             encryption=s3.BucketEncryption.S3_MANAGED,
             enforce_ssl=True,
@@ -480,6 +495,12 @@ class ApiStack(cdk.Stack):
             iam.PolicyStatement(
                 actions=["s3:GetObject"],
                 resources=[identities.arn_for_objects(f"{p}*") for p in API_READ_PREFIXES],
+            )
+        )
+        self.function.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["s3:DeleteObject"],
+                resources=[identities.arn_for_objects(f"{p}*") for p in API_DELETE_PREFIXES],
             )
         )
         # Without it, S3 answers a missing key with 403 rather than 404, which the Lambda

@@ -484,6 +484,81 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
         assert_eq!(h.send(delete(None)).await.0, 401);
     }
 
+    // Messages: Finch knocks on Gull, who reads and removes the knock, then blocks Finch.
+    let (_, gull) = h.send(birth("Gull", Proof::Valid)).await;
+    let gid = gull["id"].as_str().unwrap();
+    let gauth = bearer(gid, gull["claim"].as_str().unwrap());
+    let message = |to: &str, auth, proof| Case {
+        operation: "sendMessage",
+        method: "POST",
+        path: format!("/v1/identity/{to}/messages"),
+        authorization: auth,
+        proof,
+        body: br#"{"text":"hello"}"#.to_vec(),
+    };
+    // sendMessage: 202, 200 for the same proof, 400, 401, 404, 403.
+    let (status, sent) = h.send(message(gid, auth.clone(), Proof::Valid)).await;
+    assert_eq!((status, sent["kind"].clone()), (202, json!("knock")));
+    assert_eq!(
+        h.send(message(gid, auth.clone(), Proof::Valid)).await.0,
+        200
+    );
+    assert_eq!(h.send(message(gid, auth.clone(), Proof::None)).await.0, 400);
+    assert_eq!(h.send(message(gid, None, Proof::Valid)).await.0, 401);
+    let nobody = "aaaaaaaaaaaa";
+    assert_eq!(
+        h.send(message(nobody, auth.clone(), Proof::Valid)).await.0,
+        404
+    );
+
+    // readMessages: 200 for both kinds, 400, 401.
+    let inbox = "/v1/identity/self/messages";
+    let (status, knocks) = h
+        .send(get(
+            "readMessages",
+            &format!("{inbox}?kind=knock"),
+            gauth.clone(),
+        ))
+        .await;
+    assert_eq!(
+        (status, knocks["items"][0]["sender"].clone()),
+        (200, json!(fid))
+    );
+    let (status, mail) = h.send(get("readMessages", inbox, gauth.clone())).await;
+    assert_eq!((status, mail["items"].clone()), (200, json!([])));
+    let made_up = format!("{inbox}?page=x");
+    assert_eq!(
+        h.send(get("readMessages", &made_up, gauth.clone())).await.0,
+        400
+    );
+    assert_eq!(h.send(get("readMessages", inbox, None)).await.0, 401);
+
+    // removeMessage: 200, 400, 401.
+    let remove = |id: &str, auth| Case {
+        operation: "removeMessage",
+        method: "DELETE",
+        path: format!("{inbox}/{id}"),
+        authorization: auth,
+        proof: Proof::None,
+        body: Vec::new(),
+    };
+    let knock = knocks["items"][0]["message_id"].as_str().unwrap();
+    assert_eq!(h.send(remove(knock, gauth.clone())).await.0, 200);
+    assert_eq!(h.send(remove("k-x", gauth.clone())).await.0, 400);
+    assert_eq!(h.send(remove(knock, None)).await.0, 401);
+
+    let block = Case {
+        operation: "block",
+        method: "PUT",
+        path: format!("/v1/identity/self/blocked/{fid}"),
+        authorization: gauth.clone(),
+        proof: Proof::Valid,
+        body: Vec::new(),
+    };
+    assert_eq!(h.send(block).await.0, 201);
+    let (status, refused) = h.send(message(gid, auth.clone(), Proof::Valid)).await;
+    assert_eq!((status, refused["type"].clone()), (403, json!("blocked")));
+
     // aboutme: the same 404 for anyone unpublished or unknown.
     let unknown = "/v1/identity/aaaaaaaaaaaa/aboutme";
     assert_eq!(h.send(get("aboutme", unknown, None)).await.0, 404);
