@@ -35,7 +35,6 @@ struct Aws {
     api_function: String,
     rest_api_id: String,
     stage: String,
-    api_name: String,
     account_id: String,
     stop_budget: String,
     alerts_topic: String,
@@ -187,6 +186,18 @@ impl Controls for Aws {
             .expect("the clock is after 1970")
             .as_secs() as i64;
         let midnight = now - now.rem_euclid(86_400);
+        // The ApiName dimension is the REST API's name as API Gateway holds it, which is read
+        // rather than assumed, because a wrong name would silently count nothing.
+        let api = self
+            .apigateway
+            .get_rest_api()
+            .rest_api_id(&self.rest_api_id)
+            .send()
+            .await
+            .map_err(|e| fail("apigateway GetRestApi", e.into_service_error()))?;
+        let api_name = api
+            .name
+            .ok_or_else(|| Failure("apigateway GetRestApi: no name".into()))?;
         let query = MetricDataQuery::builder()
             .id("calls")
             .metric_stat(
@@ -196,15 +207,13 @@ impl Controls for Aws {
                             .namespace("AWS/ApiGateway")
                             .metric_name("Count")
                             .dimensions(
-                                Dimension::builder()
-                                    .name("ApiName")
-                                    .value(&self.api_name)
-                                    .build(),
+                                Dimension::builder().name("ApiName").value(api_name).build(),
                             )
                             .build(),
                     )
                     .period(300)
-                    .stat("Sum")
+                    // AWS documents Count's statistic as SampleCount.
+                    .stat("SampleCount")
                     .build(),
             )
             .build();
@@ -300,7 +309,6 @@ async fn main() -> Result<(), lambda_runtime::Error> {
         api_function: env("API_FUNCTION_NAME"),
         rest_api_id: env("REST_API_ID"),
         stage: env("STAGE_NAME"),
-        api_name: env("API_NAME"),
         account_id: env("ACCOUNT_ID"),
         stop_budget: env("STOP_BUDGET_NAME"),
         alerts_topic: env("ALERTS_TOPIC_ARN"),
