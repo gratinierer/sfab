@@ -9,6 +9,7 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 import aws_cdk as cdk
 import yaml
@@ -46,7 +47,9 @@ WEBSITE_BUILD = sfab_config.REPO_ROOT / "build" / "website"
 STOP_BUDGET_USD = 35
 # The kill switch's daily spend check reads this budget by name.
 STOP_BUDGET_NAME = "sfab-stop"
+ALERT_BUDGET_NAME = "sfab-alert"
 ALERT_BUDGET_USD = (29, 40, 50, 70, 100)
+CHECK_BUDGET_NAME = "sfab-check"
 # The check budget's one alert, at $0.01, written as a percentage of a $1 limit.
 CHECK_BUDGET_PERCENT_OF_1_USD = 1
 
@@ -215,14 +218,14 @@ class BaseStack(cdk.Stack):
             self.stop_topic,
         )
         self._budget(
-            "sfab-alert",
+            ALERT_BUDGET_NAME,
             ALERT_BUDGET_USD[-1],
             budgets.CfnBudget.ExpressionProperty(not_=no_credits),
             [(amount, "ABSOLUTE_VALUE") for amount in ALERT_BUDGET_USD],
             self.alerts_topic,
         )
         self._budget(
-            "sfab-check",
+            CHECK_BUDGET_NAME,
             1,
             budgets.CfnBudget.ExpressionProperty(not_=no_credits),
             # 1% of $1 is $0.01: CloudFormation's schema refuses a threshold below 0.1.
@@ -235,7 +238,7 @@ class BaseStack(cdk.Stack):
         name: str,
         limit: float,
         filter_expression: budgets.CfnBudget.ExpressionProperty,
-        thresholds: list[tuple[float, str]],
+        thresholds: list[tuple[float, Literal["PERCENTAGE", "ABSOLUTE_VALUE"]]],
         topic: sns.Topic,
     ) -> None:
         budgets.CfnBudget(
