@@ -15,7 +15,7 @@ use std::future::Future;
 use futures_util::{StreamExt, TryStreamExt, stream};
 use serde::{Deserialize, Serialize};
 
-use sfab_core::daily::{rfc3339, utc_day};
+use sfab_core::daily::{DAY, rfc3339, utc_day};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 
 use crate::{
@@ -27,7 +27,6 @@ use crate::{
 /// outbound check bounds each to 3 seconds, so slow servers can't use up the job's time.
 const PARALLEL: usize = 100;
 const EMAILED_KEY: &str = "federation/emailed.json";
-const DAY: i64 = 86_400;
 
 /// The one outbound call: the body at `https://<domain><path>`, or `None` for anything that
 /// isn't a plain answer within the limits, such as a redirect or a refused address. Only the daily
@@ -170,7 +169,7 @@ async fn email<S: Store, N: Notify>(
     if domains.is_empty() {
         return Ok((false, old));
     }
-    let today = rfc3339(utc_day(now) * 86_400)[..10].to_owned();
+    let today = rfc3339(utc_day(now) * DAY)[..10].to_owned();
     if let Some(object) = store.get(Bucket::Identities, EMAILED_KEY).await?
         && serde_json::from_slice::<Emailed>(&object.body).is_ok_and(|e| e.day == today)
     {

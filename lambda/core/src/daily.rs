@@ -4,7 +4,8 @@
 use std::collections::HashSet;
 use std::sync::Mutex;
 
-const DAY: i64 = 86_400;
+/// Seconds in a day.
+pub const DAY: i64 = 86_400;
 
 /// The UTC day number of a Unix time.
 pub fn utc_day(now: i64) -> i64 {

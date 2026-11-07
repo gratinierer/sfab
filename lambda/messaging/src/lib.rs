@@ -13,7 +13,7 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-use sfab_core::daily::rfc3339;
+use sfab_core::daily::{DAY, rfc3339};
 use sfab_core::gate::{Call, admit_write};
 use sfab_core::id::{AgentId, hash_tail, is_base32};
 use sfab_core::paging::OFFSET_PAGE;
@@ -27,7 +27,6 @@ pub const MAX_TEXT_CHARS: usize = 80;
 /// How long messages wait: the lifecycle rule on `messages/` expires them after this, and reads
 /// hide them from then, because S3 removes expired objects some time later.
 pub const KEEP_DAYS: i64 = 30;
-const DAY: i64 = 86_400;
 /// Inverted times count down from this, so they keep 10 digits until the year 2286.
 const TIME_TOP: i64 = 9_999_999_999;
 const TIME_DIGITS: usize = 10;

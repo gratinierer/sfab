@@ -21,7 +21,7 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use sfab_core::daily::{next_daily_run, rfc3339};
+use sfab_core::daily::{DAY, next_daily_run, rfc3339};
 use sfab_core::gate::{Call, admit_write};
 use sfab_core::problem::{ABOUT_BLANK, Problem, Reply};
 use sfab_core::proof::hex;
@@ -46,7 +46,6 @@ pub const TOKEN_PATH: &str = "/.well-known/sfab-federation/";
 
 const PENDING_PREFIX: &str = "federation/pending/";
 const VERIFIED_PREFIX: &str = "federation/verified/";
-const DAY: i64 = 86_400;
 
 fn pending_key(domain: &str) -> String {
     format!("{PENDING_PREFIX}{domain}.json")

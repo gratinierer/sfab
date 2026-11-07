@@ -628,3 +628,14 @@ def test_the_takedown_program_waits_at_least_the_api_lambda_s_timeout():
     args = (sfab_config.REPO_ROOT / "lambda" / "takedown" / "src" / "args.rs").read_text()
     found = re.search(r"const API_TIMEOUT_SECONDS: u64 = (\d+);", args)
     assert found and int(found[1]) == stacks.API_TIMEOUT_SECONDS
+
+
+def test_the_federation_crate_s_lifetimes_match_the_lifecycle_rules():
+    # lambda/world/federation hides expired requests itself, so its days must be the rules'.
+    lib = (sfab_config.REPO_ROOT / "lambda" / "world" / "federation" / "src" / "lib.rs").read_text()
+    for name, days in (
+        ("PENDING_DAYS", stacks.FEDERATION_PENDING_DAYS),
+        ("VERIFIED_DAYS", stacks.FEDERATION_VERIFIED_DAYS),
+    ):
+        found = re.search(rf"pub const {name}: i64 = (\d+);", lib)
+        assert found and int(found[1]) == days, name
