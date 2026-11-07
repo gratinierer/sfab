@@ -374,7 +374,8 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
     mean up to 300 outbound fetches and three federation emails. If it fails, the errors alarm emails the owner,
     and that day's Chronicle entry is missing. Every step is safe to repeat, so a milestone can't fire twice,
     and a day's email isn't sent twice. The kill switch keeps Lambda's retries, because a stop must get through.
-  - **Permissions:** list the claims bucket, read `vitals/`, `vouches/`, `places/`, `square/`, `academy/`, `library/`,
+  - **Permissions:** list the claims bucket, list only `world/` and `federation/` in the identities bucket, so
+    it reads only keys it has listed there, read `vitals/`, `vouches/`, `places/`, `square/`, `academy/`, `library/`,
     `contacts.json` and `home.json`, read, write and delete in `world/` and `federation/`, delete in `places/` for
     story 4's stale lane pointers, publish to the alerts topic, and make the
     outbound check. It never reads `claim.json` or `identity.json`.
