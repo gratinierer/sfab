@@ -8,6 +8,7 @@ import json
 import pytest
 from aws_cdk.assertions import Template
 
+import sfab_config
 from test_stacks import api_function, topic_id
 
 
@@ -136,6 +137,14 @@ def test_the_kill_switch_checks_the_daily_limit_every_5_minutes_and_spend_at_noo
         "rate(5 minutes)": {"check": "daily-limit"},
         "cron(0 12 * * ? *)": {"check": "spend"},
     }
+
+
+def test_the_function_parses_every_check_the_schedules_send(api):
+    # Event::parse in lambda/killswitch matches these strings; a rename on one side alone would
+    # otherwise fail only at run time.
+    parser = (sfab_config.REPO_ROOT / "lambda" / "killswitch" / "src" / "lib.rs").read_text()
+    for schedule in schedules(api).values():
+        assert f'(Some("{schedule["check"]}"), None)' in parser, schedule
 
 
 # Its permissions
