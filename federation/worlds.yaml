@@ -1,0 +1,4 @@
+# The worlds this one has approved, served at GET /v1/federation/worlds and compiled into the
+# API Lambda. To approve a world, add its domain, commit and deploy: see docs/federation.md.
+# Each entry is `- domain: <hostname>`, lowercase, listed once. The tests check this file.
+worlds: []
