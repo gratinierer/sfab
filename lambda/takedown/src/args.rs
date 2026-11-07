@@ -1,5 +1,6 @@
 //! The command line.
 
+use sfab_core::daily::is_rfc3339_second;
 use sfab_core::id::AgentId;
 
 use crate::Mode;
@@ -45,7 +46,7 @@ pub fn parse_args(args: &[String]) -> Result<Args, String> {
     let mode = match positional.as_slice() {
         ["id", id] => Mode::One(AgentId::parse(id).ok_or("an ID is 12 characters of a-z and 2-7")?),
         ["window", from, to] => {
-            if !is_utc_second(from) || !is_utc_second(to) {
+            if !is_rfc3339_second(from) || !is_rfc3339_second(to) {
                 return Err("times look like 2026-11-05T12:00:00Z".to_owned());
             }
             if from >= to {
@@ -63,17 +64,4 @@ pub fn parse_args(args: &[String]) -> Result<Args, String> {
         execute,
         wait_seconds,
     })
-}
-
-/// `YYYY-MM-DDTHH:MM:SSZ`, the form `born_at` has, so the two compare as text.
-fn is_utc_second(text: &str) -> bool {
-    let b = text.as_bytes();
-    b.len() == 20
-        && b.iter().enumerate().all(|(i, c)| match i {
-            4 | 7 => *c == b'-',
-            10 => *c == b'T',
-            13 | 16 => *c == b':',
-            19 => *c == b'Z',
-            _ => c.is_ascii_digit(),
-        })
 }

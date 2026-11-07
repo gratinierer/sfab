@@ -41,6 +41,20 @@ pub fn rfc3339(now: i64) -> String {
     )
 }
 
+/// Whether `text` has the form [`rfc3339`] writes, `YYYY-MM-DDTHH:MM:SSZ`, so it compares with
+/// those times as text.
+pub fn is_rfc3339_second(text: &str) -> bool {
+    let b = text.as_bytes();
+    b.len() == 20
+        && b.iter().enumerate().all(|(i, c)| match i {
+            4 | 7 => *c == b'-',
+            10 => *c == b'T',
+            13 | 16 => *c == b':',
+            19 => *c == b'Z',
+            _ => c.is_ascii_digit(),
+        })
+}
+
 /// IDs already marked today, capped, and cleared at midnight UTC or when full. Clearing early
 /// only costs an extra write.
 #[derive(Debug)]
@@ -88,6 +102,13 @@ mod tests {
         assert_eq!(rfc3339(1_793_836_800), "2026-11-05T00:00:00Z");
         assert_eq!(rfc3339(951_782_400 + 3_661), "2000-02-29T01:01:01Z");
         assert_eq!(rfc3339(4_102_444_799), "2099-12-31T23:59:59Z");
+    }
+
+    #[test]
+    fn recognises_the_form_it_writes() {
+        assert!(is_rfc3339_second(&rfc3339(1_793_836_800)));
+        assert!(!is_rfc3339_second("2026-11-05T00:00:00+00:00"));
+        assert!(!is_rfc3339_second("2026-11-05 00:00:00Z"));
     }
 
     #[test]
