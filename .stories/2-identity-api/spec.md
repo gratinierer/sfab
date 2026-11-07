@@ -318,7 +318,9 @@ See `docs/adr/0001-initial-architecture.md`. Nothing crosses between worlds unti
    `expires_at` as gone, and the job deletes expired requests itself without fetching or emailing them.
 5. If any requests are verified, the job sends the owner one email a day listing them, so nobody can
    flood the inbox. Unverified requests never reach the owner. `federation/emailed.json` names the last day
-   emailed, written before sending, so a rerun never emails twice in a day.
+   emailed, written before sending, so a rerun never emails twice in a day, and a send that fails after
+   it's written loses that day's email, which the errors alarm reports. A verified request is listed in
+   every day's email until the owner deletes it or it expires after 30 days.
 6. The owner approves by adding the domain to `federation/worlds.yaml`, committing and deploying, and
    then deletes the stored request with `aws s3 rm`. Rejecting it is only that delete. Git keeps the
    history, and there's no approval route to attack. A short manual, `docs/federation.md`, describes this.
