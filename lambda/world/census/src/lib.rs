@@ -29,6 +29,7 @@ const NOT_BUILT_YET: &str = "not-built-yet";
 const MAX_PAGE_DIGITS: usize = 7;
 
 const CENSUS_KEY: &str = "world/census.json";
+const WORLD_PREFIX: &str = "world/";
 const PAGES_PREFIX: &str = "world/residents/";
 
 fn page_key(page: usize) -> String {
@@ -69,10 +70,17 @@ pub async fn snapshot<S: Store>(
     residents: &[AgentId],
     as_of: &str,
 ) -> Result<Report, StoreError> {
-    let existing: BTreeSet<String> = store
-        .list(Bucket::Identities, PAGES_PREFIX)
+    // One listing of `world/` says which files exist, so the job never asks for a missing key,
+    // which S3 answers with `403` when the job may list only `world/` (spec.md "Permissions").
+    let world: BTreeSet<String> = store
+        .list(Bucket::Identities, WORLD_PREFIX)
         .await?
         .into_iter()
+        .collect();
+    let census_known = world.contains(CENSUS_KEY);
+    let existing: BTreeSet<String> = world
+        .into_iter()
+        .filter(|k| k.starts_with(PAGES_PREFIX))
         .collect();
     let chunks: Vec<&[AgentId]> = if residents.is_empty() {
         vec![&[]]
@@ -107,8 +115,8 @@ pub async fn snapshot<S: Store>(
         as_of: as_of.to_owned(),
     };
     let census = serde_json::to_vec(&census).expect("the census serializes");
-    let written =
-        written + usize::from(write_if_changed(store, CENSUS_KEY.into(), census, true).await?);
+    let written = written
+        + usize::from(write_if_changed(store, CENSUS_KEY.into(), census, census_known).await?);
 
     let wanted: BTreeSet<String> = (1..=pages).map(page_key).collect();
     let surplus: Vec<String> = existing.difference(&wanted).cloned().collect();

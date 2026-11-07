@@ -38,6 +38,7 @@ def built(tmp_path_factory):
         sfab_config.load(FIXTURE),
         api_code=stand_in(tmp_path_factory, "api"),
         kill_switch_code=stand_in(tmp_path_factory, "killswitch"),
+        job_code=stand_in(tmp_path_factory, "job"),
         website_source=stand_in_site(tmp_path_factory),
     )
 
@@ -99,7 +100,9 @@ def test_the_kill_switch_keeps_logs_for_14_days(api):
 
 
 def test_the_kill_switch_keeps_lambda_s_retries_so_a_stop_gets_through(api):
-    assert api.find_resources("AWS::Lambda::EventInvokeConfig") == {}
+    function_id, _ = kill_switch(api)
+    configs = api.find_resources("AWS::Lambda::EventInvokeConfig").values()
+    assert not [c for c in configs if function_id in json.dumps(c["Properties"]["FunctionName"])]
 
 
 def test_the_kill_switch_gets_the_daily_limit_and_what_it_stops(api, base):
@@ -148,13 +151,14 @@ def test_the_kill_switch_is_subscribed_to_the_stop_topic(api, base):
 
 
 def schedules(api: Template) -> dict[str, dict]:
-    """Each rule's schedule, with the input it sends the kill switch."""
+    """Each of the kill switch's rules' schedule, with the input it sends."""
     function_id, _ = kill_switch(api)
     found = {}
     for rule in api.find_resources("AWS::Events::Rule").values():
         props = rule["Properties"]
         (target,) = props["Targets"]
-        assert function_id in json.dumps(target["Arn"])
+        if function_id not in json.dumps(target["Arn"]):
+            continue
         found[props["ScheduleExpression"]] = json.loads(target["Input"])
     return found
 

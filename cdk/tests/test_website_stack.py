@@ -35,7 +35,7 @@ def built(config, tmp_path_factory):
     (site / "index.html").write_text("stand-in")
     code = lambda_.Code.from_asset(str(asset))
     return stacks.build(
-        cdk.App(), config, api_code=code, kill_switch_code=code, website_source=site
+        cdk.App(), config, api_code=code, kill_switch_code=code, job_code=code, website_source=site
     )
 
 

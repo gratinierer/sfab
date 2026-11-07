@@ -38,9 +38,12 @@ impl Fake {
 
     fn stopped() -> Self {
         let fake = Fake::running(0.0);
-        fake.in_place
-            .borrow_mut()
-            .extend([Step::Waf, Step::ApiLambda, Step::ExecuteApi]);
+        fake.in_place.borrow_mut().extend([
+            Step::Waf,
+            Step::ApiLambda,
+            Step::ExecuteApi,
+            Step::WorldJob,
+        ]);
         fake
     }
 
@@ -85,7 +88,7 @@ impl Controls for Fake {
     }
 }
 
-const ALL: [Step; 3] = [Step::Waf, Step::ApiLambda, Step::ExecuteApi];
+const ALL: [Step; 4] = [Step::Waf, Step::ApiLambda, Step::ExecuteApi, Step::WorldJob];
 
 #[tokio::test]
 async fn over_the_daily_limit_stops_the_api_and_emails_once_naming_the_daily_limit() {
@@ -97,6 +100,16 @@ async fn over_the_daily_limit_stops_the_api_and_emails_once_naming_the_daily_lim
     let emails = aws.emails();
     assert_eq!(emails.len(), 1);
     assert!(emails[0].0.contains("daily limit"), "{emails:?}");
+}
+
+#[tokio::test]
+async fn the_fourth_stop_step_pauses_the_daily_world_job() {
+    let aws = Fake::running(100_001.0);
+
+    handle(&aws, Event::DailyLimitCheck, LIMITS).await.unwrap();
+
+    assert_eq!(aws.applied().last(), Some(&Step::WorldJob));
+    assert!(aws.in_place.borrow().contains(&Step::WorldJob));
 }
 
 #[tokio::test]
@@ -151,7 +164,7 @@ async fn a_second_trigger_during_a_stop_sends_no_second_email() {
 
 #[tokio::test]
 async fn with_a_stop_in_force_a_check_repeats_only_the_missing_step() {
-    for missing in [Step::Waf, Step::ExecuteApi] {
+    for missing in [Step::Waf, Step::ExecuteApi, Step::WorldJob] {
         let aws = Fake::stopped();
         aws.in_place.borrow_mut().remove(&missing);
 

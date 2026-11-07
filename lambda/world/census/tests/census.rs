@@ -7,9 +7,49 @@ use serde_json::{Value, json};
 use sfab_census::{Census, snapshot};
 use sfab_core::id::AgentId;
 use sfab_core::problem::{Problem, Reply};
-use sfab_core::storage::{Bucket, MemoryStore};
+use sfab_core::storage::{Bucket, Condition, MemoryStore, Metadata, Object, Store, StoreError};
 
 const AS_OF: &str = "2026-11-07T00:05:00Z";
+
+/// S3 as the job sees it: it may list only `world/` in the identities bucket, so asking for a
+/// missing key there gets `403`, not `404`.
+struct ListOnlyWorld(MemoryStore);
+
+impl Store for ListOnlyWorld {
+    async fn get(&self, bucket: Bucket, key: &str) -> Result<Option<Object>, StoreError> {
+        match self.0.get(bucket, key).await? {
+            None => Err(StoreError::Other(format!("403 on missing {key}"))),
+            found => Ok(found),
+        }
+    }
+
+    async fn put(
+        &self,
+        bucket: Bucket,
+        key: &str,
+        body: Vec<u8>,
+        metadata: Metadata,
+        condition: Condition,
+    ) -> Result<(), StoreError> {
+        self.0.put(bucket, key, body, metadata, condition).await
+    }
+
+    async fn delete(&self, bucket: Bucket, key: &str) -> Result<(), StoreError> {
+        self.0.delete(bucket, key).await
+    }
+
+    async fn list(&self, bucket: Bucket, prefix: &str) -> Result<Vec<String>, StoreError> {
+        self.0.list(bucket, prefix).await
+    }
+}
+
+#[tokio::test]
+async fn the_snapshot_never_asks_for_a_missing_key() {
+    let store = ListOnlyWorld(MemoryStore::new());
+
+    snapshot(&store, &ids(1_500), AS_OF).await.unwrap();
+    snapshot(&store, &ids(2_500), NEXT_DAY).await.unwrap();
+}
 const NEXT_DAY: &str = "2026-11-08T00:05:00Z";
 
 /// `n` distinct, sorted resident IDs.
