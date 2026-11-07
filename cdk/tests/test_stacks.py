@@ -17,30 +17,12 @@ from aws_cdk.assertions import Match, Template
 
 import sfab_config
 import stacks
+from conftest import build_with_stand_ins
 
-FIXTURE = Path(__file__).resolve().parent / "fixtures" / "sfab.config.test.toml"
 # The same context `cdk synth` reads from cdk.json.
 CDK_CONTEXT = json.loads((Path(__file__).resolve().parent.parent / "cdk.json").read_text())[
     "context"
 ]
-
-
-@pytest.fixture(scope="module")
-def config():
-    return sfab_config.load(FIXTURE)
-
-
-@pytest.fixture(scope="module")
-def built(config, tmp_path_factory):
-    asset = tmp_path_factory.mktemp("api")
-    (asset / "bootstrap").write_text("stand-in")
-    site = tmp_path_factory.mktemp("website")
-    (site / "index.html").write_text("stand-in")
-    app = cdk.App()
-    code = lambda_.Code.from_asset(str(asset))
-    return stacks.build(
-        app, config, api_code=code, kill_switch_code=code, job_code=code, website_source=site
-    )
 
 
 @pytest.fixture(scope="module")
@@ -53,18 +35,11 @@ def api(built):
     return Template.from_stack(built.api)
 
 
-def test_the_stacks_pass_cloudformation_s_schema_rules(config, tmp_path):
+def test_the_stacks_pass_cloudformation_s_schema_rules(config, tmp_path_factory):
     # A value outside a resource's schema, such as a budget threshold under 0.1, would
     # otherwise only warn at synth and fail at deploy.
-    asset = tmp_path / "api"
-    asset.mkdir()
-    (asset / "bootstrap").write_text("stand-in")
-    site = tmp_path / "website"
-    site.mkdir()
-    (site / "index.html").write_text("stand-in")
-    app = cdk.App(context=CDK_CONTEXT, outdir=str(tmp_path / "out"))
-    code = lambda_.Code.from_asset(str(asset))
-    stacks.build(app, config, api_code=code, kill_switch_code=code, job_code=code, website_source=site)
+    app = cdk.App(context=CDK_CONTEXT, outdir=str(tmp_path_factory.mktemp("out")))
+    build_with_stand_ins(app, config, tmp_path_factory)
     app.synth()
 
 

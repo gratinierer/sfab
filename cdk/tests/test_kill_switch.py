@@ -1,46 +1,14 @@
 """CDK assertion tests for the kill switch, from spec.md "Testing" and issue 07.
 
-Built from the committed fixture config with stand-in Lambda assets, like test_stacks.py.
+Built once, from the committed fixture config with stand-in Lambda assets, in conftest.py.
 """
 
 import json
-from pathlib import Path
 
-import aws_cdk as cdk
 import pytest
-from aws_cdk import aws_lambda as lambda_
 from aws_cdk.assertions import Template
 
-import sfab_config
-import stacks
 from test_stacks import api_function, topic_id
-
-FIXTURE = Path(__file__).resolve().parent / "fixtures" / "sfab.config.test.toml"
-
-
-def stand_in(tmp_path_factory, name: str) -> lambda_.Code:
-    asset = tmp_path_factory.mktemp(name)
-    (asset / "bootstrap").write_text(f"stand-in {name}")
-    return lambda_.Code.from_asset(str(asset))
-
-
-def stand_in_site(tmp_path_factory) -> Path:
-    site = tmp_path_factory.mktemp("website")
-    (site / "index.html").write_text("stand-in")
-    return site
-
-
-@pytest.fixture(scope="module")
-def built(tmp_path_factory):
-    app = cdk.App()
-    return stacks.build(
-        app,
-        sfab_config.load(FIXTURE),
-        api_code=stand_in(tmp_path_factory, "api"),
-        kill_switch_code=stand_in(tmp_path_factory, "killswitch"),
-        job_code=stand_in(tmp_path_factory, "job"),
-        website_source=stand_in_site(tmp_path_factory),
-    )
 
 
 @pytest.fixture(scope="module")

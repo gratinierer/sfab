@@ -2,31 +2,16 @@
 and issue 11: its schedule, timeout, reserved concurrency, no retries and permissions, and the
 kill switch's right to pause it.
 
-Built from the committed fixture config with stand-in Lambda assets, like test_stacks.py.
+Built once, from the committed fixture config with stand-in Lambda assets, in conftest.py.
 """
 
 import json
 
-import aws_cdk as cdk
 import pytest
 from aws_cdk.assertions import Template
 
-import sfab_config
-import stacks
-from test_kill_switch import FIXTURE, actions, kill_switch, stand_in, stand_in_site
+from test_kill_switch import actions, kill_switch
 from test_stacks import api_function, grants, topic_id
-
-
-@pytest.fixture(scope="module")
-def built(tmp_path_factory):
-    return stacks.build(
-        cdk.App(),
-        sfab_config.load(FIXTURE),
-        api_code=stand_in(tmp_path_factory, "api"),
-        kill_switch_code=stand_in(tmp_path_factory, "killswitch"),
-        job_code=stand_in(tmp_path_factory, "job"),
-        website_source=stand_in_site(tmp_path_factory),
-    )
 
 
 @pytest.fixture(scope="module")

@@ -7,36 +7,13 @@ generate step.
 
 import json
 import subprocess
-from pathlib import Path
 
-import aws_cdk as cdk
 import pytest
-from aws_cdk import aws_lambda as lambda_
 from aws_cdk.assertions import Template
 
-import sfab_config
-import stacks
 
-FIXTURE = Path(__file__).resolve().parent / "fixtures" / "sfab.config.test.toml"
 # AWS's managed cache policy ID.
 CACHING_OPTIMIZED = "658327ea-f89d-4fab-a63d-7e88639e58f6"
-
-
-@pytest.fixture(scope="module")
-def config():
-    return sfab_config.load(FIXTURE)
-
-
-@pytest.fixture(scope="module")
-def built(config, tmp_path_factory):
-    asset = tmp_path_factory.mktemp("api")
-    (asset / "bootstrap").write_text("stand-in")
-    site = tmp_path_factory.mktemp("website")
-    (site / "index.html").write_text("stand-in")
-    code = lambda_.Code.from_asset(str(asset))
-    return stacks.build(
-        cdk.App(), config, api_code=code, kill_switch_code=code, job_code=code, website_source=site
-    )
 
 
 @pytest.fixture(scope="module")
