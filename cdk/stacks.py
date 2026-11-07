@@ -5,9 +5,12 @@ See .stories/2-identity-api/spec.md "Architecture" and "Abuse and cost controls"
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 import aws_cdk as cdk
+import yaml
+from aws_cdk import aws_apigateway as apigw
 from aws_cdk import aws_budgets as budgets
 from aws_cdk import aws_certificatemanager as acm
 from aws_cdk import aws_cloudwatch as cloudwatch
@@ -21,9 +24,11 @@ from aws_cdk import aws_sns as sns
 from aws_cdk import aws_sns_subscriptions as subs
 from constructs import Construct
 
+import sfab_config
 from sfab_config import Config
 
 REGION = "us-east-1"
+OPENAPI = sfab_config.REPO_ROOT / "openapi" / "sfab.yaml"
 
 # Budgets, in USD per month. Public settings, so they live here, reviewed, not in the config.
 STOP_BUDGET_USD = 35
@@ -46,8 +51,29 @@ API_READ_WRITE_PREFIXES = ("identities/", "messages/", "vitals/", "federation/pe
 API_READ_PREFIXES = ("world/",)
 
 
+STAGE = "v1"
+THROTTLE_RATE = 10
+THROTTLE_BURST = 20
+
+
+class SynthError(Exception):
+    """The stacks can't be built; the message says why."""
+
+
 def api_host(config: Config) -> str:
     return f"api.{config.domain_name}"
+
+
+def fill_openapi(text: str, *, api_lambda_arn: str, api_host: str) -> dict:
+    """sfab.yaml with its two placeholders filled in memory, so no real ARN reaches the
+    repo. A placeholder left over deploys fine and shows agents the raw text, so it fails."""
+    filled = text.replace("{{api_lambda_arn}}", api_lambda_arn).replace("{{api_host}}", api_host)
+    left = sorted(set(re.findall(r"\{\{[^}]*\}\}", filled)))
+    if "{{" in filled:
+        raise SynthError(
+            f"{OPENAPI.name}: unfilled placeholder(s): {', '.join(left) or '{{'}"
+        )
+    return yaml.safe_load(filled)
 
 
 class BaseStack(cdk.Stack):
@@ -187,6 +213,7 @@ class ApiStack(cdk.Stack):
         config: Config,
         base: BaseStack,
         api_code: lambda_.Code,
+        openapi_text: str,
         **kwargs,
     ) -> None:
         super().__init__(scope, id, **kwargs)
@@ -226,6 +253,50 @@ class ApiStack(cdk.Stack):
         )
         errors_alarm.add_alarm_action(cw_actions.SnsAction(base.alerts_topic))
 
+        definition = fill_openapi(
+            openapi_text, api_lambda_arn=self.function.function_arn, api_host=api_host(config)
+        )
+        self.rest_api = apigw.SpecRestApi(
+            self,
+            "Api",
+            api_definition=apigw.ApiDefinition.from_inline(definition),
+            # Our own CloudFront is in front, so not CDK's default of EDGE.
+            endpoint_types=[apigw.EndpointType.REGIONAL],
+            # Access logs are off, so nothing needs the account-level CloudWatch role, and
+            # CDK's default depends on a feature flag.
+            cloud_watch_role=False,
+            deploy_options=apigw.StageOptions(
+                stage_name=STAGE,
+                # One stage-wide default throttle, so a route can't be forgotten.
+                throttling_rate_limit=THROTTLE_RATE,
+                throttling_burst_limit=THROTTLE_BURST,
+                # No execution, body or access logs, so a flood can't run up a log bill.
+                logging_level=apigw.MethodLoggingLevel.OFF,
+                data_trace_enabled=False,
+            ),
+        )
+        # SpecRestApi doesn't build the model from code, so CDK's deployment hash wouldn't see
+        # an edit to sfab.yaml; hashing the definition makes each edit a new deployment.
+        self.rest_api.latest_deployment.add_to_logical_id(definition)
+        # The origin key: CloudFront adds it, and every operation in sfab.yaml requires it.
+        # It works only through a usage plan; the stage holds the throttles, so the plan has
+        # none. No name, because a changed value replaces the key, and a named key can't be.
+        origin_key = apigw.ApiKey(self, "OriginKey", value=config.origin_key, enabled=True)
+        plan = self.rest_api.add_usage_plan(
+            "OriginKeyPlan",
+            api_stages=[
+                apigw.UsagePlanPerApiStage(api=self.rest_api, stage=self.rest_api.deployment_stage)
+            ],
+        )
+        plan.add_api_key(origin_key)
+        # SpecRestApi can't see the integrations inside the OpenAPI document, so it adds no
+        # invoke permission; without this every route fails.
+        self.function.add_permission(
+            "ApiGatewayInvoke",
+            principal=iam.ServicePrincipal("apigateway.amazonaws.com"),
+            source_arn=self.rest_api.arn_for_execute_api(),
+        )
+
     def _grant_storage(self, base: BaseStack) -> None:
         """spec.md "Architecture": only these prefixes, never `federation/verified/`.
         Story 4 adds its own prefixes here."""
@@ -256,8 +327,20 @@ class Stacks:
     api: ApiStack
 
 
-def build(app: Construct, config: Config, api_code: lambda_.Code) -> Stacks:
+def build(
+    app: Construct, config: Config, api_code: lambda_.Code, openapi_text: str | None = None
+) -> Stacks:
+    if openapi_text is None:
+        openapi_text = OPENAPI.read_text(encoding="utf-8")
     env = cdk.Environment(account=config.account_id, region=REGION)
     base = BaseStack(app, "SfabBase", config=config, env=env)
-    api = ApiStack(app, "SfabApi", config=config, base=base, api_code=api_code, env=env)
+    api = ApiStack(
+        app,
+        "SfabApi",
+        config=config,
+        base=base,
+        api_code=api_code,
+        openapi_text=openapi_text,
+        env=env,
+    )
     return Stacks(base=base, api=api)

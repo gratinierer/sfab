@@ -334,6 +334,119 @@ def test_the_api_lambda_errors_alarm_emails_only_the_alerts_topic(api, base):
     assert "OKActions" not in alarm and "InsufficientDataActions" not in alarm
 
 
+# The API stack: the REST API from openapi/sfab.yaml
+
+
+def rest_api_body(api: Template) -> str:
+    apis = api.find_resources("AWS::ApiGateway::RestApi")
+    assert len(apis) == 1
+    return json.dumps(next(iter(apis.values()))["Properties"]["Body"])
+
+
+def test_the_rest_api_is_built_from_sfab_yaml_with_both_placeholders_filled(api, config):
+    body = rest_api_body(api)
+    assert "{{" not in body
+    assert f"Start at https://api.{config.domain_name}/v1/openapi.yaml" in body
+    function_id, _ = api_function(api)
+    assert '"Fn::GetAtt": ["%s", "Arn"]' % function_id in body
+    assert "/identity/birth" in body
+
+
+def test_a_placeholder_left_in_the_definition_fails_the_synth():
+    text = "a: '{{api_lambda_arn}}'\nb: '{{api_host}}'\nc: '{{something_new}}'\n"
+    with pytest.raises(stacks.SynthError, match="something_new"):
+        stacks.fill_openapi(text, api_lambda_arn="arn", api_host="host")
+
+
+def test_the_rest_api_is_regional(api):
+    api.has_resource_properties(
+        "AWS::ApiGateway::RestApi", {"EndpointConfiguration": {"Types": ["REGIONAL"]}}
+    )
+
+
+def test_there_is_no_cloudwatch_role_because_access_logs_are_off(api):
+    api.resource_count_is("AWS::ApiGateway::Account", 0)
+    assert not [k for k in api.find_resources("AWS::IAM::Role") if "CloudWatchRole" in k]
+
+
+def test_the_v1_stage_has_one_default_throttle_and_no_logs(api):
+    stages = api.find_resources("AWS::ApiGateway::Stage")
+    assert len(stages) == 1
+    stage = next(iter(stages.values()))["Properties"]
+    assert stage["StageName"] == "v1"
+    assert "AccessLogSetting" not in stage
+    assert stage["MethodSettings"] == [
+        {
+            "DataTraceEnabled": False,
+            "HttpMethod": "*",
+            "LoggingLevel": "OFF",
+            "ResourcePath": "/*",
+            "ThrottlingBurstLimit": 20,
+            "ThrottlingRateLimit": 10,
+        }
+    ]
+
+
+def test_api_gateway_may_invoke_the_api_lambda(api):
+    function_id, _ = api_function(api)
+    permissions = [
+        p["Properties"]
+        for p in api.find_resources("AWS::Lambda::Permission").values()
+        if p["Properties"]["Principal"] == "apigateway.amazonaws.com"
+    ]
+    assert len(permissions) == 1
+    permission = permissions[0]
+    assert permission["Action"] == "lambda:InvokeFunction"
+    assert permission["FunctionName"] == {"Fn::GetAtt": [function_id, "Arn"]}
+    assert "execute-api" in json.dumps(permission["SourceArn"])
+
+
+def deployment_id(template: Template) -> str:
+    deployments = template.find_resources("AWS::ApiGateway::Deployment")
+    assert len(deployments) == 1
+    return next(iter(deployments))
+
+
+def test_an_edit_to_sfab_yaml_gives_a_new_deployment(config, tmp_path):
+    asset = tmp_path / "api"
+    asset.mkdir()
+    (asset / "bootstrap").write_text("stand-in")
+    source = stacks.OPENAPI.read_text(encoding="utf-8")
+
+    def synth(text: str) -> str:
+        built = stacks.build(
+            cdk.App(), config, api_code=lambda_.Code.from_asset(str(asset)), openapi_text=text
+        )
+        return deployment_id(Template.from_stack(built.api))
+
+    assert synth(source) == synth(source)
+    assert synth(source) != synth(source.replace("Create an identity", "Make an identity"))
+
+
+def test_the_origin_key_is_unnamed_and_in_a_usage_plan_on_v1_without_a_throttle(api, config):
+    keys = api.find_resources("AWS::ApiGateway::ApiKey")
+    assert len(keys) == 1
+    key_id, key = next(iter(keys.items()))
+    # A named key can't be replaced, and changing Value replaces it.
+    assert "Name" not in key["Properties"]
+    assert key["Properties"]["Value"] == config.origin_key
+    assert key["Properties"]["Enabled"] is True
+
+    plans = api.find_resources("AWS::ApiGateway::UsagePlan")
+    assert len(plans) == 1
+    plan_id, plan = next(iter(plans.items()))
+    assert "Throttle" not in plan["Properties"] and "Quota" not in plan["Properties"]
+    (stage,) = plan["Properties"]["ApiStages"]
+    assert not stage.get("Throttle")  # CDK writes an empty map
+    stage_id = next(iter(api.find_resources("AWS::ApiGateway::Stage")))
+    assert stage["Stage"] == {"Ref": stage_id}
+
+    api.has_resource_properties(
+        "AWS::ApiGateway::UsagePlanKey",
+        {"KeyId": {"Ref": key_id}, "KeyType": "API_KEY", "UsagePlanId": {"Ref": plan_id}},
+    )
+
+
 def test_buckets_topics_and_budgets_are_only_in_the_base_stack(api):
     for kind in ("AWS::S3::Bucket", "AWS::SNS::Topic", "AWS::Budgets::Budget"):
         assert api.find_resources(kind) == {}, kind
