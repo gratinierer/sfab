@@ -482,9 +482,7 @@ class ApiStack(cdk.Stack):
             ),
         )
 
-        zone = route53.HostedZone.from_hosted_zone_attributes(
-            self, "Zone", hosted_zone_id=config.hosted_zone_id, zone_name=config.domain_name
-        )
+        zone = base.hosted_zone
         # Free: no overage charges, WAF included, and the zone's fee and queries covered.
         pricingplanmanager.CfnSubscription(
             self,
