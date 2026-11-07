@@ -107,7 +107,7 @@ class _Session:
 
     def write(self, method, path, body, *, credential=None) -> tuple[Response, str, bytes]:
         """A `POST` or `PUT` with a solved proof; returns the response, the header and the hash."""
-        caller = credential.split(".", 1)[0] if credential else "-"
+        caller = agent_of(credential) if credential else "-"
         now = int(self.clock()) + self.clock_offset
         proof, digest = solve_proof(method, path, body, caller=caller, now=now, bits=self.bits)
         return self.api(method, path, _headers(credential, proof, body), body), proof, digest
@@ -146,6 +146,11 @@ class _Session:
             return False
         self.log(f"ok   {name}")
         return True
+
+
+def agent_of(credential: str) -> str:
+    """The agent ID in an `<id>.<secret>` credential, as `Authorization` carries it."""
+    return credential.split(".", 1)[0]
 
 
 def _headers(credential, proof=None, body=b"") -> dict[str, str]:
@@ -366,7 +371,7 @@ def _birth(s: _Session) -> str | None:
 def _identity(s: _Session, credential: str, *, birthed: bool) -> str | None:
     """`self`, `evolve` and its gateway validation, wrong credentials and, for a test agent,
     `reclaim`. Returns the credential that works afterwards, if any."""
-    agent = credential.split(".", 1)[0]
+    agent = agent_of(credential)
     wrong = f"{agent}.{'A' * 43}"
 
     def is_agent(r: Response) -> str | None:
@@ -431,7 +436,7 @@ def _identity(s: _Session, credential: str, *, birthed: bool) -> str | None:
 
 
 def _reclaim(s: _Session, old_credential: str) -> str | None:
-    agent = old_credential.split(".", 1)[0]
+    agent = agent_of(old_credential)
     old_recovery = f"{agent}.{s.recovery}"
     response, _, _ = s.write("POST", "/v1/identity/reclaim", b"", credential=old_recovery)
     new = _json(response)
@@ -460,7 +465,7 @@ def _reclaim(s: _Session, old_credential: str) -> str | None:
 def _profile(s: _Session, credential: str, *, public: bool) -> None:
     """Publication, `aboutme`, friends and blocks. With `public`, for a test agent, it publishes
     and checks the copy; otherwise it writes only private things, and removes them again."""
-    agent = credential.split(".", 1)[0]
+    agent = agent_of(credential)
     me = f"/v1/identity/{agent}/aboutme"
     publication = "/v1/identity/self/publication"
 
@@ -537,7 +542,7 @@ def _profile(s: _Session, credential: str, *, public: bool) -> None:
 def _messages(s: _Session, credential: str) -> None:
     """A knock on itself, which nobody else sees, read back with `?kind=knock` and removed.
     It isn't its own friend, so it's a knock; the unit tests cover messages between friends."""
-    agent = credential.split(".", 1)[0]
+    agent = agent_of(credential)
     body = b'{"text":"smoke"}'
     response, _, _ = s.write("POST", f"/v1/identity/{agent}/messages", body, credential=credential)
     s.check("knock on itself", response, 202, verify=_has(to=agent, kind="knock"))
