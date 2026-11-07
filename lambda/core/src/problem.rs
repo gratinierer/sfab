@@ -21,6 +21,11 @@ impl Reply {
     pub fn created(body: Value) -> Self {
         Self { status: 201, body }
     }
+
+    /// A message or knock was accepted.
+    pub fn accepted(body: Value) -> Self {
+        Self { status: 202, body }
+    }
 }
 
 /// An RFC 9457 problem. `kind` is the `type`: `about:blank` when the status says it all.
@@ -75,6 +80,11 @@ impl Problem {
 
     pub fn not_found(title: impl Into<String>) -> Self {
         Self::new(404, ABOUT_BLANK, title)
+    }
+
+    /// You're not allowed, and `kind` says why, such as `blocked`: don't retry.
+    pub fn forbidden(kind: &'static str, title: impl Into<String>) -> Self {
+        Self::new(403, kind, title)
     }
 
     pub fn conflict(kind: &'static str, title: impl Into<String>) -> Self {

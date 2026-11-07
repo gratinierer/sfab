@@ -15,6 +15,7 @@ aws-config = { version = "1.13.0", default-features = false, features = ["rt-tok
 aws-sdk-s3 = { version = "1.157.0", default-features = false, features = ["rt-tokio", "default-https-client", "behavior-version-latest"] }
 sfab-core = { path = "../core", features = ["s3"] }
 sfab-identity = { path = "../identity" }
+sfab-messaging = { path = "../messaging" }
 tokio = { version = "1.52.3", features = ["macros", "rt", "time"] }
 
 [dev-dependencies]

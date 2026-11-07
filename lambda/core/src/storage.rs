@@ -74,6 +74,37 @@ pub trait Store: Send + Sync + 'static {
         bucket: Bucket,
         prefix: &str,
     ) -> impl Future<Output = Result<Vec<String>, StoreError>> + Send;
+
+    /// Up to `max` keys under `prefix`, in order, after `after` when given, as S3's
+    /// `ListObjectsV2` with `StartAfter` and `MaxKeys` gives them, for a live list's pages. This
+    /// default lists everything; S3 asks for one page.
+    fn list_page(
+        &self,
+        bucket: Bucket,
+        prefix: &str,
+        after: Option<&str>,
+        max: usize,
+    ) -> impl Future<Output = Result<KeyPage, StoreError>> + Send {
+        async move {
+            let mut keys: Vec<String> = self
+                .list(bucket, prefix)
+                .await?
+                .into_iter()
+                .filter(|k| after.is_none_or(|a| k.as_str() > a))
+                .collect();
+            let more = keys.len() > max;
+            keys.truncate(max);
+            Ok(KeyPage { keys, more })
+        }
+    }
+}
+
+/// One page of a listing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KeyPage {
+    pub keys: Vec<String>,
+    /// More keys follow this page.
+    pub more: bool,
 }
 
 /// The in-memory fake every crate tests against. It can be told to fail writes under a prefix,
@@ -195,5 +226,47 @@ impl Store for MemoryStore {
             .into_iter()
             .filter(|k| k.starts_with(prefix))
             .collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn a_page_of_keys_starts_after_the_last_one_and_says_whether_more_follow() {
+        let store = MemoryStore::new();
+        for k in ["m/a", "m/b", "m/c", "n/a"] {
+            let put = store.put(
+                Bucket::Identities,
+                k,
+                vec![],
+                Metadata::new(),
+                Condition::Always,
+            );
+            put.await.unwrap();
+        }
+        let first = store
+            .list_page(Bucket::Identities, "m/", None, 2)
+            .await
+            .unwrap();
+        assert_eq!(
+            first,
+            KeyPage {
+                keys: vec!["m/a".into(), "m/b".into()],
+                more: true
+            }
+        );
+        let last = store
+            .list_page(Bucket::Identities, "m/", Some("m/b"), 2)
+            .await
+            .unwrap();
+        assert_eq!(
+            last,
+            KeyPage {
+                keys: vec!["m/c".into()],
+                more: false
+            }
+        );
     }
 }

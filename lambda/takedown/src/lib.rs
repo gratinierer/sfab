@@ -39,7 +39,9 @@ pub struct Target {
 /// The one list of an agent's locations: every crate's takedown function. Story 4 adds its
 /// crates here.
 pub fn locations(id: &AgentId) -> Vec<Location> {
-    sfab_identity::takedown(id)
+    let mut all = sfab_identity::takedown(id);
+    all.extend(sfab_messaging::takedown(id));
+    all
 }
 
 /// What a takedown would handle. It writes nothing, which makes it the dry run.

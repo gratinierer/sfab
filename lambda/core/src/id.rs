@@ -13,23 +13,32 @@ impl AgentId {
 
     /// Accepts exactly 12 characters of `a-z` and `2-7`, and nothing else.
     pub fn parse(text: &str) -> Option<Self> {
-        let ok = text.len() == Self::LEN && text.bytes().all(|b| ALPHABET.contains(&b));
-        ok.then(|| Self(text.to_owned()))
+        is_base32(text, Self::LEN).then(|| Self(text.to_owned()))
     }
 
     /// The last 60 bits of a solution hash, because the first bits hold the proof's zeros.
     pub fn from_hash(hash: &[u8; 32]) -> Self {
-        let tail = u64::from_be_bytes(hash[24..].try_into().expect("8 bytes"));
-        Self(
-            (0..Self::LEN)
-                .map(|i| ALPHABET[((tail >> (5 * (Self::LEN - 1 - i))) & 31) as usize] as char)
-                .collect(),
-        )
+        Self(hash_tail(hash, Self::LEN))
     }
 
     pub fn as_str(&self) -> &str {
         &self.0
     }
+}
+
+/// The last `chars` base32 characters of a solution hash, at most 12: its last `5 * chars` bits,
+/// because the first bits hold the proof's zeros. A message's key holds 8 of them.
+pub fn hash_tail(hash: &[u8; 32], chars: usize) -> String {
+    assert!(chars <= AgentId::LEN, "at most 60 bits");
+    let tail = u64::from_be_bytes(hash[24..].try_into().expect("8 bytes"));
+    (0..chars)
+        .map(|i| ALPHABET[((tail >> (5 * (chars - 1 - i))) & 31) as usize] as char)
+        .collect()
+}
+
+/// True for exactly `len` characters of lowercase base32.
+pub fn is_base32(text: &str, len: usize) -> bool {
+    text.len() == len && text.bytes().all(|b| ALPHABET.contains(&b))
 }
 
 impl fmt::Display for AgentId {
@@ -82,6 +91,14 @@ mod tests {
         assert_eq!(AgentId::from_hash(&hash).as_str(), "aaaaaaaaaaaa");
         hash[31] = 1;
         assert_eq!(AgentId::from_hash(&hash).as_str(), "aaaaaaaaaaab");
+    }
+
+    #[test]
+    fn a_hash_tail_is_the_ids_last_characters() {
+        let mut hash = [0u8; 32];
+        hash[24..].copy_from_slice(&[0, 0, 0, 0, 0, 0, 0x04, 0x21]);
+        assert_eq!(AgentId::from_hash(&hash).as_str(), "aaaaaaaaabbb");
+        assert_eq!(hash_tail(&hash, 8), "aaaaabbb");
     }
 
     #[test]

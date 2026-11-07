@@ -1,12 +1,13 @@
 //! The identity routes' rules: `birth`, `evolve`, `self` and `reclaim`, from
 //! `.stories/2-identity-api/spec.md` "API", "Credentials" and "Storage", and public profiles,
 //! friends and blocks in [`profile`] and [`contacts`]. This crate owns the `claims/`,
-//! `identities/` and `vitals/` keys; no other crate builds them.
+//! `identities/` and `vitals/` keys; no other crate builds them. Other crates ask it who is
+//! calling ([`Identity::caller`]) and how one agent lists another ([`Identity::relation`]).
 
 mod contacts;
 mod profile;
 
-pub use contacts::{List, MAX_ENTRIES};
+pub use contacts::{List, MAX_ENTRIES, Relation};
 pub use profile::Field;
 
 use std::sync::Arc;
@@ -318,6 +319,13 @@ impl<S: Store> Identity<S> {
         Ok(Reply::ok(json!(reply)))
     }
 
+    /// The caller's ID, for another crate's route: the claim checked as on every route here,
+    /// with the same `401` and the once-a-day `vitals` touch.
+    pub async fn caller(&self, authorization: Option<&str>, now: i64) -> Result<AgentId, Problem> {
+        let agent = self.authenticate(authorization, Secret::Claim, now).await?;
+        Ok(agent.id)
+    }
+
     /// The bearer's ID and secret against the stored claim. An unknown ID, a marker and a wrong
     /// secret all get the same `401`. Then the once-a-day `vitals` touch.
     async fn authenticate(
@@ -505,14 +513,6 @@ pub fn takedown(id: &AgentId) -> Vec<Location> {
             bucket: Bucket::Identities,
             key: vitals_key(id),
             action: Action::Delete,
-        },
-        // The inbox, which issue 14 writes. Messages this agent sent to others stay until they
-        // expire.
-        Location {
-            phase: Phase::Other,
-            bucket: Bucket::Identities,
-            key: format!("messages/{id}/"),
-            action: Action::DeletePrefix,
         },
         Location {
             phase: Phase::Last,

@@ -6,7 +6,7 @@ use aws_sdk_s3::Client;
 use aws_sdk_s3::error::{DisplayErrorContext, SdkError};
 use aws_sdk_s3::primitives::ByteStream;
 
-use crate::storage::{Bucket, Condition, Metadata, Object, Store, StoreError};
+use crate::storage::{Bucket, Condition, KeyPage, Metadata, Object, Store, StoreError};
 
 #[derive(Debug, Clone)]
 pub struct S3Store {
@@ -136,5 +136,35 @@ impl Store for S3Store {
             );
         }
         Ok(keys)
+    }
+
+    /// One `ListObjectsV2` call: S3 returns keys after `StartAfter` in order, and `IsTruncated`
+    /// says whether more follow.
+    async fn list_page(
+        &self,
+        bucket: Bucket,
+        prefix: &str,
+        after: Option<&str>,
+        max: usize,
+    ) -> Result<KeyPage, StoreError> {
+        let page = self
+            .client
+            .list_objects_v2()
+            .bucket(self.name(bucket))
+            .prefix(prefix)
+            .set_start_after(after.map(str::to_owned))
+            .max_keys(i32::try_from(max).unwrap_or(1000))
+            .send()
+            .await
+            .map_err(store_error)?;
+        let keys = page
+            .contents()
+            .iter()
+            .filter_map(|o| o.key().map(str::to_owned))
+            .collect();
+        Ok(KeyPage {
+            keys,
+            more: page.is_truncated().unwrap_or(false),
+        })
     }
 }
