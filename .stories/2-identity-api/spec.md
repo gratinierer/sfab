@@ -751,7 +751,7 @@ Logs are the most likely place for a claim to leak.
   launch, as `.stories/4-life-in-the-world/` "Launch checklist" step 3 says, and a route whose thing the
   script can't create is called with an unknown ID and expects that refusal, in both modes. After launch,
   `smoke --production` calls every read route and only private writes, such as `evolve`, friends and a
-  message to itself, with one fixed smoke identity whose claim is in `sfab.config.toml`, so it births no
+  message to itself, with one fixed smoke identity whose credential, `<id>.<claim>` as in `Authorization`, is in `sfab.config.toml`, so it births no
   agents and writes nothing public. Both modes run, plus
   gateway validation with a maximum-size escaped body and a body with an extra field,
   because the local router doesn't run the gateway's validator. It also checks the
@@ -831,7 +831,7 @@ replaces the isolation that per-route IAM roles would have given.
   same steps first, audits included, and refuses to continue if any fails.
 - **Local config:** `sfab.config.toml` at the repo root holds private per-owner values,
   starting with `account_id`, `alert_email`, `abuse_contact`, `domain_name`,
-  `hosted_zone_id` and `origin_key`, and after launch an optional `smoke_claim`, the fixed smoke identity's claim,
+  `hosted_zone_id` and `origin_key`, and after launch an optional `smoke_claim`, the fixed smoke identity's credential as `<id>.<claim>`,
   which synth and the parser ignore and only the smoke script reads: `smoke --production` stops with a
   clear message when it's missing, and the example file has it commented out. The build step puts
   `abuse_contact` into the public description's `info.contact`, so that address is
