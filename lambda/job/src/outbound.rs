@@ -116,16 +116,13 @@ impl Outbound {
         self
     }
 
+    /// The port and timeout in use, so a test can check what `production` sets.
     pub fn port(&self) -> u16 {
         self.port
     }
 
     pub fn timeout(&self) -> Duration {
         self.timeout
-    }
-
-    pub fn limit(&self) -> usize {
-        LIMIT
     }
 
     async fn get(&self, domain: &str, path: &str) -> Result<Vec<u8>, Refusal> {

@@ -15,7 +15,7 @@ use sfab_core::id::Caller;
 use sfab_core::proof::{self, Request};
 use sfab_core::storage::{Bucket, MemoryStore};
 use sfab_federation::{Federation, Fetch, Here, Notify, daily};
-use sfab_job::outbound::{Outbound, Resolve, is_public};
+use sfab_job::outbound::{LIMIT, Outbound, Resolve, is_public};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
@@ -386,5 +386,5 @@ fn production_uses_https_on_443_with_a_3_second_timeout_and_a_1_kb_limit() {
     let production = Outbound::production();
     assert_eq!(production.port(), 443);
     assert_eq!(production.timeout(), Duration::from_secs(3));
-    assert_eq!(production.limit(), 1024);
+    assert_eq!(LIMIT, 1024);
 }
