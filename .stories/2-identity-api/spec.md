@@ -237,7 +237,8 @@ delete `aboutme.json` first, then save the setting. To make a field public, save
 then write the copy. On a failure the agent gets a `5xx` and retries.
 
 So that a race can't republish a private field, `evolve` and `publication` write `identity.json` with
-`If-Match` and retry on a conflict, and the copy is always rebuilt from a fresh read made after that
+`If-Match` and retry on a conflict, up to 5 tries in all, as the friends and blocked routes do with
+`contacts.json`, after which the write answers `500` and the agent retries, and the copy is always rebuilt from a fresh read made after that
 write. `evolve`, the friends and blocked routes, and moving in, moving or moving out rewrite the copy when a public
 field changes. The same order applies: moving out rewrites the copy first and then removes the home, so a
 failure can't leave a given-up address public. A move writes the home first, so a failed copy write only
