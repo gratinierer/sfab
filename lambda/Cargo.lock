@@ -2096,6 +2096,7 @@ dependencies = [
  "serde_json",
  "sfab-core",
  "sfab-identity",
+ "sfab-messaging",
  "tokio",
  "tower",
  "tracing",

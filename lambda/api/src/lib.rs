@@ -10,12 +10,13 @@ use axum::extract::{DefaultBodyLimit, OriginalUri, Path, Request, State};
 use axum::http::{HeaderMap, HeaderValue, Method, StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, post, put};
+use axum::routing::{delete, get, post, put};
 
 use sfab_core::gate::Call;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::Store;
 use sfab_identity::{Identity, List};
+use sfab_messaging::Messaging;
 
 /// The public API description, generated before the build, so a missing copy fails it.
 pub const OPENAPI: &str = include_str!(concat!(
@@ -27,7 +28,8 @@ pub const OPENAPI: &str = include_str!(concat!(
 const STAGE: &str = "/v1";
 
 pub struct AppState<S> {
-    identity: Identity<S>,
+    identity: Arc<Identity<S>>,
+    messaging: Messaging<S>,
     /// The current Unix time, so tests can fix it.
     now: fn() -> i64,
 }
@@ -52,8 +54,10 @@ pub fn client_path(seen: &str) -> String {
 
 /// The router, answering both path forms.
 pub fn app<S: Store>(store: Arc<S>, required_bits: u32, now: fn() -> i64) -> Router {
+    let identity = Arc::new(Identity::new(store.clone(), required_bits));
     let state = Arc::new(AppState {
-        identity: Identity::new(store, required_bits),
+        messaging: Messaging::new(store, identity.clone(), required_bits),
+        identity,
         now,
     });
     let routes = Router::new()
@@ -75,6 +79,12 @@ pub fn app<S: Store>(store: Arc<S>, required_bits: u32, now: fn() -> i64) -> Rou
         .route(
             "/identity/self/blocked/{id}",
             put(block::<S>).delete(unblock::<S>),
+        )
+        .route("/identity/{id}/messages", post(send_message::<S>))
+        .route("/identity/self/messages", get(read_messages::<S>))
+        .route(
+            "/identity/self/messages/{message_id}",
+            delete(remove_message::<S>),
         )
         .route("/openapi.yaml", get(openapi))
         .fallback(no_route)
@@ -228,9 +238,15 @@ async fn aboutme<S: Store>(
 
 /// The `?page=` token, if any, from the query as sent.
 fn page(uri: &OriginalUri) -> Option<String> {
+    query(uri, "page")
+}
+
+/// A query parameter's value as sent, if any. Every value this API takes is plain ASCII with
+/// nothing to decode, and anything else fails its route's own check.
+fn query(uri: &OriginalUri, name: &str) -> Option<String> {
     uri.query()?
         .split('&')
-        .find_map(|pair| pair.strip_prefix("page="))
+        .find_map(|pair| pair.strip_prefix(name)?.strip_prefix('='))
         .map(str::to_owned)
 }
 
@@ -328,6 +344,56 @@ async fn unblock<S: Store>(
     headers: HeaderMap,
 ) -> Response {
     remove_contact(&state, List::Blocked, &id, &headers).await
+}
+
+async fn send_message<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+    method: Method,
+    uri: OriginalUri,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    let path = client_path(uri.path());
+    let call = Call {
+        method: method.as_str(),
+        path: &path,
+        authorization: header(&headers, "authorization"),
+        proof: header(&headers, "proof"),
+        body: &body,
+    };
+    respond(state.messaging.send(&call, &id, (state.now)()).await)
+}
+
+async fn read_messages<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    uri: OriginalUri,
+    headers: HeaderMap,
+) -> Response {
+    let authorization = header(&headers, "authorization");
+    let (kind, token) = (query(&uri, "kind"), page(&uri));
+    let reply = state.messaging.read(
+        authorization,
+        kind.as_deref(),
+        token.as_deref(),
+        (state.now)(),
+    );
+    respond(reply.await)
+}
+
+async fn remove_message<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(message_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let authorization = header(&headers, "authorization");
+    let now = (state.now)();
+    respond(
+        state
+            .messaging
+            .remove(authorization, &message_id, now)
+            .await,
+    )
 }
 
 async fn openapi() -> Response {
