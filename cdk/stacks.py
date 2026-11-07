@@ -113,12 +113,12 @@ def outside_v1_function(host: str) -> str:
             "type": "about:blank",
             "title": "No such route",
             "status": 404,
-            "detail": f"Start at https://{host}/v1/openapi.yaml",
+            "detail": f"Start at https://{host}/{STAGE}/openapi.yaml",
         }
     )
     return f"""function handler(event) {{
   var request = event.request;
-  if (request.uri.indexOf('/v1/') === 0) {{
+  if (request.uri.indexOf('/{STAGE}/') === 0) {{
     return request;
   }}
   return {{
