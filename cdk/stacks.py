@@ -10,9 +10,12 @@ from dataclasses import dataclass
 import aws_cdk as cdk
 from aws_cdk import aws_budgets as budgets
 from aws_cdk import aws_certificatemanager as acm
+from aws_cdk import aws_cloudwatch as cloudwatch
+from aws_cdk import aws_cloudwatch_actions as cw_actions
 from aws_cdk import aws_route53 as route53
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as lambda_
+from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_sns as sns
 from aws_cdk import aws_sns_subscriptions as subs
@@ -31,6 +34,16 @@ CHECK_BUDGET_USD = 0.01
 # stop budget excludes. "Amazon Registrar" is spec.md "First deploy" step 3's guess from
 # memory. Issue 03 records the real name from the first purchase's bill; put it here then.
 DOMAIN_SERVICE_NAME = "Amazon Registrar"
+
+# The proof of work's difficulty, which the API Lambda reads (spec.md "Proof of work").
+REQUIRED_BITS = 20
+# Enforced by AWS at no charge, and the kill switch sets it to 0 to stop the API.
+API_RESERVED_CONCURRENCY = 5
+# CDK's default is 3 seconds; a request makes a few S3 calls. The takedown waits at least this.
+API_TIMEOUT_SECONDS = 10
+# The identities bucket's prefixes the API Lambda reads and writes, and those it only reads.
+API_READ_WRITE_PREFIXES = ("identities/", "messages/", "vitals/", "federation/pending/")
+API_READ_PREFIXES = ("world/",)
 
 
 def api_host(config: Config) -> str:
@@ -163,14 +176,88 @@ class BaseStack(cdk.Stack):
         )
 
 
+class ApiStack(cdk.Stack):
+    """The API and everything that protects it. A rollback here can't touch the base stack."""
+
+    def __init__(
+        self,
+        scope: Construct,
+        id: str,
+        *,
+        config: Config,
+        base: BaseStack,
+        api_code: lambda_.Code,
+        **kwargs,
+    ) -> None:
+        super().__init__(scope, id, **kwargs)
+
+        self.function = lambda_.Function(
+            self,
+            "ApiFunction",
+            runtime=lambda_.Runtime.PROVIDED_AL2023,
+            architecture=lambda_.Architecture.ARM_64,
+            handler="bootstrap",
+            code=api_code,
+            environment={
+                "REQUIRED_BITS": str(REQUIRED_BITS),
+                "IDENTITIES_BUCKET": base.identities_bucket.bucket_name,
+                "CLAIMS_BUCKET": base.claims_bucket.bucket_name,
+            },
+            reserved_concurrent_executions=API_RESERVED_CONCURRENCY,
+            timeout=cdk.Duration.seconds(API_TIMEOUT_SECONDS),
+            log_group=logs.LogGroup(
+                self,
+                "ApiFunctionLogs",
+                retention=logs.RetentionDays.TWO_WEEKS,
+                removal_policy=cdk.RemovalPolicy.DESTROY,
+            ),
+        )
+        self._grant_storage(base)
+
+        # Email only: any error tells the owner, and nothing here can stop the API.
+        errors = self.function.metric_errors(period=cdk.Duration.minutes(5), statistic="Sum")
+        errors_alarm = errors.create_alarm(
+            self,
+            "ApiFunctionErrors",
+            threshold=1,
+            evaluation_periods=1,
+            comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+            treat_missing_data=cloudwatch.TreatMissingData.NOT_BREACHING,
+        )
+        errors_alarm.add_alarm_action(cw_actions.SnsAction(base.alerts_topic))
+
+    def _grant_storage(self, base: BaseStack) -> None:
+        """spec.md "Architecture": only these prefixes, never `federation/verified/`.
+        Story 4 adds its own prefixes here."""
+        identities, claims = base.identities_bucket, base.claims_bucket
+        read_write = [identities.arn_for_objects(f"{p}*") for p in API_READ_WRITE_PREFIXES]
+        read_write.append(claims.arn_for_objects("*"))
+        self.function.add_to_role_policy(
+            iam.PolicyStatement(actions=["s3:GetObject", "s3:PutObject"], resources=read_write)
+        )
+        self.function.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["s3:GetObject"],
+                resources=[identities.arn_for_objects(f"{p}*") for p in API_READ_PREFIXES],
+            )
+        )
+        # Without it, S3 answers a missing key with 403 rather than 404, which the Lambda
+        # reads as "not found". It lists key names only, never an object's content.
+        self.function.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["s3:ListBucket"], resources=[identities.bucket_arn, claims.bucket_arn]
+            )
+        )
+
+
 @dataclass(frozen=True)
 class Stacks:
     base: BaseStack
-    api: cdk.Stack
+    api: ApiStack
 
 
 def build(app: Construct, config: Config, api_code: lambda_.Code) -> Stacks:
     env = cdk.Environment(account=config.account_id, region=REGION)
     base = BaseStack(app, "SfabBase", config=config, env=env)
-    api = cdk.Stack(app, "SfabApi", env=env)
+    api = ApiStack(app, "SfabApi", config=config, base=base, api_code=api_code, env=env)
     return Stacks(base=base, api=api)

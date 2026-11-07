@@ -4,6 +4,7 @@ Built from the committed fixture config, never a real sfab.config.toml, and with
 stand-in Lambda asset, so they need no build.
 """
 
+import json
 from pathlib import Path
 
 import aws_cdk as cdk
@@ -218,6 +219,119 @@ def test_the_check_budget_emails_at_one_cent_including_domain_charges(base):
     assert notifications(props) == [
         ("ACTUAL", "GREATER_THAN", 0.01, "ABSOLUTE_VALUE", sns_to(base, "Alerts"))
     ]
+
+
+# The API stack: the API Lambda
+
+
+def api_function(template: Template) -> tuple[str, dict]:
+    functions = {
+        k: v
+        for k, v in template.find_resources("AWS::Lambda::Function").items()
+        if k.startswith("ApiFunction")
+    }
+    assert len(functions) == 1, list(functions)
+    return next(iter(functions.items()))
+
+
+def bucket_export(base: Template, name: str) -> str:
+    """The bucket's logical ID in the base stack, which an import names."""
+    ids = [k for k in base.find_resources("AWS::S3::Bucket") if k.startswith(name)]
+    assert len(ids) == 1, ids
+    return ids[0]
+
+
+def test_the_api_lambda_runs_the_rust_binary_on_arm64_with_reserved_concurrency(api):
+    _, function = api_function(api)
+    props = function["Properties"]
+    assert props["Architectures"] == ["arm64"]
+    assert props["Runtime"] == "provided.al2023"
+    assert props["Handler"] == "bootstrap"
+    assert props["ReservedConcurrentExecutions"] == 5
+
+
+def test_the_api_lambda_gets_required_bits_and_both_buckets(api, base):
+    _, function = api_function(api)
+    env = function["Properties"]["Environment"]["Variables"]
+    assert set(env) == {"REQUIRED_BITS", "IDENTITIES_BUCKET", "CLAIMS_BUCKET"}
+    assert env["REQUIRED_BITS"] == "20"
+    assert bucket_export(base, "Identities") in str(env["IDENTITIES_BUCKET"])
+    assert bucket_export(base, "Claims") in str(env["CLAIMS_BUCKET"])
+
+
+def test_the_api_lambda_keeps_logs_for_14_days(api):
+    _, function = api_function(api)
+    group = function["Properties"]["LoggingConfig"]["LogGroup"]["Ref"]
+    assert api.find_resources("AWS::Logs::LogGroup")[group]["Properties"]["RetentionInDays"] == 14
+
+
+def bucket_resource(base: Template, resource) -> str:
+    """An S3 resource in a policy as `<bucket>` or `<bucket>/<key pattern>`, with the
+    bucket named by its logical ID in the base stack, such as `Identities/world/*`."""
+    text = json.dumps(resource)
+    names = [n for n in ("Identities", "Claims") if bucket_export(base, n) in text]
+    assert len(names) == 1, text
+    if isinstance(resource, dict) and "Fn::Join" in resource:
+        tail = "".join(p for p in resource["Fn::Join"][1] if isinstance(p, str))
+        return names[0] + tail
+    return names[0]
+
+
+def grants(api: Template, base: Template, role_prefix: str) -> set[tuple[str, str]]:
+    """Every (action, resource) the role's policies allow, with S3 resources named."""
+    found = set()
+    for policy in api.find_resources("AWS::IAM::Policy").values():
+        roles = json.dumps(policy["Properties"]["Roles"])
+        if role_prefix not in roles:
+            continue
+        for statement in policy["Properties"]["PolicyDocument"]["Statement"]:
+            assert statement["Effect"] == "Allow"
+            actions = statement["Action"]
+            actions = [actions] if isinstance(actions, str) else actions
+            resources = statement["Resource"]
+            resources = resources if isinstance(resources, list) else [resources]
+            for action in actions:
+                for resource in resources:
+                    if action.startswith("s3:"):
+                        resource = bucket_resource(base, resource)
+                    found.add((action, json.dumps(resource) if isinstance(resource, dict) else resource))
+    return found
+
+
+def test_the_api_lambda_may_touch_only_its_own_prefixes(api, base):
+    read_write = [
+        "Identities/identities/*",
+        "Identities/messages/*",
+        "Identities/vitals/*",
+        "Identities/federation/pending/*",
+        "Claims/*",
+    ]
+    expected = {(a, r) for r in read_write for a in ("s3:GetObject", "s3:PutObject")}
+    expected |= {("s3:GetObject", "Identities/world/*")}
+    # Without ListBucket, S3 answers a missing key with 403 instead of 404 (docs/aws-facts.md).
+    expected |= {("s3:ListBucket", "Identities"), ("s3:ListBucket", "Claims")}
+    assert grants(api, base, "ApiFunctionServiceRole") == expected
+
+
+def test_the_api_lambda_errors_alarm_emails_only_the_alerts_topic(api, base):
+    function_id, _ = api_function(api)
+    alarms = [
+        a["Properties"]
+        for a in api.find_resources("AWS::CloudWatch::Alarm").values()
+        if a["Properties"].get("MetricName") == "Errors"
+    ]
+    assert len(alarms) == 1
+    alarm = alarms[0]
+    assert alarm["Namespace"] == "AWS/Lambda"
+    assert alarm["Dimensions"] == [{"Name": "FunctionName", "Value": {"Ref": function_id}}]
+    assert alarm["Statistic"] == "Sum"
+    assert alarm["ComparisonOperator"] == "GreaterThanOrEqualToThreshold"
+    assert alarm["Threshold"] == 1
+    assert alarm["TreatMissingData"] == "notBreaching"
+    actions = json.dumps(alarm["AlarmActions"])
+    assert len(alarm["AlarmActions"]) == 1
+    assert topic_id(base, "Alerts") in actions
+    assert "OKActions" not in alarm and "InsufficientDataActions" not in alarm
 
 
 def test_buckets_topics_and_budgets_are_only_in_the_base_stack(api):

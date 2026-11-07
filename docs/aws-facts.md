@@ -99,6 +99,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `PutObject` with `If-Match` fails with `412` on a changed ETag and `404` on a deleted key, and `GetObject` returns the ETag that `If-Match` takes | memory | `reclaim`, in `lambda/identity`, and `lambda/core/src/s3.rs` | 2026-11-05 |
 | S3 rounds a lifecycle expiry up to the next midnight UTC, and removes expired objects some time later, so a route must filter by date itself | docs | [s3-expire], the reviewer's reading | 2026-11-01 |
 | A listing returns up to 1,000 keys per request, with each object's size | memory | | 2026-11-01 |
+| `GetObject` on a missing key returns `404` only with `s3:ListBucket` on the bucket, and `403` without it, so the API Lambda has `ListBucket` | docs | [s3-getobject] | 2026-11-07 |
 | An alarm with a period of at least one hour can evaluate up to 7 days | docs | [alarms] | 2026-11-01 |
 | An alarm is evaluated every minute over a sliding window by default, or a wall clock window if set | docs | [alarm-evaluation], [alarm-window] | 2026-11-01 |
 | An alarm acts only when its state changes | docs | [alarms] | 2026-11-01 |
@@ -123,6 +124,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | Route 53 bills every query answered except alias records, at $0.40 per million up to a billion | docs | The Route 53 pricing page | 2026-11-01 |
 | S3 and Lambda prices used in cost tables | memory | | 2026-11-01 |
 
+[s3-getobject]: https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html
 [s3-lifecycle]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html
 [s3-expire]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-expire-general-considerations.html
 [plans]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/flat-rate-pricing-plan.html
