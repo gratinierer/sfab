@@ -15,12 +15,13 @@ def synth(config: Path, tmp_path: Path) -> subprocess.CompletedProcess:
 
 
 def test_synth_succeeds_with_the_fixture(tmp_path):
-    # Needs the arm64 build, which scripts/check makes before the tests.
+    # Needs the arm64 build and the website pages, which scripts/check makes before the tests.
     result = synth(FIXTURE, tmp_path)
     assert result.returncode == 0, result.stderr
     out = tmp_path / "out"
     assert (out / "SfabBase.template.json").is_file()
     assert (out / "SfabApi.template.json").is_file()
+    assert (out / "SfabWebsite.template.json").is_file()
 
 
 def test_synth_refuses_a_missing_config(tmp_path):
