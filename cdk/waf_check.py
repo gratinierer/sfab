@@ -17,6 +17,7 @@ import sys
 import time
 from typing import Callable
 
+import sfab_config
 from api_client import Request, Transport, is_waf_block, urllib_transport
 
 WINDOW_SECONDS = 300
@@ -69,10 +70,8 @@ def main(argv: list[str] | None = None, transport: Transport = urllib_transport)
 
 
 def _api_url_from_config() -> str | None:
-    import sfab_config
-
     try:
-        return f"https://api.{sfab_config.load().domain_name}"
+        return sfab_config.load().api_url
     except sfab_config.ConfigError as e:
         print(e, file=sys.stderr)
         return None

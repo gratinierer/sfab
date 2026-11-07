@@ -29,6 +29,7 @@ import tomllib
 from dataclasses import dataclass, field
 from typing import Callable
 
+import sfab_config
 from api_client import (
     Request,
     Response,
@@ -614,12 +615,10 @@ class UsageError(Exception):
 
 def load_target(args: argparse.Namespace, config_path) -> Target:
     """The URLs and, for `--production`, the smoke identity, from the arguments and config."""
-    import sfab_config
-
     api_url = args.api_url
     if api_url is None:
         try:
-            api_url = f"https://api.{sfab_config.load(config_path).domain_name}"
+            api_url = sfab_config.load(config_path).api_url
         except sfab_config.ConfigError as e:
             raise UsageError(str(e)) from None
     credential = None
@@ -667,8 +666,6 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
 def main(
     argv: list[str] | None = None, transport: Transport = urllib_transport, config_path=None
 ) -> int:
-    import sfab_config
-
     args = parse_args(argv)
     try:
         target = load_target(args, config_path or sfab_config.config_path())

@@ -92,7 +92,7 @@ class SynthError(Exception):
 
 
 def api_host(config: Config) -> str:
-    return f"api.{config.domain_name}"
+    return config.api_host
 
 
 def fill_openapi(text: str, *, api_lambda_arn: str, api_host: str) -> dict:

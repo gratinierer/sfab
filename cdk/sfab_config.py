@@ -34,6 +34,16 @@ class Config:
     hosted_zone_id: str
     origin_key: str
 
+    @property
+    def api_host(self) -> str:
+        """The API's host, `api.<domain_name>`."""
+        return f"api.{self.domain_name}"
+
+    @property
+    def api_url(self) -> str:
+        """The API's public base URL, without the stage."""
+        return f"https://{self.api_host}"
+
 
 REQUIRED_KEYS = tuple(f.name for f in fields(Config))
 # Read only by the smoke script, never by synth.
