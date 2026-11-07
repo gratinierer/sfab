@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use axum::Router;
 use axum::body::Bytes;
-use axum::extract::{DefaultBodyLimit, OriginalUri, Path, Request, State};
+use axum::extract::{DefaultBodyLimit, FromRequest, OriginalUri, Path, Request, State};
 use axum::http::{HeaderMap, HeaderValue, Method, StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
@@ -149,66 +149,67 @@ fn respond(result: Result<Reply, Problem>) -> Response {
         .into_response()
 }
 
-async fn write<S: Store, F>(
-    state: &AppState<S>,
-    method: &Method,
-    uri: &OriginalUri,
-    headers: &HeaderMap,
-    body: &Bytes,
-    route: F,
-) -> Response
+/// A `POST` or `PUT` as the client signed it: what the gate and the proof need, with the path
+/// rebuilt as the client sent it. It reads the body, so it's always a handler's last argument.
+struct Signed {
+    method: Method,
+    path: String,
+    headers: HeaderMap,
+    body: Bytes,
+}
+
+impl<S: Send + Sync> FromRequest<S> for Signed {
+    type Rejection = Response;
+
+    async fn from_request(request: Request, state: &S) -> Result<Self, Self::Rejection> {
+        let method = request.method().clone();
+        let path = match request.extensions().get::<OriginalUri>() {
+            Some(original) => client_path(original.path()),
+            None => client_path(request.uri().path()),
+        };
+        let headers = request.headers().clone();
+        let body = Bytes::from_request(request, state)
+            .await
+            .map_err(IntoResponse::into_response)?;
+        Ok(Signed {
+            method,
+            path,
+            headers,
+            body,
+        })
+    }
+}
+
+impl Signed {
+    fn call(&self) -> Call<'_> {
+        Call {
+            // The method the client sent and hashed, never a literal of ours.
+            method: self.method.as_str(),
+            path: &self.path,
+            authorization: header(&self.headers, "authorization"),
+            proof: header(&self.headers, "proof"),
+            body: &self.body,
+        }
+    }
+}
+
+async fn write<S: Store, F>(state: &AppState<S>, signed: &Signed, route: F) -> Response
 where
     F: AsyncFnOnce(&Identity<S>, &Call<'_>, i64) -> Result<Reply, Problem>,
 {
-    let path = client_path(uri.path());
-    let call = Call {
-        // The method the client sent and hashed, never a literal of ours.
-        method: method.as_str(),
-        path: &path,
-        authorization: header(headers, "authorization"),
-        proof: header(headers, "proof"),
-        body,
-    };
-    respond(route(&state.identity, &call, (state.now)()).await)
+    respond(route(&state.identity, &signed.call(), (state.now)()).await)
 }
 
-async fn birth<S: Store>(
-    State(state): State<Arc<AppState<S>>>,
-    method: Method,
-    uri: OriginalUri,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Response {
-    write(&state, &method, &uri, &headers, &body, async |i, c, now| {
-        i.birth(c, now).await
-    })
-    .await
+async fn birth<S: Store>(State(state): State<Arc<AppState<S>>>, signed: Signed) -> Response {
+    write(&state, &signed, async |i, c, now| i.birth(c, now).await).await
 }
 
-async fn evolve<S: Store>(
-    State(state): State<Arc<AppState<S>>>,
-    method: Method,
-    uri: OriginalUri,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Response {
-    write(&state, &method, &uri, &headers, &body, async |i, c, now| {
-        i.evolve(c, now).await
-    })
-    .await
+async fn evolve<S: Store>(State(state): State<Arc<AppState<S>>>, signed: Signed) -> Response {
+    write(&state, &signed, async |i, c, now| i.evolve(c, now).await).await
 }
 
-async fn reclaim<S: Store>(
-    State(state): State<Arc<AppState<S>>>,
-    method: Method,
-    uri: OriginalUri,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Response {
-    write(&state, &method, &uri, &headers, &body, async |i, c, now| {
-        i.reclaim(c, now).await
-    })
-    .await
+async fn reclaim<S: Store>(State(state): State<Arc<AppState<S>>>, signed: Signed) -> Response {
+    write(&state, &signed, async |i, c, now| i.reclaim(c, now).await).await
 }
 
 async fn read_self<S: Store>(
@@ -240,17 +241,8 @@ async fn read_publication<S: Store>(
     respond(state.identity.read_publication(authorization, now).await)
 }
 
-async fn publish<S: Store>(
-    State(state): State<Arc<AppState<S>>>,
-    method: Method,
-    uri: OriginalUri,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Response {
-    write(&state, &method, &uri, &headers, &body, async |i, c, now| {
-        i.publish(c, now).await
-    })
-    .await
+async fn publish<S: Store>(State(state): State<Arc<AppState<S>>>, signed: Signed) -> Response {
+    write(&state, &signed, async |i, c, now| i.publish(c, now).await).await
 }
 
 async fn aboutme<S: Store>(
@@ -308,10 +300,11 @@ async fn read_blocked<S: Store>(
 async fn add_contact<S: Store>(
     state: &AppState<S>,
     list: List,
-    (id, method, uri, headers, body): (String, Method, OriginalUri, HeaderMap, Bytes),
+    id: &str,
+    signed: &Signed,
 ) -> Response {
-    write(state, &method, &uri, &headers, &body, async |i, c, now| {
-        i.add_contact(list, c, &id, now).await
+    write(state, signed, async |i, c, now| {
+        i.add_contact(list, c, id, now).await
     })
     .await
 }
@@ -319,23 +312,17 @@ async fn add_contact<S: Store>(
 async fn add_friend<S: Store>(
     State(state): State<Arc<AppState<S>>>,
     Path(id): Path<String>,
-    method: Method,
-    uri: OriginalUri,
-    headers: HeaderMap,
-    body: Bytes,
+    signed: Signed,
 ) -> Response {
-    add_contact(&state, List::Friends, (id, method, uri, headers, body)).await
+    add_contact(&state, List::Friends, &id, &signed).await
 }
 
 async fn block<S: Store>(
     State(state): State<Arc<AppState<S>>>,
     Path(id): Path<String>,
-    method: Method,
-    uri: OriginalUri,
-    headers: HeaderMap,
-    body: Bytes,
+    signed: Signed,
 ) -> Response {
-    add_contact(&state, List::Blocked, (id, method, uri, headers, body)).await
+    add_contact(&state, List::Blocked, &id, &signed).await
 }
 
 async fn remove_contact<S: Store>(
@@ -383,39 +370,27 @@ async fn federation_worlds<S: Store>(
 
 async fn request_federation<S: Store>(
     State(state): State<Arc<AppState<S>>>,
-    method: Method,
-    uri: OriginalUri,
-    headers: HeaderMap,
-    body: Bytes,
+    signed: Signed,
 ) -> Response {
-    let path = client_path(uri.path());
-    let call = Call {
-        method: method.as_str(),
-        path: &path,
-        authorization: header(&headers, "authorization"),
-        proof: header(&headers, "proof"),
-        body: &body,
-    };
-    respond(state.federation.request(&call, (state.now)()).await)
+    respond(
+        state
+            .federation
+            .request(&signed.call(), (state.now)())
+            .await,
+    )
 }
 
 async fn send_message<S: Store>(
     State(state): State<Arc<AppState<S>>>,
     Path(id): Path<String>,
-    method: Method,
-    uri: OriginalUri,
-    headers: HeaderMap,
-    body: Bytes,
+    signed: Signed,
 ) -> Response {
-    let path = client_path(uri.path());
-    let call = Call {
-        method: method.as_str(),
-        path: &path,
-        authorization: header(&headers, "authorization"),
-        proof: header(&headers, "proof"),
-        body: &body,
-    };
-    respond(state.messaging.send(&call, &id, (state.now)()).await)
+    respond(
+        state
+            .messaging
+            .send(&signed.call(), &id, (state.now)())
+            .await,
+    )
 }
 
 async fn read_messages<S: Store>(
