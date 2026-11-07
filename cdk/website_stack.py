@@ -83,7 +83,7 @@ class WebsiteStack(cdk.Stack):
             window_seconds=WEBSITE_RATE_WINDOW_SECONDS,
         )
 
-        paths = cloudfront.Function(
+        folder_pages = cloudfront.Function(
             self,
             "Paths",
             runtime=cloudfront.FunctionRuntime.JS_2_0,
@@ -103,7 +103,7 @@ class WebsiteStack(cdk.Stack):
                 cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
                 function_associations=[
                     cloudfront.FunctionAssociation(
-                        function=paths, event_type=cloudfront.FunctionEventType.VIEWER_REQUEST
+                        function=folder_pages, event_type=cloudfront.FunctionEventType.VIEWER_REQUEST
                     )
                 ],
             ),

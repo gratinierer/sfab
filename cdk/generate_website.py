@@ -42,10 +42,10 @@ def generate(source: Path, out: Path, *, api_host: str) -> None:
             continue
         page = path.read_text(encoding="utf-8").replace("{{api_host}}", api_host)
         # A placeholder left over would show visitors the raw text.
-        left = sorted(set(_PLACEHOLDER.findall(page)))
-        if left:
+        unfilled = sorted(set(_PLACEHOLDER.findall(page)))
+        if unfilled:
             raise GenerateError(
-                f"{path.relative_to(source)}: unfilled placeholder(s): {', '.join(left)}"
+                f"{path.relative_to(source)}: unfilled placeholder(s): {', '.join(unfilled)}"
             )
         target.write_text(page, encoding="utf-8")
 
