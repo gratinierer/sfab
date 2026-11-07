@@ -13,6 +13,7 @@ import stacks
 LAMBDA_BUILDS = sfab_config.REPO_ROOT / "lambda" / "target" / "lambda"
 API_LAMBDA_BUILD = LAMBDA_BUILDS / "api"
 KILL_SWITCH_BUILD = LAMBDA_BUILDS / "killswitch"
+JOB_BUILD = LAMBDA_BUILDS / "job"
 
 
 def main() -> None:
@@ -22,7 +23,7 @@ def main() -> None:
     except sfab_config.ConfigError as e:
         sys.exit(f"sfab config error: {e}")
 
-    for build in (API_LAMBDA_BUILD, KILL_SWITCH_BUILD):
+    for build in (API_LAMBDA_BUILD, KILL_SWITCH_BUILD, JOB_BUILD):
         if not (build / "bootstrap").is_file():
             sys.exit(
                 f"sfab build missing: {build / 'bootstrap'}. Run scripts/check, "
@@ -42,6 +43,7 @@ def main() -> None:
             config,
             api_code=lambda_.Code.from_asset(str(API_LAMBDA_BUILD)),
             kill_switch_code=lambda_.Code.from_asset(str(KILL_SWITCH_BUILD)),
+            job_code=lambda_.Code.from_asset(str(JOB_BUILD)),
         )
     except stacks.SynthError as e:
         sys.exit(f"sfab synth error: {e}")

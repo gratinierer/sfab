@@ -6,7 +6,7 @@ use aws_sdk_s3::Client;
 use aws_sdk_s3::error::{DisplayErrorContext, SdkError};
 use aws_sdk_s3::primitives::ByteStream;
 
-use crate::storage::{Bucket, Condition, Metadata, Object, Store, StoreError};
+use crate::storage::{Bucket, Condition, Listed, Metadata, Object, Store, StoreError};
 
 #[derive(Debug, Clone)]
 pub struct S3Store {
@@ -136,5 +136,26 @@ impl Store for S3Store {
             );
         }
         Ok(keys)
+    }
+
+    async fn list_sized(&self, bucket: Bucket, prefix: &str) -> Result<Vec<Listed>, StoreError> {
+        let mut listed = Vec::new();
+        let mut pages = self
+            .client
+            .list_objects_v2()
+            .bucket(self.name(bucket))
+            .prefix(prefix)
+            .into_paginator()
+            .send();
+        while let Some(page) = pages.next().await {
+            let page = page.map_err(store_error)?;
+            listed.extend(page.contents().iter().filter_map(|o| {
+                Some(Listed {
+                    key: o.key()?.to_owned(),
+                    size: o.size().unwrap_or_default().max(0) as u64,
+                })
+            }));
+        }
+        Ok(listed)
     }
 }

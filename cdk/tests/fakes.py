@@ -107,11 +107,14 @@ class FakeApi:
                 return "execute-api no key", problem(403, "origin-key-replaced")
             return "execute-api wrong key", problem(403, "origin-key-replaced")
         assert r.url.startswith(API_HOST), r.url
-        path = r.url[len(API_HOST) :]
+        path = r.url[len(API_HOST) :].partition("?")[0]
         if not path.startswith("/v1/"):
             return "outside v1", problem(404, detail=START)
         known = {
             ("GET", "/v1/openapi.yaml"),
+            ("GET", "/v1/world/constitution"),
+            ("GET", "/v1/world/census"),
+            ("GET", "/v1/world/residents"),
             ("POST", "/v1/identity/birth"),
             ("PUT", "/v1/identity/evolve"),
             ("GET", "/v1/identity/self"),
@@ -133,6 +136,14 @@ class FakeApi:
                 {"content-type": "application/yaml", "cache-control": "no-store"},
                 b"openapi: 3.0.1\n",
             )
+        if path == "/v1/world/constitution":
+            constitution = {"version": "0123456789abcdef", "text": "...\n## Terms\n..."}
+            return "constitution", ok(200, constitution)
+        if path == "/v1/world/census":
+            census = {"residents": len(self.claims), "as_of": "2026-11-05T00:05:00Z"}
+            return "census", ok(200, census)
+        if path == "/v1/world/residents":
+            return "residents", ok(200, {"items": sorted(self.claims), "next": None})
         # The gateway's validator, with `additionalProperties: false`.
         if r.method in ("POST", "PUT") and path != "/v1/identity/reclaim" and not contact:
             try:

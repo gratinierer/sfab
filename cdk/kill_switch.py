@@ -41,6 +41,7 @@ class KillSwitch(Construct):
         alerts_topic: sns.ITopic,
         stop_budget_name: str,
         api_function: lambda_.Function,
+        job_function: lambda_.Function,
         rest_api: apigw.SpecRestApi,
         stage_name: str,
         web_acl: wafv2.CfnWebACL,
@@ -59,6 +60,8 @@ class KillSwitch(Construct):
             environment={
                 "DAILY_CALL_LIMIT": str(DAILY_CALL_LIMIT),
                 "API_FUNCTION_NAME": api_function.function_name,
+                # The fourth stop step pauses the daily world job (world_job.py).
+                "JOB_FUNCTION_NAME": job_function.function_name,
                 # The web ACL's Ref is `name|id|scope`, which the function splits.
                 "WEB_ACL": web_acl.ref,
                 "REST_API_ID": rest_api.rest_api_id,
@@ -95,12 +98,15 @@ class KillSwitch(Construct):
                 ],
             )
 
-        self._grant(stack, stop_budget_name, alerts_topic, api_function, rest_api, web_acl)
+        self._grant(
+            stack, stop_budget_name, alerts_topic, [api_function, job_function], rest_api, web_acl
+        )
         self._alarms(alerts_topic, rest_api)
 
         # What the restart list in docs/restart-after-a-stop.md looks up, under fixed names.
         for name, value in (
             ("ApiFunctionName", api_function.function_name),
+            ("JobFunctionName", job_function.function_name),
             ("RestApiId", rest_api.rest_api_id),
             ("WebAcl", web_acl.ref),
         ):
@@ -111,7 +117,7 @@ class KillSwitch(Construct):
         stack: cdk.Stack,
         stop_budget_name: str,
         alerts_topic: sns.ITopic,
-        api_function: lambda_.Function,
+        functions: list[lambda_.Function],
         rest_api: apigw.SpecRestApi,
         web_acl: wafv2.CfnWebACL,
     ) -> None:
@@ -127,7 +133,7 @@ class KillSwitch(Construct):
             (["wafv2:GetWebACL", "wafv2:UpdateWebACL"], [web_acl.attr_arn]),
             (
                 ["lambda:GetFunctionConcurrency", "lambda:PutFunctionConcurrency"],
-                [api_function.function_arn],
+                [f.function_arn for f in functions],
             ),
             # GetRestApi, GetStage and GetDeployment; UpdateRestApi; CreateDeployment.
             (

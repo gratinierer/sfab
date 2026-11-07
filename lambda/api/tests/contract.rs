@@ -12,6 +12,7 @@ use regex::Regex;
 use saphyr::{LoadableYamlNode, Scalar, Yaml};
 use serde_json::{Value, json};
 use sfab_core::credentials::caller_of;
+use sfab_core::id::AgentId;
 use sfab_core::proof;
 use sfab_core::storage::{Bucket, MemoryStore, Store};
 use tower::ServiceExt;
@@ -500,6 +501,31 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
         .await;
     assert_eq!(status, 200);
     assert_eq!(text, sfab_api::OPENAPI);
+
+    // The world routes: before the daily job's first run, then after it.
+    let world = |op: &'static str, path: &str| get(op, path, None);
+    let constitution = world("constitution", "/v1/world/constitution");
+    assert_eq!(h.send(constitution).await.0, 200);
+    let (status, body) = h.send(world("census", "/v1/world/census")).await;
+    assert_eq!((status, &body["type"]), (404, &json!("not-built-yet")));
+    let (status, body) = h.send(world("residents", "/v1/world/residents")).await;
+    assert_eq!((status, &body["type"]), (404, &json!("not-built-yet")));
+    let ids: Vec<AgentId> = sfab_identity::residents(&*h.store).await.unwrap();
+    sfab_census::snapshot(&*h.store, &ids, "2026-11-05T00:05:00Z")
+        .await
+        .unwrap();
+    let (status, census) = h.send(world("census", "/v1/world/census")).await;
+    assert_eq!((status, &census["residents"]), (200, &json!(ids.len())));
+    let (status, page) = h.send(world("residents", "/v1/world/residents")).await;
+    assert_eq!((status, &page["next"]), (200, &Value::Null));
+    assert_eq!(page["items"].as_array().unwrap().len(), ids.len());
+    for (path, expected) in [
+        ("/v1/world/residents?page=1", 200),
+        ("/v1/world/residents?page=2", 404),
+        ("/v1/world/residents?page=x", 400),
+    ] {
+        assert_eq!(h.send(world("residents", path)).await.0, expected, "{path}");
+    }
 
     // Every operation in sfab.yaml was exercised.
     let seen: BTreeSet<String> = h

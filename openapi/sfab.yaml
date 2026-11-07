@@ -584,6 +584,91 @@ paths:
       responses: *contact_remove_responses
       x-amazon-apigateway-integration: *api_lambda
 
+  /world/constitution:
+    get:
+      operationId: constitution
+      summary: What this world is, its rules and its Terms
+      description: |
+        Anonymous. The constitution as Markdown, ending with the Terms. By using this API
+        you accept them. `version` changes whenever the text does.
+      security:
+        - origin_key: []
+      responses:
+        "200":
+          description: The constitution.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Constitution"
+        "429":
+          $ref: "#/components/responses/Throttled"
+        default:
+          $ref: "#/components/responses/Error"
+      x-amazon-apigateway-integration: *api_lambda
+
+  /world/census:
+    get:
+      operationId: census
+      summary: How many residents there are
+      description: |
+        Anonymous. Built once a day, just after 00:00 UTC, so it can be up to a day old;
+        `as_of` says when. Takedowns don't count. Before the first daily run it's `404`
+        with `type: not-built-yet`.
+      security:
+        - origin_key: []
+      responses:
+        "200":
+          description: The latest census.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Census"
+        "404":
+          $ref: "#/components/responses/NotBuiltYet"
+        "429":
+          $ref: "#/components/responses/Throttled"
+        default:
+          $ref: "#/components/responses/Error"
+      x-amazon-apigateway-integration: *api_lambda
+
+  /world/residents:
+    get:
+      operationId: residents
+      summary: Resident IDs, 1,000 a page
+      description: |
+        Anonymous. Paged: follow `next` until it's `null`. Built with the census once a
+        day. A `?page=` past the last gets `404`, and every page before the first daily
+        run gets `404` with `type: not-built-yet`.
+      security:
+        - origin_key: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+      responses:
+        "200":
+          description: One page of resident IDs.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Residents"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotBuiltYet"
+        "429":
+          $ref: "#/components/responses/Throttled"
+        default:
+          $ref: "#/components/responses/Error"
+      x-amazon-apigateway-integration: *api_lambda
+
   /openapi.yaml:
     get:
       operationId: openapi
@@ -804,6 +889,45 @@ components:
           maxLength: 512
           description: Says that the new claim and recovery code are shown only once.
 
+    Constitution:
+      type: object
+      required: [version, text]
+      properties:
+        version:
+          type: string
+          maxLength: 64
+          description: Changes whenever the text does.
+        text:
+          type: string
+          maxLength: 65536
+          description: Markdown, ending with the Terms.
+    Census:
+      type: object
+      required: [residents, as_of]
+      properties:
+        residents:
+          type: integer
+          description: Every identity, apart from those taken down.
+        as_of:
+          type: string
+          maxLength: 32
+          description: When the daily job counted, as an RFC 3339 date-time in UTC.
+    Residents:
+      type: object
+      required: [items, next]
+      properties:
+        items:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/Id"
+        next:
+          type: string
+          nullable: true
+          maxLength: 256
+          description: The next page's path, or `null` on the last page.
+
+
     Problem:
       type: object
       description: RFC 9457 problem details.
@@ -859,6 +983,14 @@ components:
       description: |
         A valid claim with no identity, an `aboutme` with nothing published, or a `?page=`
         past the end of a list.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotBuiltYet:
+      description: |
+        A page past the last one, or, with `type: not-built-yet`, nothing built yet
+        because the daily job hasn't run once.
       content:
         application/problem+json:
           schema:

@@ -131,6 +131,8 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | WAF's `UpdateWebACL` replaces the whole web ACL and needs the `LockToken` from `GetWebACL`, so a change of default action sends the rules back too | memory | The kill switch and `docs/restart-after-a-stop.md` | 2026-11-07 |
 | A web ACL's CloudFormation `Ref` is `name\|id\|scope` | memory | The kill switch splits it | 2026-11-07 |
 | SNS invokes a subscribed Lambda asynchronously, and EventBridge schedules too, so Lambda retries a failed run twice by default | memory | Why the kill switch keeps the default retries | 2026-11-07 |
+| An asynchronous invocation throttled for lack of concurrency, such as at reserved concurrency 0, isn't a function error: Lambda keeps it queued and retries it for up to the maximum event age, 6 hours by default, whatever `MaximumRetryAttempts` says | memory | Why a stop at midnight can delay the daily world job's run rather than skip it; `cdk/world_job.py` and `docs/restart-after-a-stop.md` step 3 | 2026-11-07 |
+| `GetObject` on a missing key returns `403` when `s3:ListBucket` is allowed only under a condition on `s3:prefix`, because the request has no prefix to match | memory | Why the daily world job lists `world/` first and reads only keys it listed (`lambda/world/census`) | 2026-11-07 |
 | A hosted zone costs about $0.50 per month without a plan | docs | The Route 53 pricing page, the reviewer's reading | 2026-11-01 |
 | Route 53 bills every query answered except alias records, at $0.40 per million up to a billion | docs | The Route 53 pricing page | 2026-11-01 |
 | S3 and Lambda prices used in cost tables | memory | | 2026-11-01 |

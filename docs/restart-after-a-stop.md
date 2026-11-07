@@ -19,6 +19,7 @@ out() {
     --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text
 }
 API_FUNCTION=$(out ApiFunctionName)
+JOB_FUNCTION=$(out JobFunctionName)
 REST_API_ID=$(out RestApiId)
 # The web ACL's Ref is name|id|scope.
 IFS='|' read -r WEB_ACL_NAME WEB_ACL_ID _ <<<"$(out WebAcl)"
@@ -54,7 +55,14 @@ aws lambda put-function-concurrency --function-name "$API_FUNCTION" \
 
 ## 3. The daily world job's reserved concurrency back to 1
 
-The job and this step arrive with issue 11 of story 2. Until then, skip it.
+After step 2, or the next check would set it back to 0. If the stop began before the job's run
+just after 00:00 UTC, Lambda may still hold that run, for up to 6 hours, and starts it once this
+step is done, which is safe because every step of the job can be repeated.
+
+```bash
+aws lambda put-function-concurrency --function-name "$JOB_FUNCTION" \
+  --reserved-concurrent-executions 1
+```
 
 ## 4. The `execute-api` endpoint back, and the stage deployed
 

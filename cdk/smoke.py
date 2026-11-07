@@ -197,6 +197,7 @@ def _public(s: _Session) -> None:
         200,
         check=lambda r: None if b"openapi:" in r.body else "not an OpenAPI document",
     )
+    _world(s)
     s.check(
         "outside /v1/: the CloudFront Function's 404",
         s.api("GET", "/"),
@@ -232,6 +233,46 @@ def _public(s: _Session) -> None:
         return None
 
     s.check("birth without a proof", response, 400, problem=True, check=learn)
+
+
+def _world(s: _Session) -> None:
+    """The world routes, which write nothing. Before the daily job's first run, the census and
+    resident list answer `404` with `not-built-yet`, which passes. A page past the last is left
+    to the unit tests, to keep the run near 35 requests."""
+
+    def constitution(r: Response) -> str | None:
+        body = _json(r)
+        if not isinstance(body.get("version"), str) or not body["version"]:
+            return "no version"
+        if "## Terms" not in str(body.get("text", "")):
+            return "the text has no Terms"
+        return None
+
+    s.check(
+        "GET /v1/world/constitution",
+        s.api("GET", "/v1/world/constitution"),
+        200,
+        check=constitution,
+    )
+
+    def census(r: Response) -> str | None:
+        body = _json(r)
+        if not isinstance(body.get("residents"), int) or not isinstance(body.get("as_of"), str):
+            return "no integer residents or as_of"
+        return None
+
+    def residents(r: Response) -> str | None:
+        body = _json(r)
+        if not isinstance(body.get("items"), list) or "next" not in body:
+            return "not a list with items and next"
+        return None
+
+    for path, check in (("/v1/world/census", census), ("/v1/world/residents", residents)):
+        response = s.api("GET", path)
+        if response.status == 404:
+            s.check(f"GET {path}", response, 404, problem="not-built-yet")
+        else:
+            s.check(f"GET {path}", response, 200, check=check)
 
 
 def _birth_body() -> bytes:
