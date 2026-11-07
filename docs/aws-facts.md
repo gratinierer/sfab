@@ -103,6 +103,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `PutObject` with `If-Match` fails with `412` on a changed ETag and `404` on a deleted key, and `GetObject` returns the ETag that `If-Match` takes | memory | `reclaim`, in `lambda/identity`, and `lambda/core/src/s3.rs` | 2026-11-05 |
 | S3 rounds a lifecycle expiry up to the next midnight UTC, and removes expired objects some time later, so a route must filter by date itself | docs | [s3-expire], the reviewer's reading | 2026-11-01 |
 | A listing returns up to 1,000 keys per request, with each object's size | memory | | 2026-11-01 |
+| `ListObjectsV2` with `StartAfter` and `MaxKeys` returns the keys after that one in UTF-8 binary order, and `IsTruncated` says whether more follow, so the last key names the next page | memory | The messages list, in `lambda/messaging` and `lambda/core/src/s3.rs` | 2026-11-07 |
 | `GetObject` on a missing key returns `404` only with `s3:ListBucket` on the bucket, and `403` without it, so the API Lambda has `ListBucket` | docs | [s3-getobject] | 2026-11-07 |
 | An alarm with a period of at least one hour can evaluate up to 7 days | docs | [alarms] | 2026-11-01 |
 | An alarm is evaluated every minute over a sliding window by default, or a wall clock window if set | docs | [alarm-evaluation], [alarm-window] | 2026-11-01 |
