@@ -457,7 +457,7 @@ impl Born {
     }
 }
 
-fn born_of(id: AgentId, object: &Object) -> Born {
+fn born_from_claim(id: AgentId, object: &Object) -> Born {
     if object.body.is_empty() {
         let born_at = object.metadata.get("born_at").cloned();
         return Born {
@@ -479,7 +479,7 @@ fn born_of(id: AgentId, object: &Object) -> Born {
 /// One agent's `born_at`, for the takedown program. `None` when there's no claim or marker.
 pub async fn born<S: Store>(store: &S, id: &AgentId) -> Result<Option<Born>, StoreError> {
     let object = store.get(Bucket::Claims, &claim_key(id)).await?;
-    Ok(object.map(|o| born_of(id.clone(), &o)))
+    Ok(object.map(|o| born_from_claim(id.clone(), &o)))
 }
 
 /// Every agent, claims and markers alike, whose `born_at` is at or after `from` and before `to`.
@@ -498,7 +498,7 @@ pub async fn born_between<S: Store>(
         let Some(object) = store.get(Bucket::Claims, &key).await? else {
             continue;
         };
-        let born = born_of(id, &object);
+        let born = born_from_claim(id, &object);
         if born.born_at.as_deref().is_some_and(|b| from <= b && b < to) {
             found.push(born);
         }

@@ -56,14 +56,17 @@ pub async fn plan<S: Store>(store: &S, mode: &Mode) -> Result<Vec<Target>, Store
     };
     let mut targets = Vec::with_capacity(born.len());
     for born in born {
-        let found = found(store, &born.id).await?;
+        let found = existing_keys(store, &born.id).await?;
         targets.push(Target { born, found });
     }
     Ok(targets)
 }
 
 /// The keys of an agent's locations that exist now.
-async fn found<S: Store>(store: &S, id: &AgentId) -> Result<Vec<(Bucket, String)>, StoreError> {
+async fn existing_keys<S: Store>(
+    store: &S,
+    id: &AgentId,
+) -> Result<Vec<(Bucket, String)>, StoreError> {
     let mut found = Vec::new();
     for l in locations(id) {
         match l.action {
