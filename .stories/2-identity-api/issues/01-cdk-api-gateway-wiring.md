@@ -1,7 +1,7 @@
 # CDK: build both stacks and wire CloudFront, the REST API and the Lambda
 
 Label: ready-for-agent
-Blocked by: 03, 05, 06
+Blocked by: 05, 06
 
 Build the REST API from `openapi/sfab.yaml` with `SpecRestApi` in the Python CDK, behind a
 CloudFront distribution, as described in `spec.md` "Architecture". Filed from review finding
@@ -13,6 +13,8 @@ R12.
   SNS topics with the email subscription and a policy on the alerts topic allowing both Budgets and
   CloudWatch, and all three budgets, as in `spec.md` "Abuse and cost controls",
   using the service name recorded in issue 03. Confirm the filter in the console's budget preview.
+  Until 03 records it, the code uses "Amazon Registrar", `spec.md` "First deploy" step 3's guess, as one
+  constant marked as a placeholder, so the code can be built before the account exists (owner, 2026-11-07).
 - The API stack: the API Lambda, from `lambda/target/lambda/api/bootstrap` on arm64, with `REQUIRED_BITS`
   (the CDK's `required_bits`), `IDENTITIES_BUCKET` and `CLAIMS_BUCKET` in its environment, which issue 06's
   `lambda/api/src/main.rs` reads, and its reserved concurrency, the REST API, the origin key,
