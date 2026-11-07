@@ -2103,6 +2103,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "sfab-census"
+version = "0.1.0"
+dependencies = [
+ "futures-util",
+ "serde",
+ "serde_json",
+ "sfab-core",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "sfab-core"
 version = "0.1.0"
 dependencies = [
@@ -2114,6 +2126,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "subtle",
+ "tokio",
 ]
 
 [[package]]
