@@ -578,3 +578,13 @@ def test_buckets_topics_and_budgets_are_only_in_the_base_stack(api):
         assert api.find_resources(kind) == {}, kind
     # autoDeleteObjects would add a custom resource that can empty a bucket.
     assert api.find_resources("Custom::S3AutoDeleteObjects") == {}
+
+
+def test_the_api_stack_outputs_the_stage_url_the_smoke_script_takes(api):
+    # `cdk deploy` prints it, so the owner can pass it as `scripts/smoke --execute-api`.
+    endpoints = [
+        o["Value"] for name, o in api.find_outputs("*").items() if name.startswith("ApiEndpoint")
+    ]
+    assert len(endpoints) == 1
+    assert ".execute-api." in json.dumps(endpoints[0])
+    assert "DeploymentStagev1" in json.dumps(endpoints[0])

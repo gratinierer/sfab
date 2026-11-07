@@ -81,6 +81,8 @@ class _Session:
         self.bits = DEFAULT_BITS
         self.clock_offset = 0
         self.failures: list[str] = []
+        # The test agent's recovery code, from its birth.
+        self.recovery: str | None = None
 
     def send(self, method, url, headers=None, body=b"") -> Response:
         if self.sent:
@@ -261,8 +263,18 @@ def _identity(s: _Session, credential: str, *, birthed: bool) -> None:
         found = _json(r).get("id")
         return None if found == agent else f"id {found!r}, not {agent!r}"
 
-    s.check("self, so Authorization reaches the origin", s.api("GET", "/v1/identity/self", _headers(credential)), 200, check=is_agent)
-    s.check("self with a wrong claim", s.api("GET", "/v1/identity/self", _headers(wrong)), 401, problem=True)
+    s.check(
+        "self, so Authorization reaches the origin",
+        s.api("GET", "/v1/identity/self", _headers(credential)),
+        200,
+        check=is_agent,
+    )
+    s.check(
+        "self with a wrong claim",
+        s.api("GET", "/v1/identity/self", _headers(wrong)),
+        401,
+        problem=True,
+    )
 
     body = f'{{"whoiam":"{SMOKE_WHOIAM}"}}'.encode()
     response, _, _ = s.write("PUT", "/v1/identity/evolve", body, credential=credential)
@@ -275,7 +287,13 @@ def _identity(s: _Session, credential: str, *, birthed: bool) -> None:
 
     extra = f'{{"whoiam":"{SMOKE_WHOIAM}","extra":1}}'.encode()
     response, _, _ = s.write("PUT", "/v1/identity/evolve", extra, credential=credential)
-    s.check("evolve with an extra field: the gateway's 400", response, 400, problem=True, check=_no_required_bits)
+    s.check(
+        "evolve with an extra field: the gateway's 400",
+        response,
+        400,
+        problem=True,
+        check=_no_required_bits,
+    )
 
     # Every character escaped: within the gateway's maxLength, which counts characters, but
     # about 192 KB, so only the Lambda's 32 KB check can refuse it (spec.md "Validator limit").
@@ -286,7 +304,9 @@ def _identity(s: _Session, credential: str, *, birthed: bool) -> None:
         response,
         400,
         problem=True,
-        check=lambda r: None if "32 KB" in _json(r).get("title", "") else "not the Lambda's 32 KB refusal",
+        check=lambda r: None
+        if "32 KB" in _json(r).get("title", "")
+        else "not the Lambda's 32 KB refusal",
     )
 
     malformed = b'{"whoiam":'
@@ -312,10 +332,19 @@ def _reclaim(s: _Session, old_credential: str) -> None:
 
     if not s.check("reclaim", response, 200, check=fresh):
         return
-    s.check("self with the old claim after reclaim", s.api("GET", "/v1/identity/self", _headers(old_credential)), 401, problem=True)
+    s.check(
+        "self with the old claim after reclaim",
+        s.api("GET", "/v1/identity/self", _headers(old_credential)),
+        401,
+        problem=True,
+    )
     response, _, _ = s.write("POST", "/v1/identity/reclaim", b"", credential=old_recovery)
     s.check("reclaim with the spent recovery code", response, 401, problem=True)
-    s.check("self with the new claim", s.api("GET", "/v1/identity/self", _headers(f"{agent}.{new['claim']}")), 200)
+    s.check(
+        "self with the new claim",
+        s.api("GET", "/v1/identity/self", _headers(f"{agent}.{new['claim']}")),
+        200,
+    )
 
 
 def _execute_api(s: _Session) -> None:
@@ -356,7 +385,9 @@ def load_target(args: argparse.Namespace, config_path) -> Target:
     if args.production:
         credential = _smoke_claim(config_path)
     if not args.execute_api.startswith("https://"):
-        raise UsageError("--execute-api must be the stage's https:// URL, the stack's Endpoint output")
+        raise UsageError(
+            "--execute-api must be the stage's https:// URL, the stack's Endpoint output"
+        )
     return Target(api_url.rstrip("/"), args.execute_api, credential)
 
 
@@ -368,7 +399,7 @@ def _smoke_claim(config_path) -> str:
     if value is None or value == "CHANGE_ME":
         raise UsageError(
             f"--production needs smoke_claim in {config_path}: the fixed smoke identity's "
-            "<id>.<claim>. Birth it once after launch and add it, as spec.md \"Local config\" says."
+            '<id>.<claim>. Birth it once after launch and add it, as spec.md "Local config" says.'
         )
     agent, _, claim = str(value).partition(".")
     if not (_ID.fullmatch(agent) and _SECRET.fullmatch(claim)):
@@ -377,14 +408,24 @@ def _smoke_claim(config_path) -> str:
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(prog="smoke", description="The smoke script; see cdk/smoke.py.")
-    parser.add_argument("--execute-api", required=True, help="the stage URL, the API stack's Endpoint output")
-    parser.add_argument("--production", action="store_true", help="after launch: birth nothing, write nothing public")
+    parser = argparse.ArgumentParser(
+        prog="smoke", description="The smoke script; see cdk/smoke.py."
+    )
+    parser.add_argument(
+        "--execute-api", required=True, help="the stage URL, the API stack's Endpoint output"
+    )
+    parser.add_argument(
+        "--production",
+        action="store_true",
+        help="after launch: birth nothing, write nothing public",
+    )
     parser.add_argument("--api-url", help="defaults to https://api.<domain_name> from the config")
     return parser.parse_args(argv)
 
 
-def main(argv: list[str] | None = None, transport: Transport = urllib_transport, config_path=None) -> int:
+def main(
+    argv: list[str] | None = None, transport: Transport = urllib_transport, config_path=None
+) -> int:
     import sfab_config
 
     args = parse_args(argv)
@@ -393,7 +434,9 @@ def main(argv: list[str] | None = None, transport: Transport = urllib_transport,
     except UsageError as e:
         print(e, file=sys.stderr)
         return 2
-    result = run(transport, target, production=args.production, clock=time.time, sleep=time.sleep, log=print)
+    result = run(
+        transport, target, production=args.production, clock=time.time, sleep=time.sleep, log=print
+    )
     if result.failures:
         print(f"\n{len(result.failures)} failed:", *result.failures, sep="\n  ")
     if result.blocked:
