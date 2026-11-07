@@ -100,11 +100,10 @@ def fill_openapi(text: str, *, api_lambda_arn: str, api_host: str) -> dict:
     """sfab.yaml with its two placeholders filled in memory, so no real ARN reaches the
     repo. A placeholder left over deploys fine and shows agents the raw text, so it fails."""
     filled = text.replace("{{api_lambda_arn}}", api_lambda_arn).replace("{{api_host}}", api_host)
-    left = sorted(set(re.findall(r"\{\{[^}]*\}\}", filled)))
+    # Any `{{` fails, even an unclosed one; the names are only for the message.
     if "{{" in filled:
-        raise SynthError(
-            f"{OPENAPI.name}: unfilled placeholder(s): {', '.join(left) or '{{'}"
-        )
+        unfilled = sorted(set(re.findall(r"\{\{[^}]*\}\}", filled))) or ["{{"]
+        raise SynthError(f"{OPENAPI.name}: unfilled placeholder(s): {', '.join(unfilled)}")
     return yaml.safe_load(filled)
 
 
