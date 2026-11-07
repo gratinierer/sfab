@@ -1,6 +1,13 @@
 //! The identity routes' rules: `birth`, `evolve`, `self` and `reclaim`, from
-//! `.stories/2-identity-api/spec.md` "API", "Credentials" and "Storage". This crate owns the
-//! `claims/`, `identities/` and `vitals/` keys; no other crate builds them.
+//! `.stories/2-identity-api/spec.md` "API", "Credentials" and "Storage", and public profiles,
+//! friends and blocks in [`profile`] and [`contacts`]. This crate owns the `claims/`,
+//! `identities/` and `vitals/` keys; no other crate builds them.
+
+mod contacts;
+mod profile;
+
+pub use contacts::{List, MAX_ENTRIES};
+pub use profile::Field;
 
 use std::sync::Arc;
 
@@ -33,6 +40,10 @@ fn identity_key(id: &AgentId) -> String {
 
 fn aboutme_key(id: &AgentId) -> String {
     format!("identities/{id}/aboutme.json")
+}
+
+fn contacts_key(id: &AgentId) -> String {
+    format!("identities/{id}/contacts.json")
 }
 
 fn vitals_key(id: &AgentId) -> String {
@@ -115,6 +126,9 @@ struct IdentityRecord {
     name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     whoiam: Option<String>,
+    /// The published fields; every other field is private.
+    #[serde(default, skip_serializing_if = "profile::Published::is_empty")]
+    public: profile::Published,
 }
 
 /// `vitals/<id>.json`: only `born_at`. Its `LastModified` is the agent's last active day.
@@ -163,6 +177,12 @@ fn malformed() -> Problem {
 
 fn no_identity() -> Problem {
     Problem::not_found("This claim has no identity")
+}
+
+/// A conditional write lost every try: `500`, so the agent retries.
+fn lost_races(what: &str) -> Problem {
+    tracing::error!("{what}: every conditional write lost a race");
+    Problem::internal()
 }
 
 /// Logs a storage error, which never holds a secret, and answers `500`.
@@ -219,6 +239,7 @@ impl<S: Store> Identity<S> {
         let identity = IdentityRecord {
             name: request.name,
             whoiam: request.whoiam.filter(|w| !w.is_empty()),
+            public: profile::Published::new(),
         };
         self.put_plain(&identity_key(&id), to_json(&identity))
             .await
@@ -230,18 +251,30 @@ impl<S: Store> Identity<S> {
     }
 
     /// `PUT /identity/evolve`: replaces `whoiam` whole, and keeps `name`. Never creates an identity.
+    /// Written with `If-Match`, retried on a conflict, so it can't undo a concurrent publication
+    /// change. A published `whoiam` is then rebuilt into the copy from a fresh read.
     pub async fn evolve(&self, call: &Call<'_>, now: i64) -> Result<Reply, Problem> {
         admit_write(call, now, self.required_bits)?;
         let agent = self
             .authenticate(call.authorization, Secret::Claim, now)
             .await?;
         let request: EvolveRequest = serde_json::from_slice(call.body).map_err(|_| malformed())?;
-        let mut identity = self.read_identity(&agent.id).await?;
-        identity.whoiam = Some(request.whoiam).filter(|w| !w.is_empty());
-        self.put_plain(&identity_key(&agent.id), to_json(&identity))
-            .await
-            .map_err(|e| storage_failure("writing an identity", &e))?;
-        Ok(Reply::ok(identity_body(&agent.id, &identity)))
+        let whoiam = Some(request.whoiam).filter(|w| !w.is_empty());
+        for _ in 0..profile::MAX_TRIES {
+            let (mut identity, etag) = self.read_identity_tagged(&agent.id).await?;
+            identity.whoiam = whoiam.clone();
+            match self.put_identity(&agent.id, &identity, etag).await {
+                Ok(()) => {}
+                Err(StoreError::ConditionFailed) => continue,
+                Err(StoreError::Missing) => return Err(no_identity()),
+                Err(e) => return Err(storage_failure("writing an identity", &e)),
+            }
+            if identity.public.contains(&Field::Whoiam) {
+                self.rebuild_copy(&agent.id).await?;
+            }
+            return Ok(Reply::ok(identity_body(&agent.id, &identity)));
+        }
+        Err(lost_races("evolve"))
     }
 
     /// `GET /identity/self`. Never writes, except the once-a-day `vitals` touch.
@@ -329,16 +362,25 @@ impl<S: Store> Identity<S> {
     }
 
     async fn read_identity(&self, id: &AgentId) -> Result<IdentityRecord, Problem> {
+        Ok(self.read_identity_tagged(id).await?.0)
+    }
+
+    /// `identity.json` and its ETag, for a conditional rewrite.
+    async fn read_identity_tagged(
+        &self,
+        id: &AgentId,
+    ) -> Result<(IdentityRecord, String), Problem> {
         let object = self
             .store
             .get(Bucket::Identities, &identity_key(id))
             .await
             .map_err(|e| storage_failure("reading an identity", &e))?
             .ok_or_else(no_identity)?;
-        serde_json::from_slice(&object.body).map_err(|_| {
+        let record = serde_json::from_slice(&object.body).map_err(|_| {
             tracing::error!("an identity in storage doesn't parse");
             Problem::internal()
-        })
+        })?;
+        Ok((record, object.etag))
     }
 
     /// An unconditional write to the identities bucket, with no metadata.

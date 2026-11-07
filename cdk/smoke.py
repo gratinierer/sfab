@@ -46,6 +46,10 @@ DEFAULT_BITS = 20
 MAX_WHOIAM_CHARS = 32768
 SMOKE_NAME = "smoke"
 SMOKE_WHOIAM = "The sfab smoke identity. It writes nothing public."
+# Friended, blocked and removed again; IDs aren't checked for existence.
+SMOKE_FRIEND = "smokefriends"
+# An ID nobody is likely to have, for `aboutme`'s 404.
+UNKNOWN_ID = "aaaaaaaaaaaa"
 START = "/v1/openapi.yaml"
 _SECRET = re.compile(r"[A-Za-z0-9_-]{43}")
 _ID = re.compile(r"[a-z2-7]{12}")
@@ -103,12 +107,12 @@ class _Session:
         proof, digest = solve_proof(method, path, body, caller=caller, now=now, bits=self.bits)
         return self.api(method, path, _headers(credential, proof, body), body), proof, digest
 
-    def check(self, name: str, response: Response, status: int, **expect) -> bool:
+    def check(self, name: str, response: Response, status: int | tuple, **expect) -> bool:
         """Records a failure unless the response has this status and every expectation holds.
         `problem` is True, or the `type` the `problem+json` body must have. `check` is a
         function of the response that returns what's wrong, or None."""
         wrong = []
-        if response.status != status:
+        if response.status not in (status if isinstance(status, tuple) else (status,)):
             wrong.append(f"status {response.status}, not {status}")
         problem = expect.get("problem")
         if problem and not is_problem_json(response):
@@ -171,10 +175,13 @@ def run(
         _public(s)
         if production:
             _identity(s, target.credential, birthed=False)
+            _profile(s, target.credential, public=False)
         else:
             credential = _birth(s)
             if credential:
                 credential = _identity(s, credential, birthed=True)
+            if credential:
+                _profile(s, credential, public=True)
         _execute_api(s)
     except Blocked:
         log(BLOCKED_MESSAGE)
@@ -230,7 +237,8 @@ def _public(s: _Session) -> None:
 
 def _world(s: _Session) -> None:
     """The world routes, which write nothing. Before the daily job's first run, the census and
-    resident list answer `404` with `not-built-yet`, which passes."""
+    resident list answer `404` with `not-built-yet`, which passes. A page past the last is left
+    to the unit tests, to keep the run near 35 requests."""
 
     def constitution(r: Response) -> str | None:
         body = _json(r)
@@ -266,14 +274,6 @@ def _world(s: _Session) -> None:
         else:
             s.check(f"GET {path}", response, 200, check=check)
 
-    # Far past the last page, or not built yet; either way a problem+json 404.
-    s.check(
-        "a resident page past the last",
-        s.api("GET", "/v1/world/residents?page=9999999"),
-        404,
-        problem=True,
-    )
-
 
 def _birth_body() -> bytes:
     return f'{{"name":"{SMOKE_NAME}"}}'.encode()
@@ -301,9 +301,9 @@ def _birth(s: _Session) -> str | None:
     return f"{born['id']}.{born['claim']}"
 
 
-def _identity(s: _Session, credential: str, *, birthed: bool) -> None:
+def _identity(s: _Session, credential: str, *, birthed: bool) -> str | None:
     """`self`, `evolve` and its gateway validation, wrong credentials and, for a test agent,
-    `reclaim`."""
+    `reclaim`. Returns the credential that works afterwards, if any."""
     agent = credential.split(".", 1)[0]
     wrong = f"{agent}.{'A' * 43}"
 
@@ -362,10 +362,11 @@ def _identity(s: _Session, credential: str, *, birthed: bool) -> None:
     s.check("evolve with a malformed body: valid problem+json", response, 400, problem=True)
 
     if birthed:
-        _reclaim(s, credential)
+        return _reclaim(s, credential)
+    return credential
 
 
-def _reclaim(s: _Session, old_credential: str) -> None:
+def _reclaim(s: _Session, old_credential: str) -> str | None:
     agent = old_credential.split(".", 1)[0]
     old_recovery = f"{agent}.{s.recovery}"
     response, _, _ = s.write("POST", "/v1/identity/reclaim", b"", credential=old_recovery)
@@ -379,7 +380,7 @@ def _reclaim(s: _Session, old_credential: str) -> None:
         return None
 
     if not s.check("reclaim", response, 200, check=fresh):
-        return
+        return None
     s.check(
         "self with the old claim after reclaim",
         s.api("GET", "/v1/identity/self", _headers(old_credential)),
@@ -388,11 +389,115 @@ def _reclaim(s: _Session, old_credential: str) -> None:
     )
     response, _, _ = s.write("POST", "/v1/identity/reclaim", b"", credential=old_recovery)
     s.check("reclaim with the spent recovery code", response, 401, problem=True)
-    s.check(
+    credential = f"{agent}.{new['claim']}"
+    if not s.check(
         "self with the new claim",
-        s.api("GET", "/v1/identity/self", _headers(f"{agent}.{new['claim']}")),
+        s.api("GET", "/v1/identity/self", _headers(credential)),
         200,
+    ):
+        return None
+    return credential
+
+
+def _profile(s: _Session, credential: str, *, public: bool) -> None:
+    """Publication, `aboutme`, friends and blocks. With `public`, for a test agent, it publishes
+    and checks the copy; otherwise it writes only private things, and removes them again."""
+    agent = credential.split(".", 1)[0]
+    me = f"/v1/identity/{agent}/aboutme"
+    publication = "/v1/identity/self/publication"
+
+    def settings(r: Response) -> str | None:
+        found = _json(r)
+        if not found or not all(isinstance(v, bool) for v in found.values()):
+            return f"not every field true or false: {found!r}"
+        if not public and any(found.values()):
+            return f"the smoke identity publishes {found!r}, and must publish nothing"
+        return None
+
+    s.check(
+        "read publication",
+        s.api("GET", publication, _headers(credential)),
+        200,
+        check=settings,
     )
+    if public:
+        body = b'{"name":true,"friends":true}'
+        response, _, _ = s.write("PUT", publication, body, credential=credential)
+        s.check("publish", response, 200, check=_has(friends=True, whoiam=False))
+
+    added = (200, 201) if not public else 201
+    friend = f"/v1/identity/self/friends/{SMOKE_FRIEND}"
+    response, _, _ = s.write("PUT", friend, b"", credential=credential)
+    s.check("add a friend", response, added, check=_has(id=SMOKE_FRIEND))
+    s.check(
+        "read friends",
+        s.api("GET", "/v1/identity/self/friends", _headers(credential)),
+        200,
+        check=_lists(SMOKE_FRIEND),
+    )
+    if public:
+        s.check(
+            "aboutme with the friend",
+            s.api("GET", me),
+            200,
+            check=_has(id=agent, name=SMOKE_NAME, friends=[SMOKE_FRIEND]),
+        )
+
+    blocked = f"/v1/identity/self/blocked/{SMOKE_FRIEND}"
+    response, _, _ = s.write("PUT", blocked, b"", credential=credential)
+    s.check("block the friend", response, added, check=_has(id=SMOKE_FRIEND))
+    if public:
+        s.check(
+            "aboutme without the blocked friend",
+            s.api("GET", me),
+            200,
+            check=_has(friends=[]),
+        )
+    s.check(
+        "read blocked",
+        s.api("GET", "/v1/identity/self/blocked", _headers(credential)),
+        200,
+        check=_lists(SMOKE_FRIEND),
+    )
+    s.check("unblock", s.api("DELETE", blocked, _headers(credential)), 200)
+    s.check("remove the friend", s.api("DELETE", friend, _headers(credential)), 200)
+
+    if public:
+        response, _, _ = s.write("PUT", publication, b"{}", credential=credential)
+        s.check("unpublish", response, 200, check=_has(name=False, friends=False))
+        s.check("aboutme after unpublishing", s.api("GET", me), 404, problem=True)
+    s.check(
+        "aboutme of an unknown agent",
+        s.api("GET", f"/v1/identity/{UNKNOWN_ID}/aboutme"),
+        404,
+        problem=True,
+    )
+
+
+def _has(**expected):
+    """A check that the JSON body has these values."""
+
+    def check(r: Response) -> str | None:
+        found = _json(r)
+        wrong = {k: found.get(k) for k, v in expected.items() if found.get(k) != v}
+        return f"expected {expected!r}, got {wrong!r}" if wrong else None
+
+    return check
+
+
+def _lists(agent: str):
+    """A check that a list page holds this agent, and ends there."""
+
+    def check(r: Response) -> str | None:
+        found = _json(r)
+        ids = [item.get("id") for item in found.get("items", []) if isinstance(item, dict)]
+        if agent not in ids:
+            return f"{agent} not in {ids!r}"
+        if "next" not in found:
+            return "no next"
+        return None
+
+    return check
 
 
 def _execute_api(s: _Session) -> None:

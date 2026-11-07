@@ -73,28 +73,28 @@ fn resolve<'a>(spec: &'a Value, node: &'a Value) -> &'a Value {
 /// The JSON Schema subset `sfab.yaml` uses, with every failure as a path and a reason.
 fn validate(spec: &Value, schema: &Value, value: &Value, at: &str, errors: &mut Vec<String>) {
     let schema = resolve(spec, schema);
+    if value.is_null() && schema.get("nullable") == Some(&Value::Bool(true)) {
+        return;
+    }
+    if let Some(max) = schema.get("maxItems").and_then(Value::as_u64)
+        && value.as_array().is_some_and(|a| a.len() as u64 > max)
+    {
+        errors.push(format!("{at}: more than {max} items"));
+    }
+    if let (Some(items), Some(values)) = (schema.get("items"), value.as_array()) {
+        for (i, v) in values.iter().enumerate() {
+            validate(spec, items, v, &format!("{at}[{i}]"), errors);
+        }
+    }
+    if schema.get("type").and_then(Value::as_str) == Some("boolean") && !value.is_boolean() {
+        errors.push(format!("{at}: not a boolean"));
+    }
     if let Some(all) = schema.get("allOf").and_then(Value::as_array) {
         for part in all {
             validate(spec, part, value, at, errors);
         }
     }
-    if value.is_null() && schema.get("nullable") == Some(&Value::Bool(true)) {
-        return;
-    }
     match schema.get("type").and_then(Value::as_str) {
-        Some("array") => {
-            let Some(items) = value.as_array() else {
-                return errors.push(format!("{at}: not an array"));
-            };
-            if let Some(max) = schema.get("maxItems").and_then(Value::as_u64)
-                && items.len() as u64 > max
-            {
-                errors.push(format!("{at}: more than {max} items"));
-            }
-            for (i, item) in items.iter().enumerate() {
-                validate(spec, &schema["items"], item, &format!("{at}[{i}]"), errors);
-            }
-        }
         Some("object") => {
             let Some(obj) = value.as_object() else {
                 return errors.push(format!("{at}: not an object"));
@@ -144,15 +144,45 @@ fn validate(spec: &Value, schema: &Value, value: &Value, at: &str, errors: &mut 
         Some("integer") if !value.is_i64() && !value.is_u64() => {
             errors.push(format!("{at}: not an integer"));
         }
+        Some("array") if !value.is_array() => {
+            errors.push(format!("{at}: not an array"));
+        }
         _ => {}
     }
+}
+
+/// The path in `sfab.yaml` that a request's path, with the stage and maybe a query, matches.
+/// A fixed segment wins over a `{parameter}`, as at the gateway.
+fn template(spec: &Value, path: &str) -> String {
+    let path = path.split('?').next().unwrap();
+    let route = path.strip_prefix("/v1").unwrap();
+    let sent: Vec<&str> = route.split('/').collect();
+    let matches = |t: &str| {
+        let segments: Vec<&str> = t.split('/').collect();
+        segments.len() == sent.len()
+            && segments
+                .iter()
+                .zip(&sent)
+                .all(|(t, s)| t == s || t.starts_with('{'))
+    };
+    let mut found: Vec<&String> = spec["paths"]
+        .as_object()
+        .unwrap()
+        .keys()
+        .filter(|t| matches(t))
+        .collect();
+    found.sort_by_key(|t| t.matches('{').count());
+    found
+        .first()
+        .unwrap_or_else(|| panic!("{route} isn't in sfab.yaml"))
+        .to_string()
 }
 
 /// One request, and which operation it exercises.
 struct Case {
     operation: &'static str,
     method: &'static str,
-    path: &'static str,
+    path: String,
     authorization: Option<String>,
     proof: Proof,
     body: Vec<u8>,
@@ -183,7 +213,7 @@ impl Harness {
     }
 
     async fn send(&self, case: Case) -> (u16, Value) {
-        let mut request = Request::builder().method(case.method).uri(case.path);
+        let mut request = Request::builder().method(case.method).uri(&case.path);
         if let Some(auth) = &case.authorization {
             request = request.header("authorization", auth);
         }
@@ -191,7 +221,7 @@ impl Harness {
             let caller = caller_of(case.authorization.as_deref()).unwrap();
             let r = proof::Request {
                 method: case.method,
-                path: case.path,
+                path: &case.path,
                 caller: &caller,
                 body: &case.body,
             };
@@ -203,7 +233,7 @@ impl Harness {
             .oneshot(request.body(Body::from(case.body.clone())).unwrap())
             .await
             .unwrap();
-        self.check(case.operation, case.method, case.path, response)
+        self.check(case.operation, case.method, &case.path, response)
             .await
     }
 
@@ -218,9 +248,8 @@ impl Harness {
         let status = response.status().as_u16();
         let headers = response.headers().clone();
         let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-        let route = path.strip_prefix("/v1").unwrap();
-        let route = route.split_once('?').map_or(route, |(r, _)| r);
-        let op = &self.spec["paths"][route][method.to_lowercase()];
+        let route = template(&self.spec, path);
+        let op = &self.spec["paths"][&route][method.to_lowercase()];
         assert_eq!(op["operationId"], operation, "{method} {route}");
         let responses = &op["responses"];
         let declared = responses
@@ -259,7 +288,7 @@ fn birth(name: &str, proof: Proof) -> Case {
     Case {
         operation: "birth",
         method: "POST",
-        path: "/v1/identity/birth",
+        path: "/v1/identity/birth".into(),
         authorization: None,
         proof,
         body: format!(r#"{{"name":"{name}"}}"#).into_bytes(),
@@ -274,7 +303,7 @@ fn evolve(auth: Option<String>, proof: Proof, whoiam: &str) -> Case {
     Case {
         operation: "evolve",
         method: "PUT",
-        path: "/v1/identity/evolve",
+        path: "/v1/identity/evolve".into(),
         authorization: auth,
         proof,
         body: serde_json::to_vec(&json!({ "whoiam": whoiam })).unwrap(),
@@ -285,7 +314,18 @@ fn read_self(auth: Option<String>) -> Case {
     Case {
         operation: "self",
         method: "GET",
-        path: "/v1/identity/self",
+        path: "/v1/identity/self".into(),
+        authorization: auth,
+        proof: Proof::None,
+        body: Vec::new(),
+    }
+}
+
+fn get(operation: &'static str, path: &str, auth: Option<String>) -> Case {
+    Case {
+        operation,
+        method: "GET",
+        path: path.to_owned(),
         authorization: auth,
         proof: Proof::None,
         body: Vec::new(),
@@ -296,21 +336,9 @@ fn reclaim(auth: Option<String>, proof: Proof) -> Case {
     Case {
         operation: "reclaim",
         method: "POST",
-        path: "/v1/identity/reclaim",
+        path: "/v1/identity/reclaim".into(),
         authorization: auth,
         proof,
-        body: Vec::new(),
-    }
-}
-
-/// An anonymous read.
-fn read(operation: &'static str, path: &'static str) -> Case {
-    Case {
-        operation,
-        method: "GET",
-        path,
-        authorization: None,
-        proof: Proof::None,
         body: Vec::new(),
     }
 }
@@ -382,12 +410,90 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
         404
     );
 
+    // Public profiles, friends and blocks, by a new agent.
+    let (_, fresh) = h.send(birth("Finch", Proof::Valid)).await;
+    let fid = fresh["id"].as_str().unwrap();
+    let auth = bearer(fid, fresh["claim"].as_str().unwrap());
+    let friend = "zzzzzzzzzzzz";
+
+    // publication: 200, 400, 401.
+    let publication = "/v1/identity/self/publication";
+    let read_publication = |auth| get("readPublication", publication, auth);
+    assert_eq!(h.send(read_publication(auth.clone())).await.0, 200);
+    assert_eq!(h.send(read_publication(None)).await.0, 401);
+    let publish = |auth, proof, body: &str| Case {
+        operation: "publish",
+        method: "PUT",
+        path: publication.into(),
+        authorization: auth,
+        proof,
+        body: body.as_bytes().to_vec(),
+    };
+    assert_eq!(
+        h.send(publish(auth.clone(), Proof::None, "{}")).await.0,
+        400
+    );
+    assert_eq!(h.send(publish(None, Proof::Valid, "{}")).await.0, 401);
+    let everything = r#"{"name":true,"whoiam":true,"friends":true}"#;
+    let (status, settings) = h
+        .send(publish(auth.clone(), Proof::Valid, everything))
+        .await;
+    assert_eq!((status, settings["friends"].clone()), (200, json!(true)));
+
+    // friends and blocked: 201, 200, 400, 401, and the lists.
+    for (list, read, add, remove) in [
+        ("friends", "readFriends", "addFriend", "removeFriend"),
+        ("blocked", "readBlocked", "block", "unblock"),
+    ] {
+        let all = format!("/v1/identity/self/{list}");
+        let one = format!("{all}/{friend}");
+        let put = |auth, proof| Case {
+            operation: add,
+            method: "PUT",
+            path: one.clone(),
+            authorization: auth,
+            proof,
+            body: Vec::new(),
+        };
+        assert_eq!(h.send(put(auth.clone(), Proof::Valid)).await.0, 201);
+        assert_eq!(h.send(put(auth.clone(), Proof::Valid)).await.0, 200);
+        assert_eq!(h.send(put(auth.clone(), Proof::None)).await.0, 400);
+        assert_eq!(h.send(put(None, Proof::Valid)).await.0, 401);
+        let (status, body) = h.send(get(read, &all, auth.clone())).await;
+        assert_eq!(status, 200);
+        assert_eq!(body["items"][0]["id"], friend);
+        assert_eq!(body["next"], Value::Null);
+        assert_eq!(h.send(get(read, &all, None)).await.0, 401);
+        let made_up = format!("{all}?page=x");
+        assert_eq!(h.send(get(read, &made_up, auth.clone())).await.0, 400);
+        if list == "friends" {
+            let mine = format!("/v1/identity/{fid}/aboutme");
+            let (status, about) = h.send(get("aboutme", &mine, None)).await;
+            assert_eq!((status, about["friends"].clone()), (200, json!([friend])));
+        }
+        let delete = |auth| Case {
+            operation: remove,
+            method: "DELETE",
+            path: one.clone(),
+            authorization: auth,
+            proof: Proof::None,
+            body: Vec::new(),
+        };
+        // Blocking removed the friend, so removing it is 200 whether or not it's there.
+        assert_eq!(h.send(delete(auth.clone())).await.0, 200);
+        assert_eq!(h.send(delete(None)).await.0, 401);
+    }
+
+    // aboutme: the same 404 for anyone unpublished or unknown.
+    let unknown = "/v1/identity/aaaaaaaaaaaa/aboutme";
+    assert_eq!(h.send(get("aboutme", unknown, None)).await.0, 404);
+
     // openapi: 200, the generated public copy.
     let (status, text) = h
         .send(Case {
             operation: "openapi",
             method: "GET",
-            path: "/v1/openapi.yaml",
+            path: "/v1/openapi.yaml".into(),
             authorization: None,
             proof: Proof::None,
             body: Vec::new(),
@@ -397,23 +503,20 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
     assert_eq!(text, sfab_api::OPENAPI);
 
     // The world routes: before the daily job's first run, then after it.
-    assert_eq!(
-        h.send(read("constitution", "/v1/world/constitution"))
-            .await
-            .0,
-        200
-    );
-    let (status, body) = h.send(read("census", "/v1/world/census")).await;
+    let world = |op: &'static str, path: &str| get(op, path, None);
+    let constitution = world("constitution", "/v1/world/constitution");
+    assert_eq!(h.send(constitution).await.0, 200);
+    let (status, body) = h.send(world("census", "/v1/world/census")).await;
     assert_eq!((status, &body["type"]), (404, &json!("not-built-yet")));
-    let (status, body) = h.send(read("residents", "/v1/world/residents")).await;
+    let (status, body) = h.send(world("residents", "/v1/world/residents")).await;
     assert_eq!((status, &body["type"]), (404, &json!("not-built-yet")));
     let ids: Vec<AgentId> = sfab_identity::residents(&*h.store).await.unwrap();
     sfab_census::snapshot(&*h.store, &ids, "2026-11-05T00:05:00Z")
         .await
         .unwrap();
-    let (status, census) = h.send(read("census", "/v1/world/census")).await;
+    let (status, census) = h.send(world("census", "/v1/world/census")).await;
     assert_eq!((status, &census["residents"]), (200, &json!(ids.len())));
-    let (status, page) = h.send(read("residents", "/v1/world/residents")).await;
+    let (status, page) = h.send(world("residents", "/v1/world/residents")).await;
     assert_eq!((status, &page["next"]), (200, &Value::Null));
     assert_eq!(page["items"].as_array().unwrap().len(), ids.len());
     for (path, expected) in [
@@ -421,7 +524,7 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
         ("/v1/world/residents?page=2", 404),
         ("/v1/world/residents?page=x", 400),
     ] {
-        assert_eq!(h.send(read("residents", path)).await.0, expected, "{path}");
+        assert_eq!(h.send(world("residents", path)).await.0, expected, "{path}");
     }
 
     // Every operation in sfab.yaml was exercised.

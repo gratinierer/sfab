@@ -516,7 +516,8 @@ async fn the_takedown_list_leaves_only_a_marker_that_keeps_born_at() {
         .evolve(&evolve_call(id.as_str(), claim, "x", NOW).call(), NOW)
         .await
         .unwrap();
-    // aboutme.json arrives with issue 13; the list must cover it already.
+    // A public copy, which the takedown list must cover; `tests/profile.rs` and the takedown
+    // program's tests write it through `publish`.
     w.store
         .put(
             Bucket::Identities,

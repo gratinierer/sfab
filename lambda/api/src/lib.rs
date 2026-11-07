@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use axum::Router;
 use axum::body::Bytes;
-use axum::extract::{DefaultBodyLimit, OriginalUri, Request, State};
+use axum::extract::{DefaultBodyLimit, OriginalUri, Path, Request, State};
 use axum::http::{HeaderMap, HeaderValue, Method, StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
@@ -16,7 +16,7 @@ use sfab_census::Census;
 use sfab_core::gate::Call;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::Store;
-use sfab_identity::Identity;
+use sfab_identity::{Identity, List};
 
 /// The public API description, generated before the build, so a missing copy fails it.
 pub const OPENAPI: &str = include_str!(concat!(
@@ -67,6 +67,21 @@ pub fn app<S: Store>(store: Arc<S>, required_bits: u32, now: fn() -> i64) -> Rou
         .route("/world/constitution", get(constitution))
         .route("/world/census", get(census::<S>))
         .route("/world/residents", get(residents::<S>))
+        .route(
+            "/identity/self/publication",
+            get(read_publication::<S>).put(publish::<S>),
+        )
+        .route("/identity/{id}/aboutme", get(aboutme::<S>))
+        .route("/identity/self/friends", get(read_friends::<S>))
+        .route(
+            "/identity/self/friends/{id}",
+            put(add_friend::<S>).delete(remove_friend::<S>),
+        )
+        .route("/identity/self/blocked", get(read_blocked::<S>))
+        .route(
+            "/identity/self/blocked/{id}",
+            put(block::<S>).delete(unblock::<S>),
+        )
         .route("/openapi.yaml", get(openapi))
         .fallback(no_route)
         .method_not_allowed_fallback(no_route)
@@ -197,15 +212,140 @@ async fn census<S: Store>(State(state): State<Arc<AppState<S>>>) -> Response {
 }
 
 async fn residents<S: Store>(State(state): State<Arc<AppState<S>>>, uri: OriginalUri) -> Response {
-    respond(state.census.residents(page(&uri)).await)
+    respond(state.census.residents(page(&uri).as_deref()).await)
 }
 
-/// The `?page=` token, as sent. Tokens are plain digits, so nothing needs decoding, and anything
-/// else fails as a malformed token.
-fn page(uri: &OriginalUri) -> Option<&str> {
+async fn read_publication<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    headers: HeaderMap,
+) -> Response {
+    let authorization = header(&headers, "authorization");
+    let now = (state.now)();
+    respond(state.identity.read_publication(authorization, now).await)
+}
+
+async fn publish<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    method: Method,
+    uri: OriginalUri,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    write(&state, &method, &uri, &headers, &body, async |i, c, now| {
+        i.publish(c, now).await
+    })
+    .await
+}
+
+async fn aboutme<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+) -> Response {
+    respond(state.identity.aboutme(&id).await)
+}
+
+/// The `?page=` token, if any, from the query as sent.
+fn page(uri: &OriginalUri) -> Option<String> {
     uri.query()?
         .split('&')
         .find_map(|pair| pair.strip_prefix("page="))
+        .map(str::to_owned)
+}
+
+async fn read_list<S: Store>(
+    state: &AppState<S>,
+    list: List,
+    uri: &OriginalUri,
+    headers: &HeaderMap,
+) -> Response {
+    let authorization = header(headers, "authorization");
+    let token = page(uri);
+    let now = (state.now)();
+    let reply = state
+        .identity
+        .list_contacts(list, authorization, token.as_deref(), now);
+    respond(reply.await)
+}
+
+async fn read_friends<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    uri: OriginalUri,
+    headers: HeaderMap,
+) -> Response {
+    read_list(&state, List::Friends, &uri, &headers).await
+}
+
+async fn read_blocked<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    uri: OriginalUri,
+    headers: HeaderMap,
+) -> Response {
+    read_list(&state, List::Blocked, &uri, &headers).await
+}
+
+async fn add_contact<S: Store>(
+    state: &AppState<S>,
+    list: List,
+    (id, method, uri, headers, body): (String, Method, OriginalUri, HeaderMap, Bytes),
+) -> Response {
+    write(state, &method, &uri, &headers, &body, async |i, c, now| {
+        i.add_contact(list, c, &id, now).await
+    })
+    .await
+}
+
+async fn add_friend<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+    method: Method,
+    uri: OriginalUri,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    add_contact(&state, List::Friends, (id, method, uri, headers, body)).await
+}
+
+async fn block<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+    method: Method,
+    uri: OriginalUri,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    add_contact(&state, List::Blocked, (id, method, uri, headers, body)).await
+}
+
+async fn remove_contact<S: Store>(
+    state: &AppState<S>,
+    list: List,
+    id: &str,
+    headers: &HeaderMap,
+) -> Response {
+    let authorization = header(headers, "authorization");
+    let now = (state.now)();
+    respond(
+        state
+            .identity
+            .remove_contact(list, authorization, id, now)
+            .await,
+    )
+}
+
+async fn remove_friend<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    remove_contact(&state, List::Friends, &id, &headers).await
+}
+
+async fn unblock<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    remove_contact(&state, List::Blocked, &id, &headers).await
 }
 
 async fn openapi() -> Response {

@@ -14,7 +14,7 @@ from fakes import (
     problem,
 )
 
-from smoke import SMOKE_WHOIAM, Target, run
+from smoke import SMOKE_FRIEND, SMOKE_WHOIAM, Target, run
 
 FULL = Target(api_url=API_HOST, execute_api_url=EXECUTE_API)
 PRODUCTION = Target(api_url=API_HOST, execute_api_url=EXECUTE_API, credential=SMOKE_CREDENTIAL)
@@ -43,7 +43,6 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "constitution",
         "census",
         "residents",
-        "residents past the last",
         "outside v1",
         "unknown route",
         "no proof",
@@ -56,6 +55,16 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "malformed body",
         "unauthorized",
         "reclaim",
+        "read publication",
+        "publish",
+        "aboutme",
+        "aboutme 404",
+        "add friend",
+        "read friends",
+        "remove friend",
+        "block",
+        "read blocked",
+        "unblock",
         "execute-api no key",
         "execute-api wrong key",
     }
@@ -99,6 +108,16 @@ JSON = {"content-type": "application/json", "cache-control": "no-store"}
             "execute-api with a wrong origin key",
         ),
         ("execute-api no key", ok(200, {}), "execute-api without the origin key is rejected"),
+        ("aboutme 404", ok(200, {"id": "aaaaaaaaaaaa"}), "aboutme of an unknown agent"),
+        ("read friends", ok(200, {"items": [], "next": None}), "read friends"),
+        ("read blocked", ok(200, {"items": [], "next": None}), "read blocked"),
+        ("add friend", problem(409, "list-full"), "add a friend"),
+        ("unblock", problem(500), "unblock"),
+        (
+            "read publication",
+            ok(200, {"name": "yes"}),
+            "read publication",
+        ),
         (
             "constitution",
             ok(200, {"version": "v", "text": "no terms"}),
@@ -108,11 +127,6 @@ JSON = {"content-type": "application/json", "cache-control": "no-store"}
         ("census", problem(404, "about:blank"), "GET /v1/world/census"),
         ("residents", ok(200, {"items": []}), "GET /v1/world/residents"),
         ("residents", problem(404, "about:blank"), "GET /v1/world/residents"),
-        (
-            "residents past the last",
-            ok(200, {"items": [], "next": None}),
-            "a resident page past the last",
-        ),
         (
             "openapi",
             Response(200, {"content-type": "application/yaml"}, b"openapi: 3.0.1\n"),
@@ -133,7 +147,6 @@ def test_the_census_and_residents_may_be_not_built_yet_before_the_job_s_first_ru
     api = FakeApi(clock)
     api.override["census"] = problem(404, "not-built-yet")
     api.override["residents"] = problem(404, "not-built-yet")
-    api.override["residents past the last"] = problem(404, "not-built-yet")
 
     assert smoke(api, clock).failures == []
 
@@ -210,13 +223,16 @@ def test_production_births_nothing_and_writes_only_privately():
     assert writes == {
         ("POST", f"{API_HOST}/v1/identity/birth"),  # with no proof, so it writes nothing
         ("PUT", f"{API_HOST}/v1/identity/evolve"),
+        ("PUT", f"{API_HOST}/v1/identity/self/friends/{SMOKE_FRIEND}"),
+        ("PUT", f"{API_HOST}/v1/identity/self/blocked/{SMOKE_FRIEND}"),
     }
+    assert api.public[SMOKE_ID] == set(), "nothing published"
+    assert api.contacts[SMOKE_ID] == {"friends": [], "blocked": []}, "contacts cleaned up"
     assert {
         "openapi",
         "constitution",
         "census",
         "residents",
-        "residents past the last",
         "outside v1",
         "unknown route",
         "no proof",
@@ -226,7 +242,32 @@ def test_production_births_nothing_and_writes_only_privately():
         "extra field",
         "body over 32 KB",
         "malformed body",
+        "read publication",
+        "aboutme 404",
+        "add friend",
+        "read friends",
+        "remove friend",
+        "block",
+        "read blocked",
+        "unblock",
         "execute-api no key",
         "execute-api wrong key",
     } <= set(api.labels)
+    assert "publish" not in api.labels
     assert api.identities[SMOKE_ID] == {"name": "smoke", "whoiam": SMOKE_WHOIAM}
+
+
+def test_a_blocked_friend_left_in_the_copy_fails():
+    clock = Clock()
+    api = FakeApi(clock)
+    api.keep_blocked_friends_public = True
+
+    assert "aboutme without the blocked friend" in failing_checks(api, clock)
+
+
+def test_an_unpublish_that_leaves_the_copy_fails():
+    clock = Clock()
+    api = FakeApi(clock)
+    api.ignore_unpublish = True
+
+    assert "aboutme after unpublishing" in failing_checks(api, clock)
