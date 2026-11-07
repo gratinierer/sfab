@@ -33,6 +33,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-07T15:40:14+00:00 | code-review | 08 @ 6ac7f2f..15cd567 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 10 new: 6 standards, 4 spec | |
 | 2026-11-07T15:48:56+00:00 | code-review | 01 @ 1a11d30..d4542cb | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 11 new: 6 standards, 5 spec | |
 | 2026-11-07T15:57:19+00:00 | code-review | 12 @ bd6799f..3c3500d | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 8 new: 6 standards, 2 spec | |
+| 2026-11-07T16:01:25+00:00 | code-review | 09 @ ba905f7..3fd020e | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 12 new: 7 standards, 5 spec | |
 
 ## Findings
 
@@ -122,3 +123,15 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | C82 | open | standards | 12, cdk/website_stack.py | `certificate` in `WebsiteStack.__init__` has no type hint, unlike the rest of `cdk/`. | 2026-11-07: found. |
 | C83 | open | spec | 12, cdk/website_stack.py | The `301` from `/agents` to `/agents/` drops any query string; it's within the letter of the spec, but neither the spec nor the issue records it as an accepted limit. | 2026-11-07: found. |
 | C84 | open | spec | 12, cdk/website_stack.py | The website bucket keeps CDK's default of being retained when the stack is deleted, which the spec doesn't say, so a teardown leaves a bucket to empty and delete by hand. | 2026-11-07: found. |
+| C85 | open | standards | 09, docs/aws-facts.md | The scripts rely on WAF facts with no `docs/aws-facts.md` row, as AGENTS.md "Reference files" asks: WAF's block is a plain `403`, it can take minutes to react, and `execute-api` without `x-api-key` answers `403`; the same pattern as C77. | 2026-11-07: found. |
+| C86 | open | standards | 09, cdk/smoke.py | Possible Mysterious Name: `_Session.check(**expect)` reads `expect.get("problem")`, `expect.get("api", True)` and `expect["check"]` from an untyped bag, so a misspelled key is silently ignored, and the `check` callback shares the method's name. | 2026-11-07: found. |
+| C87 | open | standards | 09, cdk/smoke.py, cdk/waf_check.py | Possible Duplicated Code: the `--api-url` argument and the `https://api.{domain_name}` derivation appear in both `smoke.load_target` and `waf_check._api_url_from_config`, and `import sfab_config` is repeated inline three times. | 2026-11-07: found. |
+| C88 | open | standards | 09, cdk/smoke.py | Possible Shotgun Surgery: `/v1/identity/...` paths and `START = "/v1/openapi.yaml"` hardcode the stage, as C68 found in the CDK. | 2026-11-07: found. |
+| C89 | open | standards | 09, cdk/tests/fakes.py | Possible Duplicated Code: `FakeApi`'s route table repeats the smoke script's `known` routes. | 2026-11-07: found. |
+| C90 | open | standards | 09, cdk/smoke.py | Possible Primitive Obsession: the `<id>.<claim>` credential is a bare string, split with `credential.split(".", 1)[0]` in three places. | 2026-11-07: found. |
+| C91 | open | standards | 09, cdk/smoke.py | Possible Mysterious Name: `_json` returns `{}` for a non-object body while `Response.json()` returns `None`, and `learn` mutates the session from inside a `check=` callback. | 2026-11-07: found. |
+| C92 | open | spec | 09, lambda/core/src/proof.rs | `proof::solve`'s comment says it's "For tests and the smoke script", but the smoke script solves proofs in Python in `cdk/api_client.py`, checked against the worked example only. | 2026-11-07: found. |
+| C93 | open | spec | 09, spec.md "Testing", "Local config" | `smoke_claim` now holds `<id>.<claim>`, which the code needs, but spec.md still calls it "the fixed smoke identity's claim" in "Testing" and "Local config". | 2026-11-07: found. |
+| C94 | open | spec | 09, cdk/smoke.py | `check()` requires `Cache-Control: no-store` on every API response, including the CloudFront Function's and API Gateway's own `404` and `400`, which may not send it, so the first smoke run may fail falsely. | 2026-11-07: found. |
+| C95 | open | spec | 09, cdk/smoke.py | The no-key `execute-api` check passes on any `403`, which a stopped or blocked API would also give, and no `docs/aws-facts.md` row records what the gateway returns, to tighten it after the first deploy. | 2026-11-07: found. |
+| C96 | open | spec | 09, .stories/2-identity-api/issues/09-smoke-script-and-abuse-check.md | The spec's "about 35 requests", the unknown-ID routes, `403 no-standing` and the census `404` belong to later routes, but neither the issue nor the spec says which tickets extend the script for them. | 2026-11-07: found. |
