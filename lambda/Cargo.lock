@@ -1823,6 +1823,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "sfab-takedown"
+version = "0.1.0"
+dependencies = [
+ "aws-config",
+ "aws-sdk-s3",
+ "serde_json",
+ "sfab-core",
+ "sfab-identity",
+ "tokio",
+]
+
+[[package]]
 name = "sha1"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -1,0 +1,21 @@
+[package]
+name = "sfab-takedown"
+version = "0.1.0"
+edition.workspace = true
+publish.workspace = true
+
+# The owner's takedown program: `.stories/2-identity-api/spec.md` "Storage" and
+# `docs/adr/0004-rules-live-in-crates.md`. It runs on the owner's machine, not as a Lambda.
+[[bin]]
+name = "takedown"
+path = "src/main.rs"
+
+[dependencies]
+aws-config = { version = "1.13.0", default-features = false, features = ["rt-tokio", "default-https-client", "behavior-version-latest"] }
+aws-sdk-s3 = { version = "1.157.0", default-features = false, features = ["rt-tokio", "default-https-client", "behavior-version-latest"] }
+sfab-core = { path = "../core", features = ["s3"] }
+sfab-identity = { path = "../identity" }
+tokio = { version = "1.52.3", features = ["macros", "rt", "time"] }
+
+[dev-dependencies]
+serde_json = "1.0.149"
