@@ -271,11 +271,9 @@ impl<S: Store> Identity<S> {
         for _ in 0..profile::MAX_TRIES {
             let (mut identity, etag) = self.read_identity_tagged(&agent.id).await?;
             identity.whoiam = whoiam.clone();
-            match self.put_identity(&agent.id, &identity, etag).await {
-                Ok(()) => {}
-                Err(StoreError::ConditionFailed) => continue,
-                Err(StoreError::Missing) => return Err(no_identity()),
-                Err(e) => return Err(storage_failure("writing an identity", &e)),
+            match self.put_identity(&agent.id, &identity, etag).await? {
+                contacts::Saved::Yes => {}
+                contacts::Saved::Raced => continue,
             }
             if identity.public.contains(&Field::Whoiam) {
                 self.rebuild_copy(&agent.id).await?;

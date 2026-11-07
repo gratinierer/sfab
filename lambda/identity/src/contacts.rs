@@ -305,7 +305,8 @@ impl<S: Store> Identity<S> {
     }
 }
 
-enum Saved {
+/// Whether a conditional write landed, or lost a race and should be retried from a fresh read.
+pub(crate) enum Saved {
     Yes,
     Raced,
 }

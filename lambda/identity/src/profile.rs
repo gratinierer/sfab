@@ -16,7 +16,7 @@ use sfab_core::id::AgentId;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 
-use crate::contacts::Contacts;
+use crate::contacts::{Contacts, Saved};
 use crate::{
     Identity, IdentityRecord, Secret, aboutme_key, identity_key, malformed, storage_failure,
     to_json,
@@ -160,11 +160,9 @@ impl<S: Store> Identity<S> {
                 self.write_copy(id, &identity).await?;
             }
             identity.public = wanted.clone();
-            match self.put_identity(id, &identity, etag).await {
-                Ok(()) => {}
-                Err(StoreError::ConditionFailed) => continue,
-                Err(StoreError::Missing) => return Err(crate::no_identity()),
-                Err(e) => return Err(storage_failure("writing an identity", &e)),
+            match self.put_identity(id, &identity, etag).await? {
+                Saved::Yes => {}
+                Saved::Raced => continue,
             }
             let identity = self.rebuild_copy(id).await?;
             return Ok(Reply::ok(settings_body(&identity.public)));
@@ -193,14 +191,16 @@ impl<S: Store> Identity<S> {
         Ok(Reply::ok(body))
     }
 
-    /// Writes `identity.json` only if it's unchanged since it was read.
+    /// Writes `identity.json` only if it's unchanged since it was read: `Raced` when it changed,
+    /// and `404` when it's gone.
     pub(crate) async fn put_identity(
         &self,
         id: &AgentId,
         identity: &IdentityRecord,
         etag: String,
-    ) -> Result<(), StoreError> {
-        self.store
+    ) -> Result<Saved, Problem> {
+        let write = self
+            .store
             .put(
                 Bucket::Identities,
                 &identity_key(id),
@@ -208,7 +208,13 @@ impl<S: Store> Identity<S> {
                 Metadata::new(),
                 Condition::IfMatch(etag),
             )
-            .await
+            .await;
+        match write {
+            Ok(()) => Ok(Saved::Yes),
+            Err(StoreError::ConditionFailed) => Ok(Saved::Raced),
+            Err(StoreError::Missing) => Err(crate::no_identity()),
+            Err(e) => Err(storage_failure("writing an identity", &e)),
+        }
     }
 
     /// Rebuilds the copy from a fresh read of `identity.json`, and `contacts.json` when a public
