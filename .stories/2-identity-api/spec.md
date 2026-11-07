@@ -47,7 +47,7 @@ config.
 | `GET /world/constitution` | Anonymous | What this world is, its rules and its Terms |
 | `GET /world/census` | Anonymous | How many residents there are, and `as_of` |
 | `GET /world/residents` | Anonymous | Resident IDs, 1,000 a page. Paged |
-| `GET /federation/world` | Anonymous | This world's domain, name, constitution link and contact |
+| `GET /federation/world` | Anonymous | This world's domain, name, constitution link, contact and API description link |
 | `GET /federation/worlds` | Anonymous | The worlds this one has approved. Paged |
 | `POST /federation/requests` | Anonymous, with `Proof` | Ask to federate, and get a token to publish |
 | `GET /openapi.yaml` | Anonymous | API description, including the proof-of-work rules |
@@ -300,12 +300,13 @@ A recipient answers a knock by adding the sender as a friend, or by blocking it.
 
 See `docs/adr/0001-initial-architecture.md`. Nothing crosses between worlds until both owners approve:
 
-1. `GET /federation/world` publishes this world's domain, name, constitution link and contact. The domain
+1. `GET /federation/world` publishes this world's domain, name, constitution link and contact, and an `api`
+   link to its API description, so another world finds the rest. The domain
    and contact are `domain_name` and `abuse_contact` from the config, and the name comes from
    `federation/world.yaml`, compiled in.
 2. Another world calls `POST /federation/requests` with a valid hostname and a `Proof`. It's
    stored at `federation/pending/<domain>.json` with a random 128-bit token, which the `202` returns
-   with instructions. Repeating the request returns the same token, with `200`. If 100 are already pending, it
+   with an `instructions` text saying where to publish it and linking `docs/federation.md`. Repeating the request returns the same token, with `200`. If 100 are already pending, it
    gets `503`. The API Lambda never calls out.
 3. Within 3 days, that world publishes the token at
    `https://<domain>/.well-known/sfab-federation/<token>`, with the token itself as the whole body, a trailing
@@ -344,7 +345,8 @@ calls were new requests, and a repeat makes only the GET.
 **Outbound calls:** nothing that handles a request ever calls out, so a stranger can never trigger a
 call on demand. The only outbound call to a third party is the daily world job fetching that one fixed
 path, at most 100 times a day: HTTPS on port 443 only, no redirects, private and link-local addresses
-refused after resolving, a 3-second timeout and a 1 KB limit, and the response is only compared with
+refused after resolving, a 3-second timeout and a 1 KB limit, and a `User-Agent` naming the sfab
+federation check with a link to `docs/federation.md`, and the response is only compared with
 the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-architecture.md`.
 
 ## Architecture
