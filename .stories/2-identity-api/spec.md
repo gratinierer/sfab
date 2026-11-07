@@ -794,7 +794,7 @@ Logs are the most likely place for a claim to leak.
   first real federation request is the end-to-end test, and a failure there costs nothing, since a
   request just expires after 3 days.
 - A census check: a day after first deploy, `/world/census` and `/world/residents` show the test
-  agents, without any markers. Its first run passing also proves the job's way of reading `world/`, listing
+  agents, without any markers, and a `/world/residents?page=` past the last page answers `404`. Its first run passing also proves the job's way of reading `world/`, listing
   first and reading only keys it listed, which rests on the `memory` row of `docs/aws-facts.md` that a
   missing key answers `403` under a prefix-conditioned `s3:ListBucket`; update that row from what the run's
   log shows.
