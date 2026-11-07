@@ -37,6 +37,9 @@ behaviour, and update its row whenever you confirm or disprove a fact.
 Apply `docs/api-design.md` when a story, review or change adds or changes an
 API route.
 
+Update `docs/restart-after-a-stop.md` when a change adds a kill switch step or
+renames what its commands look up.
+
 When a kind of knowledge keeps being rechecked or has no home, add a small file
 under `docs/`, with a pointer here saying when to read it.
 

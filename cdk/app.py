@@ -10,7 +10,9 @@ import sfab_config
 import stacks
 
 # What `cargo lambda build --release --arm64` writes, which scripts/check runs first.
-API_LAMBDA_BUILD = sfab_config.REPO_ROOT / "lambda" / "target" / "lambda" / "api"
+LAMBDA_BUILDS = sfab_config.REPO_ROOT / "lambda" / "target" / "lambda"
+API_LAMBDA_BUILD = LAMBDA_BUILDS / "api"
+KILL_SWITCH_BUILD = LAMBDA_BUILDS / "killswitch"
 
 
 def main() -> None:
@@ -20,15 +22,21 @@ def main() -> None:
     except sfab_config.ConfigError as e:
         sys.exit(f"sfab config error: {e}")
 
-    if not (API_LAMBDA_BUILD / "bootstrap").is_file():
-        sys.exit(
-            f"sfab build missing: {API_LAMBDA_BUILD / 'bootstrap'}. Run scripts/check, "
-            "which builds the Lambdas, or scripts/deploy."
-        )
+    for build in (API_LAMBDA_BUILD, KILL_SWITCH_BUILD):
+        if not (build / "bootstrap").is_file():
+            sys.exit(
+                f"sfab build missing: {build / 'bootstrap'}. Run scripts/check, "
+                "which builds the Lambdas, or scripts/deploy."
+            )
 
     app = cdk.App()
     try:
-        stacks.build(app, config, api_code=lambda_.Code.from_asset(str(API_LAMBDA_BUILD)))
+        stacks.build(
+            app,
+            config,
+            api_code=lambda_.Code.from_asset(str(API_LAMBDA_BUILD)),
+            kill_switch_code=lambda_.Code.from_asset(str(KILL_SWITCH_BUILD)),
+        )
     except stacks.SynthError as e:
         sys.exit(f"sfab synth error: {e}")
     app.synth()

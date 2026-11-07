@@ -31,6 +31,7 @@ from aws_cdk import aws_wafv2 as wafv2
 from constructs import Construct
 
 import sfab_config
+from kill_switch import KillSwitch
 from sfab_config import Config
 
 REGION = "us-east-1"
@@ -38,6 +39,8 @@ OPENAPI = sfab_config.REPO_ROOT / "openapi" / "sfab.yaml"
 
 # Budgets, in USD per month. Public settings, so they live here, reviewed, not in the config.
 STOP_BUDGET_USD = 35
+# The kill switch's daily spend check reads this budget by name.
+STOP_BUDGET_NAME = "sfab-stop"
 ALERT_BUDGET_USD = (29, 40, 50, 70, 100)
 # The check budget's one alert, at $0.01, written as a percentage of a $1 limit.
 CHECK_BUDGET_PERCENT_OF_1_USD = 1
@@ -151,7 +154,7 @@ class BaseStack(cdk.Stack):
         self.alerts_topic = sns.Topic(self, "Alerts")
         self.alerts_topic.add_subscription(subs.EmailSubscription(config.alert_email))
         self._let_publish(self.alerts_topic, "budgets.amazonaws.com", "cloudwatch.amazonaws.com")
-        # Receives only the stop budget's alert; any message on it stops the API (issue 07).
+        # Receives only the stop budget's alert; any message on it stops the API (kill_switch).
         self.stop_topic = sns.Topic(self, "Stop")
         self._let_publish(self.stop_topic, "budgets.amazonaws.com")
 
@@ -168,7 +171,7 @@ class BaseStack(cdk.Stack):
             )
         )
         self._budget(
-            "sfab-stop",
+            STOP_BUDGET_NAME,
             STOP_BUDGET_USD,
             budgets.CfnBudget.ExpressionProperty(
                 not_=budgets.CfnBudget.ExpressionProperty(or_=[domain_charges, no_credits])
@@ -264,6 +267,7 @@ class ApiStack(cdk.Stack):
         config: Config,
         base: BaseStack,
         api_code: lambda_.Code,
+        kill_switch_code: lambda_.Code,
         openapi_text: str,
         **kwargs,
     ) -> None:
@@ -350,13 +354,26 @@ class ApiStack(cdk.Stack):
 
         self._front_door(config, base, origin_key=config.origin_key)
 
+        self.kill_switch = KillSwitch(
+            self,
+            "KillSwitch",
+            code=kill_switch_code,
+            stop_topic=base.stop_topic,
+            alerts_topic=base.alerts_topic,
+            stop_budget_name=STOP_BUDGET_NAME,
+            api_function=self.function,
+            rest_api=self.rest_api,
+            stage_name=STAGE,
+            web_acl=self.web_acl,
+        )
+
     def _front_door(self, config: Config, base: BaseStack, *, origin_key: str) -> None:
         """CloudFront on the Free flat-rate plan, with WAF, in front of the REST API."""
         self.web_acl = wafv2.CfnWebACL(
             self,
             "WebAcl",
             scope="CLOUDFRONT",
-            # The kill switch flips this to Block (issue 07).
+            # The kill switch flips this to Block (kill_switch.py).
             default_action=wafv2.CfnWebACL.DefaultActionProperty(allow={}),
             # Samples return each header for 3 hours, which could expose live claims.
             visibility_config=_waf_visibility("sfabApi"),
@@ -465,7 +482,11 @@ class Stacks:
 
 
 def build(
-    app: Construct, config: Config, api_code: lambda_.Code, openapi_text: str | None = None
+    app: Construct,
+    config: Config,
+    api_code: lambda_.Code,
+    kill_switch_code: lambda_.Code,
+    openapi_text: str | None = None,
 ) -> Stacks:
     if openapi_text is None:
         openapi_text = OPENAPI.read_text(encoding="utf-8")
@@ -477,6 +498,7 @@ def build(
         config=config,
         base=base,
         api_code=api_code,
+        kill_switch_code=kill_switch_code,
         openapi_text=openapi_text,
         env=env,
     )

@@ -33,7 +33,8 @@ def built(config, tmp_path_factory):
     asset = tmp_path_factory.mktemp("api")
     (asset / "bootstrap").write_text("stand-in")
     app = cdk.App()
-    return stacks.build(app, config, api_code=lambda_.Code.from_asset(str(asset)))
+    code = lambda_.Code.from_asset(str(asset))
+    return stacks.build(app, config, api_code=code, kill_switch_code=code)
 
 
 @pytest.fixture(scope="module")
@@ -53,7 +54,8 @@ def test_the_stacks_pass_cloudformation_s_schema_rules(config, tmp_path):
     asset.mkdir()
     (asset / "bootstrap").write_text("stand-in")
     app = cdk.App(context=CDK_CONTEXT, outdir=str(tmp_path / "out"))
-    stacks.build(app, config, api_code=lambda_.Code.from_asset(str(asset)))
+    code = lambda_.Code.from_asset(str(asset))
+    stacks.build(app, config, api_code=code, kill_switch_code=code)
     app.synth()
 
 
@@ -337,6 +339,7 @@ def test_the_api_lambda_errors_alarm_emails_only_the_alerts_topic(api, base):
         a["Properties"]
         for a in api.find_resources("AWS::CloudWatch::Alarm").values()
         if a["Properties"].get("MetricName") == "Errors"
+        and a["Properties"]["Dimensions"][0]["Value"] == {"Ref": function_id}
     ]
     assert len(alarms) == 1
     alarm = alarms[0]
@@ -433,7 +436,11 @@ def test_an_edit_to_sfab_yaml_gives_a_new_deployment(config, tmp_path):
 
     def synth(text: str) -> str:
         built = stacks.build(
-            cdk.App(), config, api_code=lambda_.Code.from_asset(str(asset)), openapi_text=text
+            cdk.App(),
+            config,
+            api_code=lambda_.Code.from_asset(str(asset)),
+            kill_switch_code=lambda_.Code.from_asset(str(asset)),
+            openapi_text=text,
         )
         return deployment_id(Template.from_stack(built.api))
 
