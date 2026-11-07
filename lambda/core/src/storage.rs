@@ -99,24 +99,12 @@ pub trait Store: Send + Sync + 'static {
     }
 
     /// Every key under `prefix`, in order, with its size, as one S3 listing gives it, so a
-    /// zero-byte takedown marker can be told apart without opening it. This default opens each
-    /// object, which is right but slow, for test fakes that wrap another store.
+    /// zero-byte takedown marker can be told apart without opening it.
     fn list_sized(
         &self,
         bucket: Bucket,
         prefix: &str,
-    ) -> impl Future<Output = Result<Vec<Listed>, StoreError>> + Send {
-        async move {
-            let mut listed = Vec::new();
-            for key in self.list(bucket, prefix).await? {
-                if let Some(object) = self.get(bucket, &key).await? {
-                    let size = object.body.len() as u64;
-                    listed.push(Listed { key, size });
-                }
-            }
-            Ok(listed)
-        }
-    }
+    ) -> impl Future<Output = Result<Vec<Listed>, StoreError>> + Send;
 }
 
 /// One page of a listing.

@@ -7,7 +7,9 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use sfab_core::gate::Call;
 use sfab_core::id::AgentId;
 use sfab_core::proof::{self, Request};
-use sfab_core::storage::{Bucket, Condition, MemoryStore, Metadata, Object, Store, StoreError};
+use sfab_core::storage::{
+    Bucket, Condition, Listed, MemoryStore, Metadata, Object, Store, StoreError,
+};
 use sfab_identity::{Identity, List};
 use sfab_messaging::Messaging;
 use sfab_takedown::{Mode, execute, plan};
@@ -405,6 +407,10 @@ impl Store for Flaky {
 
     async fn list(&self, bucket: Bucket, prefix: &str) -> Result<Vec<String>, StoreError> {
         self.inner.list(bucket, prefix).await
+    }
+
+    async fn list_sized(&self, bucket: Bucket, prefix: &str) -> Result<Vec<Listed>, StoreError> {
+        self.inner.list_sized(bucket, prefix).await
     }
 }
 

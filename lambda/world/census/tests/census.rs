@@ -7,7 +7,9 @@ use serde_json::{Value, json};
 use sfab_census::{Census, snapshot};
 use sfab_core::id::AgentId;
 use sfab_core::problem::{Problem, Reply};
-use sfab_core::storage::{Bucket, Condition, MemoryStore, Metadata, Object, Store, StoreError};
+use sfab_core::storage::{
+    Bucket, Condition, Listed, MemoryStore, Metadata, Object, Store, StoreError,
+};
 
 const AS_OF: &str = "2026-11-07T00:05:00Z";
 
@@ -40,6 +42,10 @@ impl Store for ListOnlyWorld {
 
     async fn list(&self, bucket: Bucket, prefix: &str) -> Result<Vec<String>, StoreError> {
         self.0.list(bucket, prefix).await
+    }
+
+    async fn list_sized(&self, bucket: Bucket, prefix: &str) -> Result<Vec<Listed>, StoreError> {
+        self.0.list_sized(bucket, prefix).await
     }
 }
 
