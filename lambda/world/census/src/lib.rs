@@ -25,7 +25,8 @@ pub const PARALLEL: usize = 50;
 /// The route's path, which `next` repeats with `?page=`.
 pub const RESIDENTS_PATH: &str = "/v1/world/residents";
 const NOT_BUILT_YET: &str = "not-built-yet";
-/// The largest page number a token may name: more than a billion residents.
+/// The most digits a page token may have: up to page 9,999,999, which at `PAGE_SIZE` is about 10
+/// billion residents.
 const MAX_PAGE_DIGITS: usize = 7;
 
 const CENSUS_KEY: &str = "world/census.json";
