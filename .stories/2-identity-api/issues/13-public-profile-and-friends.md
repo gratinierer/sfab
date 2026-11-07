@@ -13,7 +13,9 @@ Stage 3. `spec.md` "Public profile" and "Friends and blocks".
   always rebuilt from a fresh read after the write.
 - `evolve` and the friends and blocked routes rewriting the copy when a public field changes.
 - The publishable fields kept in one list, so `.stories/4-life-in-the-world/` can add `vouches` and
-  `address`, and the home routes can rewrite the copy, without changing these routes.
+  `address`, and the home routes can rewrite the copy, without changing these routes. Until then the
+  publication holds only `name`, `whoiam` and `friends`, not the five of `spec.md`'s example. Filed from
+  code review C116.
 - `/identity/self/friends` and `/identity/self/blocked`, on `contacts.json`, paged with `?page=` and `next`, with conditional writes and
   limits of 100 each, with `409` for a 101st entry. Blocking removes a friend.
 - These routes in `sfab.yaml` with origin key `security` and a `Proof` on the three `PUT`s, in
