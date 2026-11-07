@@ -89,6 +89,8 @@ class FakeApi:
         self.keep_blocked_friends_public = False
         self.ignore_unpublish = False
         self.stale_friends: dict[str, str] = {}
+        # Federation requests: domain -> token.
+        self.federation: dict[str, str] = {}
 
     def __call__(self, request: Request) -> Response:
         self.requests.append(request)
@@ -115,6 +117,9 @@ class FakeApi:
             ("GET", "/v1/world/constitution"),
             ("GET", "/v1/world/census"),
             ("GET", "/v1/world/residents"),
+            ("GET", "/v1/federation/world"),
+            ("GET", "/v1/federation/worlds"),
+            ("POST", "/v1/federation/requests"),
             ("POST", "/v1/identity/birth"),
             ("PUT", "/v1/identity/evolve"),
             ("GET", "/v1/identity/self"),
@@ -144,6 +149,19 @@ class FakeApi:
             return "census", ok(200, census)
         if path == "/v1/world/residents":
             return "residents", ok(200, {"items": sorted(self.claims), "next": None})
+        if path == "/v1/federation/world":
+            return "federation world", ok(
+                200,
+                {
+                    "domain": API_HOST.removeprefix("https://api."),
+                    "name": "sfab",
+                    "constitution": f"{API_HOST}/v1/world/constitution",
+                    "api": f"{API_HOST}/v1/openapi.yaml",
+                    "contact": "abuse@example.invalid",
+                },
+            )
+        if path == "/v1/federation/worlds":
+            return "federation worlds", ok(200, {"items": [], "next": None})
         # The gateway's validator, with `additionalProperties: false`.
         if r.method in ("POST", "PUT") and path != "/v1/identity/reclaim" and not contact:
             try:
@@ -151,6 +169,8 @@ class FakeApi:
             except ValueError:
                 return "malformed body", problem(400, detail="Invalid request body")
             allowed = {"name", "whoiam"} if path.endswith("birth") else {"whoiam"}
+            if path.endswith("federation/requests"):
+                allowed = {"domain"}
             if path.endswith("publication"):
                 allowed = set(PUBLISHABLE)
                 values = body.values() if isinstance(body, dict) else [None]
@@ -180,6 +200,12 @@ class FakeApi:
                 )
         if about:
             return self._aboutme(about["id"])
+        if path == "/v1/federation/requests":
+            domain = json.loads(r.body)["domain"]
+            if domain in self.federation:
+                return "federation request", ok(200, self._token_reply(domain))
+            self.federation[domain] = f"{len(self.federation):032x}"
+            return "federation request", ok(202, self._token_reply(domain))
         if path == "/v1/identity/birth":
             if digest in self.used:
                 return "birth replay", problem(409, "already-exists")
@@ -251,6 +277,17 @@ class FakeApi:
         kind = path.rsplit("/", 1)[1]
         items = [{"id": i, "added_at": "2026-11-05T00:00:00Z"} for i in lists[kind]]
         return f"read {kind}", ok(200, {"items": items, "next": None})
+
+    def _token_reply(self, domain: str) -> dict:
+        token = self.federation[domain]
+        return {
+            "domain": domain,
+            "token": token,
+            "url": f"https://{domain}/.well-known/sfab-federation/{token}",
+            "expires_at": "2026-11-08T00:00:00Z",
+            "instructions": "Publish it",
+            "manual": "https://github.com/gratinierer/sfab/blob/main/docs/federation.md",
+        }
 
     def _settings(self, agent: str) -> dict:
         return {f: f in self.public[agent] for f in PUBLISHABLE}

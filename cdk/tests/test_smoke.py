@@ -43,6 +43,9 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "constitution",
         "census",
         "residents",
+        "federation world",
+        "federation worlds",
+        "federation request",
         "outside v1",
         "unknown route",
         "no proof",
@@ -68,7 +71,8 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "execute-api no key",
         "execute-api wrong key",
     }
-    assert len(api.requests) <= 35
+    # About 35, plus the three federation routes: still well under WAF's 100 per 5 minutes.
+    assert len(api.requests) <= 38
 
 
 def test_paces_one_request_every_4_seconds():
@@ -127,6 +131,14 @@ JSON = {"content-type": "application/json", "cache-control": "no-store"}
         ("census", problem(404, "about:blank"), "GET /v1/world/census"),
         ("residents", ok(200, {"items": []}), "GET /v1/world/residents"),
         ("residents", problem(404, "about:blank"), "GET /v1/world/residents"),
+        (
+            "federation world",
+            ok(200, {"domain": "elsewhere.example", "name": "x"}),
+            "GET /v1/federation/world",
+        ),
+        ("federation worlds", ok(200, {"items": []}), "GET /v1/federation/worlds"),
+        ("federation request", ok(202, {"token": "short"}), "federation request"),
+        ("federation request", problem(503, retry_after="x"), "federation request"),
         (
             "openapi",
             Response(200, {"content-type": "application/yaml"}, b"openapi: 3.0.1\n"),
@@ -220,6 +232,7 @@ def test_production_births_nothing_and_writes_only_privately():
     assert "birth" not in api.labels
     assert "reclaim" not in api.labels
     writes = {(r.method, r.url) for r in api.requests if r.method in ("POST", "PUT")}
+    # No federation request either: it would hold one of the 100 places for 3 days.
     assert writes == {
         ("POST", f"{API_HOST}/v1/identity/birth"),  # with no proof, so it writes nothing
         ("PUT", f"{API_HOST}/v1/identity/evolve"),
@@ -233,6 +246,8 @@ def test_production_births_nothing_and_writes_only_privately():
         "constitution",
         "census",
         "residents",
+        "federation world",
+        "federation worlds",
         "outside v1",
         "unknown route",
         "no proof",
@@ -255,6 +270,15 @@ def test_production_births_nothing_and_writes_only_privately():
     } <= set(api.labels)
     assert "publish" not in api.labels
     assert api.identities[SMOKE_ID] == {"name": "smoke", "whoiam": SMOKE_WHOIAM}
+
+
+def test_the_federation_request_is_for_a_subdomain_nobody_else_can_own_and_may_repeat():
+    clock = Clock()
+    api = FakeApi(clock)
+
+    assert smoke(api, clock).failures == []
+    assert smoke(api, clock).failures == [], "a rerun gets the same token with 200"
+    assert list(api.federation) == ["smoke-federation.example.invalid"]
 
 
 def test_a_blocked_friend_left_in_the_copy_fails():

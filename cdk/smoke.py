@@ -53,6 +53,10 @@ UNKNOWN_ID = "aaaaaaaaaaaa"
 START = "/v1/openapi.yaml"
 _SECRET = re.compile(r"[A-Za-z0-9_-]{43}")
 _ID = re.compile(r"[a-z2-7]{12}")
+_TOKEN = re.compile(r"[0-9a-f]{32}")
+# The federation request's domain, under this world's own, so nobody else can ever own it. It
+# has no host, so it's never verified, and it expires after 3 days (spec.md "Testing").
+SMOKE_FEDERATION_LABEL = "smoke-federation"
 BLOCKED_MESSAGE = (
     "Blocked: WAF's plain 403, from the rate limit on this IP or because the API is "
     "stopped. Wait at least 5 minutes and rerun. A stop lasts until the owner restarts the API."
@@ -182,6 +186,7 @@ def run(
                 credential = _identity(s, credential, birthed=True)
             if credential:
                 _profile(s, credential, public=True)
+            _request_federation(s)
         _execute_api(s)
     except Blocked:
         log(BLOCKED_MESSAGE)
@@ -198,6 +203,7 @@ def _public(s: _Session) -> None:
         check=lambda r: None if b"openapi:" in r.body else "not an OpenAPI document",
     )
     _world(s)
+    _federation_directory(s)
     s.check(
         "outside /v1/: the CloudFront Function's 404",
         s.api("GET", "/"),
@@ -273,6 +279,50 @@ def _world(s: _Session) -> None:
             s.check(f"GET {path}", response, 404, problem="not-built-yet")
         else:
             s.check(f"GET {path}", response, 200, check=check)
+
+
+def _world_domain(s: _Session) -> str:
+    return s.target.api_url.removeprefix("https://").removeprefix("api.")
+
+
+def _federation_directory(s: _Session) -> None:
+    """This world's directory entry and the approved worlds, which write nothing."""
+    domain = _world_domain(s)
+
+    def world(r: Response) -> str | None:
+        body = _json(r)
+        if body.get("domain") != domain:
+            return f"domain {body.get('domain')!r}, not {domain!r}"
+        missing = [k for k in ("name", "constitution", "contact") if not body.get(k)]
+        return f"no {', '.join(missing)}" if missing else None
+
+    s.check("GET /v1/federation/world", s.api("GET", "/v1/federation/world"), 200, check=world)
+
+    def worlds(r: Response) -> str | None:
+        body = _json(r)
+        if not isinstance(body.get("items"), list) or "next" not in body:
+            return "not a list with items and next"
+        return None
+
+    s.check("GET /v1/federation/worlds", s.api("GET", "/v1/federation/worlds"), 200, check=worlds)
+
+
+def _request_federation(s: _Session) -> None:
+    """A federation request for a subdomain of this world. A rerun gets the same token, with
+    `200`. Only before launch: it holds one of the 100 places for 3 days."""
+    domain = f"{SMOKE_FEDERATION_LABEL}.{_world_domain(s)}"
+    body = f'{{"domain":"{domain}"}}'.encode()
+    response, _, _ = s.write("POST", "/v1/federation/requests", body)
+
+    def token(r: Response) -> str | None:
+        found = _json(r)
+        if not _TOKEN.fullmatch(str(found.get("token", ""))):
+            return "no token of 32 hex characters"
+        if found.get("domain") != domain:
+            return f"domain {found.get('domain')!r}, not {domain!r}"
+        return None
+
+    s.check("federation request", response, (200, 202), check=token)
 
 
 def _birth_body() -> bytes:
