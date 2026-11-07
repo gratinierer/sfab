@@ -25,3 +25,6 @@ bearer:
   - GET /identity/self/blocked
   - PUT /identity/self/blocked/{id}
   - DELETE /identity/self/blocked/{id}
+  - POST /identity/{id}/messages
+  - GET /identity/self/messages
+  - DELETE /identity/self/messages/{message_id}

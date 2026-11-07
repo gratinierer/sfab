@@ -16,7 +16,7 @@ use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 
 use crate::profile::{Field, MAX_TRIES};
-use crate::{Identity, Secret, contacts_key, storage_failure, to_json};
+use crate::{Identity, Secret, contacts_key, identity_key, storage_failure, to_json};
 
 /// The most entries each list holds; a 101st gets `409` `list-full`.
 pub const MAX_ENTRIES: usize = 100;
@@ -91,6 +91,17 @@ impl Contacts {
             blocked: Vec::new(),
         }
     }
+}
+
+/// How a recipient lists a sender, for messages: `.stories/2-identity-api/spec.md` "Messages".
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Relation {
+    /// The recipient lists the sender as a friend.
+    Friend,
+    /// The recipient blocks the sender.
+    Blocked,
+    /// Anyone else.
+    Stranger,
 }
 
 fn entry_body(entry: &Entry) -> Value {
@@ -196,6 +207,32 @@ impl<S: Store> Identity<S> {
         let page = offset_page(entries.len(), page, OFFSET_PAGE, list.path())?;
         let items: Vec<Value> = entries[page.range].iter().map(entry_body).collect();
         Ok(Reply::ok(json!({"items": items, "next": page.next})))
+    }
+
+    /// How `recipient` lists `sender`, from one read of its `contacts.json`. With no
+    /// `contacts.json`, `identity.json` says whether the recipient exists: `None` when it doesn't.
+    pub async fn relation(
+        &self,
+        recipient: &AgentId,
+        sender: &AgentId,
+    ) -> Result<Option<Relation>, Problem> {
+        let (contacts, etag) = self.read_contacts(recipient).await?;
+        if etag.is_none() {
+            let identity = self
+                .store
+                .get(Bucket::Identities, &identity_key(recipient))
+                .await
+                .map_err(|e| storage_failure("reading an identity", &e))?;
+            return Ok(identity.map(|_| Relation::Stranger));
+        }
+        let relation = if contacts.find(List::Blocked, sender).is_some() {
+            Relation::Blocked
+        } else if contacts.find(List::Friends, sender).is_some() {
+            Relation::Friend
+        } else {
+            Relation::Stranger
+        };
+        Ok(Some(relation))
     }
 
     /// `contacts.json` and its ETag, or an empty one and `None` when there's none yet.

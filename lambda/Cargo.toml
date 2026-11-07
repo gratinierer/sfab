@@ -2,7 +2,7 @@
 # Later tickets add job/ and world/<name>/.
 [workspace]
 resolver = "3"
-members = ["api", "core", "identity", "job", "killswitch", "takedown", "world/census", "world/constitution", "world/federation"]
+members = ["api", "core", "identity", "job", "killswitch", "messaging", "takedown", "world/census", "world/constitution", "world/federation"]
 
 [workspace.package]
 edition = "2024"

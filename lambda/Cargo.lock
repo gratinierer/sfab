@@ -2225,6 +2225,7 @@ dependencies = [
  "sfab-core",
  "sfab-federation",
  "sfab-identity",
+ "sfab-messaging",
  "tokio",
  "tower",
  "tracing",
@@ -2337,6 +2338,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "sfab-messaging"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sfab-core",
+ "sfab-identity",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "sfab-takedown"
 version = "0.1.0"
 dependencies = [
@@ -2345,6 +2358,7 @@ dependencies = [
  "serde_json",
  "sfab-core",
  "sfab-identity",
+ "sfab-messaging",
  "tokio",
 ]
 
