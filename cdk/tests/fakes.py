@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 
 from api_client import Request, Response, agent_id, leading_zero_bits
 
@@ -61,6 +62,11 @@ SMOKE_ID = "smokesmokesm"
 SMOKE_CREDENTIAL = f"{SMOKE_ID}.{'c' * 43}"
 
 
+PUBLISHABLE = ("name", "whoiam", "friends")
+_CONTACT = re.compile(r"/v1/identity/self/(?P<list>friends|blocked)/(?P<id>[a-z2-7]{12})")
+_ABOUTME = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/aboutme")
+
+
 class FakeApi:
     """Stage 1 as deployed, behind CloudFront and API Gateway: just enough of each layer for the
     smoke script to tell a working API from a broken one. A test breaks one behaviour at a time
@@ -77,6 +83,12 @@ class FakeApi:
         self.override: dict[str, Response] = {}
         self.requests: list[Request] = []
         self.labels: list[str] = []
+        self.public: dict[str, set[str]] = {SMOKE_ID: set()}
+        self.contacts: dict[str, dict[str, list[str]]] = {}
+        # Broken behaviours the smoke script must catch.
+        self.keep_blocked_friends_public = False
+        self.ignore_unpublish = False
+        self.stale_friends: dict[str, str] = {}
 
     def __call__(self, request: Request) -> Response:
         self.requests.append(request)
@@ -104,8 +116,16 @@ class FakeApi:
             ("PUT", "/v1/identity/evolve"),
             ("GET", "/v1/identity/self"),
             ("POST", "/v1/identity/reclaim"),
+            ("GET", "/v1/identity/self/publication"),
+            ("PUT", "/v1/identity/self/publication"),
+            ("GET", "/v1/identity/self/friends"),
+            ("GET", "/v1/identity/self/blocked"),
         }
-        if (r.method, path) not in known:
+        contact = _CONTACT.fullmatch(path)
+        about = _ABOUTME.fullmatch(path)
+        if (r.method, path) not in known and not (
+            (contact and r.method in ("PUT", "DELETE")) or (about and r.method == "GET")
+        ):
             return "unknown route", problem(404, detail=START)
         if path == "/v1/openapi.yaml":
             return "openapi", Response(
@@ -114,12 +134,17 @@ class FakeApi:
                 b"openapi: 3.0.1\n",
             )
         # The gateway's validator, with `additionalProperties: false`.
-        if r.method in ("POST", "PUT") and path != "/v1/identity/reclaim":
+        if r.method in ("POST", "PUT") and path != "/v1/identity/reclaim" and not contact:
             try:
                 body = json.loads(r.body)
             except ValueError:
                 return "malformed body", problem(400, detail="Invalid request body")
             allowed = {"name", "whoiam"} if path.endswith("birth") else {"whoiam"}
+            if path.endswith("publication"):
+                allowed = set(PUBLISHABLE)
+                values = body.values() if isinstance(body, dict) else [None]
+                if not all(isinstance(v, bool) for v in values):
+                    return "extra field", problem(400, detail="Invalid request body")
             if not isinstance(body, dict) or set(body) - allowed:
                 return "extra field", problem(400, detail="Invalid request body")
         # The Lambda: the proof, then the body limit, then the route.
@@ -142,6 +167,8 @@ class FakeApi:
                 return "body over 32 KB", problem(
                     400, title="The request body is over 32 KB (32,768 bytes)"
                 )
+        if about:
+            return self._aboutme(about["id"])
         if path == "/v1/identity/birth":
             if digest in self.used:
                 return "birth replay", problem(409, "already-exists")
@@ -150,6 +177,7 @@ class FakeApi:
             claim, recovery = self._secret(), self._secret()
             self.claims[new_id] = (claim, recovery)
             self.identities[new_id] = json.loads(r.body)
+            self.public[new_id] = set()
             return "birth", ok(
                 201,
                 {
@@ -178,4 +206,58 @@ class FakeApi:
         if path == "/v1/identity/evolve":
             identity["whoiam"] = json.loads(r.body)["whoiam"]
             return "evolve", ok(200, {"id": agent, **identity})
-        return "self", ok(200, {"id": agent, **identity})
+        if path == "/v1/identity/self/publication":
+            if r.method == "PUT":
+                wanted = {k for k, v in json.loads(r.body).items() if v}
+                if not (self.ignore_unpublish and not wanted):
+                    self.public[agent] = wanted
+                return "publish", ok(200, self._settings(agent))
+            return "read publication", ok(200, self._settings(agent))
+        if path == "/v1/identity/self":
+            return "self", ok(200, {"id": agent, **identity})
+        lists = self.contacts.setdefault(agent, {"friends": [], "blocked": []})
+        if contact:
+            kind, other = contact["list"], contact["id"]
+            entries = lists[kind]
+            label = {
+                ("friends", "PUT"): "add friend",
+                ("friends", "DELETE"): "remove friend",
+                ("blocked", "PUT"): "block",
+                ("blocked", "DELETE"): "unblock",
+            }[(kind, r.method)]
+            if r.method == "DELETE":
+                if other in entries:
+                    entries.remove(other)
+                return label, ok(200, {"id": other})
+            if other in entries:
+                return label, ok(200, {"id": other, "added_at": "2026-11-05T00:00:00Z"})
+            entries.append(other)
+            if kind == "blocked" and other in lists["friends"]:
+                lists["friends"].remove(other)
+                if self.keep_blocked_friends_public:
+                    self.stale_friends[agent] = other
+            return label, ok(201, {"id": other, "added_at": "2026-11-05T00:00:00Z"})
+        kind = path.rsplit("/", 1)[1]
+        items = [{"id": i, "added_at": "2026-11-05T00:00:00Z"} for i in lists[kind]]
+        return f"read {kind}", ok(200, {"items": items, "next": None})
+
+    def _settings(self, agent: str) -> dict:
+        return {f: f in self.public[agent] for f in PUBLISHABLE}
+
+    def _aboutme(self, agent: str):
+        public = self.public.get(agent)
+        if not public:
+            return "aboutme 404", problem(404)
+        copy = {"id": agent}
+        identity = self.identities[agent]
+        if "name" in public:
+            copy["name"] = identity["name"]
+        if "whoiam" in public and "whoiam" in identity:
+            copy["whoiam"] = identity["whoiam"]
+        if "friends" in public:
+            friends = list(self.contacts.get(agent, {}).get("friends", []))
+            stale = self.stale_friends.get(agent)
+            if stale:
+                friends.append(stale)
+            copy["friends"] = friends
+        return "aboutme", ok(200, copy)
