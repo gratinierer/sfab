@@ -514,8 +514,9 @@ them all in the order below. It needs the owner's AWS credentials:
 - **Dry run by default:** it only shows what it would remove, until given `--execute`. For a
   window, this shows how many real agents it would catch.
 - **Order:** (1) replace the claim with an empty marker and delete `aboutme.json` straight away, so
-  private access and public reading both end at once. (2) Wait at least the Lambda timeout, once per
-  batch, so any write in flight finishes. (3) Read the agent's own files to find what points elsewhere,
+  private access and public reading both end at once. (2) Wait at least the API Lambda's timeout of 10 seconds, once per
+  batch, so any write in flight finishes; CDK's default of 3 seconds is too short for a request's few
+  S3 calls, so the stack sets it, and the program refuses a shorter `--wait-seconds`. (3) Read the agent's own files to find what points elsewhere,
   such as a home's lane pointer. (4) Handle every other location. (5) Delete `identities/<id>/` last,
   then `aboutme.json` again in case a write in flight recreated it. The files that point elsewhere go
   last, so a rerun can always find the pointers.
