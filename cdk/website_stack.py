@@ -10,14 +10,12 @@ from pathlib import Path
 import aws_cdk as cdk
 from aws_cdk import aws_cloudfront as cloudfront
 from aws_cdk import aws_cloudfront_origins as origins
-from aws_cdk import aws_pricingplanmanager as pricingplanmanager
 from aws_cdk import aws_route53 as route53
-from aws_cdk import aws_route53_targets as targets
 from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_s3_deployment as s3deploy
-from aws_cdk import aws_wafv2 as wafv2
 from constructs import Construct
 
+import front_door
 from sfab_config import Config
 
 # Per IP per 5 minutes: far above normal browsing, and stops the simplest flood for free.
@@ -51,15 +49,6 @@ VIEWER_FUNCTION = """function handler(event) {
 """
 
 
-def _visibility(metric_name: str) -> wafv2.CfnWebACL.VisibilityConfigProperty:
-    # Metrics give blocked counts for free; samples stay off, as on the API.
-    return wafv2.CfnWebACL.VisibilityConfigProperty(
-        cloud_watch_metrics_enabled=True,
-        metric_name=metric_name,
-        sampled_requests_enabled=False,
-    )
-
-
 class WebsiteStack(cdk.Stack):
     """A private bucket behind its own CloudFront, web ACL and Free plan, at the apex domain.
     It stays up during a stop: the kill switch touches only the API."""
@@ -87,27 +76,11 @@ class WebsiteStack(cdk.Stack):
             enforce_ssl=True,
         )
 
-        web_acl = wafv2.CfnWebACL(
+        web_acl = front_door.rate_limited_web_acl(
             self,
-            "WebAcl",
-            scope="CLOUDFRONT",
-            default_action=wafv2.CfnWebACL.DefaultActionProperty(allow={}),
-            visibility_config=_visibility("sfabWebsite"),
-            rules=[
-                wafv2.CfnWebACL.RuleProperty(
-                    name="RatePerIp",
-                    priority=0,
-                    statement=wafv2.CfnWebACL.StatementProperty(
-                        rate_based_statement=wafv2.CfnWebACL.RateBasedStatementProperty(
-                            limit=WEBSITE_RATE_LIMIT,
-                            evaluation_window_sec=WEBSITE_RATE_WINDOW_SECONDS,
-                            aggregate_key_type="IP",
-                        )
-                    ),
-                    action=wafv2.CfnWebACL.RuleActionProperty(block={}),
-                    visibility_config=_visibility("sfabWebsiteRatePerIp"),
-                )
-            ],
+            metric_name="sfabWebsite",
+            limit=WEBSITE_RATE_LIMIT,
+            window_seconds=WEBSITE_RATE_WINDOW_SECONDS,
         )
 
         paths = cloudfront.Function(
@@ -148,19 +121,7 @@ class WebsiteStack(cdk.Stack):
         )
 
         # Its own Free plan: each plan covers one distribution. The zone is in the API's plan.
-        pricingplanmanager.CfnSubscription(
-            self,
-            "FlatRatePlan",
-            plan_family="CloudFront",
-            plan_tier="FREE",
-            usage_level="DEFAULT",
-            resource_arns=[distribution.distribution_arn, web_acl.attr_arn],
-        )
-
-        target = route53.RecordTarget.from_alias(targets.CloudFrontTarget(distribution))
-        route53.ARecord(
-            self, "ApexA", zone=hosted_zone, record_name=config.domain_name, target=target
-        )
-        route53.AaaaRecord(
-            self, "ApexAaaa", zone=hosted_zone, record_name=config.domain_name, target=target
+        front_door.free_plan(self, [distribution.distribution_arn, web_acl.attr_arn])
+        front_door.alias_records(
+            self, "Apex", zone=hosted_zone, record_name=config.domain_name, distribution=distribution
         )

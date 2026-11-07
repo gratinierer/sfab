@@ -20,18 +20,16 @@ from aws_cdk import aws_cloudfront as cloudfront
 from aws_cdk import aws_cloudfront_origins as origins
 from aws_cdk import aws_cloudwatch as cloudwatch
 from aws_cdk import aws_cloudwatch_actions as cw_actions
-from aws_cdk import aws_pricingplanmanager as pricingplanmanager
 from aws_cdk import aws_route53 as route53
-from aws_cdk import aws_route53_targets as targets
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_sns as sns
 from aws_cdk import aws_sns_subscriptions as subs
-from aws_cdk import aws_wafv2 as wafv2
 from constructs import Construct
 
+import front_door
 import sfab_config
 from kill_switch import KillSwitch
 from sfab_config import Config
@@ -135,15 +133,6 @@ def outside_v1_function(host: str) -> str:
   }};
 }}
 """
-
-
-def _waf_visibility(metric_name: str) -> wafv2.CfnWebACL.VisibilityConfigProperty:
-    # Metrics give blocked counts for free; samples stay off (spec.md "Logging").
-    return wafv2.CfnWebACL.VisibilityConfigProperty(
-        cloud_watch_metrics_enabled=True,
-        metric_name=metric_name,
-        sampled_requests_enabled=False,
-    )
 
 
 class BaseStack(cdk.Stack):
@@ -424,30 +413,12 @@ class ApiStack(cdk.Stack):
 
     def _front_door(self, config: Config, base: BaseStack) -> None:
         """CloudFront on the Free flat-rate plan, with WAF, in front of the REST API."""
-        self.web_acl = wafv2.CfnWebACL(
+        # The kill switch flips its default action to Block (kill_switch.py).
+        self.web_acl = front_door.rate_limited_web_acl(
             self,
-            "WebAcl",
-            scope="CLOUDFRONT",
-            # The kill switch flips this to Block (kill_switch.py).
-            default_action=wafv2.CfnWebACL.DefaultActionProperty(allow={}),
-            # Samples return each header for 3 hours, which could expose live claims.
-            visibility_config=_waf_visibility("sfabApi"),
-            rules=[
-                wafv2.CfnWebACL.RuleProperty(
-                    name="RatePerIp",
-                    priority=0,
-                    statement=wafv2.CfnWebACL.StatementProperty(
-                        rate_based_statement=wafv2.CfnWebACL.RateBasedStatementProperty(
-                            limit=WAF_RATE_LIMIT,
-                            evaluation_window_sec=WAF_RATE_WINDOW_SECONDS,
-                            aggregate_key_type="IP",
-                        )
-                    ),
-                    # No custom response: WAF's plain 403 is what agents read as "blocked".
-                    action=wafv2.CfnWebACL.RuleActionProperty(block={}),
-                    visibility_config=_waf_visibility("sfabApiRatePerIp"),
-                )
-            ],
+            metric_name="sfabApi",
+            limit=WAF_RATE_LIMIT,
+            window_seconds=WAF_RATE_WINDOW_SECONDS,
         )
 
         not_found = cloudfront.Function(
@@ -486,24 +457,22 @@ class ApiStack(cdk.Stack):
             ),
         )
 
-        zone = base.hosted_zone
         # Free: no overage charges, WAF included, and the zone's fee and queries covered.
-        pricingplanmanager.CfnSubscription(
+        front_door.free_plan(
             self,
-            "FlatRatePlan",
-            plan_family="CloudFront",
-            plan_tier="FREE",
-            usage_level="DEFAULT",
-            resource_arns=[
+            [
                 self.distribution.distribution_arn,
                 self.web_acl.attr_arn,
-                zone.hosted_zone_arn,
+                base.hosted_zone.hosted_zone_arn,
             ],
         )
-
-        target = route53.RecordTarget.from_alias(targets.CloudFrontTarget(self.distribution))
-        route53.ARecord(self, "ApiA", zone=zone, record_name=api_host(config), target=target)
-        route53.AaaaRecord(self, "ApiAaaa", zone=zone, record_name=api_host(config), target=target)
+        front_door.alias_records(
+            self,
+            "Api",
+            zone=base.hosted_zone,
+            record_name=api_host(config),
+            distribution=self.distribution,
+        )
 
     def _grant_storage(self, base: BaseStack) -> None:
         """spec.md "Architecture": only these prefixes, never `federation/verified/`.
