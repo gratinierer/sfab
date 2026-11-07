@@ -111,22 +111,31 @@ class _Session:
         proof, digest = solve_proof(method, path, body, caller=caller, now=now, bits=self.bits)
         return self.api(method, path, _headers(credential, proof, body), body), proof, digest
 
-    def check(self, name: str, response: Response, status: int | tuple, **expect) -> bool:
+    def check(
+        self,
+        name: str,
+        response: Response,
+        status: int | tuple[int, ...],
+        *,
+        problem: bool | str = False,
+        api: bool = True,
+        verify: Callable[[Response], str | None] | None = None,
+    ) -> bool:
         """Records a failure unless the response has this status and every expectation holds.
-        `problem` is True, or the `type` the `problem+json` body must have. `check` is a
-        function of the response that returns what's wrong, or None."""
+        `problem` is True, or the `type` the `problem+json` body must have. `api` is False for
+        a response that doesn't come from the API, so needn't send `Cache-Control: no-store`.
+        `verify` is a function of the response that returns what's wrong, or None."""
         wrong = []
         if response.status not in (status if isinstance(status, tuple) else (status,)):
             wrong.append(f"status {response.status}, not {status}")
-        problem = expect.get("problem")
         if problem and not is_problem_json(response):
             wrong.append("not problem+json")
         elif isinstance(problem, str) and response.json().get("type") != problem:
             wrong.append(f"type {response.json().get('type')!r}, not {problem!r}")
-        if expect.get("api", True) and response.headers.get("cache-control") != "no-store":
+        if api and response.headers.get("cache-control") != "no-store":
             wrong.append("no Cache-Control: no-store")
-        if not wrong and expect.get("check"):
-            problem_text = expect["check"](response)
+        if not wrong and verify:
+            problem_text = verify(response)
             if problem_text:
                 wrong.append(problem_text)
         if wrong:
@@ -202,7 +211,7 @@ def _public(s: _Session) -> None:
         "GET /v1/openapi.yaml",
         s.api("GET", "/v1/openapi.yaml"),
         200,
-        check=lambda r: None if b"openapi:" in r.body else "not an OpenAPI document",
+        verify=lambda r: None if b"openapi:" in r.body else "not an OpenAPI document",
     )
     _world(s)
     _federation_directory(s)
@@ -211,7 +220,7 @@ def _public(s: _Session) -> None:
         s.api("GET", "/"),
         404,
         problem=True,
-        check=_points_to_start,
+        verify=_points_to_start,
     )
     for name, method, path in [
         ("bare /v1/", "GET", "/v1/"),
@@ -222,7 +231,7 @@ def _public(s: _Session) -> None:
             s.api(method, path),
             404,
             problem=True,
-            check=_points_to_start,
+            verify=_points_to_start,
         )
 
     body = _birth_body()
@@ -240,7 +249,7 @@ def _public(s: _Session) -> None:
             s.log(f"note: this clock is {s.clock_offset}s off the server's; using the server's")
         return None
 
-    s.check("birth without a proof", response, 400, problem=True, check=learn)
+    s.check("birth without a proof", response, 400, problem=True, verify=learn)
 
 
 def _world(s: _Session) -> None:
@@ -260,7 +269,7 @@ def _world(s: _Session) -> None:
         "GET /v1/world/constitution",
         s.api("GET", "/v1/world/constitution"),
         200,
-        check=constitution,
+        verify=constitution,
     )
 
     def census(r: Response) -> str | None:
@@ -280,7 +289,7 @@ def _world(s: _Session) -> None:
         if response.status == 404:
             s.check(f"GET {path}", response, 404, problem="not-built-yet")
         else:
-            s.check(f"GET {path}", response, 200, check=check)
+            s.check(f"GET {path}", response, 200, verify=check)
 
 
 def _world_domain(s: _Session) -> str:
@@ -298,7 +307,7 @@ def _federation_directory(s: _Session) -> None:
         missing = [k for k in ("name", "constitution", "contact") if not body.get(k)]
         return f"no {', '.join(missing)}" if missing else None
 
-    s.check("GET /v1/federation/world", s.api("GET", "/v1/federation/world"), 200, check=world)
+    s.check("GET /v1/federation/world", s.api("GET", "/v1/federation/world"), 200, verify=world)
 
     def worlds(r: Response) -> str | None:
         body = _json(r)
@@ -306,7 +315,7 @@ def _federation_directory(s: _Session) -> None:
             return "not a list with items and next"
         return None
 
-    s.check("GET /v1/federation/worlds", s.api("GET", "/v1/federation/worlds"), 200, check=worlds)
+    s.check("GET /v1/federation/worlds", s.api("GET", "/v1/federation/worlds"), 200, verify=worlds)
 
 
 def _request_federation(s: _Session) -> None:
@@ -324,7 +333,7 @@ def _request_federation(s: _Session) -> None:
             return f"domain {found.get('domain')!r}, not {domain!r}"
         return None
 
-    s.check("federation request", response, (200, 202), check=token)
+    s.check("federation request", response, (200, 202), verify=token)
 
 
 def _birth_body() -> bytes:
@@ -344,7 +353,7 @@ def _birth(s: _Session) -> str | None:
             return "claim or recovery isn't 43 characters of base64url"
         return None
 
-    if not s.check("birth", response, 201, check=secrets_and_id):
+    if not s.check("birth", response, 201, verify=secrets_and_id):
         return None
     s.log(f"     born test agent {born['id']}")
     replay = s.api("POST", "/v1/identity/birth", _headers(None, proof, body), body)
@@ -367,7 +376,7 @@ def _identity(s: _Session, credential: str, *, birthed: bool) -> str | None:
         "self, so Authorization reaches the origin",
         s.api("GET", "/v1/identity/self", _headers(credential)),
         200,
-        check=is_agent,
+        verify=is_agent,
     )
     if not birthed:
         # A test agent's run checks a refused claim after `reclaim` instead, within the budget.
@@ -384,7 +393,7 @@ def _identity(s: _Session, credential: str, *, birthed: bool) -> str | None:
         "evolve",
         response,
         200,
-        check=lambda r: None if _json(r).get("whoiam") == SMOKE_WHOIAM else "whoiam not replaced",
+        verify=lambda r: None if _json(r).get("whoiam") == SMOKE_WHOIAM else "whoiam not replaced",
     )
 
     extra = f'{{"whoiam":"{SMOKE_WHOIAM}","extra":1}}'.encode()
@@ -394,7 +403,7 @@ def _identity(s: _Session, credential: str, *, birthed: bool) -> str | None:
         response,
         400,
         problem=True,
-        check=_no_required_bits,
+        verify=_no_required_bits,
     )
 
     # Every character escaped: within the gateway's maxLength, which counts characters, but
@@ -406,7 +415,7 @@ def _identity(s: _Session, credential: str, *, birthed: bool) -> str | None:
         response,
         400,
         problem=True,
-        check=lambda r: None
+        verify=lambda r: None
         if "32 KB" in _json(r).get("title", "")
         else "not the Lambda's 32 KB refusal",
     )
@@ -433,7 +442,7 @@ def _reclaim(s: _Session, old_credential: str) -> str | None:
             return "the secrets didn't change"
         return None
 
-    if not s.check("reclaim", response, 200, check=fresh):
+    if not s.check("reclaim", response, 200, verify=fresh):
         return None
     s.check(
         "self with the old claim after reclaim",
@@ -466,53 +475,53 @@ def _profile(s: _Session, credential: str, *, public: bool) -> None:
         "read publication",
         s.api("GET", publication, _headers(credential)),
         200,
-        check=settings,
+        verify=settings,
     )
     if public:
         body = b'{"name":true,"friends":true}'
         response, _, _ = s.write("PUT", publication, body, credential=credential)
-        s.check("publish", response, 200, check=_has(friends=True, whoiam=False))
+        s.check("publish", response, 200, verify=_has(friends=True, whoiam=False))
 
     added = (200, 201) if not public else 201
     friend = f"/v1/identity/self/friends/{SMOKE_FRIEND}"
     response, _, _ = s.write("PUT", friend, b"", credential=credential)
-    s.check("add a friend", response, added, check=_has(id=SMOKE_FRIEND))
+    s.check("add a friend", response, added, verify=_has(id=SMOKE_FRIEND))
     s.check(
         "read friends",
         s.api("GET", "/v1/identity/self/friends", _headers(credential)),
         200,
-        check=_lists(SMOKE_FRIEND),
+        verify=_lists(SMOKE_FRIEND),
     )
     if public:
         s.check(
             "aboutme with the friend",
             s.api("GET", me),
             200,
-            check=_has(id=agent, name=SMOKE_NAME, friends=[SMOKE_FRIEND]),
+            verify=_has(id=agent, name=SMOKE_NAME, friends=[SMOKE_FRIEND]),
         )
 
     blocked = f"/v1/identity/self/blocked/{SMOKE_FRIEND}"
     response, _, _ = s.write("PUT", blocked, b"", credential=credential)
-    s.check("block the friend", response, added, check=_has(id=SMOKE_FRIEND))
+    s.check("block the friend", response, added, verify=_has(id=SMOKE_FRIEND))
     if public:
         s.check(
             "aboutme without the blocked friend",
             s.api("GET", me),
             200,
-            check=_has(friends=[]),
+            verify=_has(friends=[]),
         )
     s.check(
         "read blocked",
         s.api("GET", "/v1/identity/self/blocked", _headers(credential)),
         200,
-        check=_lists(SMOKE_FRIEND),
+        verify=_lists(SMOKE_FRIEND),
     )
     s.check("unblock", s.api("DELETE", blocked, _headers(credential)), 200)
     s.check("remove the friend", s.api("DELETE", friend, _headers(credential)), 200)
 
     if public:
         response, _, _ = s.write("PUT", publication, b"{}", credential=credential)
-        s.check("unpublish", response, 200, check=_has(name=False, friends=False))
+        s.check("unpublish", response, 200, verify=_has(name=False, friends=False))
         s.check("aboutme after unpublishing", s.api("GET", me), 404, problem=True)
     if not public:
         # A test agent's run checks a `404` after unpublishing instead, within the budget.
@@ -530,7 +539,7 @@ def _messages(s: _Session, credential: str) -> None:
     agent = credential.split(".", 1)[0]
     body = b'{"text":"smoke"}'
     response, _, _ = s.write("POST", f"/v1/identity/{agent}/messages", body, credential=credential)
-    s.check("knock on itself", response, 202, check=_has(to=agent, kind="knock"))
+    s.check("knock on itself", response, 202, verify=_has(to=agent, kind="knock"))
     knock = f"k-{agent}"
 
     def holds_the_knock(r: Response) -> str | None:
@@ -543,13 +552,13 @@ def _messages(s: _Session, credential: str) -> None:
         "read knocks",
         s.api("GET", "/v1/identity/self/messages?kind=knock", _headers(credential)),
         200,
-        check=holds_the_knock,
+        verify=holds_the_knock,
     )
     s.check(
         "remove the knock",
         s.api("DELETE", f"/v1/identity/self/messages/{knock}", _headers(credential)),
         200,
-        check=_has(message_id=knock),
+        verify=_has(message_id=knock),
     )
 
 
