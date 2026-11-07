@@ -180,7 +180,7 @@ class KillSwitch(Construct):
         ).add_alarm_action(email)
 
         # AWS documents Count's statistic as SampleCount. The function reads the API's name from API
-        # Gateway, while this uses the name CDK gives it, which issue 10's alarm check confirms.
+        # Gateway, while this uses the name CDK gives it, which issue 10 checks against the metric's data.
         warning = rest_api.metric_count(
             period=cdk.Duration.days(1), statistic="SampleCount"
         ).create_alarm(
