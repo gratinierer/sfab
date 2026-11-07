@@ -213,3 +213,89 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
     assert_taken_down(&w, &agent, "2026-11-05T12:00:00Z").await;
     assert_eq!(keys_of(&w.store, &bystander.id), bystander_keys);
 }
+
+/// Every key in both buckets with its body.
+fn snapshot(store: &MemoryStore) -> Vec<(String, Vec<u8>)> {
+    [Bucket::Claims, Bucket::Identities]
+        .into_iter()
+        .flat_map(|b| {
+            store
+                .keys(b)
+                .into_iter()
+                .map(move |k| (k.clone(), store.object(b, &k).unwrap().body))
+        })
+        .collect()
+}
+
+const HOUR: i64 = 3_600;
+
+fn window(from: &str, to: &str) -> Mode {
+    Mode::Window {
+        from: from.to_owned(),
+        to: to.to_owned(),
+    }
+}
+
+/// Four agents born an hour apart, from 11:00; the window 12:00 to 14:00 catches the middle two.
+async fn four_agents(w: &World) -> [Agent; 4] {
+    [
+        full_agent(w, "Early", NOW - HOUR).await,
+        full_agent(w, "Flood1", NOW).await,
+        full_agent(w, "Flood2", NOW + HOUR).await,
+        full_agent(w, "Late", NOW + 2 * HOUR).await,
+    ]
+}
+
+fn flood() -> Mode {
+    window("2026-11-05T12:00:00Z", "2026-11-05T14:00:00Z")
+}
+
+fn sorted(mut keys: Vec<String>) -> Vec<String> {
+    keys.sort();
+    keys
+}
+
+fn sorted_ids<'a>(ids: impl IntoIterator<Item = &'a AgentId>) -> Vec<AgentId> {
+    let mut ids: Vec<_> = ids.into_iter().cloned().collect();
+    ids.sort();
+    ids
+}
+
+#[tokio::test]
+async fn a_dry_run_shows_the_window_and_writes_nothing() {
+    let w = world();
+    let [_, first, second, _] = four_agents(&w).await;
+    let stored = snapshot(&w.store);
+
+    let targets = plan(&*w.store, &flood()).await.unwrap();
+
+    assert_eq!(snapshot(&w.store), stored);
+    assert_eq!(
+        sorted_ids(targets.iter().map(|t| &t.id)),
+        sorted_ids([&first.id, &second.id])
+    );
+    let t = targets.iter().find(|t| t.id == first.id).unwrap();
+    assert_eq!(t.born_at.as_deref(), Some("2026-11-05T12:00:00Z"));
+    assert!(!t.taken_down);
+    let found: Vec<_> = t.found.iter().map(|(_, k)| k.clone()).collect();
+    assert_eq!(sorted(found), sorted(keys_of(&w.store, &first.id)));
+}
+
+#[tokio::test]
+async fn a_window_takes_down_everyone_born_in_it_with_one_wait() {
+    let w = world();
+    let [before, first, second, after] = four_agents(&w).await;
+    let untouched = [keys_of(&w.store, &before.id), keys_of(&w.store, &after.id)];
+
+    let targets = plan(&*w.store, &flood()).await.unwrap();
+    let waits = AtomicUsize::new(0);
+    execute(&*w.store, &targets, counting(&waits)).await.unwrap();
+
+    assert_eq!(waits.load(Ordering::SeqCst), 1);
+    assert_taken_down(&w, &first, "2026-11-05T12:00:00Z").await;
+    assert_taken_down(&w, &second, "2026-11-05T13:00:00Z").await;
+    assert_eq!(
+        [keys_of(&w.store, &before.id), keys_of(&w.store, &after.id)],
+        untouched
+    );
+}

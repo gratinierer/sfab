@@ -79,6 +79,9 @@ async fn found<S: Store>(store: &S, id: &AgentId) -> Result<Vec<(Bucket, String)
             }
         }
     }
+    // A key can sit in two locations, such as `aboutme.json` under `identities/<id>/`.
+    found.sort();
+    found.dedup();
     Ok(found)
 }
 
