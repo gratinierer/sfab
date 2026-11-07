@@ -35,6 +35,7 @@ import sfab_config
 from kill_switch import KillSwitch
 from sfab_config import Config
 from website_stack import WebsiteStack
+from world_job import WorldJob
 
 REGION = "us-east-1"
 OPENAPI = sfab_config.REPO_ROOT / "openapi" / "sfab.yaml"
@@ -287,6 +288,7 @@ class ApiStack(cdk.Stack):
         base: BaseStack,
         api_code: lambda_.Code,
         kill_switch_code: lambda_.Code,
+        job_code: lambda_.Code,
         openapi_text: str,
         **kwargs,
     ) -> None:
@@ -373,6 +375,15 @@ class ApiStack(cdk.Stack):
 
         self._front_door(config, base, origin_key=config.origin_key)
 
+        self.world_job = WorldJob(
+            self,
+            "WorldJob",
+            code=job_code,
+            identities_bucket=base.identities_bucket,
+            claims_bucket=base.claims_bucket,
+            alerts_topic=base.alerts_topic,
+        )
+
         self.kill_switch = KillSwitch(
             self,
             "KillSwitch",
@@ -381,6 +392,7 @@ class ApiStack(cdk.Stack):
             alerts_topic=base.alerts_topic,
             stop_budget_name=STOP_BUDGET_NAME,
             api_function=self.function,
+            job_function=self.world_job.function,
             rest_api=self.rest_api,
             stage_name=STAGE,
             web_acl=self.web_acl,
@@ -512,6 +524,7 @@ def build(
     config: Config,
     api_code: lambda_.Code,
     kill_switch_code: lambda_.Code,
+    job_code: lambda_.Code,
     openapi_text: str | None = None,
     website_source: Path = WEBSITE_BUILD,
 ) -> Stacks:
@@ -526,6 +539,7 @@ def build(
         base=base,
         api_code=api_code,
         kill_switch_code=kill_switch_code,
+        job_code=job_code,
         openapi_text=openapi_text,
         env=env,
     )

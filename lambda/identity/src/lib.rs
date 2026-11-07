@@ -492,6 +492,25 @@ pub async fn born_between<S: Store>(
     Ok(found)
 }
 
+/// Every resident, in ID order, for the daily world job's census: every claim in one listing of
+/// the claims bucket, skipping zero-byte takedown markers by their listed size, so no claim is
+/// ever opened. A claim orphaned by a failed `birth` still counts (spec.md "World").
+pub async fn residents<S: Store>(store: &S) -> Result<Vec<AgentId>, StoreError> {
+    Ok(store
+        .list_sized(Bucket::Claims, "claims/")
+        .await?
+        .into_iter()
+        .filter(|listed| listed.size > 0)
+        .filter_map(|listed| {
+            listed
+                .key
+                .strip_prefix("claims/")
+                .and_then(|k| k.strip_suffix("/claim.json"))
+                .and_then(AgentId::parse)
+        })
+        .collect())
+}
+
 /// This crate's locations for an agent, and the action on each, for the takedown program. The
 /// claim becomes a zero-byte marker that keeps `born_at`, so the ID can never be born again.
 pub fn takedown(id: &AgentId) -> Vec<Location> {

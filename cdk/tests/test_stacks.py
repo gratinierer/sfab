@@ -38,7 +38,7 @@ def built(config, tmp_path_factory):
     app = cdk.App()
     code = lambda_.Code.from_asset(str(asset))
     return stacks.build(
-        app, config, api_code=code, kill_switch_code=code, website_source=site
+        app, config, api_code=code, kill_switch_code=code, job_code=code, website_source=site
     )
 
 
@@ -63,7 +63,7 @@ def test_the_stacks_pass_cloudformation_s_schema_rules(config, tmp_path):
     (site / "index.html").write_text("stand-in")
     app = cdk.App(context=CDK_CONTEXT, outdir=str(tmp_path / "out"))
     code = lambda_.Code.from_asset(str(asset))
-    stacks.build(app, config, api_code=code, kill_switch_code=code, website_source=site)
+    stacks.build(app, config, api_code=code, kill_switch_code=code, job_code=code, website_source=site)
     app.synth()
 
 
@@ -464,6 +464,7 @@ def test_an_edit_to_sfab_yaml_gives_a_new_deployment(config, tmp_path):
             config,
             api_code=lambda_.Code.from_asset(str(asset)),
             kill_switch_code=lambda_.Code.from_asset(str(asset)),
+            job_code=lambda_.Code.from_asset(str(asset)),
             openapi_text=text,
             website_source=asset,
         )

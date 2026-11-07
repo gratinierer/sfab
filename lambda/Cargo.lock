@@ -2094,6 +2094,8 @@ dependencies = [
  "regex",
  "saphyr",
  "serde_json",
+ "sfab-census",
+ "sfab-constitution",
  "sfab-core",
  "sfab-identity",
  "sfab-messaging",
@@ -2101,6 +2103,26 @@ dependencies = [
  "tower",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "sfab-census"
+version = "0.1.0"
+dependencies = [
+ "futures-util",
+ "serde",
+ "serde_json",
+ "sfab-core",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "sfab-constitution"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sfab-core",
 ]
 
 [[package]]
@@ -2127,6 +2149,22 @@ dependencies = [
  "sfab-core",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "sfab-job"
+version = "0.1.0"
+dependencies = [
+ "aws-config",
+ "aws-sdk-s3",
+ "lambda_runtime",
+ "serde_json",
+ "sfab-census",
+ "sfab-core",
+ "sfab-identity",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

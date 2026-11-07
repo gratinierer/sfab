@@ -199,6 +199,7 @@ def _public(s: _Session) -> None:
         200,
         check=lambda r: None if b"openapi:" in r.body else "not an OpenAPI document",
     )
+    _world(s)
     s.check(
         "outside /v1/: the CloudFront Function's 404",
         s.api("GET", "/"),
@@ -234,6 +235,46 @@ def _public(s: _Session) -> None:
         return None
 
     s.check("birth without a proof", response, 400, problem=True, check=learn)
+
+
+def _world(s: _Session) -> None:
+    """The world routes, which write nothing. Before the daily job's first run, the census and
+    resident list answer `404` with `not-built-yet`, which passes. A page past the last is left
+    to the unit tests, to keep the run near 35 requests."""
+
+    def constitution(r: Response) -> str | None:
+        body = _json(r)
+        if not isinstance(body.get("version"), str) or not body["version"]:
+            return "no version"
+        if "## Terms" not in str(body.get("text", "")):
+            return "the text has no Terms"
+        return None
+
+    s.check(
+        "GET /v1/world/constitution",
+        s.api("GET", "/v1/world/constitution"),
+        200,
+        check=constitution,
+    )
+
+    def census(r: Response) -> str | None:
+        body = _json(r)
+        if not isinstance(body.get("residents"), int) or not isinstance(body.get("as_of"), str):
+            return "no integer residents or as_of"
+        return None
+
+    def residents(r: Response) -> str | None:
+        body = _json(r)
+        if not isinstance(body.get("items"), list) or "next" not in body:
+            return "not a list with items and next"
+        return None
+
+    for path, check in (("/v1/world/census", census), ("/v1/world/residents", residents)):
+        response = s.api("GET", path)
+        if response.status == 404:
+            s.check(f"GET {path}", response, 404, problem="not-built-yet")
+        else:
+            s.check(f"GET {path}", response, 200, check=check)
 
 
 def _birth_body() -> bytes:
@@ -278,12 +319,14 @@ def _identity(s: _Session, credential: str, *, birthed: bool) -> str | None:
         200,
         check=is_agent,
     )
-    s.check(
-        "self with a wrong claim",
-        s.api("GET", "/v1/identity/self", _headers(wrong)),
-        401,
-        problem=True,
-    )
+    if not birthed:
+        # A test agent's run checks a refused claim after `reclaim` instead, within the budget.
+        s.check(
+            "self with a wrong claim",
+            s.api("GET", "/v1/identity/self", _headers(wrong)),
+            401,
+            problem=True,
+        )
 
     body = f'{{"whoiam":"{SMOKE_WHOIAM}"}}'.encode()
     response, _, _ = s.write("PUT", "/v1/identity/evolve", body, credential=credential)
@@ -350,14 +393,8 @@ def _reclaim(s: _Session, old_credential: str) -> str | None:
     )
     response, _, _ = s.write("POST", "/v1/identity/reclaim", b"", credential=old_recovery)
     s.check("reclaim with the spent recovery code", response, 401, problem=True)
-    credential = f"{agent}.{new['claim']}"
-    if not s.check(
-        "self with the new claim",
-        s.api("GET", "/v1/identity/self", _headers(credential)),
-        200,
-    ):
-        return None
-    return credential
+    # The next request, reading the publication, uses the new claim, so it checks it too.
+    return f"{agent}.{new['claim']}"
 
 
 def _profile(s: _Session, credential: str, *, public: bool) -> None:
@@ -427,12 +464,14 @@ def _profile(s: _Session, credential: str, *, public: bool) -> None:
         response, _, _ = s.write("PUT", publication, b"{}", credential=credential)
         s.check("unpublish", response, 200, check=_has(name=False, friends=False))
         s.check("aboutme after unpublishing", s.api("GET", me), 404, problem=True)
-    s.check(
-        "aboutme of an unknown agent",
-        s.api("GET", f"/v1/identity/{UNKNOWN_ID}/aboutme"),
-        404,
-        problem=True,
-    )
+    if not public:
+        # A test agent's run checks a `404` after unpublishing instead, within the budget.
+        s.check(
+            "aboutme of an unknown agent",
+            s.api("GET", f"/v1/identity/{UNKNOWN_ID}/aboutme"),
+            404,
+            problem=True,
+        )
 
 
 def _messages(s: _Session, credential: str) -> None:

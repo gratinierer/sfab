@@ -97,6 +97,26 @@ pub trait Store: Send + Sync + 'static {
             Ok(KeyPage { keys, more })
         }
     }
+
+    /// Every key under `prefix`, in order, with its size, as one S3 listing gives it, so a
+    /// zero-byte takedown marker can be told apart without opening it. This default opens each
+    /// object, which is right but slow, for test fakes that wrap another store.
+    fn list_sized(
+        &self,
+        bucket: Bucket,
+        prefix: &str,
+    ) -> impl Future<Output = Result<Vec<Listed>, StoreError>> + Send {
+        async move {
+            let mut listed = Vec::new();
+            for key in self.list(bucket, prefix).await? {
+                if let Some(object) = self.get(bucket, &key).await? {
+                    let size = object.body.len() as u64;
+                    listed.push(Listed { key, size });
+                }
+            }
+            Ok(listed)
+        }
+    }
 }
 
 /// One page of a listing.
@@ -105,6 +125,13 @@ pub struct KeyPage {
     pub keys: Vec<String>,
     /// More keys follow this page.
     pub more: bool,
+}
+
+/// One key from a sized listing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Listed {
+    pub key: String,
+    pub size: u64,
 }
 
 /// The in-memory fake every crate tests against. It can be told to fail writes under a prefix,
@@ -226,6 +253,21 @@ impl Store for MemoryStore {
             .into_iter()
             .filter(|k| k.starts_with(prefix))
             .collect())
+    }
+
+    async fn list_sized(&self, bucket: Bucket, prefix: &str) -> Result<Vec<Listed>, StoreError> {
+        let state = self.lock();
+        let mut listed: Vec<Listed> = state
+            .objects
+            .iter()
+            .filter(|((b, k), _)| *b == bucket && k.starts_with(prefix))
+            .map(|((_, k), o)| Listed {
+                key: k.clone(),
+                size: o.body.len() as u64,
+            })
+            .collect();
+        listed.sort_by(|a, b| a.key.cmp(&b.key));
+        Ok(listed)
     }
 }
 

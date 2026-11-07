@@ -12,6 +12,7 @@ use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, post, put};
 
+use sfab_census::Census;
 use sfab_core::gate::Call;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::Store;
@@ -30,6 +31,7 @@ const STAGE: &str = "/v1";
 pub struct AppState<S> {
     identity: Arc<Identity<S>>,
     messaging: Messaging<S>,
+    census: Census<S>,
     /// The current Unix time, so tests can fix it.
     now: fn() -> i64,
 }
@@ -56,8 +58,9 @@ pub fn client_path(seen: &str) -> String {
 pub fn app<S: Store>(store: Arc<S>, required_bits: u32, now: fn() -> i64) -> Router {
     let identity = Arc::new(Identity::new(store.clone(), required_bits));
     let state = Arc::new(AppState {
-        messaging: Messaging::new(store, identity.clone(), required_bits),
+        messaging: Messaging::new(store.clone(), identity.clone(), required_bits),
         identity,
+        census: Census::new(store),
         now,
     });
     let routes = Router::new()
@@ -65,6 +68,9 @@ pub fn app<S: Store>(store: Arc<S>, required_bits: u32, now: fn() -> i64) -> Rou
         .route("/identity/evolve", put(evolve::<S>))
         .route("/identity/self", get(read_self::<S>))
         .route("/identity/reclaim", post(reclaim::<S>))
+        .route("/world/constitution", get(constitution))
+        .route("/world/census", get(census::<S>))
+        .route("/world/residents", get(residents::<S>))
         .route(
             "/identity/self/publication",
             get(read_publication::<S>).put(publish::<S>),
@@ -205,6 +211,18 @@ async fn read_self<S: Store>(
 ) -> Response {
     let authorization = header(&headers, "authorization");
     respond(state.identity.read_self(authorization, (state.now)()).await)
+}
+
+async fn constitution() -> Response {
+    respond(Ok(sfab_constitution::constitution()))
+}
+
+async fn census<S: Store>(State(state): State<Arc<AppState<S>>>) -> Response {
+    respond(state.census.census().await)
+}
+
+async fn residents<S: Store>(State(state): State<Arc<AppState<S>>>, uri: OriginalUri) -> Response {
+    respond(state.census.residents(page(&uri).as_deref()).await)
 }
 
 async fn read_publication<S: Store>(

@@ -33,6 +33,7 @@ struct Aws {
     web_acl_name: String,
     web_acl_id: String,
     api_function: String,
+    job_function: String,
     rest_api_id: String,
     stage: String,
     account_id: String,
@@ -91,6 +92,30 @@ impl Aws {
     }
 }
 
+impl Aws {
+    async fn concurrency_is_zero(&self, function: &str) -> Result<bool, Failure> {
+        let out = self
+            .lambda
+            .get_function_concurrency()
+            .function_name(function)
+            .send()
+            .await
+            .map_err(|e| fail("lambda GetFunctionConcurrency", e.into_service_error()))?;
+        Ok(out.reserved_concurrent_executions == Some(0))
+    }
+
+    async fn zero_concurrency(&self, function: &str) -> Result<(), Failure> {
+        self.lambda
+            .put_function_concurrency()
+            .function_name(function)
+            .reserved_concurrent_executions(0)
+            .send()
+            .await
+            .map_err(|e| fail("lambda PutFunctionConcurrency", e.into_service_error()))?;
+        Ok(())
+    }
+}
+
 impl Controls for Aws {
     async fn in_place(&self, step: Step) -> Result<bool, Failure> {
         match step {
@@ -98,17 +123,9 @@ impl Controls for Aws {
                 let (acl, _) = self.web_acl().await?;
                 Ok(acl.default_action.is_some_and(|a| a.block.is_some()))
             }
-            Step::ApiLambda => {
-                let out = self
-                    .lambda
-                    .get_function_concurrency()
-                    .function_name(&self.api_function)
-                    .send()
-                    .await
-                    .map_err(|e| fail("lambda GetFunctionConcurrency", e.into_service_error()))?;
-                Ok(out.reserved_concurrent_executions == Some(0))
-            }
+            Step::ApiLambda => self.concurrency_is_zero(&self.api_function).await,
             Step::ExecuteApi => self.execute_api_closed().await,
+            Step::WorldJob => self.concurrency_is_zero(&self.job_function).await,
         }
     }
 
@@ -142,16 +159,8 @@ impl Controls for Aws {
                     .map_err(|e| fail("wafv2 UpdateWebACL", e.into_service_error()))?;
                 Ok(())
             }
-            Step::ApiLambda => {
-                self.lambda
-                    .put_function_concurrency()
-                    .function_name(&self.api_function)
-                    .reserved_concurrent_executions(0)
-                    .send()
-                    .await
-                    .map_err(|e| fail("lambda PutFunctionConcurrency", e.into_service_error()))?;
-                Ok(())
-            }
+            Step::ApiLambda => self.zero_concurrency(&self.api_function).await,
+            Step::WorldJob => self.zero_concurrency(&self.job_function).await,
             Step::ExecuteApi => {
                 // AWS applies the flag only after a stage update, so the stage is always deployed.
                 self.apigateway
@@ -307,6 +316,7 @@ async fn main() -> Result<(), lambda_runtime::Error> {
         web_acl_name: web_acl_name.to_owned(),
         web_acl_id: web_acl_id.to_owned(),
         api_function: env("API_FUNCTION_NAME"),
+        job_function: env("JOB_FUNCTION_NAME"),
         rest_api_id: env("REST_API_ID"),
         stage: env("STAGE_NAME"),
         account_id: env("ACCOUNT_ID"),

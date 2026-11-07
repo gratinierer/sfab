@@ -4,7 +4,7 @@
 
 use std::future::Future;
 
-/// The steps of a stop, in the order they run. Issue 11 adds the daily world job's.
+/// The steps of a stop, in the order they run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Step {
     /// The CloudFront WAF's default action is Block.
@@ -13,9 +13,12 @@ pub enum Step {
     ApiLambda,
     /// `disableExecuteApiEndpoint` is set on the REST API, and the stage is deployed with it.
     ExecuteApi,
+    /// The daily world job's reserved concurrency is 0, because its cost grows with what's
+    /// stored, not with traffic, so it would otherwise keep spending during a stop.
+    WorldJob,
 }
 
-pub const STEPS: [Step; 3] = [Step::Waf, Step::ApiLambda, Step::ExecuteApi];
+pub const STEPS: [Step; 4] = [Step::Waf, Step::ApiLambda, Step::ExecuteApi, Step::WorldJob];
 
 /// Why the function was invoked.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

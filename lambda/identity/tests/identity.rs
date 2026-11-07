@@ -695,3 +695,27 @@ async fn a_failed_claim_write_stores_nothing_else() {
     assert_eq!(err.status, 500);
     assert!(w.store.keys(Bucket::Identities).is_empty());
 }
+
+#[tokio::test]
+async fn the_residents_are_every_claim_except_takedown_markers() {
+    let w = world();
+    let wren = born(&w, "Wren").await;
+    let robin = born(&w, "Robin").await;
+    let gone = born(&w, "Gone").await;
+    take_down(&w.store, &AgentId::parse(&gone.id).unwrap()).await;
+    // A claim orphaned by a failed birth still counts (spec.md "World").
+    w.store
+        .delete(
+            Bucket::Identities,
+            &format!("identities/{}/identity.json", robin.id),
+        )
+        .await
+        .unwrap();
+
+    let residents = sfab_identity::residents(&*w.store).await.unwrap();
+
+    let mut expected = vec![wren.id, robin.id];
+    expected.sort();
+    let found: Vec<String> = residents.iter().map(|id| id.as_str().to_owned()).collect();
+    assert_eq!(found, expected);
+}

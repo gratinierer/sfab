@@ -40,6 +40,9 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
     assert not result.blocked
     assert set(api.labels) == {
         "openapi",
+        "constitution",
+        "census",
+        "residents",
         "outside v1",
         "unknown route",
         "no proof",
@@ -108,7 +111,7 @@ JSON = {"content-type": "application/json", "cache-control": "no-store"}
             "execute-api with a wrong origin key",
         ),
         ("execute-api no key", ok(200, {}), "execute-api without the origin key is rejected"),
-        ("aboutme 404", ok(200, {"id": "aaaaaaaaaaaa"}), "aboutme of an unknown agent"),
+        ("aboutme 404", ok(200, {"id": "aaaaaaaaaaaa"}), "aboutme after unpublishing"),
         ("read friends", ok(200, {"items": [], "next": None}), "read friends"),
         ("read blocked", ok(200, {"items": [], "next": None}), "read blocked"),
         ("add friend", problem(409, "list-full"), "add a friend"),
@@ -122,6 +125,15 @@ JSON = {"content-type": "application/json", "cache-control": "no-store"}
             "read publication",
         ),
         (
+            "constitution",
+            ok(200, {"version": "v", "text": "no terms"}),
+            "GET /v1/world/constitution",
+        ),
+        ("census", ok(200, {"as_of": "2026-11-05T00:05:00Z"}), "GET /v1/world/census"),
+        ("census", problem(404, "about:blank"), "GET /v1/world/census"),
+        ("residents", ok(200, {"items": []}), "GET /v1/world/residents"),
+        ("residents", problem(404, "about:blank"), "GET /v1/world/residents"),
+        (
             "openapi",
             Response(200, {"content-type": "application/yaml"}, b"openapi: 3.0.1\n"),
             "GET /v1/openapi.yaml",
@@ -134,6 +146,15 @@ def test_a_broken_behaviour_fails_its_check(label, response, failed):
     api.override[label] = response
 
     assert failed in failing_checks(api, clock)
+
+
+def test_the_census_and_residents_may_be_not_built_yet_before_the_job_s_first_run():
+    clock = Clock()
+    api = FakeApi(clock)
+    api.override["census"] = problem(404, "not-built-yet")
+    api.override["residents"] = problem(404, "not-built-yet")
+
+    assert smoke(api, clock).failures == []
 
 
 def test_a_birth_whose_id_isnt_from_the_proof_fails_and_skips_the_identity_checks():
@@ -217,6 +238,9 @@ def test_production_births_nothing_and_writes_only_privately():
     assert api.knocks[SMOKE_ID] == {}, "its knock removed"
     assert {
         "openapi",
+        "constitution",
+        "census",
+        "residents",
         "outside v1",
         "unknown route",
         "no proof",
@@ -242,6 +266,23 @@ def test_production_births_nothing_and_writes_only_privately():
     } <= set(api.labels)
     assert "publish" not in api.labels
     assert api.identities[SMOKE_ID] == {"name": "smoke", "whoiam": SMOKE_WHOIAM}
+
+
+@pytest.mark.parametrize(
+    "label, response, failed",
+    [
+        ("aboutme 404", ok(200, {"id": "aaaaaaaaaaaa"}), "aboutme of an unknown agent"),
+        ("unauthorized", ok(200, {"id": SMOKE_ID}), "self with a wrong claim"),
+    ],
+)
+def test_production_checks_what_a_test_agent_s_run_covers_otherwise(label, response, failed):
+    """Within the request budget, these run only where no birth, reclaim or unpublish covers
+    them."""
+    clock = Clock()
+    api = FakeApi(clock)
+    api.override[label] = response
+
+    assert failed in failing_checks(api, clock, target=PRODUCTION, production=True)
 
 
 def test_a_blocked_friend_left_in_the_copy_fails():
