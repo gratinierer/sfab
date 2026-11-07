@@ -358,6 +358,21 @@ async fn a_dry_run_shows_the_window_and_writes_nothing() {
     assert_eq!(sorted(found), sorted(keys_of(&w.store, &first.id)));
 }
 
+#[tokio::test]
+async fn an_unknown_id_finds_nothing_so_the_program_stops_before_executing() {
+    let w = world();
+    four_agents(&w).await;
+    let stored = snapshot(&w.store);
+    let typo = AgentId::parse("zzzzzzzzzzzz").unwrap();
+
+    let targets = plan(&*w.store, &Mode::One(typo)).await.unwrap();
+
+    assert_eq!(targets.len(), 1);
+    assert!(targets[0].found.is_empty());
+    assert_eq!(targets[0].born.born_at, None);
+    assert_eq!(snapshot(&w.store), stored);
+}
+
 /// The fake, with deletes under `vitals/` failing while `broken` is set: a run cut off after
 /// step 1 wrote the markers.
 struct Flaky {

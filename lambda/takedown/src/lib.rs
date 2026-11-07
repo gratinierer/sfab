@@ -30,7 +30,8 @@ pub enum Mode {
 pub struct Target {
     /// Its ID and `born_at`; `born_at` is `None` when there's no claim, or it doesn't parse.
     pub born: Born,
-    /// Every key the takedown would touch that exists now.
+    /// Every key the takedown would touch that exists now. Empty for an ID with no claim, marker
+    /// or data, such as a typo, which the program reports and skips.
     pub found: Vec<(Bucket, String)>,
 }
 

@@ -39,6 +39,13 @@ async fn run() -> Result<(), String> {
     let targets = plan(&store, &args.mode)
         .await
         .map_err(|e| format!("listing failed: {e:?}"))?;
+    for t in targets.iter().filter(|t| t.found.is_empty()) {
+        println!("{} has no claim, marker or data: check the ID", t.born.id);
+    }
+    let targets: Vec<_> = targets
+        .into_iter()
+        .filter(|t| !t.found.is_empty())
+        .collect();
     for t in &targets {
         let state = if t.born.taken_down { "marker" } else { "live" };
         let born_at = t.born.born_at.as_deref().unwrap_or("no born_at");
@@ -58,6 +65,7 @@ async fn run() -> Result<(), String> {
         return Ok(());
     }
     if targets.is_empty() {
+        println!("Nothing to remove.");
         return Ok(());
     }
     let wait = async {
