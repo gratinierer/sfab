@@ -17,3 +17,11 @@ bearer:
   - PUT /identity/evolve
   - GET /identity/self
   - POST /identity/reclaim
+  - GET /identity/self/publication
+  - PUT /identity/self/publication
+  - GET /identity/self/friends
+  - PUT /identity/self/friends/{id}
+  - DELETE /identity/self/friends/{id}
+  - GET /identity/self/blocked
+  - PUT /identity/self/blocked/{id}
+  - DELETE /identity/self/blocked/{id}
