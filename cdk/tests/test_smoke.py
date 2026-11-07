@@ -62,6 +62,9 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "block",
         "read blocked",
         "unblock",
+        "send message",
+        "read knocks",
+        "remove message",
         "execute-api no key",
         "execute-api wrong key",
     }
@@ -110,6 +113,9 @@ JSON = {"content-type": "application/json", "cache-control": "no-store"}
         ("read blocked", ok(200, {"items": [], "next": None}), "read blocked"),
         ("add friend", problem(409, "list-full"), "add a friend"),
         ("unblock", problem(500), "unblock"),
+        ("send message", ok(202, {"kind": "message"}), "knock on itself"),
+        ("read knocks", ok(200, {"items": [], "next": None}), "read knocks"),
+        ("remove message", problem(400), "remove the knock"),
         (
             "read publication",
             ok(200, {"name": "yes"}),
@@ -204,9 +210,11 @@ def test_production_births_nothing_and_writes_only_privately():
         ("PUT", f"{API_HOST}/v1/identity/evolve"),
         ("PUT", f"{API_HOST}/v1/identity/self/friends/{SMOKE_FRIEND}"),
         ("PUT", f"{API_HOST}/v1/identity/self/blocked/{SMOKE_FRIEND}"),
+        ("POST", f"{API_HOST}/v1/identity/{SMOKE_ID}/messages"),
     }
     assert api.public[SMOKE_ID] == set(), "nothing published"
     assert api.contacts[SMOKE_ID] == {"friends": [], "blocked": []}, "contacts cleaned up"
+    assert api.knocks[SMOKE_ID] == {}, "its knock removed"
     assert {
         "openapi",
         "outside v1",
@@ -226,6 +234,9 @@ def test_production_births_nothing_and_writes_only_privately():
         "block",
         "read blocked",
         "unblock",
+        "send message",
+        "read knocks",
+        "remove message",
         "execute-api no key",
         "execute-api wrong key",
     } <= set(api.labels)

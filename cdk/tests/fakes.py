@@ -65,6 +65,8 @@ SMOKE_CREDENTIAL = f"{SMOKE_ID}.{'c' * 43}"
 PUBLISHABLE = ("name", "whoiam", "friends")
 _CONTACT = re.compile(r"/v1/identity/self/(?P<list>friends|blocked)/(?P<id>[a-z2-7]{12})")
 _ABOUTME = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/aboutme")
+_SEND = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/messages")
+_MESSAGE = re.compile(r"/v1/identity/self/messages/(?P<message_id>k-[a-z2-7]{12}|m-[0-9a-z-]+)")
 
 
 class FakeApi:
@@ -85,6 +87,8 @@ class FakeApi:
         self.labels: list[str] = []
         self.public: dict[str, set[str]] = {SMOKE_ID: set()}
         self.contacts: dict[str, dict[str, list[str]]] = {}
+        # Each agent's knocks, by sender: only knocks, since the smoke script never friends itself.
+        self.knocks: dict[str, dict[str, str]] = {}
         # Broken behaviours the smoke script must catch.
         self.keep_blocked_friends_public = False
         self.ignore_unpublish = False
@@ -120,11 +124,18 @@ class FakeApi:
             ("PUT", "/v1/identity/self/publication"),
             ("GET", "/v1/identity/self/friends"),
             ("GET", "/v1/identity/self/blocked"),
+            ("GET", "/v1/identity/self/messages"),
         }
+        bare = path.split("?", 1)[0]
         contact = _CONTACT.fullmatch(path)
         about = _ABOUTME.fullmatch(path)
-        if (r.method, path) not in known and not (
-            (contact and r.method in ("PUT", "DELETE")) or (about and r.method == "GET")
+        send = _SEND.fullmatch(path)
+        message = _MESSAGE.fullmatch(path)
+        if (r.method, bare) not in known and not (
+            (contact and r.method in ("PUT", "DELETE"))
+            or (about and r.method == "GET")
+            or (send and r.method == "POST")
+            or (message and r.method == "DELETE")
         ):
             return "unknown route", problem(404, detail=START)
         if path == "/v1/openapi.yaml":
@@ -140,6 +151,8 @@ class FakeApi:
             except ValueError:
                 return "malformed body", problem(400, detail="Invalid request body")
             allowed = {"name", "whoiam"} if path.endswith("birth") else {"whoiam"}
+            if send:
+                allowed = {"text"}
             if path.endswith("publication"):
                 allowed = set(PUBLISHABLE)
                 values = body.values() if isinstance(body, dict) else [None]
@@ -215,6 +228,20 @@ class FakeApi:
             return "read publication", ok(200, self._settings(agent))
         if path == "/v1/identity/self":
             return "self", ok(200, {"id": agent, **identity})
+        if send:
+            return self._send(agent, send["id"], json.loads(r.body)["text"], now)
+        if bare == "/v1/identity/self/messages":
+            items = [
+                {"message_id": f"k-{sender}", "sender": sender, "text": text,
+                 "sent_at": "2026-11-05T00:00:00Z"}
+                for sender, text in self.knocks.get(agent, {}).items()
+            ]
+            if "kind=knock" not in path:
+                return "read messages", ok(200, {"items": [], "next": None})
+            return "read knocks", ok(200, {"items": items, "next": None})
+        if message:
+            self.knocks.get(agent, {}).pop(message["message_id"].removeprefix("k-"), None)
+            return "remove message", ok(200, {"message_id": message["message_id"]})
         lists = self.contacts.setdefault(agent, {"friends": [], "blocked": []})
         if contact:
             kind, other = contact["list"], contact["id"]
@@ -240,6 +267,14 @@ class FakeApi:
         kind = path.rsplit("/", 1)[1]
         items = [{"id": i, "added_at": "2026-11-05T00:00:00Z"} for i in lists[kind]]
         return f"read {kind}", ok(200, {"items": items, "next": None})
+
+    def _send(self, sender: str, to: str, text: str, now: int):
+        if to not in self.identities:
+            return "message to an unknown agent", problem(404)
+        if sender in self.contacts.get(to, {}).get("blocked", []):
+            return "blocked message", problem(403, "blocked")
+        self.knocks.setdefault(to, {})[sender] = text
+        return "send message", ok(202, {"to": to, "kind": "knock", "sent_at": "2026-11-05T00:00:00Z"})
 
     def _settings(self, agent: str) -> dict:
         return {f: f in self.public[agent] for f in PUBLISHABLE}

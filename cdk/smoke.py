@@ -176,12 +176,14 @@ def run(
         if production:
             _identity(s, target.credential, birthed=False)
             _profile(s, target.credential, public=False)
+            _messages(s, target.credential)
         else:
             credential = _birth(s)
             if credential:
                 credential = _identity(s, credential, birthed=True)
             if credential:
                 _profile(s, credential, public=True)
+                _messages(s, credential)
         _execute_api(s)
     except Blocked:
         log(BLOCKED_MESSAGE)
@@ -430,6 +432,35 @@ def _profile(s: _Session, credential: str, *, public: bool) -> None:
         s.api("GET", f"/v1/identity/{UNKNOWN_ID}/aboutme"),
         404,
         problem=True,
+    )
+
+
+def _messages(s: _Session, credential: str) -> None:
+    """A knock on itself, which nobody else sees, read back with `?kind=knock` and removed.
+    It isn't its own friend, so it's a knock; the unit tests cover messages between friends."""
+    agent = credential.split(".", 1)[0]
+    body = b'{"text":"smoke"}'
+    response, _, _ = s.write("POST", f"/v1/identity/{agent}/messages", body, credential=credential)
+    s.check("knock on itself", response, 202, check=_has(to=agent, kind="knock"))
+    knock = f"k-{agent}"
+
+    def holds_the_knock(r: Response) -> str | None:
+        items = [i for i in _json(r).get("items", []) if isinstance(i, dict)]
+        if not any(i.get("message_id") == knock and i.get("text") == "smoke" for i in items):
+            return f"{knock} with its text not in {items!r}"
+        return None
+
+    s.check(
+        "read knocks",
+        s.api("GET", "/v1/identity/self/messages?kind=knock", _headers(credential)),
+        200,
+        check=holds_the_knock,
+    )
+    s.check(
+        "remove the knock",
+        s.api("DELETE", f"/v1/identity/self/messages/{knock}", _headers(credential)),
+        200,
+        check=_has(message_id=knock),
     )
 
 
