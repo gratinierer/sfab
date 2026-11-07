@@ -93,6 +93,13 @@ class _Session:
         # The test agent's recovery code, from its birth.
         self.recovery: str | None = None
 
+    def learn(self, refusal: dict) -> None:
+        """The proof's difficulty and the server's clock, from a refused `birth`."""
+        self.bits = refusal["required_bits"]
+        self.clock_offset = refusal["server_time"] - int(self.clock())
+        if abs(self.clock_offset) > 30:
+            self.log(f"note: this clock is {self.clock_offset}s off the server's; using the server's")
+
     def send(self, method, url, headers=None, body=b"") -> Response:
         if self.sent:
             self.sleep(PACE_SECONDS)
@@ -164,18 +171,19 @@ def _headers(credential, proof=None, body=b"") -> dict[str, str]:
     return headers
 
 
-def _json(response: Response) -> dict:
+def _json_object(response: Response) -> dict:
+    """The body as a JSON object, or `{}` for anything else, so checks can use `.get`."""
     body = response.json()
     return body if isinstance(body, dict) else {}
 
 
 def _points_to_start(response: Response) -> str | None:
-    detail = _json(response).get("detail", "")
+    detail = _json_object(response).get("detail", "")
     return None if START in detail else f"detail {detail!r} doesn't point to {START}"
 
 
 def _no_required_bits(response: Response) -> str | None:
-    if "required_bits" in _json(response):
+    if "required_bits" in _json_object(response):
         return "required_bits present, so the gateway's validator let it through"
     return None
 
@@ -243,19 +251,16 @@ def _public(s: _Session) -> None:
     body = _birth_body()
     response = s.api("POST", "/v1/identity/birth", _headers(None, body=body), body)
 
-    def learn(r: Response) -> str | None:
-        found = _json(r)
+    def has_bits_and_time(r: Response) -> str | None:
+        found = _json_object(r)
         if not isinstance(found.get("required_bits"), int):
             return "no integer required_bits"
         if not isinstance(found.get("server_time"), int):
             return "no integer server_time"
-        s.bits = found["required_bits"]
-        s.clock_offset = found["server_time"] - int(s.clock())
-        if abs(s.clock_offset) > 30:
-            s.log(f"note: this clock is {s.clock_offset}s off the server's; using the server's")
         return None
 
-    s.check("birth without a proof", response, 400, problem=True, verify=learn)
+    if s.check("birth without a proof", response, 400, problem=True, verify=has_bits_and_time):
+        s.learn(_json_object(response))
 
 
 def _world(s: _Session) -> None:
@@ -264,7 +269,7 @@ def _world(s: _Session) -> None:
     to the unit tests, to keep the run near 35 requests."""
 
     def constitution(r: Response) -> str | None:
-        body = _json(r)
+        body = _json_object(r)
         if not isinstance(body.get("version"), str) or not body["version"]:
             return "no version"
         if "## Terms" not in str(body.get("text", "")):
@@ -279,13 +284,13 @@ def _world(s: _Session) -> None:
     )
 
     def census(r: Response) -> str | None:
-        body = _json(r)
+        body = _json_object(r)
         if not isinstance(body.get("residents"), int) or not isinstance(body.get("as_of"), str):
             return "no integer residents or as_of"
         return None
 
     def residents(r: Response) -> str | None:
-        body = _json(r)
+        body = _json_object(r)
         if not isinstance(body.get("items"), list) or "next" not in body:
             return "not a list with items and next"
         return None
@@ -307,7 +312,7 @@ def _federation_directory(s: _Session) -> None:
     domain = _world_domain(s)
 
     def world(r: Response) -> str | None:
-        body = _json(r)
+        body = _json_object(r)
         if body.get("domain") != domain:
             return f"domain {body.get('domain')!r}, not {domain!r}"
         missing = [k for k in ("name", "constitution", "contact") if not body.get(k)]
@@ -316,7 +321,7 @@ def _federation_directory(s: _Session) -> None:
     s.check("GET /v1/federation/world", s.api("GET", "/v1/federation/world"), 200, verify=world)
 
     def worlds(r: Response) -> str | None:
-        body = _json(r)
+        body = _json_object(r)
         if not isinstance(body.get("items"), list) or "next" not in body:
             return "not a list with items and next"
         return None
@@ -332,7 +337,7 @@ def _request_federation(s: _Session) -> None:
     response, _, _ = s.write("POST", "/v1/federation/requests", body)
 
     def token(r: Response) -> str | None:
-        found = _json(r)
+        found = _json_object(r)
         if not _TOKEN.fullmatch(str(found.get("token", ""))):
             return "no token of 32 hex characters"
         if found.get("domain") != domain:
@@ -350,7 +355,7 @@ def _birth(s: _Session) -> str | None:
     """A test agent, and a replay of its proof."""
     body = _birth_body()
     response, proof, digest = s.write("POST", "/v1/identity/birth", body)
-    born = _json(response)
+    born = _json_object(response)
 
     def secrets_and_id(r: Response) -> str | None:
         if born.get("id") != agent_id(digest):
@@ -375,7 +380,7 @@ def _identity(s: _Session, credential: str, *, birthed: bool) -> str | None:
     wrong = f"{agent}.{'A' * 43}"
 
     def is_agent(r: Response) -> str | None:
-        found = _json(r).get("id")
+        found = _json_object(r).get("id")
         return None if found == agent else f"id {found!r}, not {agent!r}"
 
     s.check(
@@ -399,7 +404,7 @@ def _identity(s: _Session, credential: str, *, birthed: bool) -> str | None:
         "evolve",
         response,
         200,
-        verify=lambda r: None if _json(r).get("whoiam") == SMOKE_WHOIAM else "whoiam not replaced",
+        verify=lambda r: None if _json_object(r).get("whoiam") == SMOKE_WHOIAM else "whoiam not replaced",
     )
 
     extra = f'{{"whoiam":"{SMOKE_WHOIAM}","extra":1}}'.encode()
@@ -422,7 +427,7 @@ def _identity(s: _Session, credential: str, *, birthed: bool) -> str | None:
         400,
         problem=True,
         verify=lambda r: None
-        if "32 KB" in _json(r).get("title", "")
+        if "32 KB" in _json_object(r).get("title", "")
         else "not the Lambda's 32 KB refusal",
     )
 
@@ -439,7 +444,7 @@ def _reclaim(s: _Session, old_credential: str) -> str | None:
     agent = agent_of(old_credential)
     old_recovery = f"{agent}.{s.recovery}"
     response, _, _ = s.write("POST", "/v1/identity/reclaim", b"", credential=old_recovery)
-    new = _json(response)
+    new = _json_object(response)
 
     def fresh(r: Response) -> str | None:
         if new.get("id") != agent:
@@ -470,7 +475,7 @@ def _profile(s: _Session, credential: str, *, public: bool) -> None:
     publication = "/v1/identity/self/publication"
 
     def settings(r: Response) -> str | None:
-        found = _json(r)
+        found = _json_object(r)
         if not found or not all(isinstance(v, bool) for v in found.values()):
             return f"not every field true or false: {found!r}"
         if not public and any(found.values()):
@@ -549,7 +554,7 @@ def _messages(s: _Session, credential: str) -> None:
     knock = f"k-{agent}"
 
     def holds_the_knock(r: Response) -> str | None:
-        items = [i for i in _json(r).get("items", []) if isinstance(i, dict)]
+        items = [i for i in _json_object(r).get("items", []) if isinstance(i, dict)]
         if not any(i.get("message_id") == knock and i.get("text") == "smoke" for i in items):
             return f"{knock} with its text not in {items!r}"
         return None
@@ -572,7 +577,7 @@ def _has(**expected):
     """A check that the JSON body has these values."""
 
     def check(r: Response) -> str | None:
-        found = _json(r)
+        found = _json_object(r)
         wrong = {k: found.get(k) for k, v in expected.items() if found.get(k) != v}
         return f"expected {expected!r}, got {wrong!r}" if wrong else None
 
@@ -583,7 +588,7 @@ def _lists(agent: str):
     """A check that a list page holds this agent, and ends there."""
 
     def check(r: Response) -> str | None:
-        found = _json(r)
+        found = _json_object(r)
         ids = [item.get("id") for item in found.get("items", []) if isinstance(item, dict)]
         if agent not in ids:
             return f"{agent} not in {ids!r}"
