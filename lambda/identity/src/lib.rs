@@ -35,6 +35,13 @@ fn claim_key(id: &AgentId) -> String {
     format!("claims/{id}/claim.json")
 }
 
+/// The ID in a key [`claim_key`] built, or `None` for any other key.
+fn id_of_claim_key(key: &str) -> Option<AgentId> {
+    key.strip_prefix("claims/")
+        .and_then(|k| k.strip_suffix("/claim.json"))
+        .and_then(AgentId::parse)
+}
+
 fn identity_key(id: &AgentId) -> String {
     format!("identities/{id}/identity.json")
 }
@@ -485,11 +492,7 @@ pub async fn born_between<S: Store>(
 ) -> Result<Vec<Born>, StoreError> {
     let mut found = Vec::new();
     for key in store.list(Bucket::Claims, "claims/").await? {
-        let Some(id) = key
-            .strip_prefix("claims/")
-            .and_then(|k| k.strip_suffix("/claim.json"))
-            .and_then(AgentId::parse)
-        else {
+        let Some(id) = id_of_claim_key(&key) else {
             continue;
         };
         let Some(object) = store.get(Bucket::Claims, &key).await? else {
@@ -512,13 +515,7 @@ pub async fn residents<S: Store>(store: &S) -> Result<Vec<AgentId>, StoreError> 
         .await?
         .into_iter()
         .filter(|listed| listed.size > 0)
-        .filter_map(|listed| {
-            listed
-                .key
-                .strip_prefix("claims/")
-                .and_then(|k| k.strip_suffix("/claim.json"))
-                .and_then(AgentId::parse)
-        })
+        .filter_map(|listed| id_of_claim_key(&listed.key))
         .collect())
 }
 
