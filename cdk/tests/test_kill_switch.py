@@ -24,6 +24,12 @@ def stand_in(tmp_path_factory, name: str) -> lambda_.Code:
     return lambda_.Code.from_asset(str(asset))
 
 
+def stand_in_site(tmp_path_factory) -> Path:
+    site = tmp_path_factory.mktemp("website")
+    (site / "index.html").write_text("stand-in")
+    return site
+
+
 @pytest.fixture(scope="module")
 def built(tmp_path_factory):
     app = cdk.App()
@@ -32,6 +38,7 @@ def built(tmp_path_factory):
         sfab_config.load(FIXTURE),
         api_code=stand_in(tmp_path_factory, "api"),
         kill_switch_code=stand_in(tmp_path_factory, "killswitch"),
+        website_source=stand_in_site(tmp_path_factory),
     )
 
 

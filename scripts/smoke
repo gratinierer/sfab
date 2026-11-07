@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# The smoke script against the deployed API: cdk/smoke.py. Needs no AWS credentials.
+#   scripts/smoke --execute-api <the API stack's Endpoint output> [--production]
+# Exits 0 on a pass, 1 on a failure, 2 on a usage or config problem, and 3 when WAF
+# blocked it: wait at least 5 minutes and rerun.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+exec cdk/.venv/bin/python cdk/smoke.py "$@"

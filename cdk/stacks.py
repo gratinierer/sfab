@@ -1,4 +1,4 @@
-"""Story 2's stacks: the base stack and the API stack.
+"""Story 2's stacks: the base stack, the API stack and the website stack (website_stack.py).
 
 See .stories/2-identity-api/spec.md "Architecture" and "Abuse and cost controls".
 """
@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+from pathlib import Path
 
 import aws_cdk as cdk
 import yaml
@@ -33,9 +34,12 @@ from constructs import Construct
 import sfab_config
 from kill_switch import KillSwitch
 from sfab_config import Config
+from website_stack import WebsiteStack
 
 REGION = "us-east-1"
 OPENAPI = sfab_config.REPO_ROOT / "openapi" / "sfab.yaml"
+# What generate_website.py writes, which scripts/check runs first.
+WEBSITE_BUILD = sfab_config.REPO_ROOT / "build" / "website"
 
 # Budgets, in USD per month. Public settings, so they live here, reviewed, not in the config.
 STOP_BUDGET_USD = 35
@@ -479,6 +483,7 @@ class ApiStack(cdk.Stack):
 class Stacks:
     base: BaseStack
     api: ApiStack
+    website: WebsiteStack
 
 
 def build(
@@ -487,6 +492,7 @@ def build(
     api_code: lambda_.Code,
     kill_switch_code: lambda_.Code,
     openapi_text: str | None = None,
+    website_source: Path = WEBSITE_BUILD,
 ) -> Stacks:
     if openapi_text is None:
         openapi_text = OPENAPI.read_text(encoding="utf-8")
@@ -502,4 +508,12 @@ def build(
         openapi_text=openapi_text,
         env=env,
     )
-    return Stacks(base=base, api=api)
+    website = WebsiteStack(
+        app,
+        "SfabWebsite",
+        config=config,
+        certificate=base.certificate,
+        source=website_source,
+        env=env,
+    )
+    return Stacks(base=base, api=api, website=website)

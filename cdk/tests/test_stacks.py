@@ -1,7 +1,8 @@
 """CDK assertion tests for the base and API stacks, from spec.md "Testing".
 
 Built from the committed fixture config, never a real sfab.config.toml, and with a
-stand-in Lambda asset, so they need no build.
+stand-in Lambda asset and website folder, so they need no build. The website stack's
+own tests are in test_website_stack.py.
 """
 
 import json
@@ -32,9 +33,13 @@ def config():
 def built(config, tmp_path_factory):
     asset = tmp_path_factory.mktemp("api")
     (asset / "bootstrap").write_text("stand-in")
+    site = tmp_path_factory.mktemp("website")
+    (site / "index.html").write_text("stand-in")
     app = cdk.App()
     code = lambda_.Code.from_asset(str(asset))
-    return stacks.build(app, config, api_code=code, kill_switch_code=code)
+    return stacks.build(
+        app, config, api_code=code, kill_switch_code=code, website_source=site
+    )
 
 
 @pytest.fixture(scope="module")
@@ -53,14 +58,17 @@ def test_the_stacks_pass_cloudformation_s_schema_rules(config, tmp_path):
     asset = tmp_path / "api"
     asset.mkdir()
     (asset / "bootstrap").write_text("stand-in")
+    site = tmp_path / "website"
+    site.mkdir()
+    (site / "index.html").write_text("stand-in")
     app = cdk.App(context=CDK_CONTEXT, outdir=str(tmp_path / "out"))
     code = lambda_.Code.from_asset(str(asset))
-    stacks.build(app, config, api_code=code, kill_switch_code=code)
+    stacks.build(app, config, api_code=code, kill_switch_code=code, website_source=site)
     app.synth()
 
 
 def test_every_stack_targets_the_config_account_in_us_east_1(built, config):
-    for stack in (built.base, built.api):
+    for stack in (built.base, built.api, built.website):
         assert stack.account == config.account_id
         assert stack.region == "us-east-1"
 
@@ -441,6 +449,7 @@ def test_an_edit_to_sfab_yaml_gives_a_new_deployment(config, tmp_path):
             api_code=lambda_.Code.from_asset(str(asset)),
             kill_switch_code=lambda_.Code.from_asset(str(asset)),
             openapi_text=text,
+            website_source=asset,
         )
         return deployment_id(Template.from_stack(built.api))
 
@@ -585,3 +594,13 @@ def test_buckets_topics_and_budgets_are_only_in_the_base_stack(api):
         assert api.find_resources(kind) == {}, kind
     # autoDeleteObjects would add a custom resource that can empty a bucket.
     assert api.find_resources("Custom::S3AutoDeleteObjects") == {}
+
+
+def test_the_api_stack_outputs_the_stage_url_the_smoke_script_takes(api):
+    # `cdk deploy` prints it, so the owner can pass it as `scripts/smoke --execute-api`.
+    endpoints = [
+        o["Value"] for name, o in api.find_outputs("*").items() if name.startswith("ApiEndpoint")
+    ]
+    assert len(endpoints) == 1
+    assert ".execute-api." in json.dumps(endpoints[0])
+    assert "DeploymentStagev1" in json.dumps(endpoints[0])

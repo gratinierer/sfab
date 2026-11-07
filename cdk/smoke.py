@@ -1,0 +1,448 @@
+"""The smoke script, run by hand against the deployed API: `.stories/2-identity-api/spec.md`
+"Testing". Each later ticket adds its routes here.
+
+    scripts/smoke --execute-api <stage URL> [--production] [--api-url https://api.<domain_name>]
+
+The stage URL is the API stack's `Endpoint` output that `cdk deploy` prints, such as
+`https://abc123.execute-api.us-east-1.amazonaws.com/v1/`. Needs no AWS credentials.
+
+- Before launch, the full run births a test agent and covers every route, the gateway's
+  validation and errors, both `404`s, and the direct `execute-api` way in.
+- After launch, `--production` births nothing and writes nothing public: it reads every read
+  route and makes only private writes, as the fixed smoke identity, whose `<id>.<claim>` is
+  `smoke_claim` in `sfab.config.toml`.
+
+It sends one request every 4 seconds, to stay under WAF's 100 per 5 minutes, and solves a
+`Proof` for each write. WAF's plain `403` means this IP is blocked, or the API is stopped:
+it stops and says to wait and rerun, rather than failing.
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+import secrets
+import string
+import sys
+import time
+import tomllib
+from dataclasses import dataclass, field
+from typing import Callable
+
+from api_client import (
+    Request,
+    Response,
+    Transport,
+    agent_id,
+    is_problem_json,
+    is_waf_block,
+    solve_proof,
+    urllib_transport,
+)
+
+PACE_SECONDS = 4
+# Until the API's first answer says otherwise: spec.md "Proof of work".
+DEFAULT_BITS = 20
+MAX_WHOIAM_CHARS = 32768
+SMOKE_NAME = "smoke"
+SMOKE_WHOIAM = "The sfab smoke identity. It writes nothing public."
+START = "/v1/openapi.yaml"
+_SECRET = re.compile(r"[A-Za-z0-9_-]{43}")
+_ID = re.compile(r"[a-z2-7]{12}")
+BLOCKED_MESSAGE = (
+    "Blocked: WAF's plain 403, from the rate limit on this IP or because the API is "
+    "stopped. Wait at least 5 minutes and rerun. A stop lasts until the owner restarts the API."
+)
+
+
+@dataclass(frozen=True)
+class Target:
+    api_url: str
+    execute_api_url: str
+    # `<id>.<claim>` of the fixed smoke identity, for `--production`.
+    credential: str | None = None
+
+
+@dataclass
+class Result:
+    failures: list[str] = field(default_factory=list)
+    blocked: bool = False
+
+
+class Blocked(Exception):
+    pass
+
+
+class _Session:
+    def __init__(self, transport, target, clock, sleep, log):
+        self.transport, self.target = transport, target
+        self.clock, self.sleep, self.log = clock, sleep, log
+        self.sent = 0
+        self.bits = DEFAULT_BITS
+        self.clock_offset = 0
+        self.failures: list[str] = []
+        # The test agent's recovery code, from its birth.
+        self.recovery: str | None = None
+
+    def send(self, method, url, headers=None, body=b"") -> Response:
+        if self.sent:
+            self.sleep(PACE_SECONDS)
+        self.sent += 1
+        response = self.transport(Request(method, url, dict(headers or {}), body))
+        if url.startswith(self.target.api_url) and is_waf_block(response):
+            raise Blocked()
+        return response
+
+    def api(self, method, path, headers=None, body=b"") -> Response:
+        return self.send(method, self.target.api_url + path, headers, body)
+
+    def write(self, method, path, body, *, credential=None) -> tuple[Response, str, bytes]:
+        """A `POST` or `PUT` with a solved proof; returns the response, the header and the hash."""
+        caller = credential.split(".", 1)[0] if credential else "-"
+        now = int(self.clock()) + self.clock_offset
+        proof, digest = solve_proof(method, path, body, caller=caller, now=now, bits=self.bits)
+        return self.api(method, path, _headers(credential, proof, body), body), proof, digest
+
+    def check(self, name: str, response: Response, status: int, **expect) -> bool:
+        """Records a failure unless the response has this status and every expectation holds.
+        `problem` is True, or the `type` the `problem+json` body must have. `check` is a
+        function of the response that returns what's wrong, or None."""
+        wrong = []
+        if response.status != status:
+            wrong.append(f"status {response.status}, not {status}")
+        problem = expect.get("problem")
+        if problem and not is_problem_json(response):
+            wrong.append("not problem+json")
+        elif isinstance(problem, str) and response.json().get("type") != problem:
+            wrong.append(f"type {response.json().get('type')!r}, not {problem!r}")
+        if expect.get("api", True) and response.headers.get("cache-control") != "no-store":
+            wrong.append("no Cache-Control: no-store")
+        if not wrong and expect.get("check"):
+            problem_text = expect["check"](response)
+            if problem_text:
+                wrong.append(problem_text)
+        if wrong:
+            body = response.body[:300].decode("utf-8", "replace")
+            self.failures.append(f"{name}: {'; '.join(wrong)}. Body: {body}")
+            self.log(f"FAIL {name}")
+            return False
+        self.log(f"ok   {name}")
+        return True
+
+
+def _headers(credential, proof=None, body=b"") -> dict[str, str]:
+    headers = {}
+    if credential:
+        headers["Authorization"] = f"Bearer {credential}"
+    if proof:
+        headers["Proof"] = proof
+    if body:
+        headers["Content-Type"] = "application/json"
+    return headers
+
+
+def _json(response: Response) -> dict:
+    body = response.json()
+    return body if isinstance(body, dict) else {}
+
+
+def _points_to_start(response: Response) -> str | None:
+    detail = _json(response).get("detail", "")
+    return None if START in detail else f"detail {detail!r} doesn't point to {START}"
+
+
+def _no_required_bits(response: Response) -> str | None:
+    if "required_bits" in _json(response):
+        return "required_bits present, so the gateway's validator let it through"
+    return None
+
+
+def run(
+    transport: Transport,
+    target: Target,
+    *,
+    production: bool,
+    clock: Callable[[], float],
+    sleep: Callable[[float], None],
+    log: Callable[[str], None],
+) -> Result:
+    s = _Session(transport, target, clock, sleep, log)
+    try:
+        _public(s)
+        if production:
+            _identity(s, target.credential, birthed=False)
+        else:
+            credential = _birth(s)
+            if credential:
+                credential = _identity(s, credential, birthed=True)
+        _execute_api(s)
+    except Blocked:
+        log(BLOCKED_MESSAGE)
+        return Result(s.failures, blocked=True)
+    return Result(s.failures)
+
+
+def _public(s: _Session) -> None:
+    """Anonymous reads, both `404`s, and a `birth` with no proof, which writes nothing."""
+    s.check(
+        "GET /v1/openapi.yaml",
+        s.api("GET", "/v1/openapi.yaml"),
+        200,
+        check=lambda r: None if b"openapi:" in r.body else "not an OpenAPI document",
+    )
+    s.check(
+        "outside /v1/: the CloudFront Function's 404",
+        s.api("GET", "/"),
+        404,
+        problem=True,
+        check=_points_to_start,
+    )
+    for name, method, path in [
+        ("bare /v1/", "GET", "/v1/"),
+        ("wrong method", "DELETE", "/v1/identity/birth"),
+    ]:
+        s.check(
+            f"{name}: the gateway's 404",
+            s.api(method, path),
+            404,
+            problem=True,
+            check=_points_to_start,
+        )
+
+    body = _birth_body()
+    response = s.api("POST", "/v1/identity/birth", _headers(None, body=body), body)
+
+    def learn(r: Response) -> str | None:
+        found = _json(r)
+        if not isinstance(found.get("required_bits"), int):
+            return "no integer required_bits"
+        if not isinstance(found.get("server_time"), int):
+            return "no integer server_time"
+        s.bits = found["required_bits"]
+        s.clock_offset = found["server_time"] - int(s.clock())
+        if abs(s.clock_offset) > 30:
+            s.log(f"note: this clock is {s.clock_offset}s off the server's; using the server's")
+        return None
+
+    s.check("birth without a proof", response, 400, problem=True, check=learn)
+
+
+def _birth_body() -> bytes:
+    return f'{{"name":"{SMOKE_NAME}"}}'.encode()
+
+
+def _birth(s: _Session) -> str | None:
+    """A test agent, and a replay of its proof."""
+    body = _birth_body()
+    response, proof, digest = s.write("POST", "/v1/identity/birth", body)
+    born = _json(response)
+
+    def secrets_and_id(r: Response) -> str | None:
+        if born.get("id") != agent_id(digest):
+            return f"id {born.get('id')!r}, not {agent_id(digest)!r} from the proof's hash"
+        if not all(_SECRET.fullmatch(str(born.get(k, ""))) for k in ("claim", "recovery")):
+            return "claim or recovery isn't 43 characters of base64url"
+        return None
+
+    if not s.check("birth", response, 201, check=secrets_and_id):
+        return None
+    s.log(f"     born test agent {born['id']}")
+    replay = s.api("POST", "/v1/identity/birth", _headers(None, proof, body), body)
+    s.check("birth replay", replay, 409, problem="already-exists")
+    s.recovery = born["recovery"]
+    return f"{born['id']}.{born['claim']}"
+
+
+def _identity(s: _Session, credential: str, *, birthed: bool) -> None:
+    """`self`, `evolve` and its gateway validation, wrong credentials and, for a test agent,
+    `reclaim`."""
+    agent = credential.split(".", 1)[0]
+    wrong = f"{agent}.{'A' * 43}"
+
+    def is_agent(r: Response) -> str | None:
+        found = _json(r).get("id")
+        return None if found == agent else f"id {found!r}, not {agent!r}"
+
+    s.check(
+        "self, so Authorization reaches the origin",
+        s.api("GET", "/v1/identity/self", _headers(credential)),
+        200,
+        check=is_agent,
+    )
+    s.check(
+        "self with a wrong claim",
+        s.api("GET", "/v1/identity/self", _headers(wrong)),
+        401,
+        problem=True,
+    )
+
+    body = f'{{"whoiam":"{SMOKE_WHOIAM}"}}'.encode()
+    response, _, _ = s.write("PUT", "/v1/identity/evolve", body, credential=credential)
+    s.check(
+        "evolve",
+        response,
+        200,
+        check=lambda r: None if _json(r).get("whoiam") == SMOKE_WHOIAM else "whoiam not replaced",
+    )
+
+    extra = f'{{"whoiam":"{SMOKE_WHOIAM}","extra":1}}'.encode()
+    response, _, _ = s.write("PUT", "/v1/identity/evolve", extra, credential=credential)
+    s.check(
+        "evolve with an extra field: the gateway's 400",
+        response,
+        400,
+        problem=True,
+        check=_no_required_bits,
+    )
+
+    # Every character escaped: within the gateway's maxLength, which counts characters, but
+    # about 192 KB, so only the Lambda's 32 KB check can refuse it (spec.md "Validator limit").
+    escaped = ('{"whoiam":"' + "\\u00e9" * MAX_WHOIAM_CHARS + '"}').encode()
+    response, _, _ = s.write("PUT", "/v1/identity/evolve", escaped, credential=credential)
+    s.check(
+        "evolve with a maximum-size escaped body: the Lambda's 32 KB check",
+        response,
+        400,
+        problem=True,
+        check=lambda r: None
+        if "32 KB" in _json(r).get("title", "")
+        else "not the Lambda's 32 KB refusal",
+    )
+
+    malformed = b'{"whoiam":'
+    response, _, _ = s.write("PUT", "/v1/identity/evolve", malformed, credential=credential)
+    s.check("evolve with a malformed body: valid problem+json", response, 400, problem=True)
+
+    if birthed:
+        _reclaim(s, credential)
+
+
+def _reclaim(s: _Session, old_credential: str) -> None:
+    agent = old_credential.split(".", 1)[0]
+    old_recovery = f"{agent}.{s.recovery}"
+    response, _, _ = s.write("POST", "/v1/identity/reclaim", b"", credential=old_recovery)
+    new = _json(response)
+
+    def fresh(r: Response) -> str | None:
+        if new.get("id") != agent:
+            return f"id {new.get('id')!r}, not {agent!r}"
+        if f"{agent}.{new.get('claim')}" == old_credential or new.get("recovery") == s.recovery:
+            return "the secrets didn't change"
+        return None
+
+    if not s.check("reclaim", response, 200, check=fresh):
+        return
+    s.check(
+        "self with the old claim after reclaim",
+        s.api("GET", "/v1/identity/self", _headers(old_credential)),
+        401,
+        problem=True,
+    )
+    response, _, _ = s.write("POST", "/v1/identity/reclaim", b"", credential=old_recovery)
+    s.check("reclaim with the spent recovery code", response, 401, problem=True)
+    s.check(
+        "self with the new claim",
+        s.api("GET", "/v1/identity/self", _headers(f"{agent}.{new['claim']}")),
+        200,
+    )
+
+
+def _execute_api(s: _Session) -> None:
+    """Straight to API Gateway, past CloudFront: without the origin key, and with a wrong one."""
+    url = s.target.execute_api_url.rstrip("/") + "/openapi.yaml"
+    s.check("execute-api without the origin key is rejected", s.send("GET", url), 403, api=False)
+    s.check(
+        "execute-api with a wrong origin key",
+        s.send("GET", url, {"x-api-key": _wrong_key()}),
+        403,
+        problem="origin-key-replaced",
+    )
+
+
+def _wrong_key() -> str:
+    alphabet = string.ascii_letters + string.digits
+    return "smoke" + "".join(secrets.choice(alphabet) for _ in range(35))
+
+
+# The command line.
+
+
+class UsageError(Exception):
+    pass
+
+
+def load_target(args: argparse.Namespace, config_path) -> Target:
+    """The URLs and, for `--production`, the smoke identity, from the arguments and config."""
+    import sfab_config
+
+    api_url = args.api_url
+    if api_url is None:
+        try:
+            api_url = f"https://api.{sfab_config.load(config_path).domain_name}"
+        except sfab_config.ConfigError as e:
+            raise UsageError(str(e)) from None
+    credential = None
+    if args.production:
+        credential = _smoke_claim(config_path)
+    if not args.execute_api.startswith("https://"):
+        raise UsageError(
+            "--execute-api must be the stage's https:// URL, the stack's Endpoint output"
+        )
+    return Target(api_url.rstrip("/"), args.execute_api, credential)
+
+
+def _smoke_claim(config_path) -> str:
+    try:
+        value = tomllib.loads(config_path.read_text(encoding="utf-8")).get("smoke_claim")
+    except (OSError, tomllib.TOMLDecodeError) as e:
+        raise UsageError(f"{config_path}: can't read smoke_claim: {e}") from None
+    if value is None or value == "CHANGE_ME":
+        raise UsageError(
+            f"--production needs smoke_claim in {config_path}: the fixed smoke identity's "
+            '<id>.<claim>. Birth it once after launch and add it, as spec.md "Local config" says.'
+        )
+    agent, _, claim = str(value).partition(".")
+    if not (_ID.fullmatch(agent) and _SECRET.fullmatch(claim)):
+        raise UsageError(f"{config_path}: smoke_claim must be <id>.<claim>, as in Authorization")
+    return str(value)
+
+
+def parse_args(argv: list[str] | None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        prog="smoke", description="The smoke script; see cdk/smoke.py."
+    )
+    parser.add_argument(
+        "--execute-api", required=True, help="the stage URL, the API stack's Endpoint output"
+    )
+    parser.add_argument(
+        "--production",
+        action="store_true",
+        help="after launch: birth nothing, write nothing public",
+    )
+    parser.add_argument("--api-url", help="defaults to https://api.<domain_name> from the config")
+    return parser.parse_args(argv)
+
+
+def main(
+    argv: list[str] | None = None, transport: Transport = urllib_transport, config_path=None
+) -> int:
+    import sfab_config
+
+    args = parse_args(argv)
+    try:
+        target = load_target(args, config_path or sfab_config.config_path())
+    except UsageError as e:
+        print(e, file=sys.stderr)
+        return 2
+    result = run(
+        transport, target, production=args.production, clock=time.time, sleep=time.sleep, log=print
+    )
+    if result.failures:
+        print(f"\n{len(result.failures)} failed:", *result.failures, sep="\n  ")
+    if result.blocked:
+        return 3
+    return 1 if result.failures else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
