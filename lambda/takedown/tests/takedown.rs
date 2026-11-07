@@ -148,7 +148,15 @@ async fn full_agent(w: &World, name: &str, now: i64) -> Agent {
 async fn rebirth(w: &World, agent: &Agent) -> Result<(), (u16, &'static str)> {
     let body = format!(r#"{{"name":"{}"}}"#, agent.name);
     let proof = &agent.birth_proof;
-    let reply = deliver(w, "POST", BIRTH, None, body.as_bytes(), proof, agent.born_at);
+    let reply = deliver(
+        w,
+        "POST",
+        BIRTH,
+        None,
+        body.as_bytes(),
+        proof,
+        agent.born_at,
+    );
     reply.await.map(|_| ())
 }
 
@@ -207,7 +215,9 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
 
     let targets = plan(&*w.store, &Mode::One(agent.id.clone())).await.unwrap();
     let waits = AtomicUsize::new(0);
-    execute(&*w.store, &targets, counting(&waits)).await.unwrap();
+    execute(&*w.store, &targets, counting(&waits))
+        .await
+        .unwrap();
 
     assert_eq!(waits.load(Ordering::SeqCst), 1);
     assert_taken_down(&w, &agent, "2026-11-05T12:00:00Z").await;
@@ -380,12 +390,16 @@ async fn a_rerun_of_a_finished_takedown_succeeds_and_changes_nothing() {
     let mode = Mode::One(agent.id.clone());
     let waits = AtomicUsize::new(0);
     let targets = plan(&*w.store, &mode).await.unwrap();
-    execute(&*w.store, &targets, counting(&waits)).await.unwrap();
+    execute(&*w.store, &targets, counting(&waits))
+        .await
+        .unwrap();
     let stored = snapshot(&w.store);
 
     let targets = plan(&*w.store, &mode).await.unwrap();
     assert!(targets[0].taken_down);
-    execute(&*w.store, &targets, counting(&waits)).await.unwrap();
+    execute(&*w.store, &targets, counting(&waits))
+        .await
+        .unwrap();
 
     assert_eq!(snapshot(&w.store), stored);
     assert_taken_down(&w, &agent, "2026-11-05T12:00:00Z").await;
@@ -399,7 +413,9 @@ async fn a_window_takes_down_everyone_born_in_it_with_one_wait() {
 
     let targets = plan(&*w.store, &flood()).await.unwrap();
     let waits = AtomicUsize::new(0);
-    execute(&*w.store, &targets, counting(&waits)).await.unwrap();
+    execute(&*w.store, &targets, counting(&waits))
+        .await
+        .unwrap();
 
     assert_eq!(waits.load(Ordering::SeqCst), 1);
     assert_taken_down(&w, &first, "2026-11-05T12:00:00Z").await;

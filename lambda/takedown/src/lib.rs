@@ -2,7 +2,11 @@
 //! takedown function, so every key format stays in the crate that owns it
 //! (`docs/adr/0004-rules-live-in-crates.md`).
 
+mod args;
+
 use std::future::Future;
+
+pub use args::{Args, USAGE, parse_args};
 
 use sfab_core::id::AgentId;
 use sfab_core::storage::{Bucket, Condition, Store, StoreError};
@@ -14,7 +18,10 @@ pub enum Mode {
     One(AgentId),
     /// Every agent whose `born_at` is at or after `from` and before `to`, as RFC 3339 in UTC to the
     /// second, such as `2026-11-05T12:00:00Z`.
-    Window { from: String, to: String },
+    Window {
+        from: String,
+        to: String,
+    },
 }
 
 /// One agent the takedown would handle, and what it found of the agent's data.
@@ -38,15 +45,17 @@ pub fn locations(id: &AgentId) -> Vec<Location> {
 /// What a takedown would handle. It writes nothing, which makes it the dry run.
 pub async fn plan<S: Store>(store: &S, mode: &Mode) -> Result<Vec<Target>, StoreError> {
     let born = match mode {
-        Mode::One(id) => vec![
-            sfab_identity::born(store, id)
-                .await?
-                .unwrap_or(sfab_identity::Born {
-                    id: id.clone(),
-                    born_at: None,
-                    taken_down: false,
-                }),
-        ],
+        Mode::One(id) => {
+            vec![
+                sfab_identity::born(store, id)
+                    .await?
+                    .unwrap_or(sfab_identity::Born {
+                        id: id.clone(),
+                        born_at: None,
+                        taken_down: false,
+                    }),
+            ]
+        }
         Mode::Window { from, to } => sfab_identity::born_between(store, from, to).await?,
     };
     let mut targets = Vec::with_capacity(born.len());
@@ -95,11 +104,7 @@ pub async fn execute<S: Store, W: Future<Output = ()>>(
     wait: W,
 ) -> Result<(), StoreError> {
     let all: Vec<Vec<Location>> = targets.iter().map(|t| locations(&t.id)).collect();
-    let in_phase = |phase: Phase| {
-        all.iter()
-            .flatten()
-            .filter(move |l| l.phase == phase)
-    };
+    let in_phase = |phase: Phase| all.iter().flatten().filter(move |l| l.phase == phase);
     // (1) End private access and public reading at once.
     for l in in_phase(Phase::First) {
         apply(store, l).await?;

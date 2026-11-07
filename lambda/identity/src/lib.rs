@@ -435,11 +435,7 @@ pub async fn born_between<S: Store>(
             continue;
         };
         let born = born_of(id, &object);
-        if born
-            .born_at
-            .as_deref()
-            .is_some_and(|b| from <= b && b < to)
-        {
+        if born.born_at.as_deref().is_some_and(|b| from <= b && b < to) {
             found.push(born);
         }
     }
