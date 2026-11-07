@@ -92,7 +92,8 @@ pub async fn daily<S: Store, F: Fetch, N: Notify>(
     let count = |f: fn(&Outcome) -> bool| outcomes.iter().filter(|o| f(o)).count();
     let verified = count(|o| matches!(o, Outcome::Verified));
     let checked = verified + count(|o| matches!(o, Outcome::Unmatched));
-    let (emailed, old) = email(store, notify, now).await?;
+    let (domains, old) = waiting_verified(store, now).await?;
+    let emailed = email(store, notify, &domains, now).await?;
     Ok(DailyReport {
         checked,
         verified,
@@ -141,13 +142,13 @@ async fn verify<S: Store, F: Fetch>(
     Ok(Outcome::Verified)
 }
 
-/// Today's one email, if any request is verified and none went out today, and how many verified
-/// requests were deleted for being older than 30 days.
-async fn email<S: Store, N: Notify>(
+/// The verified requests still waiting for the owner, deleting any older than `VERIFIED_DAYS`,
+/// since S3 removes expired objects some time later. Returns their domains and how many it
+/// deleted.
+async fn waiting_verified<S: Store>(
     store: &S,
-    notify: &N,
     now: i64,
-) -> Result<(bool, usize), StoreError> {
+) -> Result<(Vec<String>, usize), StoreError> {
     let mut domains = Vec::new();
     let mut old = 0;
     for key in store.list(Bucket::Identities, VERIFIED_PREFIX).await? {
@@ -166,14 +167,24 @@ async fn email<S: Store, N: Notify>(
             domains.push(request.domain);
         }
     }
+    Ok((domains, old))
+}
+
+/// Today's one email, if any request is waiting and none went out today; whether it was sent.
+async fn email<S: Store, N: Notify>(
+    store: &S,
+    notify: &N,
+    domains: &[String],
+    now: i64,
+) -> Result<bool, StoreError> {
     if domains.is_empty() {
-        return Ok((false, old));
+        return Ok(false);
     }
     let today = rfc3339(utc_day(now) * DAY)[..10].to_owned();
     if let Some(object) = store.get(Bucket::Identities, EMAILED_KEY).await?
         && serde_json::from_slice::<Emailed>(&object.body).is_ok_and(|e| e.day == today)
     {
-        return Ok((false, old));
+        return Ok(false);
     }
     let marker = serde_json::to_vec(&Emailed { day: today }).expect("a day serializes");
     store
@@ -205,5 +216,5 @@ async fn email<S: Store, N: Notify>(
         .notify(&subject, &message)
         .await
         .map_err(StoreError::Other)?;
-    Ok((true, old))
+    Ok(true)
 }
