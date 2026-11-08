@@ -151,7 +151,7 @@ async fn owner_batch(
     for _ in 0..n {
         let code = new_code();
         issue(store, &code, &how).await.unwrap();
-        codes.push(code);
+        codes.push(code.into());
     }
     codes
 }

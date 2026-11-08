@@ -32,6 +32,8 @@ pub const CODE_CHARS: usize = 16;
 const LABEL: &str = "label";
 const EXPIRES: &str = "expires";
 const NO_IP_LIMIT: &str = "no-ip-limit";
+/// `no-ip-limit`'s value on a code that skips the IP rule.
+const SET: &str = "true";
 
 const CODES_PREFIX: &str = "genesis/codes/";
 const BATCHES_PREFIX: &str = "genesis/batches/";
@@ -44,17 +46,55 @@ fn batch_key(label: &str, code: &str) -> String {
     format!("{BATCHES_PREFIX}{label}/{code}")
 }
 
-/// A new genesis code: 16 characters of lowercase base32, 80 random bits.
-pub fn new_code() -> String {
+/// A genesis code: 16 characters of lowercase base32. Only `new_code` and `Code::parse` make
+/// one, so every `Code` is safe in a key.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Code(String);
+
+impl Code {
+    /// `text` as a code, or `None` when it hasn't a code's form.
+    pub fn parse(text: &str) -> Option<Self> {
+        is_code(text).then(|| Self(text.to_owned()))
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::ops::Deref for Code {
+    type Target = str;
+
+    fn deref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Display for Code {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl From<Code> for String {
+    fn from(code: Code) -> Self {
+        code.0
+    }
+}
+
+/// A new genesis code: 80 random bits.
+pub fn new_code() -> Code {
     let mut bytes = [0u8; 10];
     getrandom::fill(&mut bytes).expect("the system's random source");
     let bits = bytes
         .iter()
         .fold(0u128, |acc, b| (acc << 8) | u128::from(*b));
-    (0..CODE_CHARS)
-        .rev()
-        .map(|i| ALPHABET[((bits >> (5 * i)) & 31) as usize] as char)
-        .collect()
+    Code(
+        (0..CODE_CHARS)
+            .rev()
+            .map(|i| ALPHABET[((bits >> (5 * i)) & 31) as usize] as char)
+            .collect(),
+    )
 }
 
 const ALPHABET: &[u8; 32] = b"abcdefghijklmnopqrstuvwxyz234567";
@@ -91,7 +131,7 @@ impl Issue {
             metadata.insert(EXPIRES.to_owned(), rfc3339(expires));
         }
         if self.no_ip_limit {
-            metadata.insert(NO_IP_LIMIT.to_owned(), "true".to_owned());
+            metadata.insert(NO_IP_LIMIT.to_owned(), SET.to_owned());
         }
         metadata
     }
@@ -99,7 +139,7 @@ impl Issue {
 
 /// Uploads one code: `genesis/codes/<code>` with its metadata, and its batch entry
 /// `genesis/batches/<label>/<code>`, which is never deleted.
-pub async fn issue<S: Store>(store: &S, code: &str, how: &Issue) -> Result<(), StoreError> {
+pub async fn issue<S: Store>(store: &S, code: &Code, how: &Issue) -> Result<(), StoreError> {
     store
         .put(
             BUCKET,
@@ -121,7 +161,7 @@ pub async fn issue<S: Store>(store: &S, code: &str, how: &Issue) -> Result<(), S
 }
 
 /// Makes a new code and issues it as `how` says.
-pub async fn issue_new<S: Store>(store: &S, how: &Issue) -> Result<String, StoreError> {
+pub async fn issue_new<S: Store>(store: &S, how: &Issue) -> Result<Code, StoreError> {
     let code = new_code();
     issue(store, &code, how).await?;
     Ok(code)
@@ -135,10 +175,10 @@ struct Pool {
 }
 
 /// Writes `genesis/pool.json` with `codes`, for the UTC day of `now`.
-pub async fn write_pool<S: Store>(store: &S, now: i64, codes: &[String]) -> Result<(), StoreError> {
+pub async fn write_pool<S: Store>(store: &S, now: i64, codes: &[Code]) -> Result<(), StoreError> {
     let pool = Pool {
         date: utc_date(now),
-        codes: codes.to_vec(),
+        codes: codes.iter().map(|c| c.0.clone()).collect(),
     };
     store
         .put(
@@ -158,7 +198,7 @@ fn to_json<T: Serialize>(value: &T) -> Vec<u8> {
 /// A code that passed `admit`, for `use_up` after the birth.
 #[derive(Debug, Clone)]
 pub struct Admission {
-    code: String,
+    code: Code,
     world: bool,
     /// The IP record to write, or `None` for a code that skips the rule.
     ip: Option<String>,
@@ -198,12 +238,10 @@ impl<S: Store> Genesis<S> {
         viewer: Option<&str>,
         now: i64,
     ) -> Result<Admission, Problem> {
-        if !is_code(code) {
-            return Err(invalid_code());
-        }
+        let code = Code::parse(code).ok_or_else(invalid_code)?;
         let metadata = self
             .store
-            .head(BUCKET, &code_key(code))
+            .head(BUCKET, &code_key(&code))
             .await
             .map_err(|e| storage_failure("reading a genesis code", &e))?
             .ok_or_else(invalid_code)?;
@@ -215,7 +253,7 @@ impl<S: Store> Genesis<S> {
         let world = metadata
             .get(LABEL)
             .is_some_and(|l| l.starts_with(WORLD_LABEL_PREFIX));
-        let ip = if metadata.get(NO_IP_LIMIT).is_some_and(|v| v == "true") {
+        let ip = if metadata.get(NO_IP_LIMIT).is_some_and(|v| v == SET) {
             None
         } else {
             let Some(fingerprint) = viewer.and_then(|v| self.rule.fingerprint(v)) else {
@@ -227,11 +265,7 @@ impl<S: Store> Genesis<S> {
             self.check_window(&fingerprint, now).await?;
             Some(fingerprint)
         };
-        Ok(Admission {
-            code: code.to_owned(),
-            world,
-            ip,
-        })
+        Ok(Admission { code, world, ip })
     }
 
     /// `409 too-soon` when the IP record holds a birth inside the window. Judged by the stored
@@ -289,7 +323,7 @@ impl<S: Store> Genesis<S> {
 
     /// One GET and one conditional PUT, whose lost race is ignored, so the pool is only mostly
     /// fresh.
-    async fn leave_pool(&self, code: &str) {
+    async fn leave_pool(&self, code: &Code) {
         let object = match self.store.get(BUCKET, POOL_KEY).await {
             Ok(Some(object)) => object,
             Ok(None) => return,
@@ -299,7 +333,7 @@ impl<S: Store> Genesis<S> {
             return tracing::error!("the genesis pool doesn't parse");
         };
         let before = pool.codes.len();
-        pool.codes.retain(|c| c != code);
+        pool.codes.retain(|c| *c != code.0);
         if pool.codes.len() == before {
             return;
         }
@@ -382,7 +416,8 @@ pub mod testing {
     /// Puts back a used code, as a replay test needs.
     pub async fn reseed_exempt_code<S: Store>(store: &S, code: &str) {
         let how = owner_batch(true);
-        issue(store, code, &how).await.expect("seeding a code");
+        let code = Code::parse(code).expect("a code");
+        issue(store, &code, &how).await.expect("seeding a code");
     }
 
     fn owner_batch(no_ip_limit: bool) -> Issue {
@@ -397,6 +432,7 @@ pub mod testing {
         issue_new(store, &owner_batch(no_ip_limit))
             .await
             .expect("seeding a code")
+            .into()
     }
 
     /// `n` world codes for the UTC day of `now`, issued and in that day's pool.
@@ -409,6 +445,6 @@ pub mod testing {
         write_pool(store, now, &codes)
             .await
             .expect("seeding a pool");
-        codes
+        codes.into_iter().map(String::from).collect()
     }
 }

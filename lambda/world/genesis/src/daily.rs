@@ -10,8 +10,8 @@ use sfab_core::daily::{DAY, utc_date};
 use sfab_core::storage::{Condition, Metadata, Store, StoreError};
 
 use crate::{
-    BATCHES_PREFIX, BUCKET, CODES_PREFIX, IPS_PREFIX, Issue, WORLD_LABEL_PREFIX, Window, code_key,
-    issue_new, to_json, write_pool,
+    BATCHES_PREFIX, BUCKET, CODES_PREFIX, Code, IPS_PREFIX, Issue, WORLD_LABEL_PREFIX, Window,
+    code_key, issue_new, to_json, write_pool,
 };
 
 const SUMMARY_KEY: &str = "genesis/summary.json";
@@ -162,7 +162,7 @@ pub async fn daily<S: Store>(
         if date < today.as_str() {
             stale.extend(still);
         } else if date == today {
-            todays.extend(still);
+            todays.extend(still.filter_map(|c| Code::parse(&c)));
         }
     }
     let expired = stale.len();

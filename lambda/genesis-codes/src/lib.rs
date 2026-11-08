@@ -71,7 +71,7 @@ pub async fn issue_codes<S: Store>(
 ) -> Result<Vec<String>, StoreError> {
     let mut codes = Vec::with_capacity(count);
     for _ in 0..count {
-        codes.push(issue_new(store, how).await?);
+        codes.push(issue_new(store, how).await?.into());
     }
     Ok(codes)
 }
