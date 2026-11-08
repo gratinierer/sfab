@@ -14,7 +14,8 @@ The Lambda side of `spec.md` "What `birth` does", "The IP rule" and the `genesis
   world code, remove it from `genesis/pool.json` with a conditional PUT whose failure is ignored.
 - The IP fingerprint: HMAC of the IPv4 address or IPv6 /64 prefix with `ip_hash_key`, from CloudFront's viewer
   address. No raw IP in any object or log line.
-- `GET /world/genesis-code`: one random code from `genesis/pool.json`, or `404 none-left` with `retry_after`, and its
+- `GET /world/genesis-code`: one random code from `genesis/pool.json`, `404 not-built-yet` before the daily job's first pool, or `404 none-left` with
+  `retry_after` once it's empty, and its
   route in `openapi/sfab.yaml`.
 - The proof-of-work worked example in `openapi/sfab.yaml` gets a `genesis_code` in its `birth` body, with its body
   hash and nonce recomputed and `lambda/core/tests/worked_example.rs` updated to match.
