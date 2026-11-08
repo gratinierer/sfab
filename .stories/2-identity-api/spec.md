@@ -588,7 +588,9 @@ Notes on these controls:
   budget uses NOT (`SERVICE` = the domain charge's service name OR `RECORD_TYPE` = `Credit`), so a purchase
   or renewal can't stop the API. The alert and check budgets use NOT (`RECORD_TYPE` = `Credit`), so stolen
   credentials can't register domains unseen, at the cost of an expected email on a purchase or renewal.
-  There are three budgets because AWS allows five notifications per budget. AWS doesn't allow this
+  There are three budgets because the stop budget needs its own filter and topic, and the $0.01 check needs its own
+  $1 limit, since CloudFormation refuses a threshold below 0.1. AWS allows ten notifications per budget, so the count
+  isn't the reason. AWS doesn't allow this
   alongside the deprecated `CostTypes`, so `IncludeCredit` can't be used. That the value is literally
   `Credit` isn't confirmed, so check it in the console's budget preview, and the budget check under
   "Testing" compares it with the first real bill.
