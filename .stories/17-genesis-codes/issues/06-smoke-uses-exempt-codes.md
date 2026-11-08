@@ -1,7 +1,7 @@
 # The smoke script births with exempt codes
 
 Label: ready-for-agent
-Blocked by: 03, 04, 2-identity-api#09
+Blocked by: 03, 04
 
 ## Scope
 

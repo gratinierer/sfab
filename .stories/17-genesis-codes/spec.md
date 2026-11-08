@@ -13,10 +13,10 @@ identities appear each day and can see where the owner-shared codes went.
 It changes `birth` from `.stories/2-identity-api/`. It's before the public launch, so the change to `birth`'s request
 is allowed (`docs/api-design.md` "Changes"), and needs no changelog line, because the changelog starts with the launch.
 
-Story 17 is deployed before launch and before story 2's drills (`2-identity-api#10`), so no agent outside tests is
-ever born without a genesis code. Story 2's first deploy (`2-identity-api#01`) and smoke (`#09`) run on the old
-`birth`, and story 17 follows as the next deploy. Its issues are built in whatever order their `Blocked by` lines
-allow, and story 2's drills wait for them.
+Story 17 ships in story 2's first deploy (`2-identity-api#01`), so no world ever runs `birth` without genesis codes.
+Story 2's code is built and only its deploy and runs are left, so issues 01-06 are built first, and 2#01 is `Blocked
+by` 05 and 06; story 2's smoke (`#09`) then runs with issue 06's changes. Issue 07 (the legal check) is needed only
+before launch.
 
 ## Genesis code
 

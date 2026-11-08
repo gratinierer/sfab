@@ -5,8 +5,8 @@ Blocked by: 2-identity-api#06
 
 The `genesis` crate in `lambda/world/genesis/`, which owns every `genesis/` key (ADR 0004), and the Lambda side of `spec.md` "What `birth` does", "The IP rule" and the `genesis/` keys in "Storage". `identity::birth` calls `genesis` after the proof and before the birth, so `identity` depends on `genesis` (ADR 0008).
 
-It reaches a deployed world only with the rest of story 17, in the deploy after story 2's first one and before story
-2's drills (`spec.md` intro).
+It reaches a deployed world only with the rest of story 17, in story 2's first deploy (`2-identity-api#01`, `spec.md`
+intro).
 
 ## Scope
 

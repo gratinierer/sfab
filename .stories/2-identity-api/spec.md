@@ -937,8 +937,8 @@ failure. Each step needs the one before it:
    attached, CloudFront and WAF bill per request.
 7. Deploy the website stack, and check its distribution shows the Free flat-rate plan in the console, as in step 6.
 
-After this, every deploy runs all stacks with the `deploy` script. The next one is story 17
-(`.stories/17-genesis-codes/` intro), and "Done" lists the checks for the end.
+Story 17 is part of this first deploy (`.stories/17-genesis-codes/` intro), so steps 4 to 7 wait for its issues
+01-06. After this, every deploy runs all stacks with the `deploy` script, and "Done" lists the checks for the end.
 
 ## Prerequisites
 
