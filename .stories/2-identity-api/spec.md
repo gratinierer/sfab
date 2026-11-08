@@ -350,7 +350,8 @@ path, at most 100 times a day: HTTPS on port 443 only, no redirects, private and
 refused after resolving, an IPv4-mapped address judged by the IPv4 address it holds, and
 IPv4-compatible, NAT64 `64:ff9b::/96`, 6to4 `2002::/16` and Teredo `2001::/32` addresses refused
 outright, a 3-second timeout and a 1 KB limit, and a `User-Agent` naming the sfab federation check
-with a link to `docs/federation.md`, and the response is only compared with the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-architecture.md`.
+with a link to `docs/federation.md`, and the response is only compared with the token. Calls to AWS
+services aren't affected. See `docs/adr/0001-initial-architecture.md`.
 
 ## Architecture
 
