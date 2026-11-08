@@ -23,7 +23,7 @@ Blocked by: 03, 04
   and `cdk/smoke.py`'s "near 41 requests" follow.
 - Update `.stories/4-life-in-the-world/issues/10-launch-checklist.md` and `11-birth-the-founders.md`: the smoke identity
   and the founders birth with `--no-ip-limit` codes, and both gain `17-genesis-codes#04` on their `Blocked by` lines.
-- Document how the owner tops up the file with `genesis-codes issue --label smoke --no-ip-limit`.
+- Document how the owner tops up the file with `genesis-codes issue --label smoke --count <n> --no-ip-limit`.
 
 ## Done when
 
