@@ -140,9 +140,41 @@ def test_a_world_rejecting_both_world_codes_fails():
     assert api.labels.count("genesis code") == 2
 
 
-def test_the_same_used_world_code_again_passes_and_skips_the_retry():
-    # The pool picks at random and a lost race leaves the used code in it, so the refetch may
-    # hand back the very code just rejected: that's the stale entry, not a fault.
+def test_the_same_used_world_code_again_is_refetched_until_a_fresh_one():
+    # The pool picks at random and a lost race leaves the used code in it, so a refetch may
+    # hand back the very code just rejected; the next one may not, and that one must be born.
+    clock = Clock()
+    api = FakeApi(clock)
+    stale = api.pool[0]
+    del api.genesis[stale]
+    lines = []
+
+    def transport(request):
+        answer = api(request)
+        if api.labels[-1] == "invalid genesis code":
+            api.handed = 0  # the next refetch picks the stale code again
+        return answer
+
+    result = run(
+        transport,
+        FULL,
+        production=False,
+        clock=clock,
+        sleep=clock.sleep,
+        log=lines.append,
+        codes=Codes(api.issue(2)),
+    )
+
+    assert result.failures == []
+    assert api.labels.count("genesis code") == 3
+    assert api.labels.count("invalid genesis code") == 1, "the same code isn't sent twice"
+    assert "world birth" in api.labels, "the fresh code was accepted"
+    # Two refetches and a birth on top of the run's 43; at most three refetches, so 47.
+    assert len(api.requests) <= 47
+
+
+def test_a_one_code_pool_holding_the_used_code_passes_and_skips_the_retry():
+    # Every refetch hands back the stale entry: that's the pool, not a fault.
     clock = Clock()
     api = FakeApi(clock)
     stale = api.pool[0]
@@ -151,9 +183,10 @@ def test_the_same_used_world_code_again_passes_and_skips_the_retry():
     lines = []
 
     assert smoke(api, clock, log=lines.append).failures == []
-    assert api.labels.count("genesis code") == 2
+    assert api.labels.count("genesis code") == 4, "the first fetch and three refetches"
     assert api.labels.count("invalid genesis code") == 1, "the same code isn't sent twice"
     assert any("skip" in line and "same" in line for line in lines), lines
+    assert len(api.requests) <= 47
 
 
 @pytest.mark.parametrize(

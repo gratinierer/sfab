@@ -474,14 +474,20 @@ def _birth(s: _Session, codes: Codes) -> str | None:
     return f"{born['id']}.{born['claim']}"
 
 
+# How many times a world-code retry refetches for a code other than the rejected one.
+_WORLD_CODE_REFETCHES = 3
+
+
 def _world_birth(s: _Session) -> None:
     """A birth with the world's code. The code is checked before the IP rule, so `201` or
     `409 too-soon` both prove it was accepted, and a rerun from one IP within the window still
     passes; only `201` uses up the pool code. The pool is only mostly fresh, so after a `403
     invalid-genesis-code` it fetches a fresh code and births once more, which must be accepted:
     a racing birth may use one code, but a world that rejects two is broken. A refetch that
-    finds no code skips the retry, as a first fetch would, and so does one that hands back the
-    same used code, since the pool picks at random and keeps a code a race used."""
+    finds no code skips the retry, as a first fetch would. The pool picks at random and keeps a
+    code a race used, so a refetch may hand back the same used code: it refetches up to
+    `_WORLD_CODE_REFETCHES` times for a different one, and skips only if every refetch gives
+    the used code."""
     if s.world_code is None:
         s.log("skip birth with the world's code: GET /v1/world/genesis-code gave none")
         return
@@ -494,15 +500,20 @@ def _world_birth(s: _Session) -> None:
             "note: the world's code was already used, which a racing birth may do, "
             "since the pool is only mostly fresh; trying a fresh one"
         )
-        used, s.world_code = s.world_code, None
-        _genesis_code(s)
-        if s.world_code is None:
-            s.log("skip birth with a fresh world code: GET /v1/world/genesis-code gave none")
-            return
-        if s.world_code == used:
+        used = s.world_code
+        for _ in range(_WORLD_CODE_REFETCHES):
+            s.world_code = None
+            _genesis_code(s)
+            if s.world_code is None:
+                s.log("skip birth with a fresh world code: GET /v1/world/genesis-code gave none")
+                return
+            if s.world_code != used:
+                break
+        else:
             s.log(
-                "skip birth with a fresh world code: GET /v1/world/genesis-code gave the same "
-                "used code again, which the pool's random pick may do while it holds it"
+                f"skip birth with a fresh world code: GET /v1/world/genesis-code gave the same "
+                f"used code {_WORLD_CODE_REFETCHES} times, which the pool's random pick may do "
+                "while it holds it, and always does when it is the only code left"
             )
             return
         response, _, digest = s.write("POST", "/v1/identity/birth", _birth_body(s.world_code))
