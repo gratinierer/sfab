@@ -235,6 +235,9 @@ pub fn is_public(ip: IpAddr) -> bool {
                 || (s[0] == 0x2001 && s[1] == 0x0db8)
                 // NAT64, 64:ff9b::/96, which can reach private IPv4.
                 || (s[0] == 0x0064 && s[1] == 0xff9b)
+                // 6to4, 2002::/16, and Teredo, 2001::/32, which embed IPv4 too.
+                || s[0] == 0x2002
+                || (s[0] == 0x2001 && s[1] == 0x0000)
                 // IPv4-compatible, ::/96.
                 || s[..6].iter().all(|&x| x == 0))
         }

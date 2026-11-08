@@ -346,7 +346,13 @@ async fn a_certificate_for_another_name_is_refused() {
 
 #[test]
 fn only_public_addresses_may_be_fetched() {
-    for public in ["93.184.215.14", "8.8.8.8", "2606:4700::1111"] {
+    // 2001:4860:: is an ordinary global address, outside Teredo's 2001::/32.
+    for public in [
+        "93.184.215.14",
+        "8.8.8.8",
+        "2606:4700::1111",
+        "2001:4860:4860::8888",
+    ] {
         assert!(is_public(public.parse().unwrap()), "{public}");
     }
     for private in [
@@ -371,6 +377,9 @@ fn only_public_addresses_may_be_fetched() {
         "::ffff:127.0.0.1",
         "::ffff:10.0.0.1",
         "64:ff9b::a00:1",
+        // 6to4, embedding 10.0.0.1, and Teredo.
+        "2002:a00:1::1",
+        "2001:0:4136:e378:8000:63bf:3fff:fdd2",
         "fc00::1",
         "fd12:3456::1",
         "fe80::1",
