@@ -236,6 +236,8 @@ def test_production_births_nothing_and_writes_only_privately():
     result = smoke(api, clock, target=PRODUCTION, production=True)
 
     assert result.failures == []
+    # About 30 (spec.md "Testing").
+    assert len(api.requests) <= 30
     assert "birth" not in api.labels
     assert "reclaim" not in api.labels
     writes = {(r.method, r.url) for r in api.requests if r.method in ("POST", "PUT")}
