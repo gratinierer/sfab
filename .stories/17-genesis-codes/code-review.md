@@ -19,6 +19,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-08T21:35:00+00:00 | code-review | 01, 02, 03, 04, 05, 06 @ 53d24d8..b32f5e6 | claude-fable-5-1 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5, round 3) | 2 new: 1 standards, 1 spec | reviewed the C11-C19 fixes; no hard violations or regressions; C11 makes one malformed `pool.json` entry fail the whole pool (500 until the next daily run), judged acceptable since only the crate writes it; C18's 45-request retry path stays under WAF's limit, so story 2's "about 43" stands |
 | 2026-11-08T21:37:20+00:00 | walkthrough | 01, 02, 03, 04, 05, 06 | claude-opus-5-5 (dispatched) | 0 new, 2 resolved, 0 still open | auto walkthrough, not a review pass; `scripts/check` passed |
 | 2026-11-08T21:55:00+00:00 | code-review | 01, 02, 03, 04, 05, 06 @ 486429f..290e82d | claude-fable-5-1 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5, round 4) | 1 new: 0 standards, 1 spec | C20 and C21 fixes confirmed, statuses flipped to `resolved`; minor smells (skip message repeats the docstring, a wording-based log assert) not filed |
+| 2026-11-08T21:44:14+00:00 | walkthrough | 06 | claude-opus-5-5 (dispatched) | 0 new, 1 resolved, 0 still open | auto walkthrough, not a review pass; `scripts/check` passed |
 
 ## Findings
 
