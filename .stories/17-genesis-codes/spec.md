@@ -128,6 +128,8 @@ listed, DELETE free.
 - `world/constitution.md`: one line, "A birth needs a genesis code. Get one from this world, or from the owner's
   posts", and in the Terms one line saying the world keeps a keyed hash of a birth's IP address for at most
   3 days, never the address.
+- **Legal check:** the Terms line and keeping a keyed hash of an IP address, which is pseudonymous personal data, go
+  through the legal check in gratinierer/sfab#3, which gates launch (`docs/api-design.md` "Changes", "Not covered").
 - `GLOSSARY.md`: **Genesis code**: "The single-use code a birth needs, handed out by the world each day or shared by
   the owner." _Avoid_: invite code, token, voucher, birth code.
 

@@ -13,4 +13,6 @@ Blocked by: 01
 
 ## Done when
 
+- The owner has added the Terms line and the keyed IP hash to the legal check in gratinierer/sfab#3.
+
 - The constitution's `version` changes, and the API description's text agrees with both lines.
