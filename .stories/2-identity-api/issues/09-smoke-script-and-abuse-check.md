@@ -22,7 +22,8 @@ covers every route.
 ## Done when
 
 - The owner has run both against the deployed API with every route, and they pass. This container has no AWS
-  credentials, but neither script needs any.
+  credentials, but neither script needs any. The smoke run births with exempt genesis codes from one IP
+  without hitting `409 too-soon` (`17-genesis-codes#06`).
 - On that first run, the response to the `execute-api` request without the key is recorded in the
   `docs/aws-facts.md` row on a missing API key, and if it's the `problem+json` `403` with
   `type: origin-key-replaced`, the smoke check is tightened to require it, so a stopped or blocked API

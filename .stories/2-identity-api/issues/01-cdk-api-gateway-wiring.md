@@ -63,6 +63,8 @@ emails and an automatic stop from the start. Keep its URL unpublished until the 
 - Every route reaches the API Lambda after a first deploy on a fresh account, and a real `birth` through
   CloudFront succeeds, which proves the Lambda rebuilds the hashed path the client sent.
 - CDK assertion tests cover the API Lambda's permissions and its errors alarm.
+- On this deploy, story 17's IP proofs (`17-genesis-codes#03`) are recorded in `docs/aws-facts.md`: a birth's IP
+  record matches the caller's real address, and a request carrying its own forwarding header can't change it.
 - An edit to `sfab.yaml` reaches the `v1` stage on the next `cdk deploy`.
 - CDK assertion tests cover the invoke permission, access logs off, no CloudWatch role, and all three budgets' alerts and
   filters.

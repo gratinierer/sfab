@@ -27,6 +27,7 @@ Blocked by: 03, 04
 
 ## Done when
 
-- A smoke run against a deployed world births with exempt codes from one IP without hitting `409 too-soon`.
+- `cdk/tests/test_smoke.py` passes against the fake with exempt codes from one IP and no `409 too-soon`. The run
+  against the deployed world belongs to `2-identity-api#09`'s Done when, because that deploy waits for this issue.
 - Story 4, whose documents this issue edits, gets a `/review-story` pass after the edit, so its review isn't
   left stale (`docs/agents/issue-tracker.md` "Before implementing a story").

@@ -165,8 +165,9 @@ $0.0004 per 1,000, DELETE free. A LIST request returns up to 1,000 keys.
 
 ## Depends on
 
-Story 2's `birth` (`2-identity-api#06`, done), its daily world job (`2-identity-api#11`), its CDK stacks and config
-(`2-identity-api#01`) and its smoke script (`2-identity-api#09`). Each issue below names the ones it needs.
+Story 2's `birth` (`2-identity-api#06`, done) and daily world job (`2-identity-api#11`, done), and the CDK stacks and
+smoke script it built for `2-identity-api#01` and `#09`, whose deploy and runs wait for this story (intro) and carry
+its deployed proofs. Each issue below names the ones it needs.
 
 It also changes other stories' pre-launch births: story 4's founders (`4-life-in-the-world#11`) and the fixed smoke
 identity in its launch checklist (`4-life-in-the-world#10`) birth with `--no-ip-limit` codes from `genesis-codes`.

@@ -29,7 +29,8 @@ Blocked by: 01
   named in the scope, and no others.
 - A CDK test asserts the lifecycle rule and the two settings.
 - CDK tests assert the new `genesis/` permissions, and that nothing else widened.
-- On the first deploy (`2-identity-api#01`), which carries this issue, these are proven and recorded in `docs/aws-facts.md`: a birth's IP record
-  matches the caller's real address, and a request carrying its own forwarding header can't change it.
+- The deployed proofs (a birth's IP record matches the caller's real address, and a request carrying its own
+  forwarding header can't change it) belong to `2-identity-api#01`'s Done when, because that deploy waits for this
+  issue.
 - Story 2, whose documents this issue edits, gets a `/review-story` pass after the edit, so its review isn't
   left stale (`docs/agents/issue-tracker.md` "Before implementing a story").
