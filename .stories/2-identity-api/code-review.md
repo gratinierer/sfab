@@ -43,6 +43,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-08T09:57:30+00:00 | walkthrough | 01, 07, 08, 09, 11-15 | claude-opus-5-5, auto | 0 new, 0 resolved, 21 still open | auto walkthrough, not a review pass; 12 rechecked and left for the owner, 9 skipped as still waiting; `scripts/check` stops at the missing `cargo-audit`, as at the baseline |
 | 2026-11-08T10:36:50+00:00 | walkthrough | 01, 07, 08, 09, 11-15 | claude-opus-5-5, with the owner deciding each finding | 0 new, 17 resolved, 4 wontfix, 0 still open | walkthrough, not a review pass; every `scripts/check` step but the audit passes (`cargo-audit` isn't installed): generate, the arm64 build, 178 Rust and 220 CDK tests, clippy and fmt |
 | 2026-11-08T10:42:32+00:00 | code-review | 01, 07, 08, 09, 11-15 @ ee473de..2f5571a | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 9 new: 5 standards, 4 spec | round 1 of `/code-review ee473de auto 5`; the fix commits of both auto passes and the 2026-11-08 walkthrough |
+| 2026-11-08T10:46:55+00:00 | walkthrough | 01, 07, 08, 09, 11-15 | claude-opus-5-5, auto | 0 new, 8 resolved, 1 superseded, 0 still open | auto walkthrough, not a review pass; address pass 1 of `/code-review ee473de auto 5` |
 
 ## Findings
 
