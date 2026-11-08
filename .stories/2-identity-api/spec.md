@@ -933,8 +933,9 @@ failure. Each step needs the one before it:
    cause and deploy again. If it fails with "Your account must be verified before you can add
    new CloudFront resources", open an AWS Support case, wait for the answer, and deploy again.
    Forum reports describe this for new accounts; AWS doesn't document it. Then issue the first genesis codes with
-   `genesis-codes issue` (`17-genesis-codes#04`): `--label smoke --no-ip-limit` codes into `smoke-genesis-codes.txt`
-   for the smoke run, and one for issue 01's real `birth`, because the daily pool is `not-built-yet` until the job
+   `genesis-codes issue` (`17-genesis-codes#04`): `--label smoke --count <n> --no-ip-limit` codes into
+   `smoke-genesis-codes.txt` for the smoke run, and `--label first-birth --count 1`, an ordinary code, for issue 01's
+   real `birth`, so that birth writes the IP record issue 01's proofs check, because the daily pool is `not-built-yet` until the job
    first runs and a `birth` without a code gets `403`.
 6. **Check that the distribution shows the Free flat-rate plan in the console.** If it isn't
    attached, CloudFront and WAF bill per request.
