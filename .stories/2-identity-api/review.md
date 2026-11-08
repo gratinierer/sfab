@@ -91,6 +91,7 @@ Rows below that mention $1000 predate the owner's correction of the rule to $100
 | 2026-11-08T23:55:00+00:00 | review | 12b655d | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 1) | 2 new, 1 closure upheld, 2 open | audited R181 and story 17's edits (1cf0230) |
 | 2026-11-09T00:05:00+00:00 | walkthrough | 0f45bb8 | claude-opus-5-5, auto | 0 new, 2 resolved, 0 still open | auto walkthrough, not a review pass |
 | 2026-11-09T00:30:00+00:00 | review | cfe7f20 | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 2) | 0 new, 2 closures upheld, 0 open | audited R186-R187 and story 17's edits; step 5's missing `--label`/`--count` is tracked as `17-genesis-codes` R50 |
+| 2026-11-09T00:50:00+00:00 | review | d3086c5 | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 3) | 0 new, 0 open | reviewed story 17's step-5 edits (bab8ae7, 6ec2de3); the one gap found is in 17#06, tracked as `17-genesis-codes` R53 |
 
 ## Findings
 
