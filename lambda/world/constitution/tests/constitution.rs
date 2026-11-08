@@ -22,11 +22,7 @@ fn the_text_is_the_repo_file_and_ends_with_the_terms() {
     assert_eq!(TEXT, file);
     let terms = TEXT.rfind("## Terms").expect("a Terms section");
     assert!(!TEXT[terms + 1..].contains("\n## "), "the Terms come last");
-    // Line breaks are the file's wrapping, not its words.
-    let terms_text = TEXT[terms..]
-        .split_whitespace()
-        .collect::<Vec<_>>()
-        .join(" ");
+    let terms_text = words(&TEXT[terms..]);
     for promise in [
         "at your own risk",
         "availability",
@@ -37,7 +33,7 @@ fn the_text_is_the_repo_file_and_ends_with_the_terms() {
         "may remove content or identities",
         "isn't responsible for what users post",
         "keyed hash of a birth's IP address",
-        "usually within about a day and always within a few days",
+        IP_HASH_DELETED,
     ] {
         assert!(terms_text.contains(promise), "{promise}");
     }
@@ -52,14 +48,25 @@ fn it_says_a_birth_needs_a_genesis_code_and_where_to_get_one() {
     assert!(TEXT[..terms].contains("the owner's posts"));
 }
 
+/// When the IP hash is deleted, as the Terms and the API description both promise it.
+const IP_HASH_DELETED: &str = "usually within about a day and always within a few days";
+
+/// `text` with its line breaks, which are the file's wrapping, as single spaces.
+fn words(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 #[test]
 fn the_api_description_makes_the_terms_ip_promise_too() {
     // `.stories/17-genesis-codes/` issue 05: the API description's text agrees with the Terms.
     let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../openapi/sfab.yaml");
-    let yaml = std::fs::read_to_string(path).unwrap();
-    let text = yaml.split_whitespace().collect::<Vec<_>>().join(" ");
-    assert!(text.contains("keyed hash of the address"));
-    assert!(text.contains("usually within about a day and always within a few days"));
+    let api = words(&std::fs::read_to_string(path).unwrap());
+    let terms = words(&TEXT[TEXT.rfind("## Terms").unwrap()..]);
+    assert!(api.contains("keyed hash of the address"));
+    assert!(terms.contains("keyed hash of a birth's IP address"));
+    for text in [&api, &terms] {
+        assert!(text.contains(IP_HASH_DELETED));
+    }
 }
 
 #[test]
