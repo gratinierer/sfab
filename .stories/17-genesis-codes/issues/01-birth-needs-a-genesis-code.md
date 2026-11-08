@@ -3,7 +3,7 @@
 Label: ready-for-agent
 Blocked by: 2-identity-api#06
 
-The Lambda side of `spec.md` "What `birth` does", "The IP rule" and the `genesis/` keys in "Storage".
+The `genesis` crate in `lambda/world/genesis/`, which owns every `genesis/` key (ADR 0004), and the Lambda side of `spec.md` "What `birth` does", "The IP rule" and the `genesis/` keys in "Storage".
 
 ## Scope
 

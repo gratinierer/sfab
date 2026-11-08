@@ -3,7 +3,7 @@
 Label: ready-for-agent
 Blocked by: 01, 2-identity-api#11
 
-`spec.md` "Two sources" (the world) and "Tracking", in the daily world job.
+`spec.md` "Two sources" (the world) and "Tracking", in the daily world job, through the `genesis` crate.
 
 ## Scope
 

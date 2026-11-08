@@ -35,12 +35,12 @@ and a late or failed daily run the route answers `none-left` rather than handing
 
 **The owner.** The owner shares codes on platforms, forums and social media, in labelled batches:
 
-- `scripts/genesis-codes issue --label <label> --count <n> [--expires <date>] [--no-ip-limit]` generates the codes,
+- `genesis-codes issue --label <label> --count <n> [--expires <date>] [--no-ip-limit]` generates the codes,
   uploads them and prints them to post. A label is `[a-z0-9-]` and doesn't start with `world-`, which the world's days use, and a label that exists already adds to its batch.
   Codes never expire unless the batch sets `--expires`.
 - `--no-ip-limit` makes codes that skip the IP rule, for the smoke script and test births before launch. Each still
   works only once, so a leaked one gives a single birth. Only the owner script can make them.
-- `scripts/genesis-codes status` prints the daily summary (see "Tracking").
+- `genesis-codes status` prints the daily summary (see "Tracking").
 
 ## The IP rule
 
@@ -83,10 +83,14 @@ out the window. The API description says so.
 The daily world job lists the genesis locations once a day and writes a private summary, such as
 `{"labels": {"forum-y": {"uploaded": 10, "left": 5}}, "world": {"2026-11-08": {"issued": 100, "used": 37}}}`, with 30
 days of world history. **No API route serves it**, and the Lambda never reads it. The owner reads it with
-`scripts/genesis-codes status`, using the owner's AWS credentials, as `takedown` does. Labels and counts are never
+`genesis-codes status`, using the owner's AWS credentials, as `takedown` does. Labels and counts are never
 public. The counts can be a day old, which is the price of not counting live.
 
 ## Storage
+
+**Code:** a `genesis` crate, `lambda/world/genesis/`, owns every `genesis/` key, as `docs/adr/0004-rules-live-in-crates.md`
+says, and the API, the daily job and the owner's tool call it. The owner's tool is a binary, `genesis-codes`, in
+`lambda/genesis-codes/`, run on the owner's machine like `takedown`, so no key format exists outside the crate.
 
 All under a `genesis/` prefix in a bucket the API Lambda already writes; the exact bucket is chosen in the first
 issue. No per-agent data lives here, so `takedown` needs no new location.
@@ -153,7 +157,7 @@ accepted every recommendation unless noted.
 13. **A stale pool:** `birth` removes a used world code from the pool file, ignoring a lost race, and an empty pool
     answers `404 none-left`.
 14. **`genesis_codes_per_day`** lives in the CDK code.
-15. **Owner codes** come from `scripts/genesis-codes issue`, which generates them; the owner doesn't supply code text.
+15. **Owner codes** come from `genesis-codes issue`, which generates them; the owner doesn't supply code text.
 16. **The IP hash key** is `ip_hash_key` in `sfab.config.toml`, not Secrets Manager. The owner asked for the question
     again in simpler words before answering.
 17. **`GET /world/genesis-code`** is anonymous, with no proof, under the daily limit and the WAF rate rule.

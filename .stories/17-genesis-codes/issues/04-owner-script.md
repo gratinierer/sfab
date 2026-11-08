@@ -1,9 +1,10 @@
-# `scripts/genesis-codes`: issue batches and read the summary
+# `genesis-codes`: issue batches and read the summary
 
 Label: ready-for-agent
 Blocked by: 01, 02
 
-`spec.md` "Two sources" (the owner) and "Tracking".
+`spec.md` "Two sources" (the owner) and "Tracking". A binary in `lambda/genesis-codes/`, run on the owner's machine
+like `takedown`, that writes and reads keys only through the `genesis` crate.
 
 ## Scope
 
