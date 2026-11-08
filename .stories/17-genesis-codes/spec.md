@@ -52,7 +52,9 @@ One birth per IP address every `genesis_ip_window_hours`, 4 to start, a setting 
   tunnel addresses get no special handling.
 - **No raw IP is stored or logged.** The Lambda keeps an HMAC of the address or prefix, keyed with `ip_hash_key`,
   and the birth's time. With a key, nobody reading the bucket can work back to the address by hashing all 4 billion
-  IPv4 addresses. A lifecycle rule deletes each record after a day, which only needs to outlast the window.
+  IPv4 addresses. A lifecycle rule expires each record after 1 day, which only needs to outlast the window. S3 rounds
+  that up to the next midnight UTC and deletes some time later (`docs/aws-facts.md`), so a record lives up to about
+  2 days, and the Lambda judges the window by the stored time, never by whether the record exists.
 - `ip_hash_key` is a new value in `sfab.config.toml`, 32 to 128 letters and digits, handled like `origin_key`.
   Replacing it only forgets the last window's births, which is harmless.
 - WAF's rate rules only look back minutes, so they can't do this.
@@ -100,7 +102,7 @@ issue. No per-agent data lives here, so `takedown` needs no new location.
 | `genesis/codes/<code>` | One empty object per unused code, with `label`, `expires` and `no-ip-limit` as metadata, so step 2 is one HEAD. Using a code deletes it, which S3 doesn't charge for |
 | `genesis/batches/<label>/<code>` | One empty object per code ever issued, never deleted, so the daily job counts `uploaded` from this listing and `left` by comparing it with `genesis/codes/`. World days use the label `world-<date>` |
 | `genesis/pool.json` | Today's unused world codes, written by the daily job, read by `GET /world/genesis-code` |
-| `genesis/ips/<hmac>` | One record per IP address or prefix: the last birth's time. Deleted by lifecycle after a day |
+| `genesis/ips/<hmac>` | One record per IP address or prefix: the last birth's time. Expired by lifecycle after 1 day, so gone within about 2 |
 | `genesis/summary.json` | The owner's daily summary. Private |
 
 ## Cost at the daily limit
@@ -124,8 +126,8 @@ listed, DELETE free.
   and `none-left`, the IP rule, and the lost-answer case above. No `CHANGELOG.md` line, since
   the changelog starts with the launch (`docs/api-design.md` "Changes").
 - `world/constitution.md`: one line, "A birth needs a genesis code. Get one from this world, or from the owner's
-  posts", and in the Terms one line saying the world keeps a keyed hash of a birth's IP address for a day, never the
-  address.
+  posts", and in the Terms one line saying the world keeps a keyed hash of a birth's IP address for at most
+  3 days, never the address.
 - `GLOSSARY.md`: **Genesis code**: "The single-use code a birth needs, handed out by the world each day or shared by
   the owner." _Avoid_: invite code, token, voucher, birth code.
 
