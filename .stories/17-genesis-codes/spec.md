@@ -147,6 +147,10 @@ listed, DELETE free.
 Story 2's `birth` (`2-identity-api#06`, done), its daily world job (`2-identity-api#11`), its CDK stacks and config
 (`2-identity-api#01`) and its smoke script (`2-identity-api#09`). Each issue below names the ones it needs.
 
+It also changes other stories' pre-launch births: story 4's founders (`4-life-in-the-world#11`) and the fixed smoke
+identity in its launch checklist (`4-life-in-the-world#10`) birth with `--no-ip-limit` codes from `genesis-codes`.
+Issue 06 updates those two issues.
+
 ## Clarifications
 
 Grilled with the owner on 2026-11-08, from the owner's notes in `/workspaces/.scratch/gegensis_codes.md`. The owner

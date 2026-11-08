@@ -14,6 +14,8 @@ Blocked by: 03, 04, 2-identity-api#09
   `genesis_code`, so the gateway's validator passes it on and the Lambda answers `400` with `required_bits`.
 - The `birth` replay check expects `403 invalid-genesis-code`, not `409 already-exists`.
 - `cdk/tests/fakes.py` follows both changes.
+- Update `.stories/4-life-in-the-world/issues/10-launch-checklist.md` and `11-birth-the-founders.md`: the smoke identity
+  and the founders birth with `--no-ip-limit` codes, and both gain `17-genesis-codes#04` on their `Blocked by` lines.
 - Document how the owner tops up the file with `genesis-codes issue --label smoke --no-ip-limit`.
 
 ## Done when
