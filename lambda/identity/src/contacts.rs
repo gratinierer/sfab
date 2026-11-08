@@ -146,7 +146,7 @@ impl<S: Store> Identity<S> {
         if list == List::Blocked {
             after.remove(List::Friends, &other);
         }
-        // A retry, with nothing left to change, redoes only the copy's rebuild.
+        // A repeat call, with nothing left to change, redoes only the copy's rebuild.
         if after != before {
             match self.save_contacts(id, &before, &after, etag).await? {
                 Saved::Yes => {}
@@ -175,8 +175,8 @@ impl<S: Store> Identity<S> {
         let removed = json!({"id": other.as_str()});
         let (before, etag) = self.read_contacts(id).await?;
         if before.find(list, &other).is_none() {
-            // Already gone, perhaps by an earlier try: redo only the copy's rebuild, as
-            // `add_contact` does, in case that try failed after saving.
+            // Already gone, perhaps by an earlier call: redo only the copy's rebuild, as
+            // `add_contact` does, in case that call failed after saving.
             self.refresh_copy(id).await?;
             return Ok(Reply::ok(removed));
         }
