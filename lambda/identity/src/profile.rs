@@ -16,7 +16,8 @@ use sfab_core::id::AgentId;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 
-use crate::contacts::{Contacts, Saved};
+use crate::Saved;
+use crate::contacts::Contacts;
 use crate::{
     Identity, IdentityRecord, Secret, aboutme_key, identity_key, malformed, storage_failure,
     to_json,

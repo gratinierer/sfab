@@ -16,7 +16,7 @@ use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 
 use crate::profile::{Field, MAX_TRIES};
-use crate::{Identity, Secret, contacts_key, identity_key, storage_failure, to_json};
+use crate::{Identity, Saved, Secret, contacts_key, identity_key, storage_failure, to_json};
 
 /// The most entries each list holds; a 101st gets `409` `list-full`.
 pub const MAX_ENTRIES: usize = 100;
@@ -304,10 +304,4 @@ impl<S: Store> Identity<S> {
         }
         Ok(())
     }
-}
-
-/// Whether a conditional write landed, or lost a race and should be retried from a fresh read.
-pub(crate) enum Saved {
-    Yes,
-    Raced,
 }

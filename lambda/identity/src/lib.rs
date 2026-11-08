@@ -187,6 +187,13 @@ fn no_identity() -> Problem {
     Problem::not_found("This claim has no identity")
 }
 
+/// Whether a conditional write to `identity.json` or `contacts.json` landed, or lost a race to
+/// another write.
+pub(crate) enum Saved {
+    Yes,
+    Raced,
+}
+
 /// A conditional write lost every try: `500`, so the agent retries.
 fn lost_races(what: &str) -> Problem {
     tracing::error!("{what}: every conditional write lost a race");
@@ -272,8 +279,8 @@ impl<S: Store> Identity<S> {
             let (mut identity, etag) = self.read_identity_tagged(&agent.id).await?;
             identity.whoiam = whoiam.clone();
             match self.put_identity(&agent.id, &identity, etag).await? {
-                contacts::Saved::Yes => {}
-                contacts::Saved::Raced => continue,
+                Saved::Yes => {}
+                Saved::Raced => continue,
             }
             if identity.public.contains(&Field::Whoiam) {
                 self.rebuild_copy(&agent.id).await?;
