@@ -21,7 +21,8 @@ The `genesis` crate in `lambda/world/genesis/`, which owns every `genesis/` key 
   `retry_after` once it's empty or from an earlier UTC day, and its
   route in `openapi/sfab.yaml`.
 - The proof-of-work worked example in `openapi/sfab.yaml` gets a `genesis_code` in its `birth` body, with its body
-  hash and nonce recomputed and `lambda/core/tests/worked_example.rs` updated to match.
+  hash and nonce recomputed and `lambda/core/tests/worked_example.rs` and the Python client's
+  `cdk/tests/test_api_client.py` (`WORKED_BODY` and its expected values) updated to match.
 - Story 2's `spec.md` "Wire contract" gains `invalid-genesis-code` (`403`), `try-later` (`409`, unless story 4 added it first) and the route's
   `not-built-yet`, and its `409` row, its lost-`birth` paragraph, its "Proof of work" line "`birth` is the exception: its replay gets
   `409`", and `openapi/sfab.yaml`'s `409` row and its other `birth`-replay mention say a lost
