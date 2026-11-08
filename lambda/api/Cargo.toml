@@ -27,6 +27,7 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", default-features = false, features = ["fmt", "std"] }
 
 [dev-dependencies]
+sfab-core = { path = "../core", features = ["test-support"] }
 sfab-genesis = { path = "../world/genesis", features = ["test-support"] }
 regex = "1.13.1"
 saphyr = "0.3.3"

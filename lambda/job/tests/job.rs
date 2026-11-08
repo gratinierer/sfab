@@ -8,6 +8,7 @@ use sfab_census::Census;
 use sfab_core::id::AgentId;
 use sfab_core::storage::{Bucket, Condition, MemoryStore, Store};
 use sfab_core::takedown::Action;
+use sfab_core::testing::Captured;
 use sfab_federation::{Fetch, Notify};
 use sfab_genesis::{Daily, Genesis, IpRule, Window};
 
@@ -123,26 +124,6 @@ async fn a_failed_census_still_makes_the_days_genesis_codes_and_fails_the_run() 
     assert!(genesis.pool_code(NOW).await.is_ok());
 }
 
-#[derive(Clone, Default)]
-struct Captured(Arc<std::sync::Mutex<Vec<u8>>>);
-
-impl std::io::Write for Captured {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.0.lock().unwrap().extend_from_slice(buf);
-        Ok(buf.len())
-    }
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
-impl<'a> tracing_subscriber::fmt::MakeWriter<'a> for Captured {
-    type Writer = Captured;
-    fn make_writer(&'a self) -> Self::Writer {
-        self.clone()
-    }
-}
-
 #[tokio::test(flavor = "current_thread")]
 async fn when_the_census_and_genesis_both_fail_the_genesis_error_is_logged() {
     let captured = Captured::default();
@@ -162,6 +143,6 @@ async fn when_the_census_and_genesis_both_fail_the_genesis_error_is_logged() {
         !error.contains("genesis/"),
         "the run returns the census's error: {error}"
     );
-    let logs = String::from_utf8(captured.0.lock().unwrap().clone()).unwrap();
+    let logs = captured.text();
     assert!(logs.contains("injected failure on genesis/"), "{logs}");
 }

@@ -38,4 +38,5 @@ tokio-rustls = { version = "0.26.6", default-features = false }
 
 [dev-dependencies]
 rcgen = "0.14"
+sfab-core = { path = "../core", features = ["test-support"] }
 tokio = { version = "1.52.3", features = ["macros", "rt", "net", "time", "io-util"] }

@@ -4,6 +4,7 @@
 use std::sync::Arc;
 
 use sfab_core::storage::{Bucket, Calls, Condition, MemoryStore, Metadata, Store};
+use sfab_core::testing::Captured;
 use sfab_genesis::{
     Daily, Genesis, Issue, Summary, Window, daily, issue, new_code, read_summary, testing,
 };
@@ -258,26 +259,6 @@ async fn the_run_deletes_ip_records_older_than_the_window_and_keeps_newer_ones()
     );
 }
 
-#[derive(Clone, Default)]
-struct Captured(Arc<std::sync::Mutex<Vec<u8>>>);
-
-impl std::io::Write for Captured {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.0.lock().unwrap().extend_from_slice(buf);
-        Ok(buf.len())
-    }
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
-impl<'a> tracing_subscriber::fmt::MakeWriter<'a> for Captured {
-    type Writer = Captured;
-    fn make_writer(&'a self) -> Self::Writer {
-        self.clone()
-    }
-}
-
 #[tokio::test(flavor = "current_thread")]
 async fn a_malformed_key_in_todays_world_batch_is_logged_and_left_out_of_the_pool() {
     let captured = Captured::default();
@@ -303,7 +284,7 @@ async fn a_malformed_key_in_todays_world_batch_is_logged_and_left_out_of_the_poo
 
     daily(&*store, RUN + HOUR, &SETTINGS).await.unwrap();
 
-    let logs = String::from_utf8(captured.0.lock().unwrap().clone()).unwrap();
+    let logs = captured.text();
     assert!(
         logs.contains("genesis/batches/world-2026-11-05/NOT-A-CODE"),
         "{logs}"

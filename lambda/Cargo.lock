@@ -2267,6 +2267,7 @@ dependencies = [
  "subtle",
  "tokio",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

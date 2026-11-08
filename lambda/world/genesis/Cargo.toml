@@ -20,6 +20,7 @@ sha2 = "0.11.1"
 tracing = "0.1.44"
 
 [dev-dependencies]
+sfab-core = { path = "../../core", features = ["test-support"] }
 sfab-genesis = { path = ".", features = ["test-support"] }
 tokio = { version = "1.52.3", features = ["macros", "rt"] }
 tracing-subscriber = { version = "0.3.23", default-features = false, features = ["fmt", "std"] }

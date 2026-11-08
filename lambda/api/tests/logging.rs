@@ -4,8 +4,7 @@
 //! object hold the viewer's raw IP address (`.stories/17-genesis-codes/spec.md` "The IP rule"):
 //! births use ordinary genesis codes from a viewer address, so the IP rule's read and write run.
 
-use std::io::Write;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use axum::Router;
 use axum::body::{Body, to_bytes};
@@ -14,9 +13,9 @@ use serde_json::Value;
 use sfab_core::credentials::caller_of;
 use sfab_core::proof;
 use sfab_core::storage::{Bucket, MemoryStore};
+use sfab_core::testing::Captured;
 use sfab_genesis::testing as genesis;
 use tower::ServiceExt;
-use tracing_subscriber::fmt::MakeWriter;
 
 const BITS: u32 = 4;
 const NOW: i64 = 1_793_836_800;
@@ -25,26 +24,6 @@ const V6: &str = "2001:db8:1:2:aaaa::1";
 
 fn now() -> i64 {
     NOW
-}
-
-#[derive(Clone, Default)]
-struct Captured(Arc<Mutex<Vec<u8>>>);
-
-impl Write for Captured {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.0.lock().unwrap().extend_from_slice(buf);
-        Ok(buf.len())
-    }
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
-impl<'a> MakeWriter<'a> for Captured {
-    type Writer = Captured;
-    fn make_writer(&'a self) -> Self::Writer {
-        self.clone()
-    }
 }
 
 /// A request from `V4`, as CloudFront forwards it.
@@ -186,7 +165,7 @@ async fn logs_carry_no_authorization_value() {
     )
     .await;
 
-    let logs = String::from_utf8(captured.0.lock().unwrap().clone()).unwrap();
+    let logs = captured.text();
     assert!(
         logs.contains("call failed"),
         "the failures were logged: {logs}"

@@ -12,3 +12,5 @@ pub mod proof;
 pub mod s3;
 pub mod storage;
 pub mod takedown;
+#[cfg(feature = "test-support")]
+pub mod testing;
