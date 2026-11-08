@@ -158,7 +158,7 @@ pub async fn daily<S: Store>(
         let Some(date) = label.strip_prefix(WORLD_LABEL_PREFIX) else {
             continue;
         };
-        let still = parsed(still_unused(codes, &unused));
+        let still = parsed(label, still_unused(codes, &unused));
         if date < today.as_str() {
             stale.extend(still);
         } else if date == today {
@@ -202,9 +202,19 @@ fn still_unused<'a>(
     codes.iter().filter(|c| unused.contains(*c))
 }
 
-/// `keys`, the code part of batch entries, as codes.
-fn parsed<'a>(keys: impl Iterator<Item = &'a String>) -> impl Iterator<Item = Code> {
-    keys.filter_map(|key| Code::parse(key))
+/// `codes`, the code part of `label`'s batch entries, as codes. Only this crate writes them, so
+/// one that isn't a code is logged and left out.
+fn parsed<'a>(
+    label: &'a str,
+    codes: impl Iterator<Item = &'a String> + 'a,
+) -> impl Iterator<Item = Code> + 'a {
+    codes.filter_map(move |code| {
+        let parsed = Code::parse(code);
+        if parsed.is_none() {
+            tracing::error!(key = %format!("{BATCHES_PREFIX}{label}/{code}"), "a batch entry isn't a genesis code, left out");
+        }
+        parsed
+    })
 }
 
 /// Deletes every IP record last written more than `window` before `now`, so a record

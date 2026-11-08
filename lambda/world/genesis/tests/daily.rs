@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use sfab_core::storage::{Calls, MemoryStore};
+use sfab_core::storage::{Bucket, Calls, Condition, MemoryStore, Metadata, Store};
 use sfab_genesis::{
     Daily, Genesis, Issue, Summary, Window, daily, issue, new_code, read_summary, testing,
 };
@@ -256,4 +256,60 @@ async fn the_run_deletes_ip_records_older_than_the_window_and_keeps_newer_ones()
         "too-soon",
         "the newer record stays"
     );
+}
+
+#[derive(Clone, Default)]
+struct Captured(Arc<std::sync::Mutex<Vec<u8>>>);
+
+impl std::io::Write for Captured {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0.lock().unwrap().extend_from_slice(buf);
+        Ok(buf.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a> tracing_subscriber::fmt::MakeWriter<'a> for Captured {
+    type Writer = Captured;
+    fn make_writer(&'a self) -> Self::Writer {
+        self.clone()
+    }
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn a_malformed_key_in_todays_world_batch_is_logged_and_left_out_of_the_pool() {
+    let captured = Captured::default();
+    let subscriber = tracing_subscriber::fmt()
+        .with_writer(captured.clone())
+        .finish();
+    let _guard = tracing::subscriber::set_default(subscriber);
+    let store = Arc::new(MemoryStore::new());
+    daily(&*store, RUN, &SETTINGS).await.unwrap();
+    for key in [
+        "genesis/batches/world-2026-11-05/NOT-A-CODE",
+        "genesis/codes/NOT-A-CODE",
+    ] {
+        let put = store.put(
+            Bucket::Identities,
+            key,
+            Vec::new(),
+            Metadata::new(),
+            Condition::Always,
+        );
+        put.await.unwrap();
+    }
+
+    daily(&*store, RUN + HOUR, &SETTINGS).await.unwrap();
+
+    let logs = String::from_utf8(captured.0.lock().unwrap().clone()).unwrap();
+    assert!(
+        logs.contains("genesis/batches/world-2026-11-05/NOT-A-CODE"),
+        "{logs}"
+    );
+    for _ in 0..20 {
+        let reply = genesis(&store).pool_code(RUN + HOUR).await.unwrap();
+        assert_ne!(reply.body["genesis_code"], "NOT-A-CODE");
+    }
 }
