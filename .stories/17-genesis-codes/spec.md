@@ -30,7 +30,8 @@ codes, so codes never pile up. `GET /world/genesis-code` is anonymous, needs no 
 like every call and falls under the existing WAF rate rule. It returns one random code from the day's pool file. Until
 the daily job has written the pool once, it answers `404` with `type: not-built-yet`, as `docs/api-design.md` "Reads"
 requires for daily-built data. After that, an empty pool answers `404` with `type: none-left` and a `retry_after` of the
-next daily run.
+next daily run. The pool file carries its UTC date, and a pool from an earlier day counts as empty, so between midnight
+and a late or failed daily run the route answers `none-left` rather than handing out expired codes.
 
 **The owner.** The owner shares codes on platforms, forums and social media, in labelled batches:
 

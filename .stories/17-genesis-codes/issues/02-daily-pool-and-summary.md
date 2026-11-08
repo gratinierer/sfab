@@ -8,7 +8,7 @@ Blocked by: 01, 2-identity-api#11
 ## Scope
 
 - Each run deletes the previous day's unused world codes, makes `genesis_codes_per_day` new ones under
-  `genesis/codes/` and `genesis/batches/world-<date>/`, valid for the UTC day, and writes `genesis/pool.json`.
+  `genesis/codes/` and `genesis/batches/world-<date>/`, valid for the UTC day, and writes `genesis/pool.json` with its UTC date.
 - It lists `genesis/codes/` and `genesis/batches/` once and writes `genesis/summary.json`: per label `uploaded` and
   `left`, and for the world `issued` and `used` per day, for 30 days.
 

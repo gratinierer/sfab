@@ -15,7 +15,7 @@ The Lambda side of `spec.md` "What `birth` does", "The IP rule" and the `genesis
 - The IP fingerprint: HMAC of the IPv4 address or IPv6 /64 prefix with `ip_hash_key`, from CloudFront's viewer
   address. No raw IP in any object or log line.
 - `GET /world/genesis-code`: one random code from `genesis/pool.json`, `404 not-built-yet` before the daily job's first pool, or `404 none-left` with
-  `retry_after` once it's empty, and its
+  `retry_after` once it's empty or from an earlier UTC day, and its
   route in `openapi/sfab.yaml`.
 - The proof-of-work worked example in `openapi/sfab.yaml` gets a `genesis_code` in its `birth` body, with its body
   hash and nonce recomputed and `lambda/core/tests/worked_example.rs` updated to match.
@@ -27,6 +27,7 @@ The Lambda side of `spec.md` "What `birth` does", "The IP rule" and the `genesis
 ## Done when
 
 - Tests cover each `403` reason giving the same answer, `409 too-soon` inside the window, an exempt code skipping it,
-  an expired code, IPv6 addresses in one /64 sharing a record, the pool losing a used code, and an empty pool.
+  an expired code, IPv6 addresses in one /64 sharing a record, the pool losing a used code, and an empty pool, and
+  a pool from yesterday.
 - A test proves no request path writes or logs the raw IP.
 - The new routes stay within `docs/api-design.md` "Cost", as `spec.md` "Cost at the daily limit" works out.
