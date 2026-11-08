@@ -17,7 +17,9 @@ Blocked by: 01, 2-identity-api#01
 - IAM for `genesis/`: the API Lambda gets HEAD (GET) and DELETE on `genesis/codes/`, GET and PUT on `genesis/ips/` and
   `genesis/pool.json`; the daily job gets list, GET, PUT and DELETE under `genesis/`, with its `ListBucket` condition
   widened to the prefix. Update `API_READ_WRITE_PREFIXES`, `API_DELETE_PREFIXES` in `cdk/stacks.py`, `cdk/world_job.py`,
-  their CDK tests, and the permission lists in story 2's `spec.md` "Architecture".
+  their CDK tests, the permission lists in story 2's `spec.md` "Architecture", story 2's `spec.md` sentence
+  "`DELETE` is the API Lambda's only delete" and the `cdk/stacks.py` comment "The only prefix where the API Lambda
+  deletes", which both stop being true.
 
 ## Done when
 
