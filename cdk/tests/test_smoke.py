@@ -14,15 +14,18 @@ from fakes import (
     problem,
 )
 
-from smoke import SMOKE_FRIEND, SMOKE_WHOIAM, UNKNOWN_ID, Target, run
+from smoke import SMOKE_FRIEND, SMOKE_WHOIAM, UNKNOWN_ID, Codes, Target, run
 
 FULL = Target(api_url=API_HOST, execute_api_url=EXECUTE_API)
 PRODUCTION = Target(api_url=API_HOST, execute_api_url=EXECUTE_API, credential=SMOKE_CREDENTIAL)
 
 
-def smoke(api, clock, target=FULL, production=False):
+def smoke(api, clock, target=FULL, production=False, codes=None, log=lambda _: None):
+    """One run, with fresh `--no-ip-limit` codes unless the test gives its own."""
+    if codes is None:
+        codes = Codes(api.issue(2))
     return run(
-        api, target, production=production, clock=clock, sleep=clock.sleep, log=lambda _: None
+        api, target, production=production, clock=clock, sleep=clock.sleep, log=log, codes=codes
     )
 
 
@@ -43,6 +46,7 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "constitution",
         "census",
         "residents",
+        "genesis code",
         "federation world",
         "federation worlds",
         "federation request",
@@ -51,6 +55,7 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "no proof",
         "birth",
         "birth replay",
+        "world birth",
         "self",
         "evolve",
         "extra field",
@@ -75,8 +80,66 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "execute-api no key",
         "execute-api wrong key",
     }
-    # About 41 (spec.md "Testing"); the 4-second pace keeps any length under WAF's 100 per 5 minutes.
-    assert len(api.requests) <= 41
+    # About 43 (spec.md "Testing"); the 4-second pace keeps any length under WAF's 100 per 5 minutes.
+    assert len(api.requests) <= 43
+
+
+def test_births_with_exempt_codes_from_one_ip_and_rerun_without_too_soon():
+    """Story 17 issue 06: `--no-ip-limit` codes skip the IP rule, one per birth, and the world
+    code's birth may meet the IP rule on a rerun, which still proves the code was accepted."""
+    clock = Clock()
+    api = FakeApi(clock)
+    exempt = api.issue(3)
+    codes = Codes(exempt)
+
+    first = smoke(api, clock, codes=codes)
+    second = smoke(api, clock, codes=codes)
+
+    assert first.failures == second.failures == []
+    assert codes.codes == exempt[2:], "one code per birth, spent"
+    assert set(exempt) & set(api.genesis) == {exempt[2]}
+    assert api.labels.count("birth") == 2
+    assert len(api.pool) == 2, "only the first run's 201 used up a pool code"
+
+
+def test_the_world_code_birth_may_meet_the_ip_rule():
+    clock = Clock()
+    api = FakeApi(clock)
+    api.last_birth = int(clock())
+
+    assert smoke(api, clock).failures == []
+    assert "world birth" in api.labels
+    assert len(api.pool) == 3
+
+
+def test_says_clearly_when_the_codes_run_out_and_skips_the_identity_checks():
+    clock = Clock()
+    api = FakeApi(clock)
+    lines = []
+
+    result = smoke(api, clock, codes=Codes([]), log=lines.append)
+
+    assert [f.split(":")[0] for f in result.failures] == ["birth"]
+    assert "smoke-genesis-codes.txt" in result.failures[0]
+    assert "--no-ip-limit" in result.failures[0]
+    assert "birth" not in api.labels
+    assert "self" not in api.labels
+    assert "world birth" in api.labels, "the world code's birth still runs"
+
+
+@pytest.mark.parametrize(
+    "response",
+    [problem(404, "not-built-yet"), problem(409, "try-later", retry_after="2026-11-06T00:05:00Z")],
+)
+def test_no_world_code_yet_passes_and_skips_the_world_code_birth(response):
+    clock = Clock()
+    api = FakeApi(clock)
+    api.override["genesis code"] = response
+    lines = []
+
+    assert smoke(api, clock, log=lines.append).failures == []
+    assert "world birth" not in api.labels
+    assert any("skip" in line and "world" in line for line in lines)
 
 
 def test_paces_one_request_every_4_seconds():
@@ -108,6 +171,12 @@ JSON = {"content-type": "application/json", "cache-control": "no-store"}
             "evolve with a maximum-size escaped body",
         ),
         ("birth replay", ok(201, {}), "birth replay"),
+        ("birth replay", problem(409, "already-exists"), "birth replay"),
+        ("genesis code", ok(200, {"genesis_code": "short"}), "GET /v1/world/genesis-code"),
+        ("genesis code", problem(409, "try-later"), "GET /v1/world/genesis-code"),
+        ("genesis code", problem(404, "about:blank"), "GET /v1/world/genesis-code"),
+        ("world birth", problem(403, "invalid-genesis-code"), "birth with the world's code"),
+        ("world birth", problem(409, "too-soon"), "birth with the world's code"),
         ("evolve", ok(200, {"whoiam": "old"}), "evolve"),
         ("no proof", problem(400), "birth without a proof"),
         (
@@ -224,7 +293,15 @@ def test_solves_proofs_with_the_servers_clock_and_bits():
         local.sleep(seconds)
         server.sleep(seconds)
 
-    result = run(api, FULL, production=False, clock=local, sleep=sleep, log=lambda _: None)
+    result = run(
+        api,
+        FULL,
+        production=False,
+        clock=local,
+        sleep=sleep,
+        log=lambda _: None,
+        codes=Codes(api.issue(1)),
+    )
 
     assert result.failures == []
 
@@ -236,9 +313,10 @@ def test_production_births_nothing_and_writes_only_privately():
     result = smoke(api, clock, target=PRODUCTION, production=True)
 
     assert result.failures == []
-    # The production run is held to its 30 requests (spec.md "Testing" says about 30).
-    assert len(api.requests) <= 30
+    # The production run is held to its 31 requests (spec.md "Testing" says about 31).
+    assert len(api.requests) <= 31
     assert "birth" not in api.labels
+    assert "world birth" not in api.labels
     assert "reclaim" not in api.labels
     writes = {(r.method, r.url) for r in api.requests if r.method in ("POST", "PUT")}
     # No federation request either: it would hold one of the 100 places for 3 days.
@@ -258,6 +336,7 @@ def test_production_births_nothing_and_writes_only_privately():
         "constitution",
         "census",
         "residents",
+        "genesis code",
         "federation world",
         "federation worlds",
         "outside v1",

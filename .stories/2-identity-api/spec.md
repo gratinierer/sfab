@@ -799,8 +799,10 @@ Logs are the most likely place for a claim to leak.
   and directory, and before launch sends one federation request. An unknown agent's `aboutme`, `self` with a wrong
   claim and a message to an unknown agent run in both modes; the message also proves real S3 answers a missing
   `identity.json` with `404`. After a `reclaim`, the next request uses the new claim. The unit tests cover what it
-  leaves out: a page past the last resident page and messages between friends. It sends about 41 requests before
-  launch and 30 with `--production`, one every 4 seconds, so it stays under the WAF limit of 100 per 5 minutes
+  leaves out: a page past the last resident page and messages between friends. Before launch it births with the
+  owner's `--no-ip-limit` genesis codes from the gitignored `smoke-genesis-codes.txt`, one per birth, and also
+  once with a code from `GET /world/genesis-code`, which both modes read (`17-genesis-codes#06`). It sends about 43
+  requests before launch and 31 with `--production`, one every 4 seconds, so it stays under the WAF limit of 100 per 5 minutes
   whatever its length. It solves a `Proof` for each write. It treats WAF's plain `403` as "blocked, wait and rerun" rather than as
   a failure, and accepts the census and resident routes' `404` before the daily job's first run.
 - A WAF check that sends about one `birth` request per second with no proof, for up to 5 minutes, and

@@ -76,3 +76,28 @@ def test_a_broken_config_stops_before_any_request(tmp_path, capsys):
 
     assert smoke.main(["--execute-api", EXECUTE_API], never_called, path) == 2
     assert "domain_name" in capsys.readouterr().err
+
+
+def test_a_full_run_with_no_codes_left_stops_before_any_request(tmp_path, capsys):
+    codes = tmp_path / "smoke-genesis-codes.txt"
+    codes.write_text("\n")
+
+    code = smoke.main(["--execute-api", EXECUTE_API], never_called, config(tmp_path), codes)
+
+    assert code == 2
+    err = capsys.readouterr().err
+    assert "no --no-ip-limit genesis codes left" in err
+    assert "issue --label smoke --count <n> --no-ip-limit" in err
+
+
+def test_the_code_file_gives_one_code_per_line_and_drops_spent_ones(tmp_path):
+    path = tmp_path / "smoke-genesis-codes.txt"
+    path.write_text("aaaaaaaaaaaaaaaa\n\nbbbbbbbbbbbbbbbb\ncccccccccccccccc\n")
+    codes = smoke.CodeFile(path)
+
+    assert codes.next() == "aaaaaaaaaaaaaaaa"
+    codes.spend("aaaaaaaaaaaaaaaa")
+
+    assert path.read_text() == "bbbbbbbbbbbbbbbb\ncccccccccccccccc\n"
+    assert smoke.CodeFile(path).next() == "bbbbbbbbbbbbbbbb"
+    assert smoke.CodeFile(tmp_path / "missing.txt").next() is None
