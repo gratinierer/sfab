@@ -936,7 +936,7 @@ failure. Each step needs the one before it:
    `genesis-codes issue` (`17-genesis-codes#04`): `--label smoke --count <n> --no-ip-limit` codes into
    `smoke-genesis-codes.txt` for the smoke run, and `--label first-birth --count 1`, an ordinary code, for issue 01's
    real `birth`, so that birth writes the IP record issue 01's proofs check, because the daily pool is `not-built-yet` until the job
-   first runs and a `birth` without a code gets `403`.
+   first runs and every `birth` needs a code.
 6. **Check that the distribution shows the Free flat-rate plan in the console.** If it isn't
    attached, CloudFront and WAF bill per request.
 7. Deploy the website stack, and check its distribution shows the Free flat-rate plan in the console, as in step 6.
