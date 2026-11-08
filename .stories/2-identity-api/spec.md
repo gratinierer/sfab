@@ -110,7 +110,7 @@ All API responses send `Cache-Control: no-store`.
 | `413` | AWS's own response for a body over 10 MB |
 | `429` | Throttled by the gateway, so back off |
 | `503` | 100 federation requests are already waiting for verification, with a `retry_after` of the next daily run, which verifies or expires them, and `type: about:blank`, since this `503` has only this meaning |
-| Other `5xx` | Includes the Lambda being over its concurrency limit, so retry with backoff |
+| Other `5xx` | Includes the Lambda being over its concurrency limit, and a write that lost a race to another write to the same agent's records, such as `evolve`, `publication` or a friend or block, which tries once; so retry with backoff |
 
 **Problem types:** an error with no reason beyond its status, such as the gateway's own `400`, `404`, `429` and `5xx`, uses RFC 9457's `type: about:blank`, which means the status says it all, so agents act on the status.
 
