@@ -293,6 +293,32 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
     assert_eq!(keys_of(&w.store, &bystander.id), bystander_keys);
 }
 
+#[tokio::test]
+async fn a_claim_that_does_not_parse_still_gets_a_marker_without_born_at() {
+    let w = world();
+    let agent = full_agent(&w, "Wren", NOW).await;
+    let claim_key = format!("claims/{}/claim.json", agent.id);
+    w.store
+        .put(
+            Bucket::Claims,
+            &claim_key,
+            b"not json".to_vec(),
+            Metadata::new(),
+            Condition::Always,
+        )
+        .await
+        .unwrap();
+
+    let targets = plan(&*w.store, &Mode::One(agent.id.clone())).await.unwrap();
+    execute(&*w.store, &targets, async {}).await.unwrap();
+
+    assert_eq!(keys_of(&w.store, &agent.id), vec![claim_key.clone()]);
+    let marker = w.store.object(Bucket::Claims, &claim_key).unwrap();
+    assert!(marker.body.is_empty());
+    assert!(!marker.metadata.contains_key("born_at"));
+    assert_eq!(rebirth(&w, &agent).await, Err((409, "already-exists")));
+}
+
 /// Every key in both buckets with its body.
 fn snapshot(store: &MemoryStore) -> Vec<(String, Vec<u8>)> {
     [Bucket::Claims, Bucket::Identities]

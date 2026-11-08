@@ -156,8 +156,15 @@ async fn mark<S: Store>(
         if current.body.is_empty() {
             return Ok(());
         }
-        let metadata = metadata_of(&current.body)
-            .ok_or_else(|| StoreError::Other(format!("{} doesn't parse", l.key)))?;
+        // A claim that doesn't parse still gets its marker, so the ID can't be born again; it
+        // keeps no `born_at`, so only a takedown by ID finds it again.
+        let metadata = metadata_of(&current.body).unwrap_or_else(|| {
+            eprintln!(
+                "warning: {} doesn't parse, so its marker keeps no born_at",
+                l.key
+            );
+            Default::default()
+        });
         let write = store
             .put(
                 l.bucket,

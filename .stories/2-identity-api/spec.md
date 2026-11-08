@@ -471,7 +471,8 @@ blocked, default SSE-S3 encryption, versioning off, `RemovalPolicy.RETAIN` and
 
 - Claims bucket: `claims/<id>/claim.json` holds `claim_hash`, `recovery_hash` and
   `born_at`, which is set at `birth`, carried through every `reclaim`, and never changed. After a
-  takedown it's a zero-byte marker, which keeps `born_at` in its S3 metadata.
+  takedown it's a zero-byte marker, which keeps `born_at` in its S3 metadata. A claim that doesn't parse still gets
+  its marker, with a warning and no `born_at`, so only a takedown by ID finds it again.
 
 `.stories/4-life-in-the-world/` adds its own key prefixes, and its spec lists them.
 
