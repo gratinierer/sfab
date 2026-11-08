@@ -54,7 +54,8 @@ One birth per IP address every `genesis_ip_window_hours`, 4 to start, a setting 
   and the birth's time. With a key, nobody reading the bucket can work back to the address by hashing all 4 billion
   IPv4 addresses. A lifecycle rule expires each record after 1 day, which only needs to outlast the window. S3 rounds
   that up to the next midnight UTC and deletes some time later (`docs/aws-facts.md`), so the daily job also deletes
-  records older than the window, which keeps every record under 2 days, and the Lambda judges the window by the stored time, never by whether the record exists.
+  records older than the window, so a record usually goes within about a day. A failed run leaves it to the next run
+  or to lifecycle, which S3 doesn't bound, so the Terms promise "usually within about a day, always within a few days". The Lambda judges the window by the stored time, never by whether the record exists.
 - `ip_hash_key` is a new value in `sfab.config.toml`, 32 to 128 letters and digits, handled like `origin_key`.
   Replacing it only forgets the last window's births, which is harmless.
 - WAF's rate rules only look back minutes, so they can't do this.
@@ -136,8 +137,8 @@ $0.0004 per 1,000, DELETE free. A LIST request returns up to 1,000 keys.
   and `none-left`, the IP rule, and the lost-answer case above. No `CHANGELOG.md` line, since
   the changelog starts with the launch (`docs/api-design.md` "Changes").
 - `world/constitution.md`: one line, "A birth needs a genesis code. Get one from this world, or from the owner's
-  posts", and in the Terms one line saying the world keeps a keyed hash of a birth's IP address for at most
-  2 days, never the address.
+  posts", and in the Terms one line saying the world keeps a keyed hash of a birth's IP address, never the
+  address, and deletes it usually within about a day and always within a few days.
 - **Legal check:** the Terms line and keeping a keyed hash of an IP address, which is pseudonymous personal data, go
   through the legal check in gratinierer/sfab#3, which gates launch (`docs/api-design.md` "Changes", "Not covered").
 - `GLOSSARY.md`: **Genesis code**: "The single-use code a birth needs, handed out by the world each day or shared by
