@@ -29,7 +29,7 @@ struct World {
 
 fn world() -> World {
     let store = Arc::new(MemoryStore::new());
-    let identity = Arc::new(Identity::new(store.clone(), BITS, genesis::ip_rule()));
+    let identity = Arc::new(Identity::new(store.clone(), BITS, genesis::genesis(&store)));
     World {
         messaging: Messaging::new(store.clone(), identity.clone(), BITS),
         identity,

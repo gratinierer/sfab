@@ -35,7 +35,7 @@ pub struct AppState<S> {
     messaging: Messaging<S>,
     census: Census<S>,
     federation: Federation<S>,
-    genesis: Genesis<S>,
+    genesis: Arc<Genesis<S>>,
     /// The current Unix time, so tests can fix it.
     now: fn() -> i64,
 }
@@ -67,12 +67,13 @@ pub fn app<S: Store>(
     now: fn() -> i64,
     here: Here,
 ) -> Router {
-    let identity = Arc::new(Identity::new(store.clone(), required_bits, ip_rule.clone()));
+    let genesis = Arc::new(Genesis::new(store.clone(), ip_rule));
+    let identity = Arc::new(Identity::new(store.clone(), required_bits, genesis.clone()));
     let state = Arc::new(AppState {
         messaging: Messaging::new(store.clone(), identity.clone(), required_bits),
         identity,
         census: Census::new(store.clone()),
-        genesis: Genesis::new(store.clone(), ip_rule),
+        genesis,
         federation: Federation::new(store, required_bits, here),
         now,
     });

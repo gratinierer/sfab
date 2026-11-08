@@ -27,7 +27,7 @@ struct World {
 fn world() -> World {
     let store = Arc::new(MemoryStore::new());
     World {
-        identity: Identity::new(store.clone(), BITS, genesis::ip_rule()),
+        identity: Identity::new(store.clone(), BITS, genesis::genesis(&store)),
         store,
     }
 }

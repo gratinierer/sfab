@@ -26,7 +26,7 @@ struct World {
 fn world() -> World {
     let store = Arc::new(MemoryStore::new());
     World {
-        identity: Identity::new(store.clone(), BITS, genesis::ip_rule()),
+        identity: Identity::new(store.clone(), BITS, genesis::genesis(&store)),
         store,
     }
 }
@@ -303,7 +303,7 @@ async fn a_conflict_on_identity_json_answers_500_and_the_retry_copies_from_a_fre
     let a = born(&w, "Wren").await;
     evolve(&w, &a, "old").await;
     let store = racing(&w, 1);
-    let identity = Identity::new(store.clone(), BITS, genesis::ip_rule());
+    let identity = Identity::new(store.clone(), BITS, genesis::genesis(&store));
     let call = publication_call(&a, json!({"whoiam": true}));
 
     // One try only, so a lost race costs few S3 calls: the agent retries on the `500`.
@@ -325,7 +325,8 @@ async fn evolve_after_a_lost_race_keeps_the_publication_and_rewrites_the_copy() 
     evolve(&w, &a, "new").await;
     assert_eq!(aboutme(&w, &a.id).await.unwrap()["whoiam"], "new");
 
-    let identity = Identity::new(racing(&w, 1), BITS, genesis::ip_rule());
+    let racing = racing(&w, 1);
+    let identity = Identity::new(racing.clone(), BITS, genesis::genesis(&racing));
     let body = serde_json::to_vec(&json!({"whoiam": "mine"})).unwrap();
     let sent = write("PUT", "/v1/identity/evolve".into(), a.auth(), &body);
     assert_eq!(status(&identity.evolve(&sent.call(), NOW).await), 500);
@@ -344,7 +345,8 @@ async fn evolve_after_a_lost_race_keeps_the_publication_and_rewrites_the_copy() 
 async fn endless_conflicts_end_in_500_with_nothing_published() {
     let w = world();
     let a = born(&w, "Wren").await;
-    let identity = Identity::new(racing(&w, 100), BITS, genesis::ip_rule());
+    let racing = racing(&w, 100);
+    let identity = Identity::new(racing.clone(), BITS, genesis::genesis(&racing));
     let result = identity
         .publish(&publication_call(&a, json!({"name": true})).call(), NOW)
         .await;
@@ -462,7 +464,7 @@ async fn a_conflict_on_contacts_json_answers_500_and_the_retry_keeps_both_friend
         // Another call adds `other_id(9)` first.
         theirs: |_| json!({"friends": [{"id": other_id(9), "added_at": "2026-11-05T00:00:00Z"}]}),
     });
-    let identity = Identity::new(store.clone(), BITS, genesis::ip_rule());
+    let identity = Identity::new(store.clone(), BITS, genesis::genesis(&store));
     let mine = other_id(0);
     let call = add_call(&a, List::Friends, &mine);
 

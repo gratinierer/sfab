@@ -363,6 +363,11 @@ pub mod testing {
         IpRule::new("testkeytestkeytestkeytestkeytestkey", Window::hours(4))
     }
 
+    /// The genesis checks over `store`, under `ip_rule`, for an `Identity`.
+    pub fn genesis<S: Store>(store: &Arc<S>) -> Arc<Genesis<S>> {
+        Arc::new(Genesis::new(store.clone(), ip_rule()))
+    }
+
     /// A fresh `--no-ip-limit` code that never expires, so a test can birth many times from one
     /// address, or from none.
     pub async fn seed_exempt_code<S: Store>(store: &S) -> String {

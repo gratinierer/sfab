@@ -22,7 +22,7 @@ use sfab_core::id::AgentId;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Object, Store, StoreError};
 use sfab_core::takedown::{Action, Location, Phase};
-use sfab_genesis::{Genesis, IpRule};
+use sfab_genesis::Genesis;
 
 /// Where `birth` points agents for the constitution, which ends with the Terms. Issue 11 serves it.
 pub const CONSTITUTION: &str = "/v1/world/constitution";
@@ -179,7 +179,7 @@ pub struct Identity<S> {
     store: Arc<S>,
     required_bits: u32,
     marked: MarkedToday,
-    genesis: Genesis<S>,
+    genesis: Arc<Genesis<S>>,
 }
 
 fn malformed() -> Problem {
@@ -210,10 +210,10 @@ fn to_json<T: Serialize>(value: &T) -> Vec<u8> {
 }
 
 impl<S: Store> Identity<S> {
-    /// `ip_rule` is `birth`'s IP rule, from `IP_HASH_KEY` and `GENESIS_IP_WINDOW_HOURS`.
-    pub fn new(store: Arc<S>, required_bits: u32, ip_rule: IpRule) -> Self {
+    /// `genesis` holds `birth`'s genesis checks and IP rule, shared with the pool route.
+    pub fn new(store: Arc<S>, required_bits: u32, genesis: Arc<Genesis<S>>) -> Self {
         Self {
-            genesis: Genesis::new(store.clone(), ip_rule),
+            genesis,
             store,
             required_bits,
             marked: MarkedToday::default(),
