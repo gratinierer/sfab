@@ -2300,6 +2300,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "sfab-genesis-codes"
+version = "0.1.0"
+dependencies = [
+ "aws-config",
+ "aws-sdk-s3",
+ "serde_json",
+ "sfab-core",
+ "sfab-genesis",
+ "tokio",
+]
+
+[[package]]
 name = "sfab-identity"
 version = "0.1.0"
 dependencies = [

@@ -22,7 +22,11 @@ fn genesis(store: &Arc<MemoryStore>) -> Genesis<MemoryStore> {
 
 /// The summary as JSON, so a test can compare it with a literal.
 async fn summary(store: &MemoryStore) -> serde_json::Value {
-    let summary: Summary = read_summary(store).await.unwrap().expect("a summary");
+    let summary: Summary = read_summary(store)
+        .await
+        .unwrap()
+        .expect("a summary")
+        .summary;
     serde_json::to_value(summary).unwrap()
 }
 

@@ -17,7 +17,7 @@ use sfab_core::daily::{DAY, is_rfc3339_second, next_daily_run, rfc3339, utc_date
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 
-pub use daily::{Batch, Daily, DailyReport, Summary, WorldDay, daily, read_summary};
+pub use daily::{Batch, Daily, DailyReport, Summary, WorldDay, Written, daily, read_summary};
 use ip::IPS_PREFIX;
 pub use ip::IpRule;
 

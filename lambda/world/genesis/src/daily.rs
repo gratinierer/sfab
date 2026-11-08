@@ -65,13 +65,31 @@ pub struct WorldDay {
     pub used: usize,
 }
 
-/// The owner's summary, or `None` before the daily job's first run. One GET.
-pub async fn read_summary<S: Store>(store: &S) -> Result<Option<Summary>, StoreError> {
+/// The summary as the owner reads it, with when the daily job wrote it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Written {
+    pub summary: Summary,
+    /// The Unix time of the write, S3's `LastModified`, since the summary holds no date of its
+    /// own.
+    pub at: i64,
+}
+
+/// The owner's summary, or `None` before the daily job's first run. One LIST, for the write
+/// time, and one GET.
+pub async fn read_summary<S: Store>(store: &S) -> Result<Option<Written>, StoreError> {
+    let listed = store.list_sized(BUCKET, SUMMARY_KEY).await?;
+    let Some(at) = listed
+        .iter()
+        .find(|l| l.key == SUMMARY_KEY)
+        .map(|l| l.last_modified)
+    else {
+        return Ok(None);
+    };
     let Some(object) = store.get(BUCKET, SUMMARY_KEY).await? else {
         return Ok(None);
     };
     serde_json::from_slice(&object.body)
-        .map(Some)
+        .map(|summary| Some(Written { summary, at }))
         .map_err(|e| StoreError::Other(format!("{SUMMARY_KEY} doesn't parse: {e}")))
 }
 
