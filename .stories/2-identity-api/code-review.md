@@ -41,6 +41,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-07T20:42:15+00:00 | code-review | 15 @ 58d5d04..95e7fc1 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 10 new: 4 standards, 6 spec | |
 | 2026-11-07T22:08:00+00:00 | walkthrough | 01, 07, 08, 09, 11, 12, 13, 14, 15 | claude-opus-5-5 (auto) | 0 new, 71 resolved (70 resolved, 1 superseded), 21 still open | auto walkthrough, not a review pass; C56-C147; changed spec.md and issues 09, 10, 13 |
 | 2026-11-08T09:57:30+00:00 | walkthrough | 01, 07, 08, 09, 11-15 | claude-opus-5-5, auto | 0 new, 0 resolved, 21 still open | auto walkthrough, not a review pass; 12 rechecked and left for the owner, 9 skipped as still waiting; `scripts/check` stops at the missing `cargo-audit`, as at the baseline |
+| 2026-11-08T10:36:50+00:00 | walkthrough | 01, 07, 08, 09, 11-15 | claude-opus-5-5, with the owner deciding each finding | 0 new, 16 resolved, 5 wontfix, 0 still open | walkthrough, not a review pass; every `scripts/check` step but the audit passes (`cargo-audit` isn't installed): generate, the arm64 build, 178 Rust and 220 CDK tests, clippy and fmt |
 
 ## Findings
 
