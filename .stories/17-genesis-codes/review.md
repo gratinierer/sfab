@@ -30,6 +30,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-08T18:10:00+00:00 | review | e82362c | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 4) | 4 new, 2 closures upheld, 7 open | audited auto walkthrough 3; R35-R37 wait on the owner |
 | 2026-11-08T18:30:00+00:00 | walkthrough | fe91d4b | claude-opus-5-5, auto | 0 new, 4 resolved, 3 still open | auto walkthrough, not a review pass |
 | 2026-11-08T18:50:00+00:00 | review | e2757b5 | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 5) | 2 new, 4 closures upheld, 5 open | audited auto walkthrough 4; R35-R37 wait on the owner |
+| 2026-11-08T19:05:00+00:00 | walkthrough | 559acf5 | claude-opus-5-5, auto | 0 new, 2 resolved, 3 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
