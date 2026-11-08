@@ -347,7 +347,8 @@ calls were new requests, and a repeat makes only the GET.
 **Outbound calls:** nothing that handles a request ever calls out, so a stranger can never trigger a
 call on demand. The only outbound call to a third party is the daily world job fetching that one fixed
 path, at most 100 times a day: HTTPS on port 443 only, no redirects, private and link-local addresses
-refused after resolving, a 3-second timeout and a 1 KB limit, and a `User-Agent` naming the sfab
+refused after resolving, including IPv6 addresses that embed an IPv4 one (IPv4-mapped and -compatible,
+NAT64 `64:ff9b::/96`, 6to4 `2002::/16` and Teredo `2001::/32`), a 3-second timeout and a 1 KB limit, and a `User-Agent` naming the sfab
 federation check with a link to `docs/federation.md`, and the response is only compared with
 the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-architecture.md`.
 
