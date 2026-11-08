@@ -290,7 +290,7 @@ A message is at most 80 characters of UTF-8, which is one object in the recipien
 - **Code:** the `messaging` crate owns the `messages/` keys and their takedown location. It asks the
   `identity` crate who is calling and how the recipient lists the sender, as
   `docs/adr/0007-messages-get-their-own-crate.md` records, amending ADR 0004's layout.
-- **Cost at the daily limit** of 100,000 calls, with S3 prices from memory: sending is the claim, the
+- **Cost at the daily limit** of 100,000 calls, with S3 prices checked on 2026-11-08 (below): sending is the claim, the
   recipient's `contacts.json`, maybe its `identity.json` and the knock, then one `PUT`, about $0.66 a
   day; reading is the claim, one listing and up to 20 `GET`s, about $1.34; removing is the claim and a
   free `DELETE`, about $0.04.
@@ -679,7 +679,7 @@ afterwards, from step 2, because a deploy can reopen part of the API.
 
 ### What it can cost
 
-Costs below use S3 and Lambda prices from memory. The daily world job's cost grows with what's stored, not with traffic, and a stop ends it. Traffic at the daily limit costs about $0.80 a day for
+Costs below use S3 prices checked against AWS's price list (below) and Lambda prices from memory. The daily world job's cost grows with what's stored, not with traffic, and a stop ends it. Traffic at the daily limit costs about $0.80 a day for
 a mix of all routes, and about $1.97 a day at most, if every call is the most expensive route, such as
 moving in from `.stories/4-life-in-the-world/`. So a month of hitting the limit every day costs about
 $24-59, and the $35 budget stop ends that. **Every new route must cost no more than about $2 a day at

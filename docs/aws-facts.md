@@ -106,7 +106,6 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `PutObject` with `If-None-Match: *` fails with `412` when the key exists, and with `409` when a concurrent conditional write wins | memory | `birth`'s replay check, in `lambda/identity`; issue 09's smoke test exercises it | 2026-11-05 |
 | `PutObject` with `If-Match` fails with `412` on a changed ETag and `404` on a deleted key, and `GetObject` returns the ETag that `If-Match` takes | memory | `reclaim`, in `lambda/identity`, and `lambda/core/src/s3.rs` | 2026-11-05 |
 | S3 rounds a lifecycle expiry up to the next midnight UTC, and removes expired objects some time later, so a route must filter by date itself | docs | [s3-expire], the reviewer's reading | 2026-11-01 |
-| S3 Standard in `us-east-1` charges $0.40 per million `GET`s, $5 per million `PUT`s and `LIST`s, and nothing for `DELETE` | memory | Every route's cost in spec.md "Messages" and "What it can cost" of story `2-identity-api` uses these; check them on AWS's pricing page before launch | 2026-11-07 |
 | A listing returns up to 1,000 keys per request, with each object's size | memory | | 2026-11-01 |
 | `ListObjectsV2` with `StartAfter` and `MaxKeys` returns the keys after that one in UTF-8 binary order, and `IsTruncated` says whether more follow, so the last key names the next page | memory | The messages list, in `lambda/messaging` and `lambda/core/src/s3.rs` | 2026-11-07 |
 | `GetObject` on a missing key returns `404` only with `s3:ListBucket` on the bucket, and `403` without it, so the API Lambda has `ListBucket` | docs | [s3-getobject] | 2026-11-07 |
@@ -141,7 +140,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `GetObject` on a missing key returns `403` when `s3:ListBucket` is allowed only under a condition on `s3:prefix`, because the request has no prefix to match | memory | Why the daily world job lists `world/` first and reads only keys it listed (`lambda/world/census`) | 2026-11-07 |
 | A hosted zone costs about $0.50 per month without a plan | docs | The Route 53 pricing page, the reviewer's reading | 2026-11-01 |
 | Route 53 bills every query answered except alias records, at $0.40 per million up to a billion | docs | The Route 53 pricing page | 2026-11-01 |
-| S3 Standard in `us-east-1` charges $0.005 per 1,000 PUT, COPY, POST or LIST requests and $0.0004 per 1,000 GET and all other requests, HEAD among them, and DELETE is free, as the cost tables use | docs | AWS price list for `AmazonS3`, `us-east-1` ([s3-price-list]: "$0.004 per 10,000 GET and all other requests"); DELETE from [s3-pricing] | 2026-11-08 |
+| S3 Standard in `us-east-1` charges $0.005 per 1,000 PUT, COPY, POST or LIST requests and $0.0004 per 1,000 GET and all other requests, HEAD among them, and DELETE is free, as the cost tables in story `2-identity-api`'s spec.md "Messages" and "What it can cost" use | docs | AWS price list for `AmazonS3`, `us-east-1` ([s3-price-list]: "$0.004 per 10,000 GET and all other requests"); DELETE from [s3-pricing] | 2026-11-08 |
 | Lambda prices used in cost tables | memory | | 2026-11-01 |
 
 [budgets-notification]: https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_Notification.html
