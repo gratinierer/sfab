@@ -33,6 +33,7 @@ class Config:
     domain_name: str
     hosted_zone_id: str
     origin_key: str
+    ip_hash_key: str
 
     @property
     def api_host(self) -> str:
@@ -51,6 +52,7 @@ IGNORED_KEYS = ("smoke_claim",)
 
 PLACEHOLDER = "CHANGE_ME"
 _ORIGIN_KEY = re.compile(r"[A-Za-z0-9]{20,128}")
+_IP_HASH_KEY = re.compile(r"[A-Za-z0-9]{32,128}")
 _ACCOUNT_ID = re.compile(r"[0-9]{12}")
 
 
@@ -101,6 +103,8 @@ def parse(data: dict, source: str = "config") -> Config:
 
     if "origin_key" in values and not _ORIGIN_KEY.fullmatch(values["origin_key"]):
         problems.append("origin_key: must be 20 to 128 letters and digits (A-Z, a-z, 0-9)")
+    if "ip_hash_key" in values and not _IP_HASH_KEY.fullmatch(values["ip_hash_key"]):
+        problems.append("ip_hash_key: must be 32 to 128 letters and digits (A-Z, a-z, 0-9)")
     if "account_id" in values and not _ACCOUNT_ID.fullmatch(values["account_id"]):
         problems.append("account_id: must be 12 digits")
 

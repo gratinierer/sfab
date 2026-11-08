@@ -102,6 +102,14 @@ def test_federation_requests_expire_3_days_pending_and_30_verified(base):
     assert expiry_rules(base, "Claims") == {}, "claims never expire"
 
 
+def test_genesis_ip_records_expire_after_1_day_and_nothing_else_under_genesis_does(base):
+    # Story 17 "The IP rule": the backstop to the daily job's deletion, outlasting the window.
+    rules = expiry_rules(base, "Identities")
+    assert rules["genesis/ips/"] == 1
+    assert [p for p in rules if p.startswith("genesis/")] == ["genesis/ips/"]
+    assert stacks.GENESIS_IP_WINDOW_HOURS < 24
+
+
 # The base stack: topics
 
 
@@ -283,7 +291,9 @@ def test_the_api_lambda_runs_the_rust_binary_on_arm64_with_reserved_concurrency(
     assert props["ReservedConcurrentExecutions"] == 5
 
 
-def test_the_api_lambda_gets_required_bits_both_buckets_and_this_world(api, base, config):
+def test_the_api_lambda_gets_required_bits_both_buckets_this_world_and_the_ip_rule(
+    api, base, config
+):
     _, function = api_function(api)
     env = function["Properties"]["Environment"]["Variables"]
     assert set(env) == {
@@ -292,13 +302,30 @@ def test_the_api_lambda_gets_required_bits_both_buckets_and_this_world(api, base
         "CLAIMS_BUCKET",
         "DOMAIN_NAME",
         "ABUSE_CONTACT",
+        "IP_HASH_KEY",
+        "GENESIS_IP_WINDOW_HOURS",
     }
     assert env["REQUIRED_BITS"] == "20"
+    # Story 17 "The IP rule": one birth per IP address every 4 hours, hashed with the key.
+    assert env["GENESIS_IP_WINDOW_HOURS"] == "4"
+    assert env["IP_HASH_KEY"] == config.ip_hash_key
     # GET /federation/world publishes both.
     assert env["DOMAIN_NAME"] == config.domain_name
     assert env["ABUSE_CONTACT"] == config.abuse_contact
     assert bucket_export(base, "Identities") in str(env["IDENTITIES_BUCKET"])
     assert bucket_export(base, "Claims") in str(env["CLAIMS_BUCKET"])
+
+
+def test_the_ip_hash_key_goes_only_to_the_api_lambda(built, config):
+    # Unlike origin_key, it never reaches CloudFront, the API key or another stack.
+    found = [
+        (resource["Type"], logical_id)
+        for stack in (built.base, built.api, built.website)
+        for logical_id, resource in Template.from_stack(stack).to_json()["Resources"].items()
+        if config.ip_hash_key in json.dumps(resource)
+    ]
+    assert len(found) == 1, found
+    assert found[0][0] == "AWS::Lambda::Function" and found[0][1].startswith("ApiFunction")
 
 
 def test_the_api_lambda_keeps_logs_for_14_days(api):
@@ -346,12 +373,20 @@ def test_the_api_lambda_may_touch_only_its_own_prefixes(api, base):
         "Identities/messages/*",
         "Identities/vitals/*",
         "Identities/federation/pending/*",
+        # Story 17: the IP rule's records, and the pool a used world code leaves.
+        "Identities/genesis/ips/*",
+        "Identities/genesis/pool.json",
         "Claims/*",
     ]
     expected = {(a, r) for r in read_write for a in ("s3:GetObject", "s3:PutObject")}
     expected |= {("s3:GetObject", "Identities/world/*")}
-    # Only a message or knock is ever deleted by the API (spec.md "Messages").
-    expected |= {("s3:DeleteObject", "Identities/messages/*")}
+    # A birth HEADs its genesis code, which needs GetObject, and deletes it once used.
+    expected |= {("s3:GetObject", "Identities/genesis/codes/*")}
+    # The API deletes only a message or knock (spec.md "Messages") and a used genesis code.
+    expected |= {
+        ("s3:DeleteObject", "Identities/messages/*"),
+        ("s3:DeleteObject", "Identities/genesis/codes/*"),
+    }
     # Without ListBucket, S3 answers a missing key with 403 instead of 404 (docs/aws-facts.md).
     expected |= {("s3:ListBucket", "Identities"), ("s3:ListBucket", "Claims")}
     assert grants(api, base, "ApiFunctionServiceRole") == expected
@@ -395,6 +430,18 @@ def test_the_rest_api_is_built_from_sfab_yaml_with_both_placeholders_filled(api,
     function_id, _ = api_function(api)
     assert '"Fn::GetAtt": ["%s", "Arn"]' % function_id in body
     assert "/identity/birth" in body
+
+
+def test_get_world_genesis_code_reaches_the_api_lambda(api):
+    # Story 17 "Routes": anonymous, so it needs only the origin key, like every operation.
+    apis = api.find_resources("AWS::ApiGateway::RestApi")
+    body = next(iter(apis.values()))["Properties"]["Body"]
+    operation = body["paths"]["/world/genesis-code"]["get"]
+    assert operation["security"] == [{"origin_key": []}]
+    integration = operation["x-amazon-apigateway-integration"]
+    assert integration["type"] == "aws_proxy"
+    function_id, _ = api_function(api)
+    assert '"Fn::GetAtt": ["%s", "Arn"]' % function_id in json.dumps(integration["uri"])
 
 
 def test_a_placeholder_left_in_the_definition_fails_the_synth():
@@ -543,6 +590,20 @@ def test_the_distribution_passes_every_request_uncached_over_https_only(api, con
     assert behavior["FunctionAssociations"] == [
         {"EventType": "viewer-request", "FunctionARN": {"Fn::GetAtt": [function_id, "FunctionARN"]}}
     ]
+
+
+def test_the_viewer_address_reaches_the_lambda_and_no_function_rewrites_headers(api):
+    # Story 17 "The IP rule" reads CloudFront-Viewer-Address, which AllViewerExceptHostHeader
+    # adds (docs/aws-facts.md). The one viewer function only answers paths outside /v1/, so
+    # it never sets a header a request then carries to the origin.
+    _, props = only(api, "AWS::CloudFront::Distribution")
+    dist = props["DistributionConfig"]
+    assert dist["DefaultCacheBehavior"]["OriginRequestPolicyId"] == ALL_VIEWER_EXCEPT_HOST_HEADER
+    assert "CacheBehaviors" not in dist
+    (origin,) = dist["Origins"]
+    assert [h["HeaderName"] for h in origin["OriginCustomHeaders"]] == ["x-api-key"]
+    _, function = only(api, "AWS::CloudFront::Function")
+    assert "request.headers" not in function["FunctionCode"]
 
 
 def test_the_origin_is_the_api_without_a_doubled_stage_and_with_the_origin_key(api, config):
