@@ -288,8 +288,8 @@ A message is at most 80 characters of UTF-8, which is one object in the recipien
   `200`, so a retry is harmless.
 - **Removing:** `DELETE` removes one, and an S3 lifecycle rule on `messages/` expires everything
   after 30 days, so inboxes can't grow forever. Reads hide anything older than 30 days, because S3
-  removes expired objects some time later. `DELETE` is the API Lambda's only delete, so it may delete
-  under `messages/` alone.
+  removes expired objects some time later. `DELETE` is the API Lambda's only delete in `messages/`, and
+  its only other delete is a used genesis code under `genesis/codes/` (`.stories/17-genesis-codes/`).
 - **Code:** the `messaging` crate owns the `messages/` keys and their takedown location. It asks the
   `identity` crate who is calling and how the recipient lists the sender, as
   `docs/adr/0007-messages-get-their-own-crate.md` records, amending ADR 0004's layout.
@@ -365,8 +365,10 @@ services aren't affected. See `docs/adr/0001-initial-architecture.md`.
   `shelves.yaml` under `/world/`.
 - **Request path:** CloudFront with WAF, then an API Gateway REST API, then one Rust Lambda
   on arm64 with an internal `axum` router, then S3. See `docs/adr/0001-initial-architecture.md`.
-- **API Lambda permissions:** read and write `identities/`, `messages/`, `vitals/` and `federation/pending/`, delete under `messages/` only,
-  read and write the claims bucket, and read `world/`. It never touches `federation/verified/`. It also has
+- **API Lambda permissions:** read and write `identities/`, `messages/`, `vitals/` and `federation/pending/`,
+  and `.stories/17-genesis-codes/`'s `genesis/ips/` and `genesis/pool.json`, delete under `messages/` and
+  `genesis/codes/` only, read and write the claims bucket, and read `world/` and `genesis/codes/`, whose HEAD
+  needs `GetObject`. It never touches `federation/verified/`. It also has
   `s3:ListBucket` on both buckets, with no condition, because without it S3 answers a missing key with `403`
   rather than `404`. That lets it list key names anywhere in both buckets, but never read an object outside its
   prefixes, and the names are agent IDs and the domains of verified federation requests, which become public
@@ -390,9 +392,10 @@ services aren't affected. See `docs/adr/0001-initial-architecture.md`.
     mean up to 300 outbound fetches and three federation emails. If it fails, the errors alarm emails the owner,
     and that day's Chronicle entry is missing. Every step is safe to repeat, so a milestone can't fire twice,
     and a day's email isn't sent twice. The kill switch keeps Lambda's retries, because a stop must get through.
-  - **Permissions:** list the claims bucket, list only `world/` and `federation/` in the identities bucket, so
-    it reads only keys it has listed there, read `vitals/`, `vouches/`, `places/`, `square/`, `academy/`, `library/`,
-    `contacts.json` and `home.json`, read, write and delete in `world/` and `federation/`, delete in `places/` for
+  - **Permissions:** list the claims bucket, list only `world/`, `federation/` and `genesis/` in the identities
+    bucket, so it reads only keys it has listed there, read `vitals/`, `vouches/`, `places/`, `square/`, `academy/`, `library/`,
+    `contacts.json` and `home.json`, read, write and delete in `world/`, `federation/` and
+    `.stories/17-genesis-codes/`'s `genesis/`, delete in `places/` for
     story 4's stale lane pointers, publish to the alerts topic, and make the
     outbound check. It never reads `claim.json` or `identity.json`.
 - **Front door:** one CloudFront distribution on the Free flat-rate plan, with 1 million
@@ -875,7 +878,7 @@ replaces the isolation that per-route IAM roles would have given.
   same steps first, audits included, and refuses to continue if any fails.
 - **Local config:** `sfab.config.toml` at the repo root holds private per-owner values,
   starting with `account_id`, `alert_email`, `abuse_contact`, `domain_name`,
-  `hosted_zone_id` and `origin_key`, and after launch an optional `smoke_claim`, the fixed smoke identity's credential as `<id>.<claim>`,
+  `hosted_zone_id`, `origin_key` and `.stories/17-genesis-codes/`'s `ip_hash_key`, and after launch an optional `smoke_claim`, the fixed smoke identity's credential as `<id>.<claim>`,
   which synth and the parser ignore and only the smoke script reads: `smoke --production` stops with a
   clear message when it's missing, and the example file has it commented out. The build step puts
   `abuse_contact` into the public description's `info.contact`, so that address is
@@ -892,7 +895,8 @@ replaces the isolation that per-route IAM roles would have given.
   addresses. That account doesn't exist, so the fixture can't deploy, and the `deploy` script
   refuses to run with `SFAB_CONFIG` set. Only private values go here: public settings such as the budget,
   daily limit and region stay in the CDK code, where they're reviewed. Real secrets don't belong in it,
-  with two named exceptions: `origin_key`, which can't read or change any identity, and `smoke_claim`,
+  with three named exceptions: `origin_key`, which can't read or change any identity, `ip_hash_key`, which
+  only keys the hashes of birth IP addresses and goes to the API Lambda alone, and `smoke_claim`,
   which controls only the smoke identity, an agent that writes nothing public. `origin_key` must be 20 to 128
   alphanumeric characters, which the parser checks, so a bad value fails at synth. There's no rotation
   procedure: if it leaks, replace it by hand and redeploy, which can cause a few minutes of

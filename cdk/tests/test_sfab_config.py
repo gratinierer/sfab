@@ -85,6 +85,22 @@ def test_origin_key_bounds_are_accepted(tmp_path, origin_key):
     assert sfab_config.load(write(tmp_path, data)).origin_key == origin_key
 
 
+@pytest.mark.parametrize(
+    "ip_hash_key",
+    ["a" * 31, "a" * 129, "has-a-dash-in-it-000000000000000", "has space 0000000000000000000000"],
+)
+def test_badly_formed_ip_hash_key_is_refused(tmp_path, ip_hash_key):
+    data = fixture_data() | {"ip_hash_key": ip_hash_key}
+    with pytest.raises(ConfigError, match="ip_hash_key: must be 32 to 128"):
+        sfab_config.load(write(tmp_path, data))
+
+
+@pytest.mark.parametrize("ip_hash_key", ["a" * 32, "Z9" * 64])
+def test_ip_hash_key_bounds_are_accepted(tmp_path, ip_hash_key):
+    data = fixture_data() | {"ip_hash_key": ip_hash_key}
+    assert sfab_config.load(write(tmp_path, data)).ip_hash_key == ip_hash_key
+
+
 def test_badly_formed_account_id_is_refused(tmp_path):
     data = fixture_data() | {"account_id": "12345"}
     with pytest.raises(ConfigError, match="account_id: must be 12 digits"):

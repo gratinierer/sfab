@@ -82,15 +82,24 @@ def test_the_job_keeps_logs_for_14_days(api):
     assert api.find_resources("AWS::Logs::LogGroup")[group]["Properties"]["RetentionInDays"] == 14
 
 
-def test_the_job_gets_both_buckets_and_the_alerts_topic(api, base):
+def test_the_job_gets_both_buckets_the_alerts_topic_and_the_genesis_settings(api, base):
     _, function = world_job(api)
     env = function["Properties"]["Environment"]["Variables"]
-    assert set(env) == {"IDENTITIES_BUCKET", "CLAIMS_BUCKET", "ALERTS_TOPIC_ARN"}
+    assert set(env) == {
+        "IDENTITIES_BUCKET",
+        "CLAIMS_BUCKET",
+        "ALERTS_TOPIC_ARN",
+        "GENESIS_CODES_PER_DAY",
+        "GENESIS_IP_WINDOW_HOURS",
+    }
+    # Story 17: 100 world codes a day, and IP records older than the 4-hour window go.
+    assert env["GENESIS_CODES_PER_DAY"] == "100"
+    assert env["GENESIS_IP_WINDOW_HOURS"] == "4"
     # The federation email goes to the owner's alerts topic, never the stop topic.
     assert topic_id(base, "Alerts") in json.dumps(env["ALERTS_TOPIC_ARN"])
 
 
-def test_the_job_may_list_claims_and_write_only_world_and_federation(api, base):
+def test_the_job_may_list_claims_and_write_only_world_federation_and_genesis(api, base):
     found = grants(api, base, "WorldJobFunctionServiceRole")
     publish = {g for g in found if g[0] == "sns:Publish"}
     assert found - publish == {
@@ -102,12 +111,17 @@ def test_the_job_may_list_claims_and_write_only_world_and_federation(api, base):
         ("s3:GetObject", "Identities/federation/*"),
         ("s3:PutObject", "Identities/federation/*"),
         ("s3:DeleteObject", "Identities/federation/*"),
+        # Story 17: issue the day's codes, write the pool and summary, and delete old world
+        # codes and IP records.
+        ("s3:GetObject", "Identities/genesis/*"),
+        ("s3:PutObject", "Identities/genesis/*"),
+        ("s3:DeleteObject", "Identities/genesis/*"),
     }
     assert len(publish) == 1
     assert topic_id(base, "Alerts") in next(iter(publish))[1]
 
 
-def test_the_job_lists_only_world_and_federation_in_the_identities_bucket(api):
+def test_the_job_lists_only_world_federation_and_genesis_in_the_identities_bucket(api):
     conditions = []
     for policy in api.find_resources("AWS::IAM::Policy").values():
         if "WorldJobFunctionServiceRole" not in json.dumps(policy["Properties"]["Roles"]):
@@ -117,7 +131,9 @@ def test_the_job_lists_only_world_and_federation_in_the_identities_bucket(api):
                 statement["Resource"]
             ):
                 conditions.append(statement["Condition"])
-    assert conditions == [{"StringLike": {"s3:prefix": ["world/*", "federation/*"]}}]
+    assert conditions == [
+        {"StringLike": {"s3:prefix": ["world/*", "federation/*", "genesis/*"]}}
+    ]
 
 
 def test_only_the_job_may_touch_verified_federation_requests(api, base):
@@ -147,10 +163,11 @@ def test_only_the_job_may_write_or_delete_world(api, base):
     for role in ("ApiFunctionServiceRole", "KillSwitchFunctionServiceRole"):
         found = grants(api, base, role)
         assert ("s3:PutObject", "Identities/world/*") not in found, role
-        # The API deletes only in `messages/` (issue 14); nothing but the job deletes in `world/`.
+        # The API deletes only in `messages/` (issue 14) and a used genesis code (story 17);
+        # nothing but the job deletes in `world/`.
         assert ("s3:DeleteObject", "Identities/world/*") not in found, role
         deletes = {resource for action, resource in found if action == "s3:DeleteObject"}
-        assert deletes <= {"Identities/messages/*"}, role
+        assert deletes <= {"Identities/messages/*", "Identities/genesis/codes/*"}, role
 
 
 # The kill switch's fourth stop step

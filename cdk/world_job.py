@@ -31,6 +31,8 @@ SCHEDULE = events.Schedule.cron(minute="5", hour="0")
 # The identities bucket's prefixes the job reads, writes and deletes in.
 WORLD_PREFIX = "world/"
 FEDERATION_PREFIX = "federation/"
+# Story 17: the day's world codes, the pool, the summary, and old codes and IP records.
+GENESIS_PREFIX = "genesis/"
 
 
 class WorldJob(Construct):
@@ -43,6 +45,8 @@ class WorldJob(Construct):
         identities_bucket: s3.IBucket,
         claims_bucket: s3.IBucket,
         alerts_topic: sns.ITopic,
+        genesis_codes_per_day: int,
+        genesis_ip_window_hours: int,
     ) -> None:
         super().__init__(scope, id)
 
@@ -60,6 +64,10 @@ class WorldJob(Construct):
                 "CLAIMS_BUCKET": claims_bucket.bucket_name,
                 # Where the daily federation email goes.
                 "ALERTS_TOPIC_ARN": alerts_topic.topic_arn,
+                # Story 17: the day's world genesis codes, and the IP records it deletes once
+                # older than the window. The settings live in stacks.py.
+                "GENESIS_CODES_PER_DAY": str(genesis_codes_per_day),
+                "GENESIS_IP_WINDOW_HOURS": str(genesis_ip_window_hours),
             },
             log_group=logs.LogGroup(
                 self,
@@ -97,9 +105,10 @@ class WorldJob(Construct):
 
     def _grant(self, identities: s3.IBucket, claims: s3.IBucket) -> None:
         """spec.md "Daily world job" ("Permissions"): list the claims bucket, without ever
-        reading a claim, and read, write and delete in `world/` and `federation/`, listing only
-        those. The outbound check needs no permission: the function isn't in a VPC."""
-        prefixes = (WORLD_PREFIX, FEDERATION_PREFIX)
+        reading a claim, and read, write and delete in `world/` and `federation/`, and story 17's
+        `genesis/`, listing only those. The outbound check needs no permission: the function
+        isn't in a VPC."""
+        prefixes = (WORLD_PREFIX, FEDERATION_PREFIX, GENESIS_PREFIX)
         statements = [
             iam.PolicyStatement(actions=["s3:ListBucket"], resources=[claims.bucket_arn]),
             iam.PolicyStatement(

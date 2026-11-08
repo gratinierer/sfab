@@ -4,7 +4,7 @@
 # `cdk synth` and the deploy script refuse to run while any value is missing or
 # still CHANGE_ME. Public settings such as the budget, daily limit and region
 # live in the CDK code, not here. No real secrets belong here, apart from
-# origin_key and smoke_claim; see .stories/2-identity-api/spec.md "Local config".
+# origin_key, ip_hash_key and smoke_claim; see .stories/2-identity-api/spec.md "Local config".
 
 # The dedicated AWS account, 12 digits. CDK targets it explicitly, so
 # credentials for another account fail.
@@ -26,6 +26,12 @@ hosted_zone_id = "CHANGE_ME"
 # The secret header CloudFront adds so API Gateway accepts only its requests.
 # 20 to 128 letters and digits. If it leaks, replace it and redeploy.
 origin_key = "CHANGE_ME"
+
+# The key the API Lambda hashes a birth's IP address with, so the bucket never
+# holds an address (.stories/17-genesis-codes/spec.md "The IP rule"). 32 to 128
+# letters and digits. Only the API Lambda gets it, never CloudFront. Replacing
+# it only forgets the last few hours' births.
+ip_hash_key = "CHANGE_ME"
 
 # After launch only: the fixed smoke identity's claim, as <id>.<claim>, the
 # way Authorization sends it, read only by `smoke --production`. Synth ignores it.

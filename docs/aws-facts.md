@@ -47,6 +47,11 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `HTTPS_ONLY` answers `http://` with `403` | docs | [https-viewers], the reviewer's reading; issue 01 of story `2-identity-api` proves it | 2026-11-01 |
 | Port 80 can't be closed on a distribution | memory | | 2026-11-01 |
 | A new account may need Support verification before creating CloudFront resources | forum | re:Post search summaries | 2026-11-01 |
+| The managed origin request policy `AllViewerExceptHostHeader` (`b689b0a8-53d0-40ab-baf2-68738e2966ac`) forwards every viewer header except `Host`, and adds CloudFront's headers for protocol, HTTP version, TLS version, device type and viewer location | docs | [orp-managed] | 2026-11-08 |
+| `CloudFront-Viewer-Address` is a viewer location header holding the viewer's IP address and source port, such as `198.51.100.10:46532`, and can be added in an origin request policy but not a cache policy | docs | [cf-headers] | 2026-11-08 |
+| So `AllViewerExceptHostHeader` forwards `CloudFront-Viewer-Address` to the origin | docs | [orp-managed] and [cf-headers] together, the reviewer's reading: the policy page says "all … viewer location headers" without naming each one. Issue 01 of story `2-identity-api` proves it, by a birth whose IP record matches the caller's address | 2026-11-08 |
+| A `CloudFront-Viewer-Address` header the viewer sends is replaced by CloudFront's own value, so a client can't set it | memory | AWS doesn't say. Its list of request headers CloudFront removes or replaces omits it ([cf-custom-origin]). Story 17's IP rule relies on it; issue 01 of story `2-identity-api` proves it, by a birth that sends its own header | 2026-11-08 |
+| CloudFront appends the connecting address to a viewer's `X-Forwarded-For` rather than replacing it, so its leading entries are the viewer's to choose | docs | [cf-custom-origin] "Client IP addresses"; why story 17 reads `CloudFront-Viewer-Address` instead | 2026-11-08 |
 
 ## WAF
 
@@ -180,3 +185,6 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 [deletion-policy]: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-attribute-deletionpolicy.html
 [s3-price-list]: https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-east-1/index.json
 [s3-pricing]: https://aws.amazon.com/s3/pricing/
+[orp-managed]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-origin-request-policies.html
+[cf-headers]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/adding-cloudfront-headers.html
+[cf-custom-origin]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/RequestAndResponseBehaviorCustomOrigin.html

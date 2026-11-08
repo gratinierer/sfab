@@ -63,18 +63,34 @@ API_RESERVED_CONCURRENCY = 5
 # CDK's default is 3 seconds; a request makes a few S3 calls. The takedown waits at least this:
 # API_TIMEOUT_SECONDS in lambda/takedown/src/args.rs, which a test ties to this one.
 API_TIMEOUT_SECONDS = 10
+# Story 17 "Two sources" and "The IP rule": the daily job issues this many world genesis codes,
+# and one IP address may birth once every this many hours. Public settings, so they live here.
+GENESIS_CODES_PER_DAY = 100
+GENESIS_IP_WINDOW_HOURS = 4
 # How long messages and knocks wait before the lifecycle rule on `messages/` expires them; the
 # messaging crate's KEEP_DAYS hides them from the same day.
 MESSAGE_DAYS = 30
-# The only prefix where the API Lambda deletes: `DELETE /identity/self/messages/{message_id}`.
-API_DELETE_PREFIXES = ("messages/",)
-# The identities bucket's prefixes the API Lambda reads and writes, and those it only reads.
-API_READ_WRITE_PREFIXES = ("identities/", "messages/", "vitals/", "federation/pending/")
-API_READ_PREFIXES = ("world/",)
+# Where the API Lambda deletes: `DELETE /identity/self/messages/{message_id}`, and a birth's
+# used genesis code (story 17 "What `birth` does").
+API_DELETE_PREFIXES = ("messages/", "genesis/codes/")
+# The identities bucket's prefixes the API Lambda reads and writes, the single keys it reads
+# and writes, and the prefixes it only reads. A HEAD needs GetObject.
+API_READ_WRITE_PREFIXES = (
+    "identities/",
+    "messages/",
+    "vitals/",
+    "federation/pending/",
+    "genesis/ips/",
+)
+API_READ_WRITE_KEYS = ("genesis/pool.json",)
+API_READ_PREFIXES = ("world/", "genesis/codes/")
 # Days before S3 deletes a federation request: one waiting for its token, and one waiting for
 # the owner (spec.md "Federation" and "Storage").
 FEDERATION_PENDING_DAYS = 3
 FEDERATION_VERIFIED_DAYS = 30
+# Days before S3 deletes a genesis IP record: story 17 "The IP rule". Only needs to outlast
+# GENESIS_IP_WINDOW_HOURS; the daily job deletes older records itself, sooner.
+GENESIS_IP_RECORD_DAYS = 1
 
 
 STAGE = "v1"
@@ -150,8 +166,9 @@ class BaseStack(cdk.Stack):
         )
 
         # Inboxes can't grow forever: spec.md "Messages". Federation requests expire too:
-        # spec.md "Federation". The API and the daily world job hide or delete anything older
-        # themselves, because S3 removes expired objects some time later (docs/aws-facts.md).
+        # spec.md "Federation", and so do genesis IP records: story 17 "The IP rule". The API
+        # and the daily world job hide or delete anything older themselves, because S3 removes
+        # expired objects some time later (docs/aws-facts.md).
         self.identities_bucket = self._bucket(
             "Identities",
             [
@@ -167,6 +184,11 @@ class BaseStack(cdk.Stack):
                     id="FederationVerified",
                     prefix="federation/verified/",
                     expiration=cdk.Duration.days(FEDERATION_VERIFIED_DAYS),
+                ),
+                s3.LifecycleRule(
+                    id="GenesisIps",
+                    prefix="genesis/ips/",
+                    expiration=cdk.Duration.days(GENESIS_IP_RECORD_DAYS),
                 ),
             ],
         )
@@ -315,6 +337,9 @@ class ApiStack(cdk.Stack):
                 # This world, which GET /federation/world publishes.
                 "DOMAIN_NAME": config.domain_name,
                 "ABUSE_CONTACT": config.abuse_contact,
+                # The IP rule. The key goes only here, never to CloudFront or the API key.
+                "IP_HASH_KEY": config.ip_hash_key,
+                "GENESIS_IP_WINDOW_HOURS": str(GENESIS_IP_WINDOW_HOURS),
             },
             reserved_concurrent_executions=API_RESERVED_CONCURRENCY,
             timeout=cdk.Duration.seconds(API_TIMEOUT_SECONDS),
@@ -392,6 +417,8 @@ class ApiStack(cdk.Stack):
             identities_bucket=base.identities_bucket,
             claims_bucket=base.claims_bucket,
             alerts_topic=base.alerts_topic,
+            genesis_codes_per_day=GENESIS_CODES_PER_DAY,
+            genesis_ip_window_hours=GENESIS_IP_WINDOW_HOURS,
         )
 
         self.kill_switch = KillSwitch(
@@ -444,7 +471,10 @@ class ApiStack(cdk.Stack):
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
                 cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
-                # Sends Authorization on every method.
+                # Sends Authorization on every method, and CloudFront-Viewer-Address, which
+                # story 17's IP rule reads: AWS documents this managed policy as adding the
+                # viewer location headers (docs/aws-facts.md), and Free lists origin request
+                # rules with managed policies, so no custom policy is needed.
                 origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
                 function_associations=[
                     cloudfront.FunctionAssociation(
@@ -476,6 +506,7 @@ class ApiStack(cdk.Stack):
         Story 4 adds its own prefixes here."""
         identities, claims = base.identities_bucket, base.claims_bucket
         read_write = [identities.arn_for_objects(f"{p}*") for p in API_READ_WRITE_PREFIXES]
+        read_write += [identities.arn_for_objects(k) for k in API_READ_WRITE_KEYS]
         read_write.append(claims.arn_for_objects("*"))
         self.function.add_to_role_policy(
             iam.PolicyStatement(actions=["s3:GetObject", "s3:PutObject"], resources=read_write)
