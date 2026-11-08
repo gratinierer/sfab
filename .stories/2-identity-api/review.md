@@ -83,6 +83,7 @@ Rows below that mention $1000 predate the owner's correction of the rule to $100
 | 2026-11-05T09:03:46+00:00 | review | 57560df | claude-sonnet-5-5 (dispatched, and reported its own model ID; story authored by claude-opus-5-5) | 3 new, 0 resolved, 3 still open | full pass; all 4 closures held (R174-R176, R166's waiver); tests and audit pass; findings checked by claude-opus-5-5 before writing |
 | 2026-11-05T09:07:38+00:00 | walkthrough | working tree | claude-opus-5-5, with the owner deciding each finding | 0 new, 3 resolved, 0 still open | walkthrough, not a review pass; issues 01, 06 and 14 changed |
 | 2026-11-08T21:20:00+00:00 | review | 0563371 | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 1) | 6 new, 3 closures upheld, 6 open | first review since 216 commits of implementation; R177-R179 upheld |
+| 2026-11-08T21:45:00+00:00 | walkthrough | abec107 | claude-opus-5-5, auto | 0 new, 5 resolved, 1 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
