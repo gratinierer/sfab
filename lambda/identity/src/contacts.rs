@@ -247,8 +247,8 @@ impl<S: Store> Identity<S> {
         Ok((contacts, Some(object.etag)))
     }
 
-    /// Saves `after` only if `contacts.json` is unchanged since `before` was read, or answers a
-    /// lost race. When friends leave and are published, the copy drops them first.
+    /// Saves `after` only if `contacts.json` is unchanged since `before` was read, and answers a
+    /// lost race when it changed. When friends leave and are published, the copy drops them first.
     async fn save_contacts(
         &self,
         id: &AgentId,
