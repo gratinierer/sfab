@@ -1,6 +1,5 @@
 # Build the world routes and the daily world job
 
-Label: ready-for-agent
 Blocked by: 01, 07, 09
 
 Stage 2. `spec.md` "World".
