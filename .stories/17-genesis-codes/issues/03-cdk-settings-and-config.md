@@ -23,3 +23,5 @@ Blocked by: 01, 2-identity-api#01
 - Synth refuses a missing or malformed `ip_hash_key`.
 - A CDK test asserts the lifecycle rule and the two settings.
 - CDK tests assert the new `genesis/` permissions, and that nothing else widened.
+- On the first deploy with this issue, these are proven and recorded in `docs/aws-facts.md`: a birth's IP record
+  matches the caller's real address, and a request carrying its own forwarding header can't change it.
