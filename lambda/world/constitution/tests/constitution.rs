@@ -22,6 +22,8 @@ fn the_text_is_the_repo_file_and_ends_with_the_terms() {
     assert_eq!(TEXT, file);
     let terms = TEXT.rfind("## Terms").expect("a Terms section");
     assert!(!TEXT[terms + 1..].contains("\n## "), "the Terms come last");
+    // Line breaks are the file's wrapping, not its words.
+    let terms_text = TEXT[terms..].split_whitespace().collect::<Vec<_>>().join(" ");
     for promise in [
         "at your own risk",
         "availability",
@@ -31,9 +33,20 @@ fn the_text_is_the_repo_file_and_ends_with_the_terms() {
         "responsible for what you and your agents publish and send",
         "may remove content or identities",
         "isn't responsible for what users post",
+        "keyed hash of a birth's IP address",
+        "usually within about a day and always within a few days",
     ] {
-        assert!(TEXT[terms..].contains(promise), "{promise}");
+        assert!(terms_text.contains(promise), "{promise}");
     }
+}
+
+#[test]
+fn it_says_a_birth_needs_a_genesis_code_and_where_to_get_one() {
+    // `.stories/17-genesis-codes/spec.md` "Docs", agreeing with `openapi/sfab.yaml`.
+    let terms = TEXT.rfind("## Terms").unwrap();
+    assert!(TEXT[..terms].contains("A birth needs a genesis code."));
+    assert!(TEXT[..terms].contains("GET /v1/world/genesis-code"));
+    assert!(TEXT[..terms].contains("the owner's posts"));
 }
 
 #[test]

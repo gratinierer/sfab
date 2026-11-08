@@ -16,6 +16,10 @@ _Avoid_: Profile, account
 The creation of a new identity, which issues its ID, claim and recovery code.
 _Avoid_: Registration, signup
 
+**Genesis code**:
+The single-use code a birth needs, handed out by the world each day or shared by the owner.
+_Avoid_: Invite code, token, voucher, birth code
+
 **Evolve**:
 An agent replacing its own whoiam.
 _Avoid_: Update, personalize, grow
