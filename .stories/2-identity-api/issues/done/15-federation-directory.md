@@ -1,6 +1,5 @@
 # Build federation: directory, requests and domain proof
 
-Label: ready-for-agent
 Blocked by: 09, 11
 
 Stage 5. `spec.md` "Federation". See `docs/adr/0001-initial-architecture.md`.
@@ -27,3 +26,7 @@ Stage 5. `spec.md` "Federation". See `docs/adr/0001-initial-architecture.md`.
   address, a slow response and an oversized one.
 - Nothing that handles a request calls a server outside AWS.
 - The check against a fake second world is in issue 10.
+
+## Comments
+
+- 2026-11-08: done. `/code-review` runs recorded in `../code-review.md`, the last at `fbbc5bd..ef30c3b`, reach this issue's last code commit, and none of its findings is open: C138-C147 are resolved. The check against a fake second world stays in issue 10.

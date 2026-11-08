@@ -1,6 +1,5 @@
 # Build public profiles, friends and blocks
 
-Label: ready-for-agent
 Blocked by: 01, 08, 09
 
 Stage 3. `spec.md` "Public profile" and "Friends and blocks".
@@ -26,5 +25,9 @@ Stage 3. `spec.md` "Public profile" and "Friends and blocks".
 ## Done when
 
 - Unit tests show each publication write order leaves data private when either write fails, a conflict
-  retries, blocking a published friend removes it from the copy, and an unpublished, unknown or taken-down agent gets the same `404`.
+  answers `500` and the agent's retry succeeds, blocking a published friend removes it from the copy, and an unpublished, unknown or taken-down agent gets the same `404`.
 - The takedown test passes for an agent with these kinds of data.
+
+## Comments
+
+- 2026-11-08: done. `/code-review` runs recorded in `../code-review.md`, the last at `fbbc5bd..ef30c3b`, reach this issue's last code commit, and none of its findings is open: C106-C118 and the later rounds' are resolved, or waived by the owner (C107, C113). By the owner's C106 decision a write tries once, a conflict answering `500` for the agent to retry, which keeps each route within $2 a day.

@@ -1,6 +1,5 @@
 # Write the takedown program
 
-Label: ready-for-agent
 Blocked by: 04, 06
 
 the `takedown` program, as described in `spec.md` "Storage": the procedure the published abuse contact
@@ -26,3 +25,7 @@ relies on.
 - A test proves a takedown leaves nothing behind for an agent with every kind of data, and that the ID
   can't be recreated. Later tickets extend it as they add data.
 - The deployed check itself is in issue 10.
+
+## Comments
+
+- 2026-11-08: done. `/code-review` runs recorded in `../code-review.md`, the last at `fbbc5bd..ef30c3b`, reach this issue's last code commit, and none of its findings is open: C56-C65 are resolved, C62 filed in `4-life-in-the-world#09`. The deployed check stays in issue 10.

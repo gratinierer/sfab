@@ -1,6 +1,5 @@
 # Build messages and knocks
 
-Label: ready-for-agent
 Blocked by: 09, 13
 
 Stage 4. `spec.md` "Messages". See `docs/adr/0001-initial-architecture.md`.
@@ -24,3 +23,7 @@ Stage 4. `spec.md` "Messages". See `docs/adr/0001-initial-architecture.md`.
   refused, and a message to an unknown agent.
 - A CDK assertion test covers the lifecycle rule.
 - The takedown test passes for an agent with messages.
+
+## Comments
+
+- 2026-11-08: done. `/code-review` runs recorded in `../code-review.md`, the last at `fbbc5bd..ef30c3b`, reach this issue's last code commit, and none of its findings is open: C129-C137 are resolved or superseded, with ADR 0007 recording the messaging crate.
