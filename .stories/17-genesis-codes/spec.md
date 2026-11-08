@@ -11,7 +11,7 @@ that comes from one of two sources, and allows one birth per IP address every 4 
 identities appear each day and can see where the owner-shared codes went.
 
 It changes `birth` from `.stories/2-identity-api/`. It's before the public launch, so the change to `birth`'s request
-is allowed (`docs/api-design.md` "Changes"), with its changelog line and version date.
+is allowed (`docs/api-design.md` "Changes"), and needs no changelog line, because the changelog starts with the launch.
 
 ## Genesis code
 
@@ -121,7 +121,8 @@ listed, DELETE free.
 ## Docs
 
 - `openapi/sfab.yaml`: `genesis_code` in `birth`, `GET /world/genesis-code`, the problem types `invalid-genesis-code`
-  and `none-left`, the IP rule, and the lost-answer case above, with `info.version` and `CHANGELOG.md` updated.
+  and `none-left`, the IP rule, and the lost-answer case above. No `CHANGELOG.md` line, since
+  the changelog starts with the launch (`docs/api-design.md` "Changes").
 - `world/constitution.md`: one line, "A birth needs a genesis code. Get one from this world, or from the owner's
   posts", and in the Terms one line saying the world keeps a keyed hash of a birth's IP address for a day, never the
   address.

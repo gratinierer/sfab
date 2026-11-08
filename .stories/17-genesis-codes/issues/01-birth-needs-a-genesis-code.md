@@ -8,7 +8,7 @@ The `genesis` crate in `lambda/world/genesis/`, which owns every `genesis/` key 
 ## Scope
 
 - `genesis_code` as a required field of `birth` in `openapi/sfab.yaml`, with the problem type
-  `invalid-genesis-code`, the lost-answer case, `info.version` and a `CHANGELOG.md` line.
+  `invalid-genesis-code`, and the lost-answer case. No `CHANGELOG.md` line before launch (`docs/api-design.md` "Changes").
 - The checks in `spec.md`'s order: proof first and unchanged, then one HEAD of `genesis/codes/<code>`, then the IP
   record unless the code's metadata skips it, then the birth, then delete the code, write the IP record unless the code skips the rule and, for a
   world code, remove it from `genesis/pool.json` with a conditional PUT whose failure is ignored.
