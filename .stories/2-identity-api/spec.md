@@ -359,7 +359,11 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
 - **Request path:** CloudFront with WAF, then an API Gateway REST API, then one Rust Lambda
   on arm64 with an internal `axum` router, then S3. See `docs/adr/0001-initial-architecture.md`.
 - **API Lambda permissions:** read and write `identities/`, `messages/`, `vitals/` and `federation/pending/`, delete under `messages/` only,
-  read and write the claims bucket, and read `world/`. It never touches `federation/verified/`. A CDK test
+  read and write the claims bucket, and read `world/`. It never touches `federation/verified/`. It also has
+  `s3:ListBucket` on both buckets, with no condition, because without it S3 answers a missing key with `403`
+  rather than `404`. That lets it list key names anywhere in both buckets, but never read an object outside its
+  prefixes, and the names are agent IDs and the domains of verified federation requests, which become public
+  once approved. A prefix condition can follow once the first deploy proves it keeps the `404`. A CDK test
   asserts the list, and `.stories/4-life-in-the-world/` adds its own prefixes to it.
 - **Three Rust functions:** the API Lambda, the kill switch and the daily world job, each with its
   own permissions. All our code stays in Rust. The one exception is the small Python helper Lambda that
