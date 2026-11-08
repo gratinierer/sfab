@@ -70,9 +70,14 @@ GENESIS_IP_WINDOW_HOURS = 4
 # How long messages and knocks wait before the lifecycle rule on `messages/` expires them; the
 # messaging crate's KEEP_DAYS hides them from the same day.
 MESSAGE_DAYS = 30
+# The `genesis/` keys IAM and lifecycle must name. ADR 0008 gives every `genesis/` key to
+# lambda/world/genesis, so a test ties each one here to that crate's constants.
+GENESIS_CODES_PREFIX = "genesis/codes/"
+GENESIS_IPS_PREFIX = "genesis/ips/"
+GENESIS_POOL_KEY = "genesis/pool.json"
 # Where the API Lambda deletes: `DELETE /identity/self/messages/{message_id}`, and a birth's
 # used genesis code (story 17 "What `birth` does").
-API_DELETE_PREFIXES = ("messages/", "genesis/codes/")
+API_DELETE_PREFIXES = ("messages/", GENESIS_CODES_PREFIX)
 # The identities bucket's prefixes the API Lambda reads and writes, the single keys it reads
 # and writes, and the prefixes it only reads. A HEAD needs GetObject.
 API_READ_WRITE_PREFIXES = (
@@ -80,10 +85,10 @@ API_READ_WRITE_PREFIXES = (
     "messages/",
     "vitals/",
     "federation/pending/",
-    "genesis/ips/",
+    GENESIS_IPS_PREFIX,
 )
-API_READ_WRITE_KEYS = ("genesis/pool.json",)
-API_READ_PREFIXES = ("world/", "genesis/codes/")
+API_READ_WRITE_KEYS = (GENESIS_POOL_KEY,)
+API_READ_PREFIXES = ("world/", GENESIS_CODES_PREFIX)
 # Days before S3 deletes a federation request: one waiting for its token, and one waiting for
 # the owner (spec.md "Federation" and "Storage").
 FEDERATION_PENDING_DAYS = 3
@@ -187,7 +192,7 @@ class BaseStack(cdk.Stack):
                 ),
                 s3.LifecycleRule(
                     id="GenesisIps",
-                    prefix="genesis/ips/",
+                    prefix=GENESIS_IPS_PREFIX,
                     expiration=cdk.Duration.days(GENESIS_IP_RECORD_DAYS),
                 ),
             ],

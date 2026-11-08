@@ -700,3 +700,24 @@ def test_the_federation_crate_s_lifetimes_match_the_lifecycle_rules():
     ):
         found = re.search(rf"pub const {name}: i64 = (\d+);", lib)
         assert found and int(found[1]) == days, name
+
+
+def test_the_cdk_s_genesis_keys_are_the_genesis_crate_s():
+    # ADR 0008: only lambda/world/genesis knows a `genesis/` key, but IAM and lifecycle must name
+    # some too, so every one the CDK spells must be one of the crate's constants.
+    genesis = sfab_config.REPO_ROOT / "lambda" / "world" / "genesis" / "src"
+    source = (genesis / "lib.rs").read_text() + (genesis / "ip.rs").read_text()
+    crate = set(re.findall(r'const \w+: &str = "(genesis/[^"]*)";', source))
+    cdk_keys = {
+        key
+        for key in (
+            *stacks.API_DELETE_PREFIXES,
+            *stacks.API_READ_WRITE_PREFIXES,
+            *stacks.API_READ_WRITE_KEYS,
+            *stacks.API_READ_PREFIXES,
+            stacks.GENESIS_IPS_PREFIX,
+        )
+        if key.startswith("genesis/")
+    }
+    assert cdk_keys == {"genesis/codes/", "genesis/ips/", "genesis/pool.json"}
+    assert cdk_keys <= crate, cdk_keys - crate
