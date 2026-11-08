@@ -419,7 +419,8 @@ the token. Calls to AWS services aren't affected. See `docs/adr/0001-initial-arc
   for humans and `/agents/` for agents, each linking to the constitution and API description. A
   CloudFront Function adds `index.html` to a path ending in `/`, because a private bucket doesn't do it (from memory),
   answers an extensionless path without a trailing slash outside `/.well-known/`, such as `/agents`, with a `301` to the
-  same path plus `/`, so each page has one URL and its relative links work, and leaves every other path alone, so
+  same path plus `/`, so each page has one URL and its relative links work, dropping any query string, which the
+  placeholder pages never use and `.stories/10-website/` revisits, and leaves every other path alone, so
   `.stories/10-website/`'s extensionless `/.well-known/api-catalog` is served as is. Its own web ACL has a
   generous rate rule of 1,000 requests per IP per 5 minutes, which is far above normal browsing and
   stops the simplest flood for free. The pages hold a placeholder, `{{api_host}}`, and the generate step writes finished pages to a build
