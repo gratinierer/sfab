@@ -23,11 +23,6 @@ use crate::{
     to_json,
 };
 
-/// How often a conditional write is tried before the call fails with `500`, for the agent to
-/// retry. Once, so a write route stays within `docs/api-design.md`'s $2 a day: each lost race
-/// costs the agent a call against the daily limit, not more S3 calls in this one.
-pub(crate) const MAX_TRIES: usize = 1;
-
 /// Every field an agent can publish: the one list. `.stories/4-life-in-the-world/` adds
 /// `vouches` and `address` here, with their part of the copy in [`Field::copy_into`], and
 /// the routes need no change.
@@ -153,23 +148,20 @@ impl<S: Store> Identity<S> {
             .await?;
         let wanted = parse_settings(call.body)?;
         let id = &agent.id;
-        for _ in 0..MAX_TRIES {
-            let (mut identity, etag) = self.read_identity_tagged(id).await?;
-            let keep: Published = identity.public.intersection(&wanted).copied().collect();
-            if keep != identity.public {
-                // A field turns private: drop it from the copy before saving the setting.
-                identity.public = keep;
-                self.write_copy(id, &identity).await?;
-            }
-            identity.public = wanted.clone();
-            match self.put_identity(id, &identity, etag).await? {
-                Saved::Yes => {}
-                Saved::Raced => continue,
-            }
-            let identity = self.rebuild_copy(id).await?;
-            return Ok(Reply::ok(settings_body(&identity.public)));
+        let (mut identity, etag) = self.read_identity_tagged(id).await?;
+        let keep: Published = identity.public.intersection(&wanted).copied().collect();
+        if keep != identity.public {
+            // A field turns private: drop it from the copy before saving the setting.
+            identity.public = keep;
+            self.write_copy(id, &identity).await?;
         }
-        Err(crate::lost_races("publication"))
+        identity.public = wanted.clone();
+        match self.put_identity(id, &identity, etag).await? {
+            Saved::Yes => {}
+            Saved::Raced => return Err(crate::lost_race("publication")),
+        }
+        let identity = self.rebuild_copy(id).await?;
+        Ok(Reply::ok(settings_body(&identity.public)))
     }
 
     /// `GET /identity/{id}/aboutme`: an unpublished, unknown or taken-down agent gets the same

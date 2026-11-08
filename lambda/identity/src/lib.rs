@@ -194,9 +194,12 @@ pub(crate) enum Saved {
     Raced,
 }
 
-/// A conditional write lost every try: `500`, so the agent retries.
-fn lost_races(what: &str) -> Problem {
-    tracing::error!("{what}: every conditional write lost a race");
+/// A conditional write lost a race to another write: `500`, so the agent retries from a fresh
+/// read. Writes try once, so a lost race costs the agent a call against the daily limit rather
+/// than more S3 calls in this one, which keeps each write route within `docs/api-design.md`'s $2
+/// a day.
+fn lost_race(what: &str) -> Problem {
+    tracing::error!("{what}: a conditional write lost a race");
     Problem::internal()
 }
 
@@ -275,19 +278,16 @@ impl<S: Store> Identity<S> {
             .await?;
         let request: EvolveRequest = serde_json::from_slice(call.body).map_err(|_| malformed())?;
         let whoiam = Some(request.whoiam).filter(|w| !w.is_empty());
-        for _ in 0..profile::MAX_TRIES {
-            let (mut identity, etag) = self.read_identity_tagged(&agent.id).await?;
-            identity.whoiam = whoiam.clone();
-            match self.put_identity(&agent.id, &identity, etag).await? {
-                Saved::Yes => {}
-                Saved::Raced => continue,
-            }
-            if identity.public.contains(&Field::Whoiam) {
-                self.rebuild_copy(&agent.id).await?;
-            }
-            return Ok(Reply::ok(identity_body(&agent.id, &identity)));
+        let (mut identity, etag) = self.read_identity_tagged(&agent.id).await?;
+        identity.whoiam = whoiam.clone();
+        match self.put_identity(&agent.id, &identity, etag).await? {
+            Saved::Yes => {}
+            Saved::Raced => return Err(lost_race("evolve")),
         }
-        Err(lost_races("evolve"))
+        if identity.public.contains(&Field::Whoiam) {
+            self.rebuild_copy(&agent.id).await?;
+        }
+        Ok(Reply::ok(identity_body(&agent.id, &identity)))
     }
 
     /// `GET /identity/self`. Never writes, except the once-a-day `vitals` touch.

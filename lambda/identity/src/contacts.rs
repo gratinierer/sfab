@@ -15,7 +15,7 @@ use sfab_core::paging::{OFFSET_PAGE, offset_page};
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 
-use crate::profile::{Field, MAX_TRIES};
+use crate::profile::Field;
 use crate::{Identity, Saved, Secret, contacts_key, identity_key, storage_failure, to_json};
 
 /// The most entries each list holds; a 101st gets `409` `list-full`.
@@ -125,42 +125,39 @@ impl<S: Store> Identity<S> {
             .await?;
         let other = AgentId::parse(other).ok_or_else(bad_id)?;
         let id = &agent.id;
-        for _ in 0..MAX_TRIES {
-            let (before, etag) = self.read_contacts(id).await?;
-            let existing = before.find(list, &other).cloned();
-            if existing.is_none() && before.list(list).len() >= MAX_ENTRIES {
-                return Err(Problem::conflict(
-                    "list-full",
-                    format!("This list already holds {MAX_ENTRIES} agents"),
-                ));
-            }
-            let mut after = before.clone();
-            let entry = existing.clone().unwrap_or_else(|| Entry {
-                id: other.as_str().to_owned(),
-                added_at: rfc3339(now),
-                more: Map::new(),
-            });
-            if existing.is_none() {
-                after.list_mut(list).push(entry.clone());
-            }
-            if list == List::Blocked {
-                after.remove(List::Friends, &other);
-            }
-            // A retry, with nothing left to change: redo only the copy's rebuild.
-            let unchanged = existing.is_some() && after.friends.len() == before.friends.len();
-            if !unchanged {
-                match self.save_contacts(id, &before, &after, etag).await? {
-                    Saved::Yes => {}
-                    Saved::Raced => continue,
-                }
-            }
-            self.refresh_copy(id).await?;
-            return Ok(match existing {
-                Some(_) => Reply::ok(json!(entry)),
-                None => Reply::created(json!(entry)),
-            });
+        let (before, etag) = self.read_contacts(id).await?;
+        let existing = before.find(list, &other).cloned();
+        if existing.is_none() && before.list(list).len() >= MAX_ENTRIES {
+            return Err(Problem::conflict(
+                "list-full",
+                format!("This list already holds {MAX_ENTRIES} agents"),
+            ));
         }
-        Err(crate::lost_races("contacts"))
+        let mut after = before.clone();
+        let entry = existing.clone().unwrap_or_else(|| Entry {
+            id: other.as_str().to_owned(),
+            added_at: rfc3339(now),
+            more: Map::new(),
+        });
+        if existing.is_none() {
+            after.list_mut(list).push(entry.clone());
+        }
+        if list == List::Blocked {
+            after.remove(List::Friends, &other);
+        }
+        // A retry, with nothing left to change: redo only the copy's rebuild.
+        let unchanged = existing.is_some() && after.friends.len() == before.friends.len();
+        if !unchanged {
+            match self.save_contacts(id, &before, &after, etag).await? {
+                Saved::Yes => {}
+                Saved::Raced => return Err(crate::lost_race("contacts")),
+            }
+        }
+        self.refresh_copy(id).await?;
+        Ok(match existing {
+            Some(_) => Reply::ok(json!(entry)),
+            None => Reply::created(json!(entry)),
+        })
     }
 
     /// `DELETE /identity/self/friends/{id}` and `DELETE /identity/self/blocked/{id}`: `200`
@@ -176,24 +173,21 @@ impl<S: Store> Identity<S> {
         let other = AgentId::parse(other).ok_or_else(bad_id)?;
         let id = &agent.id;
         let removed = json!({"id": other.as_str()});
-        for _ in 0..MAX_TRIES {
-            let (before, etag) = self.read_contacts(id).await?;
-            if before.find(list, &other).is_none() {
-                // Already gone, perhaps by an earlier try: redo only the copy's rebuild, as
-                // `add_contact` does, in case that try failed after saving.
-                self.refresh_copy(id).await?;
-                return Ok(Reply::ok(removed));
-            }
-            let mut after = before.clone();
-            after.remove(list, &other);
-            match self.save_contacts(id, &before, &after, etag).await? {
-                Saved::Yes => {}
-                Saved::Raced => continue,
-            }
+        let (before, etag) = self.read_contacts(id).await?;
+        if before.find(list, &other).is_none() {
+            // Already gone, perhaps by an earlier try: redo only the copy's rebuild, as
+            // `add_contact` does, in case that try failed after saving.
             self.refresh_copy(id).await?;
             return Ok(Reply::ok(removed));
         }
-        Err(crate::lost_races("contacts"))
+        let mut after = before.clone();
+        after.remove(list, &other);
+        match self.save_contacts(id, &before, &after, etag).await? {
+            Saved::Yes => {}
+            Saved::Raced => return Err(crate::lost_race("contacts")),
+        }
+        self.refresh_copy(id).await?;
+        Ok(Reply::ok(removed))
     }
 
     /// `GET /identity/self/friends` and `GET /identity/self/blocked`, 20 entries a page, with an
