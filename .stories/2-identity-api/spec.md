@@ -308,7 +308,8 @@ See `docs/adr/0001-initial-architecture.md`. Nothing crosses between worlds unti
 2. Another world calls `POST /federation/requests` with a valid hostname and a `Proof`. It's
    stored at `federation/pending/<domain>.json` with a random 128-bit token, which the `202` returns
    with an `instructions` text saying where to publish it and linking `docs/federation.md`. Repeating the request returns the same token, with `200`. If 100 are already pending, it
-   gets `503`. The API Lambda never calls out.
+   gets `503`. The cap counts every stored request, so one past `expires_at` holds its place until the next daily
+   run deletes it, which is when the `503`'s `retry_after` points. The API Lambda never calls out.
 3. Within 3 days, that world publishes the token at
    `https://<domain>/.well-known/sfab-federation/<token>`, with the token itself as the whole body, a trailing
    newline allowed. An sfab world commits that file under `website/.well-known/sfab-federation/` and deploys,
