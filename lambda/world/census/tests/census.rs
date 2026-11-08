@@ -2,6 +2,7 @@
 //! from `.stories/2-identity-api/spec.md` "World" and "Testing", against the in-memory fake.
 
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use serde_json::{Value, json};
 use sfab_census::{Census, snapshot};
@@ -164,6 +165,73 @@ async fn a_page_past_the_last_gets_404_and_a_malformed_token_400() {
     for bad in ["0", "01", "x", "-1", "", "99999999999999999999"] {
         assert_eq!(problem(census.residents(Some(bad)).await).0, 400, "{bad:?}");
     }
+}
+
+/// Counts every S3 call, so the routes' cost figure in spec.md "What it can cost" holds.
+#[derive(Default)]
+struct Counting {
+    inner: MemoryStore,
+    gets: AtomicUsize,
+    others: AtomicUsize,
+}
+
+impl Store for Counting {
+    async fn get(&self, bucket: Bucket, key: &str) -> Result<Option<Object>, StoreError> {
+        self.gets.fetch_add(1, Ordering::SeqCst);
+        self.inner.get(bucket, key).await
+    }
+
+    async fn put(
+        &self,
+        bucket: Bucket,
+        key: &str,
+        body: Vec<u8>,
+        metadata: Metadata,
+        condition: Condition,
+    ) -> Result<(), StoreError> {
+        self.others.fetch_add(1, Ordering::SeqCst);
+        self.inner.put(bucket, key, body, metadata, condition).await
+    }
+
+    async fn delete(&self, bucket: Bucket, key: &str) -> Result<(), StoreError> {
+        self.others.fetch_add(1, Ordering::SeqCst);
+        self.inner.delete(bucket, key).await
+    }
+
+    async fn list(&self, bucket: Bucket, prefix: &str) -> Result<Vec<String>, StoreError> {
+        self.others.fetch_add(1, Ordering::SeqCst);
+        self.inner.list(bucket, prefix).await
+    }
+
+    async fn list_sized(&self, bucket: Bucket, prefix: &str) -> Result<Vec<Listed>, StoreError> {
+        self.others.fetch_add(1, Ordering::SeqCst);
+        self.inner.list_sized(bucket, prefix).await
+    }
+}
+
+#[tokio::test]
+async fn each_route_reads_at_most_two_files_and_never_writes_or_lists() {
+    let store = Arc::new(Counting::default());
+    let census = Census::new(store.clone());
+    let calls = |s: &Counting| {
+        (
+            s.gets.swap(0, Ordering::SeqCst),
+            s.others.swap(0, Ordering::SeqCst),
+        )
+    };
+
+    let _ = census.census().await;
+    assert_eq!(calls(&store), (1, 0), "census before the first run");
+    let _ = census.residents(None).await;
+    assert_eq!(calls(&store), (2, 0), "residents before the first run");
+
+    snapshot(&store.inner, &ids(1_500), AS_OF).await.unwrap();
+    let _ = census.census().await;
+    assert_eq!(calls(&store), (1, 0), "census");
+    let _ = census.residents(Some("2")).await;
+    assert_eq!(calls(&store), (1, 0), "a page");
+    let _ = census.residents(Some("3")).await;
+    assert_eq!(calls(&store), (2, 0), "a page past the last");
 }
 
 #[tokio::test]

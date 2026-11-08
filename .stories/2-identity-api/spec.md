@@ -685,7 +685,9 @@ against AWS's price list for `us-east-1` on 2026-11-08: $0.005 per 1,000 PUT, CO
 per 1,000 GET requests, and DELETE free. At 100,000 calls a day, the worst case of each public profile, friends and
 blocks route is: the friend and block `PUT`s and `DELETE`s and `PUT /identity/self/publication`, at most 5 GETs
 and 3 PUTs, about $1.70; `PUT /identity/evolve`, 4 GETs and 2 PUTs, about $1.16; reading friends, blocked or the
-publication, 2 GETs, about $0.08; and `aboutme`, 1 GET, about $0.04. The daily world job and
+publication, 2 GETs, about $0.08; and `aboutme`, 1 GET, about $0.04. The world routes cost less: `/world/constitution`
+is compiled into the Lambda, so no S3 call; `/world/census`, 1 GET, about $0.04; and `/world/residents`, 1 GET, or 2
+for a page past the last or before the first run, about $0.08. A census test counts these calls. The daily world job and
 the storage it grows are billed separately, grow with what's stored rather than with traffic, and show
 up in the alert budget. Budgets
 update every 8-12 hours, plus an unstated billing delay, so the budget stop can lag by a day or more,
