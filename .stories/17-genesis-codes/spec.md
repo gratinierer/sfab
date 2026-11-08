@@ -123,8 +123,8 @@ says, and the API, the daily job and the owner's tool call it. The owner's tool 
 `identity::birth` calls `genesis` after the proof and before the birth, so `identity` depends on `genesis`. ADR 0008
 adds both crates to ADR 0004's layout.
 
-All under a `genesis/` prefix in a bucket the API Lambda already writes; the exact bucket is chosen in the first
-issue. No per-agent data lives here, so `takedown` needs no new location.
+All under a `genesis/` prefix in the identities bucket, which the API Lambda already writes; issue 01 chose it,
+since the claims bucket is kept for claims alone. No per-agent data lives here, so `takedown` needs no new location.
 
 | Key | What it holds |
 |---|---|

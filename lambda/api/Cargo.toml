@@ -19,6 +19,7 @@ sfab-core = { path = "../core", features = ["s3"] }
 sfab-census = { path = "../world/census" }
 sfab-constitution = { path = "../world/constitution" }
 sfab-federation = { path = "../world/federation" }
+sfab-genesis = { path = "../world/genesis" }
 sfab-identity = { path = "../identity" }
 sfab-messaging = { path = "../messaging" }
 tokio = { version = "1.52.3", features = ["macros", "rt"] }
@@ -26,6 +27,7 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", default-features = false, features = ["fmt", "std"] }
 
 [dev-dependencies]
+sfab-genesis = { path = "../world/genesis", features = ["test-support"] }
 regex = "1.13.1"
 saphyr = "0.3.3"
 tower = { version = "0.5.3", features = ["util"] }

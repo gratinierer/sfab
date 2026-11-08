@@ -22,6 +22,7 @@ use sfab_core::id::AgentId;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Object, Store, StoreError};
 use sfab_core::takedown::{Action, Location, Phase};
+use sfab_genesis::{Genesis, IpRule};
 
 /// Where `birth` points agents for the constitution, which ends with the Terms. Issue 11 serves it.
 pub const CONSTITUTION: &str = "/v1/world/constitution";
@@ -151,6 +152,7 @@ struct BirthRequest {
     name: String,
     #[serde(default)]
     whoiam: Option<String>,
+    genesis_code: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -177,6 +179,7 @@ pub struct Identity<S> {
     store: Arc<S>,
     required_bits: u32,
     marked: MarkedToday,
+    genesis: Genesis<S>,
 }
 
 fn malformed() -> Problem {
@@ -207,16 +210,19 @@ fn to_json<T: Serialize>(value: &T) -> Vec<u8> {
 }
 
 impl<S: Store> Identity<S> {
-    pub fn new(store: Arc<S>, required_bits: u32) -> Self {
+    /// `ip_rule` is `birth`'s IP rule, from `IP_HASH_KEY` and `GENESIS_IP_WINDOW_HOURS`.
+    pub fn new(store: Arc<S>, required_bits: u32, ip_rule: IpRule) -> Self {
         Self {
+            genesis: Genesis::new(store.clone(), ip_rule),
             store,
             required_bits,
             marked: MarkedToday::default(),
         }
     }
 
-    /// `POST /identity/birth`: the claim first with `If-None-Match: *`, which rejects replays and
-    /// taken-down IDs, then the identity, then `vitals/<id>.json`.
+    /// `POST /identity/birth`, in `.stories/17-genesis-codes/spec.md`'s order: the proof, the
+    /// genesis code and the IP rule, then the claim with `If-None-Match: *`, which rejects replays
+    /// and taken-down IDs, the identity and `vitals/<id>.json`, and last the code is used up.
     pub async fn birth(&self, call: &Call<'_>, now: i64) -> Result<Reply, Problem> {
         let admitted = admit_write(call, now, self.required_bits)?;
         let request: BirthRequest = serde_json::from_slice(call.body).map_err(|_| malformed())?;
@@ -224,6 +230,10 @@ impl<S: Store> Identity<S> {
         if name_chars == 0 || name_chars > NAME_MAX_CHARS {
             return Err(Problem::bad_request("name must be 1 to 128 characters"));
         }
+        let admission = self
+            .genesis
+            .admit(&request.genesis_code, call.viewer, now)
+            .await?;
         let id = AgentId::from_hash(&admitted.hash);
         let born_at = rfc3339(now);
         let (record, secrets) = ClaimRecord::with_new_secrets(born_at.clone());
@@ -257,6 +267,7 @@ impl<S: Store> Identity<S> {
             .map_err(|e| storage_failure("writing a new identity", &e))?;
         self.marked.first_today(id.as_str(), now);
         self.write_vitals(&id, &born_at).await;
+        self.genesis.use_up(&admission, now).await;
         let reply = secrets.birth_reply(&id);
         Ok(Reply::created(json!(reply)))
     }

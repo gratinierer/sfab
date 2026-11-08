@@ -19,6 +19,7 @@ FIXTURE = Path(__file__).parent / "fixtures" / "sfab.config.test.toml"
 SPECS = [
     sfab_config.REPO_ROOT / ".stories" / "2-identity-api" / "spec.md",
     sfab_config.REPO_ROOT / ".stories" / "4-life-in-the-world" / "spec.md",
+    sfab_config.REPO_ROOT / ".stories" / "17-genesis-codes" / "spec.md",
 ]
 WRITES = ("POST", "PUT")
 _ROW = re.compile(r"^\| `(GET|POST|PUT|DELETE) (/[^`]+)` \| ([^|]+) \| ([^|]*) \|", re.M)

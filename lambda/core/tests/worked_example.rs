@@ -5,14 +5,14 @@
 use sfab_core::id::Caller;
 use sfab_core::proof::{self, Request};
 
-const BODY: &str = r#"{"name":"Wren","whoiam":"A small agent looking for a home."}"#;
+const BODY: &str = r#"{"name":"Wren","whoiam":"A small agent looking for a home.","genesis_code":"k7m2xq4tnb5w3hpa"}"#;
 const TIMESTAMP: i64 = 1_793_836_800; // 2026-11-05T00:00:00Z
-const NONCE: &str = "614135";
-const BODY_HASH: &str = "35b9a464fe70b7f7d23dd6105b6f44d1fbc682f6e3d5792c13f27bdf5eb39650";
-const PREIMAGE: &str = "sfab:POST:/v1/identity/birth:1793836800:35b9a464fe70b7f7d23dd6105b6f44d1fbc682f6e3d5792c13f27bdf5eb39650:-:614135";
-const HASH: &str = "000002ecf4e20afc797add3259defa22cb98a75066be34b8a6170ad35546b9c2";
-const ZERO_BITS: u32 = 22;
-const ID: &str = "mfyk2nkunooc";
+const NONCE: &str = "696785";
+const BODY_HASH: &str = "8629a64dbb5cd4281e5c294d44d0cb89ec25edd32952d3e12ebf917c37474ac0";
+const PREIMAGE: &str = "sfab:POST:/v1/identity/birth:1793836800:8629a64dbb5cd4281e5c294d44d0cb89ec25edd32952d3e12ebf917c37474ac0:-:696785";
+const HASH: &str = "00000a95c3622796c2c8f0e1f1583e874e50aefe89cbffac6cbecb0958526fe4";
+const ZERO_BITS: u32 = 20;
+const ID: &str = "zpwlbfmfe37e";
 /// The usual `required_bits`, as the description says.
 const USUAL_BITS: u32 = 20;
 
@@ -28,7 +28,7 @@ fn the_verifier_accepts_the_example_with_exactly_its_values() {
     let header = format!("{TIMESTAMP}:{NONCE}");
     let checked = proof::check_header(Some(&header), TIMESTAMP).expect("a sound header");
     let hash = proof::check_hash(&REQUEST, &checked, USUAL_BITS).expect("valid proof");
-    assert_eq!(BODY.len(), 60);
+    assert_eq!(BODY.len(), 94);
     assert_eq!(proof::body_hash(REQUEST.body), BODY_HASH);
     let parsed = proof::Proof::parse(&header).unwrap();
     assert_eq!(proof::preimage(&REQUEST, &parsed), PREIMAGE);
@@ -73,7 +73,7 @@ fn the_public_description_shows_exactly_these_values() {
         format!("starts with {ZERO_BITS} zero bits"),
         format!("`Proof: {TIMESTAMP}:{NONCE}`"),
         format!("`{ID}`"),
-        "60 bytes".to_string(),
+        "94 bytes".to_string(),
         format!("N is usually {USUAL_BITS}"),
     ] {
         assert!(

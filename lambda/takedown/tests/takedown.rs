@@ -10,6 +10,7 @@ use sfab_core::proof::{self, Request};
 use sfab_core::storage::{
     Bucket, Condition, Listed, MemoryStore, Metadata, Object, Store, StoreError,
 };
+use sfab_genesis::testing as genesis;
 use sfab_identity::{Identity, List};
 use sfab_messaging::Messaging;
 use sfab_takedown::{Mode, execute, plan};
@@ -28,7 +29,7 @@ struct World {
 
 fn world() -> World {
     let store = Arc::new(MemoryStore::new());
-    let identity = Arc::new(Identity::new(store.clone(), BITS));
+    let identity = Arc::new(Identity::new(store.clone(), BITS, genesis::ip_rule()));
     World {
         messaging: Messaging::new(store.clone(), identity.clone(), BITS),
         identity,
@@ -39,6 +40,8 @@ fn world() -> World {
 struct Agent {
     id: AgentId,
     name: String,
+    /// The `--no-ip-limit` code its birth used up.
+    genesis_code: String,
     birth_proof: String,
     born_at: i64,
     claim: String,
@@ -77,6 +80,7 @@ async fn deliver(
         authorization: authorization.as_deref(),
         proof: Some(proof),
         body,
+        viewer: None,
     };
     let reply = match path {
         "/v1/identity/birth" => w.identity.birth(&call, now).await,
@@ -103,7 +107,8 @@ const BIRTH: &str = "/v1/identity/birth";
 
 /// An agent born at `now`, with every kind of data this story stores.
 async fn full_agent(w: &World, name: &str, now: i64) -> Agent {
-    let body = format!(r#"{{"name":"{name}"}}"#);
+    let genesis_code = genesis::seed_exempt_code(&*w.store).await;
+    let body = birth_body(name, &genesis_code);
     let birth_proof = solve("POST", BIRTH, None, body.as_bytes(), now);
     let reply = deliver(w, "POST", BIRTH, None, body.as_bytes(), &birth_proof, now)
         .await
@@ -132,6 +137,7 @@ async fn full_agent(w: &World, name: &str, now: i64) -> Agent {
         authorization: Some(&auth),
         proof: Some(&proof),
         body: settings,
+        viewer: None,
     };
     w.identity.publish(&call, now).await.expect("publication");
     for (list, other) in [
@@ -151,6 +157,7 @@ async fn full_agent(w: &World, name: &str, now: i64) -> Agent {
             authorization: Some(&auth),
             proof: Some(&proof),
             body: b"",
+            viewer: None,
         };
         let added = w.identity.add_contact(list, &call, other, now).await;
         assert_eq!(added.expect("a contact").status, 201);
@@ -174,6 +181,7 @@ async fn full_agent(w: &World, name: &str, now: i64) -> Agent {
                 authorization: Some(&auth),
                 proof: Some(&proof),
                 body: b"",
+                viewer: None,
             };
             let added = w
                 .identity
@@ -188,6 +196,7 @@ async fn full_agent(w: &World, name: &str, now: i64) -> Agent {
             authorization: Some(&auth),
             proof: Some(&proof),
             body: body.as_bytes(),
+            viewer: None,
         };
         let sent = w
             .messaging
@@ -204,6 +213,7 @@ async fn full_agent(w: &World, name: &str, now: i64) -> Agent {
     Agent {
         id,
         name: name.to_owned(),
+        genesis_code,
         birth_proof,
         born_at: now,
         claim,
@@ -211,9 +221,16 @@ async fn full_agent(w: &World, name: &str, now: i64) -> Agent {
     }
 }
 
-/// Replays an agent's own `birth`, which would make the same ID.
+fn birth_body(name: &str, genesis_code: &str) -> String {
+    serde_json::json!({ "name": name, "genesis_code": genesis_code }).to_string()
+}
+
+/// Replays an agent's own `birth`, which would make the same ID. Its used genesis code is put
+/// back first, since no code can be re-issued on a deployed world, so the replay reaches the
+/// claim's `If-None-Match: *` and proves the marker.
 async fn rebirth(w: &World, agent: &Agent) -> Result<(), (u16, &'static str)> {
-    let body = format!(r#"{{"name":"{}"}}"#, agent.name);
+    genesis::reseed_exempt_code(&*w.store, &agent.genesis_code).await;
+    let body = birth_body(&agent.name, &agent.genesis_code);
     let proof = &agent.birth_proof;
     let reply = deliver(
         w,

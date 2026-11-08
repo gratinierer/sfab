@@ -8,6 +8,7 @@ use sfab_core::gate::Call;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::proof::{self, Request};
 use sfab_core::storage::{Bucket, MemoryStore};
+use sfab_genesis::testing as genesis;
 use sfab_identity::{Identity, List};
 use sfab_messaging::Messaging;
 
@@ -25,7 +26,7 @@ struct World {
 
 fn world() -> World {
     let store = Arc::new(MemoryStore::new());
-    let identity = Arc::new(Identity::new(store.clone(), BITS));
+    let identity = Arc::new(Identity::new(store.clone(), BITS, genesis::ip_rule()));
     World {
         messaging: Messaging::new(store.clone(), identity.clone(), BITS),
         identity,
@@ -49,6 +50,7 @@ impl Sent {
             authorization: self.authorization.as_deref(),
             proof: self.proof.as_deref(),
             body: &self.body,
+            viewer: None,
         }
     }
 }
@@ -83,7 +85,8 @@ impl Agent {
 }
 
 async fn born(w: &World, name: &str) -> Agent {
-    let body = format!(r#"{{"name":"{name}"}}"#);
+    let code = genesis::seed_exempt_code(&*w.store).await;
+    let body = serde_json::json!({ "name": name, "genesis_code": code }).to_string();
     let sent = write(
         "POST",
         "/v1/identity/birth".into(),

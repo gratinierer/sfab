@@ -15,6 +15,7 @@ use sfab_core::credentials::caller_of;
 use sfab_core::id::AgentId;
 use sfab_core::proof;
 use sfab_core::storage::{Bucket, MemoryStore, Store};
+use sfab_genesis::testing as genesis;
 use tower::ServiceExt;
 
 const BITS: u32 = 8;
@@ -186,6 +187,8 @@ struct Case {
     authorization: Option<String>,
     proof: Proof,
     body: Vec<u8>,
+    /// CloudFront's `CloudFront-Viewer-Address`.
+    viewer: Option<&'static str>,
 }
 
 enum Proof {
@@ -206,7 +209,7 @@ impl Harness {
         let store = Arc::new(MemoryStore::new());
         Self {
             spec: spec(),
-            app: sfab_api::app(store.clone(), BITS, now, here()),
+            app: sfab_api::app(store.clone(), BITS, genesis::ip_rule(), now, here()),
             store,
             seen: Mutex::new(BTreeSet::new()),
         }
@@ -216,6 +219,9 @@ impl Harness {
         let mut request = Request::builder().method(case.method).uri(&case.path);
         if let Some(auth) = &case.authorization {
             request = request.header("authorization", auth);
+        }
+        if let Some(viewer) = case.viewer {
+            request = request.header("cloudfront-viewer-address", viewer);
         }
         if let Proof::Valid = case.proof {
             let caller = caller_of(case.authorization.as_deref()).unwrap();
@@ -235,6 +241,11 @@ impl Harness {
             .unwrap();
         self.check(case.operation, case.method, &case.path, response)
             .await
+    }
+
+    /// A fresh `--no-ip-limit` genesis code, so births need no viewer address.
+    async fn code(&self) -> String {
+        genesis::seed_exempt_code(&*self.store).await
     }
 
     /// Checks one response against its operation, and returns its status and JSON body.
@@ -299,17 +310,19 @@ fn federation_request(domain: &str, proof: Proof) -> Case {
         authorization: None,
         proof,
         body: serde_json::to_vec(&json!({ "domain": domain })).unwrap(),
+        viewer: None,
     }
 }
 
-fn birth(name: &str, proof: Proof) -> Case {
+fn birth(name: &str, genesis_code: &str, proof: Proof) -> Case {
     Case {
         operation: "birth",
         method: "POST",
         path: "/v1/identity/birth".into(),
         authorization: None,
         proof,
-        body: format!(r#"{{"name":"{name}"}}"#).into_bytes(),
+        body: serde_json::to_vec(&json!({ "name": name, "genesis_code": genesis_code })).unwrap(),
+        viewer: None,
     }
 }
 
@@ -325,6 +338,7 @@ fn evolve(auth: Option<String>, proof: Proof, whoiam: &str) -> Case {
         authorization: auth,
         proof,
         body: serde_json::to_vec(&json!({ "whoiam": whoiam })).unwrap(),
+        viewer: None,
     }
 }
 
@@ -336,6 +350,7 @@ fn read_self(auth: Option<String>) -> Case {
         authorization: auth,
         proof: Proof::None,
         body: Vec::new(),
+        viewer: None,
     }
 }
 
@@ -347,6 +362,7 @@ fn get(operation: &'static str, path: &str, auth: Option<String>) -> Case {
         authorization: auth,
         proof: Proof::None,
         body: Vec::new(),
+        viewer: None,
     }
 }
 
@@ -358,6 +374,7 @@ fn reclaim(auth: Option<String>, proof: Proof) -> Case {
         authorization: auth,
         proof,
         body: Vec::new(),
+        viewer: None,
     }
 }
 
@@ -365,11 +382,33 @@ fn reclaim(auth: Option<String>, proof: Proof) -> Case {
 async fn every_handler_answers_as_sfab_yaml_declares() {
     let h = Harness::new();
 
-    // birth: 201, 400, 409.
-    let (status, born) = h.send(birth("Wren", Proof::Valid)).await;
+    // birth: 201, 400, 403, 409 and 500.
+    let code = h.code().await;
+    let (status, born) = h.send(birth("Wren", &code, Proof::Valid)).await;
     assert_eq!(status, 201);
-    assert_eq!(h.send(birth("Wren", Proof::None)).await.0, 400);
-    assert_eq!(h.send(birth("Wren", Proof::Valid)).await.0, 409);
+    assert_eq!(h.send(birth("Wren", &code, Proof::None)).await.0, 400);
+    // A lost answer's retry meets the used code.
+    let (status, body) = h.send(birth("Wren", &code, Proof::Valid)).await;
+    assert_eq!(
+        (status, &body["type"]),
+        (403, &json!("invalid-genesis-code"))
+    );
+    genesis::reseed_exempt_code(&*h.store, &code).await;
+    let (status, body) = h.send(birth("Wren", &code, Proof::Valid)).await;
+    assert_eq!((status, &body["type"]), (409, &json!("already-exists")));
+    let from = |name: &str, code: &str, viewer| Case {
+        viewer,
+        ..birth(name, code, Proof::Valid)
+    };
+    let ordinary = genesis::seed_code(&*h.store).await;
+    let missing_viewer = from("Kite", &ordinary, None);
+    assert_eq!(h.send(missing_viewer).await.0, 500);
+    let viewer = Some("198.51.100.7:46532");
+    assert_eq!(h.send(from("Kite", &ordinary, viewer)).await.0, 201);
+    let ordinary = genesis::seed_code(&*h.store).await;
+    let (status, body) = h.send(from("Kestrel", &ordinary, viewer)).await;
+    assert_eq!((status, &body["type"]), (409, &json!("too-soon")));
+    assert!(body["retry_after"].is_string());
     let (id, claim, recovery) = (
         born["id"].as_str().unwrap(),
         born["claim"].as_str().unwrap(),
@@ -406,7 +445,7 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
     );
 
     // A claim with no identity: 404 from self, evolve and reclaim.
-    let (_, orphan) = h.send(birth("Robin", Proof::Valid)).await;
+    let (_, orphan) = h.send(birth("Robin", &h.code().await, Proof::Valid)).await;
     let orphan_id = orphan["id"].as_str().unwrap();
     h.store
         .delete(
@@ -429,7 +468,7 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
     );
 
     // Public profiles, friends and blocks, by a new agent.
-    let (_, fresh) = h.send(birth("Finch", Proof::Valid)).await;
+    let (_, fresh) = h.send(birth("Finch", &h.code().await, Proof::Valid)).await;
     let fid = fresh["id"].as_str().unwrap();
     let auth = bearer(fid, fresh["claim"].as_str().unwrap());
     let friend = "zzzzzzzzzzzz";
@@ -446,6 +485,7 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
         authorization: auth,
         proof,
         body: body.as_bytes().to_vec(),
+        viewer: None,
     };
     assert_eq!(
         h.send(publish(auth.clone(), Proof::None, "{}")).await.0,
@@ -472,6 +512,7 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
             authorization: auth,
             proof,
             body: Vec::new(),
+            viewer: None,
         };
         assert_eq!(h.send(put(auth.clone(), Proof::Valid)).await.0, 201);
         assert_eq!(h.send(put(auth.clone(), Proof::Valid)).await.0, 200);
@@ -496,6 +537,7 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
             authorization: auth,
             proof: Proof::None,
             body: Vec::new(),
+            viewer: None,
         };
         // Blocking removed the friend, so removing it is 200 whether or not it's there.
         assert_eq!(h.send(delete(auth.clone())).await.0, 200);
@@ -503,7 +545,7 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
     }
 
     // Messages: Finch knocks on Gull, who reads and removes the knock, then blocks Finch.
-    let (_, gull) = h.send(birth("Gull", Proof::Valid)).await;
+    let (_, gull) = h.send(birth("Gull", &h.code().await, Proof::Valid)).await;
     let gid = gull["id"].as_str().unwrap();
     let gauth = bearer(gid, gull["claim"].as_str().unwrap());
     let message = |to: &str, auth, proof| Case {
@@ -513,6 +555,7 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
         authorization: auth,
         proof,
         body: br#"{"text":"hello"}"#.to_vec(),
+        viewer: None,
     };
     // sendMessage: 202, 200 for the same proof, 400, 401, 404, 403.
     let (status, sent) = h.send(message(gid, auth.clone(), Proof::Valid)).await;
@@ -559,6 +602,7 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
         authorization: auth,
         proof: Proof::None,
         body: Vec::new(),
+        viewer: None,
     };
     let knock = knocks["items"][0]["message_id"].as_str().unwrap();
     assert_eq!(h.send(remove(knock, gauth.clone())).await.0, 200);
@@ -572,6 +616,7 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
         authorization: gauth.clone(),
         proof: Proof::Valid,
         body: Vec::new(),
+        viewer: None,
     };
     assert_eq!(h.send(block).await.0, 201);
     let (status, refused) = h.send(message(gid, auth.clone(), Proof::Valid)).await;
@@ -590,6 +635,7 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
             authorization: None,
             proof: Proof::None,
             body: Vec::new(),
+            viewer: None,
         })
         .await;
     assert_eq!(status, 200);
@@ -619,6 +665,19 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
     ] {
         assert_eq!(h.send(world("residents", path)).await.0, expected, "{path}");
     }
+
+    // The genesis pool: before the daily job's first pool, with codes, then a stale pool.
+    let pool = || get("genesisCode", "/v1/world/genesis-code", None);
+    let (status, body) = h.send(pool()).await;
+    assert_eq!((status, &body["type"]), (404, &json!("not-built-yet")));
+    let codes = genesis::seed_world_codes(&*h.store, NOW, 2).await;
+    let (status, body) = h.send(pool()).await;
+    assert_eq!(status, 200);
+    assert!(codes.contains(&body["genesis_code"].as_str().unwrap().to_owned()));
+    genesis::seed_world_codes(&*h.store, NOW - 86_400, 2).await;
+    let (status, body) = h.send(pool()).await;
+    assert_eq!((status, &body["type"]), (409, &json!("try-later")));
+    assert!(body["retry_after"].is_string());
 
     // Federation: the directory, compiled in, and requests.
     let (status, world) = h
@@ -679,7 +738,7 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
 #[tokio::test]
 async fn a_body_over_axums_default_limit_reaches_the_gate() {
     let h = Harness::new();
-    let mut case = birth("Wren", Proof::None);
+    let mut case = birth("Wren", &h.code().await, Proof::None);
     case.body = vec![b'a'; 3 * 1024 * 1024];
     let (status, body) = h.send(case).await;
     assert_eq!(status, 400);
@@ -694,7 +753,7 @@ async fn both_path_forms_reach_the_route_and_hash_the_client_path() {
     let h = Harness::new();
     // The proof is solved for /v1/identity/birth, as the client sends it; the Lambda may see
     // the path without the stage.
-    let mut case = birth("Wren", Proof::Valid);
+    let mut case = birth("Wren", &h.code().await, Proof::Valid);
     let caller = caller_of(None).unwrap();
     let r = proof::Request {
         method: "POST",

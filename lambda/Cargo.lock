@@ -2224,6 +2224,7 @@ dependencies = [
  "sfab-constitution",
  "sfab-core",
  "sfab-federation",
+ "sfab-genesis",
  "sfab-identity",
  "sfab-messaging",
  "tokio",
@@ -2282,12 +2283,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "sfab-genesis"
+version = "0.1.0"
+dependencies = [
+ "getrandom 0.3.4",
+ "hmac",
+ "serde",
+ "serde_json",
+ "sfab-core",
+ "sfab-genesis",
+ "sha2",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "sfab-identity"
 version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
  "sfab-core",
+ "sfab-genesis",
  "tokio",
  "tracing",
 ]
@@ -2344,6 +2362,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sfab-core",
+ "sfab-genesis",
  "sfab-identity",
  "tokio",
  "tracing",
@@ -2357,6 +2376,7 @@ dependencies = [
  "aws-sdk-s3",
  "serde_json",
  "sfab-core",
+ "sfab-genesis",
  "sfab-identity",
  "sfab-messaging",
  "tokio",

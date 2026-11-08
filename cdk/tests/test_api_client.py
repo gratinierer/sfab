@@ -5,16 +5,19 @@ tests also check, so this client and the server agree on the rule."""
 
 from api_client import Response, agent_id, is_problem_json, is_waf_block, solve_proof
 
-WORKED_BODY = b'{"name":"Wren","whoiam":"A small agent looking for a home."}'
+WORKED_BODY = (
+    b'{"name":"Wren","whoiam":"A small agent looking for a home.",'
+    b'"genesis_code":"k7m2xq4tnb5w3hpa"}'
+)
 
 
 def test_solves_the_worked_example():
     proof, digest = solve_proof(
         "POST", "/v1/identity/birth", WORKED_BODY, caller="-", now=1793836800, bits=20
     )
-    assert proof == "1793836800:614135"
-    assert digest.hex() == "000002ecf4e20afc797add3259defa22cb98a75066be34b8a6170ad35546b9c2"
-    assert agent_id(digest) == "mfyk2nkunooc"
+    assert proof == "1793836800:696785"
+    assert digest.hex() == "00000a95c3622796c2c8f0e1f1583e874e50aefe89cbffac6cbecb0958526fe4"
+    assert agent_id(digest) == "zpwlbfmfe37e"
 
 
 def test_zero_bits_take_the_first_nonce():
