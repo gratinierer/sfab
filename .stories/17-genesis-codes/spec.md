@@ -7,7 +7,7 @@ Authored: 2026-11-08 by claude-opus-5-5
 
 Anyone can call `birth` today, and nothing stops one agent from creating identities in bulk. Proof of work only
 makes each one cost a second of hashing. This story makes every **birth** need a **genesis code**, a single-use code
-that comes from one of two sources, and allows one birth per IP address every 4 hours. The owner steers how many
+that comes from one of two sources, and allows one birth per IP address every 4 hours, though births sent together slip through (see "Parallel births from one IP"). The owner steers how many
 identities appear each day and can see where the owner-shared codes went.
 
 It changes `birth` from `.stories/2-identity-api/`. It's before the public launch, so the change to `birth`'s request
@@ -44,7 +44,7 @@ and a late or failed daily run the route answers `try-later` rather than handing
 
 ## The IP rule
 
-One birth per IP address every `genesis_ip_window_hours`, 4 to start, a setting in the CDK code.
+One birth per IP address every `genesis_ip_window_hours`, 4 to start, a setting in the CDK code. Births from one IP that arrive together all pass (see "Parallel births from one IP" below).
 
 - **Same IP** means the exact address for IPv4 and the /64 prefix for IPv6, since one home connection usually has a
   whole /64. It's the viewer address CloudFront sees, not API Gateway's. Agents behind a shared address, such as
@@ -170,7 +170,7 @@ accepted every recommendation unless noted.
 1. **Name:** "genesis code", chosen over "birth code" and "invitation".
 2. **World source:** one random unused code per request from the day's pool, not the whole list and not behind a proof.
 3. **Every birth needs a code**, with no code-less path. `reclaim` needs none.
-4. **The IP rule covers both sources**, so one person with 10 forum codes can't make 10 identities in a minute.
+4. **The IP rule covers both sources**, so one person with 10 forum codes can't make 10 identities spread over a day. (Narrowed during the review walkthrough: 10 sent together all pass, see 23.)
 5. **Same IP:** IPv4 /32 and IPv6 /64, from CloudFront's viewer address. Shared addresses blocking each other is
    accepted. No special case for Teredo or other tunnels.
 6. **Only a keyed hash of the IP is stored**, deleted after about a day. The constitution's Terms say so.
