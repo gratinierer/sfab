@@ -34,6 +34,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-08T19:25:00+00:00 | review | 9c6972d | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 6) | 1 new, 2 closures upheld, 4 open | audited auto walkthrough 5; R35-R37 wait on the owner; loop stopped at its limit |
 | 2026-11-08T20:00:00+00:00 | walkthrough | d31b556 | claude-opus-5-5, with the owner | 0 new, 4 resolved, 0 still open | walkthrough, not a review pass; R35 edited story 2 issue 10 |
 | 2026-11-08T20:30:00+00:00 | review | 1b41375 | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 1) | 0 new, 3 closures upheld, 1 reopened, 1 open | audited the owner walkthrough of R35-R37, R47 |
+| 2026-11-08T20:40:00+00:00 | walkthrough | 872383e | claude-opus-5-5, auto | 0 new, 0 resolved, 1 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
