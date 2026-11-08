@@ -23,8 +23,9 @@ use crate::{
 };
 
 /// How often a conditional write is tried before the call fails with `500`, for the agent to
-/// retry. Each try is one read and one write, so a lost race costs a few S3 calls.
-pub(crate) const MAX_TRIES: usize = 5;
+/// retry. Once, so a write route stays within `docs/api-design.md`'s $2 a day: each lost race
+/// costs the agent a call against the daily limit, not more S3 calls in this one.
+pub(crate) const MAX_TRIES: usize = 1;
 
 /// Every field an agent can publish: the one list. `.stories/4-life-in-the-world/` adds
 /// `vouches` and `address` here, with their part of the copy in [`Field::copy_into`], and

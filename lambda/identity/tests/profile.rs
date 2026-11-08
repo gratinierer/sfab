@@ -288,26 +288,27 @@ fn racing(w: &World, races: usize) -> Arc<Racing> {
 }
 
 #[tokio::test]
-async fn a_conflict_on_identity_json_retries_and_the_copy_comes_from_a_fresh_read() {
+async fn a_conflict_on_identity_json_answers_500_and_the_retry_copies_from_a_fresh_read() {
     let w = world();
     let a = born(&w, "Wren").await;
     evolve(&w, &a, "old").await;
-    let store = racing(&w, 2);
+    let store = racing(&w, 1);
     let identity = Identity::new(store.clone(), BITS);
+    let call = publication_call(&a, json!({"whoiam": true}));
 
-    let reply = identity
-        .publish(&publication_call(&a, json!({"whoiam": true})).call(), NOW)
-        .await
-        .unwrap();
+    // One try only, so a lost race costs few S3 calls: the agent retries on the `500`.
+    let lost = identity.publish(&call.call(), NOW).await;
+    assert_eq!(status(&lost), 500);
+    assert_eq!(store.races.load(Ordering::SeqCst), 0);
+    let reply = identity.publish(&call.call(), NOW).await.unwrap();
 
     assert_eq!(reply.body["whoiam"], true);
-    assert_eq!(store.races.load(Ordering::SeqCst), 0);
     // The concurrent whoiam survived, and the copy shows it, not the one read before the race.
     assert_eq!(aboutme(&w, &a.id).await.unwrap()["whoiam"], "theirs");
 }
 
 #[tokio::test]
-async fn evolve_retries_a_conflict_without_undoing_a_publication_and_rewrites_the_copy() {
+async fn evolve_after_a_lost_race_keeps_the_publication_and_rewrites_the_copy() {
     let w = world();
     let a = born(&w, "Wren").await;
     publish(&w, &a, json!({"whoiam": true})).await.unwrap();
@@ -317,6 +318,7 @@ async fn evolve_retries_a_conflict_without_undoing_a_publication_and_rewrites_th
     let identity = Identity::new(racing(&w, 1), BITS);
     let body = serde_json::to_vec(&json!({"whoiam": "mine"})).unwrap();
     let sent = write("PUT", "/v1/identity/evolve".into(), a.auth(), &body);
+    assert_eq!(status(&identity.evolve(&sent.call(), NOW).await), 500);
     identity.evolve(&sent.call(), NOW).await.unwrap();
 
     assert_eq!(aboutme(&w, &a.id).await.unwrap()["whoiam"], "mine");

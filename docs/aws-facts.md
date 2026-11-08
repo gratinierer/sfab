@@ -141,7 +141,8 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `GetObject` on a missing key returns `403` when `s3:ListBucket` is allowed only under a condition on `s3:prefix`, because the request has no prefix to match | memory | Why the daily world job lists `world/` first and reads only keys it listed (`lambda/world/census`) | 2026-11-07 |
 | A hosted zone costs about $0.50 per month without a plan | docs | The Route 53 pricing page, the reviewer's reading | 2026-11-01 |
 | Route 53 bills every query answered except alias records, at $0.40 per million up to a billion | docs | The Route 53 pricing page | 2026-11-01 |
-| S3 and Lambda prices used in cost tables | memory | | 2026-11-01 |
+| S3 Standard in `us-east-1` charges $0.005 per 1,000 PUT, COPY, POST or LIST requests and $0.0004 per 1,000 GET requests, and DELETE is free, as the cost tables use | docs | AWS price list for `AmazonS3`, `us-east-1`, published 2026-11-04 ([s3-price-list]); DELETE from [s3-pricing] | 2026-11-08 |
+| Lambda prices used in cost tables | memory | | 2026-11-01 |
 
 [budgets-notification]: https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_Notification.html
 [s3-getobject]: https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html
@@ -178,3 +179,5 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 [apigw-monitoring]: https://docs.aws.amazon.com/apigateway/latest/developerguide/monitoring-cloudwatch.html
 [dynamodb-pricing]: https://aws.amazon.com/dynamodb/pricing/
 [deletion-policy]: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-attribute-deletionpolicy.html
+[s3-price-list]: https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-east-1/index.json
+[s3-pricing]: https://aws.amazon.com/s3/pricing/
