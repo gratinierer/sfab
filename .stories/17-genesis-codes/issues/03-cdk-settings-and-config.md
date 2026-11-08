@@ -13,8 +13,13 @@ Blocked by: 01, 2-identity-api#01
 - CloudFront forwards the viewer address to the Lambda, and nothing else can set it. Record what's confirmed in
   `docs/aws-facts.md`.
 - `GET /world/genesis-code` reaches the Lambda through the REST API.
+- IAM for `genesis/`: the API Lambda gets HEAD (GET) and DELETE on `genesis/codes/`, GET and PUT on `genesis/ips/` and
+  `genesis/pool.json`; the daily job gets list, GET, PUT and DELETE under `genesis/`, with its `ListBucket` condition
+  widened to the prefix. Update `API_READ_WRITE_PREFIXES`, `API_DELETE_PREFIXES` in `cdk/stacks.py`, `cdk/world_job.py`,
+  their CDK tests, and the permission lists in story 2's `spec.md` "Architecture".
 
 ## Done when
 
 - Synth refuses a missing or malformed `ip_hash_key`.
 - A CDK test asserts the lifecycle rule and the two settings.
+- CDK tests assert the new `genesis/` permissions, and that nothing else widened.
