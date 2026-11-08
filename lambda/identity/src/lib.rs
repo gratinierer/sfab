@@ -187,13 +187,6 @@ fn no_identity() -> Problem {
     Problem::not_found("This claim has no identity")
 }
 
-/// Whether a conditional write to `identity.json` or `contacts.json` landed, or lost a race to
-/// another write.
-pub(crate) enum Saved {
-    Yes,
-    Raced,
-}
-
 /// A conditional write lost a race to another write: `500`, so the agent retries from a fresh
 /// read. Writes try once, so a lost race costs the agent a call against the daily limit rather
 /// than more S3 calls in this one, which keeps each write route within `docs/api-design.md`'s $2
@@ -281,10 +274,7 @@ impl<S: Store> Identity<S> {
         let whoiam = Some(request.whoiam).filter(|w| !w.is_empty());
         let (mut identity, etag) = self.read_identity_tagged(&agent.id).await?;
         identity.whoiam = whoiam.clone();
-        match self.put_identity(&agent.id, &identity, etag).await? {
-            Saved::Yes => {}
-            Saved::Raced => return Err(lost_race("evolve")),
-        }
+        self.put_identity(&agent.id, &identity, etag).await?;
         if identity.public.contains(&Field::Whoiam) {
             self.rebuild_copy(&agent.id).await?;
         }

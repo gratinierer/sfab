@@ -16,7 +16,6 @@ use sfab_core::id::AgentId;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 
-use crate::Saved;
 use crate::contacts::Contacts;
 use crate::{
     Identity, IdentityRecord, Secret, aboutme_key, identity_key, malformed, storage_failure,
@@ -156,10 +155,7 @@ impl<S: Store> Identity<S> {
             self.write_copy(id, &identity).await?;
         }
         identity.public = wanted.clone();
-        match self.put_identity(id, &identity, etag).await? {
-            Saved::Yes => {}
-            Saved::Raced => return Err(crate::lost_race("publication")),
-        }
+        self.put_identity(id, &identity, etag).await?;
         let identity = self.rebuild_copy(id).await?;
         Ok(Reply::ok(settings_body(&identity.public)))
     }
@@ -185,14 +181,14 @@ impl<S: Store> Identity<S> {
         Ok(Reply::ok(body))
     }
 
-    /// Writes `identity.json` only if it's unchanged since it was read: `Raced` when it changed,
-    /// and `404` when it's gone.
+    /// Writes `identity.json` only if it's unchanged since it was read: a lost race when it
+    /// changed, and `404` when it's gone.
     pub(crate) async fn put_identity(
         &self,
         id: &AgentId,
         identity: &IdentityRecord,
         etag: String,
-    ) -> Result<Saved, Problem> {
+    ) -> Result<(), Problem> {
         let write = self
             .store
             .put(
@@ -204,8 +200,8 @@ impl<S: Store> Identity<S> {
             )
             .await;
         match write {
-            Ok(()) => Ok(Saved::Yes),
-            Err(StoreError::ConditionFailed) => Ok(Saved::Raced),
+            Ok(()) => Ok(()),
+            Err(StoreError::ConditionFailed) => Err(crate::lost_race("identity.json")),
             Err(StoreError::Missing) => Err(crate::no_identity()),
             Err(e) => Err(storage_failure("writing an identity", &e)),
         }

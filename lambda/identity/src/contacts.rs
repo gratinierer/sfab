@@ -17,7 +17,7 @@ use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 
 use crate::profile::Field;
-use crate::{Identity, Saved, Secret, contacts_key, identity_key, storage_failure, to_json};
+use crate::{Identity, Secret, contacts_key, identity_key, storage_failure, to_json};
 
 /// The most entries each list holds; a 101st gets `409` `list-full`.
 pub const MAX_ENTRIES: usize = 100;
@@ -148,10 +148,7 @@ impl<S: Store> Identity<S> {
         }
         // A repeat call, with nothing left to change, redoes only the copy's rebuild.
         if after != before {
-            match self.save_contacts(id, &before, &after, etag).await? {
-                Saved::Yes => {}
-                Saved::Raced => return Err(crate::lost_race("contacts")),
-            }
+            self.save_contacts(id, &before, &after, etag).await?;
         }
         self.refresh_copy(id).await?;
         Ok(match existing {
@@ -182,10 +179,7 @@ impl<S: Store> Identity<S> {
         }
         let mut after = before.clone();
         after.remove(list, &other);
-        match self.save_contacts(id, &before, &after, etag).await? {
-            Saved::Yes => {}
-            Saved::Raced => return Err(crate::lost_race("contacts")),
-        }
+        self.save_contacts(id, &before, &after, etag).await?;
         self.refresh_copy(id).await?;
         Ok(Reply::ok(removed))
     }
@@ -253,15 +247,15 @@ impl<S: Store> Identity<S> {
         Ok((contacts, Some(object.etag)))
     }
 
-    /// Saves `after` only if `contacts.json` is unchanged since `before` was read. When friends
-    /// leave and are published, the copy drops them first.
+    /// Saves `after` only if `contacts.json` is unchanged since `before` was read, or answers a
+    /// lost race. When friends leave and are published, the copy drops them first.
     async fn save_contacts(
         &self,
         id: &AgentId,
         before: &Contacts,
         after: &Contacts,
         etag: Option<String>,
-    ) -> Result<Saved, Problem> {
+    ) -> Result<(), Problem> {
         let kept = before.keeping_only_lasting_friends(after);
         if kept.friends.len() < before.friends.len() {
             let (identity, _) = self.read_identity_tagged(id).await?;
@@ -284,8 +278,10 @@ impl<S: Store> Identity<S> {
             )
             .await;
         match write {
-            Ok(()) => Ok(Saved::Yes),
-            Err(StoreError::ConditionFailed | StoreError::Missing) => Ok(Saved::Raced),
+            Ok(()) => Ok(()),
+            Err(StoreError::ConditionFailed | StoreError::Missing) => {
+                Err(crate::lost_race("contacts.json"))
+            }
             Err(e) => Err(storage_failure("writing contacts", &e)),
         }
     }
