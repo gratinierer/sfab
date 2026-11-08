@@ -18,6 +18,9 @@ The Lambda side of `spec.md` "What `birth` does", "The IP rule" and the `genesis
   route in `openapi/sfab.yaml`.
 - The proof-of-work worked example in `openapi/sfab.yaml` gets a `genesis_code` in its `birth` body, with its body
   hash and nonce recomputed and `lambda/core/tests/worked_example.rs` updated to match.
+- Story 2's `spec.md` "Wire contract" gains `invalid-genesis-code` (`403`), `none-left` (`404`) and the route's
+  `not-built-yet`, and its `409` row, its lost-`birth` paragraph and the `409` row in `openapi/sfab.yaml` say a lost
+  `birth` retry now gets `403 invalid-genesis-code`, as `docs/api-design.md` asks for new types.
 - Choose the bucket for `genesis/` and record it in `spec.md`.
 
 ## Done when
