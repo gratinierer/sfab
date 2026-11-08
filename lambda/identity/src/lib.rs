@@ -199,12 +199,6 @@ fn lost_race(route: &str) -> Problem {
     Problem::internal()
 }
 
-/// Logs a storage error, which never holds a secret, and answers `500`.
-fn storage_failure(what: &str, err: &StoreError) -> Problem {
-    tracing::error!(error = ?err, "{what} failed");
-    Problem::internal()
-}
-
 fn to_json<T: Serialize>(value: &T) -> Vec<u8> {
     serde_json::to_vec(value).expect("plain data serializes")
 }
@@ -255,7 +249,7 @@ impl<S: Store> Identity<S> {
                     "This ID already exists, or this proof was used: solve again",
                 ));
             }
-            Err(e) => return Err(storage_failure("writing a new claim", &e)),
+            Err(e) => return Err(Problem::storage("writing a new claim", &e)),
         }
         let identity = IdentityRecord {
             name: request.name,
@@ -264,7 +258,7 @@ impl<S: Store> Identity<S> {
         };
         self.put_plain(&identity_key(&id), to_json(&identity))
             .await
-            .map_err(|e| storage_failure("writing a new identity", &e))?;
+            .map_err(|e| Problem::storage("writing a new identity", &e))?;
         self.marked.first_today(id.as_str(), now);
         self.write_vitals(&id, &born_at).await;
         self.genesis.use_up(&admission, now).await;
@@ -328,7 +322,7 @@ impl<S: Store> Identity<S> {
             Err(StoreError::ConditionFailed | StoreError::Missing) => {
                 return Err(Problem::unauthorized());
             }
-            Err(e) => return Err(storage_failure("rewriting a claim", &e)),
+            Err(e) => return Err(Problem::storage("rewriting a claim", &e)),
         }
         let reply = secrets.reclaim_reply(&agent.id);
         Ok(Reply::ok(json!(reply)))
@@ -356,7 +350,7 @@ impl<S: Store> Identity<S> {
             .store
             .get(Bucket::Claims, &claim_key(&bearer.id))
             .await
-            .map_err(|e| storage_failure("reading a claim", &e))?;
+            .map_err(|e| Problem::storage("reading a claim", &e))?;
         let Some(Object { body, etag, .. }) = object else {
             return Err(Problem::unauthorized());
         };
@@ -397,7 +391,7 @@ impl<S: Store> Identity<S> {
             .store
             .get(Bucket::Identities, &identity_key(id))
             .await
-            .map_err(|e| storage_failure("reading an identity", &e))?
+            .map_err(|e| Problem::storage("reading an identity", &e))?
             .ok_or_else(no_identity)?;
         let record = serde_json::from_slice(&object.body).map_err(|_| {
             tracing::error!("an identity in storage doesn't parse");

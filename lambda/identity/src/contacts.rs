@@ -17,7 +17,7 @@ use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 
 use crate::profile::Field;
-use crate::{Identity, Secret, contacts_key, identity_key, storage_failure, to_json};
+use crate::{Identity, Secret, contacts_key, identity_key, to_json};
 
 /// The most entries each list holds; a 101st gets `409` `list-full`.
 pub const MAX_ENTRIES: usize = 100;
@@ -214,7 +214,7 @@ impl<S: Store> Identity<S> {
                 .store
                 .get(Bucket::Identities, &identity_key(recipient))
                 .await
-                .map_err(|e| storage_failure("reading an identity", &e))?;
+                .map_err(|e| Problem::storage("reading an identity", &e))?;
             return Ok(identity.map(|_| Relation::Stranger));
         }
         let relation = if contacts.find(List::Blocked, sender).is_some() {
@@ -236,7 +236,7 @@ impl<S: Store> Identity<S> {
             .store
             .get(Bucket::Identities, &contacts_key(id))
             .await
-            .map_err(|e| storage_failure("reading contacts", &e))?;
+            .map_err(|e| Problem::storage("reading contacts", &e))?;
         let Some(object) = object else {
             return Ok((Contacts::default(), None));
         };
@@ -282,7 +282,7 @@ impl<S: Store> Identity<S> {
             Err(StoreError::ConditionFailed | StoreError::Missing) => {
                 Err(crate::lost_race("contacts"))
             }
-            Err(e) => Err(storage_failure("writing contacts", &e)),
+            Err(e) => Err(Problem::storage("writing contacts", &e)),
         }
     }
 

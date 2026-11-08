@@ -212,11 +212,6 @@ fn invalid_code() -> Problem {
     )
 }
 
-fn storage_failure(what: &str, err: &StoreError) -> Problem {
-    tracing::error!(error = ?err, "{what} failed");
-    Problem::internal()
-}
-
 /// The genesis checks for `birth`, and the pool route.
 pub struct Genesis<S> {
     store: Arc<S>,
@@ -243,7 +238,7 @@ impl<S: Store> Genesis<S> {
             .store
             .head(BUCKET, &code_key(&code))
             .await
-            .map_err(|e| storage_failure("reading a genesis code", &e))?
+            .map_err(|e| Problem::storage("reading a genesis code", &e))?
             .ok_or_else(invalid_code)?;
         if let Some(expires) = metadata.get(EXPIRES)
             && (!is_rfc3339_second(expires) || rfc3339(now) >= *expires)
@@ -275,7 +270,7 @@ impl<S: Store> Genesis<S> {
             .store
             .get(BUCKET, &ip::record_key(fingerprint))
             .await
-            .map_err(|e| storage_failure("reading an IP record", &e))?;
+            .map_err(|e| Problem::storage("reading an IP record", &e))?;
         let Some(object) = object else {
             return Ok(());
         };
@@ -357,13 +352,9 @@ impl<S: Store> Genesis<S> {
             .store
             .get(BUCKET, POOL_KEY)
             .await
-            .map_err(|e| storage_failure("reading the genesis pool", &e))?
+            .map_err(|e| Problem::storage("reading the genesis pool", &e))?
             .ok_or_else(|| {
-                Problem::new(
-                    404,
-                    "not-built-yet",
-                    "No genesis codes yet: the daily job hasn't run once",
-                )
+                Problem::not_built_yet("No genesis codes yet: the daily job hasn't run once")
             })?;
         let pool: Pool = serde_json::from_slice(&object.body).map_err(|_| {
             tracing::error!("the genesis pool doesn't parse");

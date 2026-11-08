@@ -24,7 +24,6 @@ pub const PAGE_SIZE: usize = 1_000;
 pub const PARALLEL: usize = 50;
 /// The route's path, which `next` repeats with `?page=`.
 pub const RESIDENTS_PATH: &str = "/v1/world/residents";
-const NOT_BUILT_YET: &str = "not-built-yet";
 /// The most digits a page token may have: up to page 9,999,999, which at `PAGE_SIZE` is about 10
 /// billion residents.
 const MAX_PAGE_DIGITS: usize = 7;
@@ -222,9 +221,7 @@ fn parse_page(token: &str) -> Option<usize> {
 }
 
 fn not_built_yet() -> Problem {
-    Problem::new(
-        404,
-        NOT_BUILT_YET,
+    Problem::not_built_yet(
         "The daily world job hasn't built this yet; try again after its next run, just after 00:00 UTC",
     )
 }

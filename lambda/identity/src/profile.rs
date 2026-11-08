@@ -17,10 +17,7 @@ use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 
 use crate::contacts::Contacts;
-use crate::{
-    Identity, IdentityRecord, Secret, aboutme_key, identity_key, malformed, storage_failure,
-    to_json,
-};
+use crate::{Identity, IdentityRecord, Secret, aboutme_key, identity_key, malformed, to_json};
 
 /// Every field an agent can publish: the one list. `.stories/4-life-in-the-world/` adds
 /// `vouches` and `address` here, with their part of the copy in [`Field::copy_into`], and
@@ -170,7 +167,7 @@ impl<S: Store> Identity<S> {
             .store
             .get(Bucket::Identities, &aboutme_key(&id))
             .await
-            .map_err(|e| storage_failure("reading a public copy", &e))?
+            .map_err(|e| Problem::storage("reading a public copy", &e))?
             .ok_or_else(not_found)?;
         if object.body.is_empty() {
             return Err(not_found());
@@ -205,7 +202,7 @@ impl<S: Store> Identity<S> {
             Ok(()) => Ok(()),
             Err(StoreError::ConditionFailed) => Err(crate::lost_race(route)),
             Err(StoreError::Missing) => Err(crate::no_identity()),
-            Err(e) => Err(storage_failure("writing an identity", &e)),
+            Err(e) => Err(Problem::storage("writing an identity", &e)),
         }
     }
 
@@ -242,6 +239,6 @@ impl<S: Store> Identity<S> {
         let body = copy_body(id, &identity.public, &sources);
         self.put_plain(&aboutme_key(id), body)
             .await
-            .map_err(|e| storage_failure("writing a public copy", &e))
+            .map_err(|e| Problem::storage("writing a public copy", &e))
     }
 }

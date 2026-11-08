@@ -5,6 +5,7 @@
 use serde_json::{Map, Value, json};
 
 use crate::proof::Rejection;
+use crate::storage::StoreError;
 
 /// A successful reply: a status and a JSON body.
 #[derive(Debug, Clone, PartialEq)]
@@ -94,6 +95,18 @@ impl Problem {
     /// A failure on our side. The title says nothing about the cause.
     pub fn internal() -> Self {
         Self::new(500, ABOUT_BLANK, "Server error, retry with backoff")
+    }
+
+    /// A storage call failed: logs the error, which never holds a secret, and answers `500`.
+    /// `what` names the call, such as "reading a claim".
+    pub fn storage(what: &str, err: &StoreError) -> Self {
+        tracing::error!(error = ?err, "{what} failed");
+        Self::internal()
+    }
+
+    /// `404 not-built-yet`: the daily world job hasn't built what was asked for yet.
+    pub fn not_built_yet(title: impl Into<String>) -> Self {
+        Self::new(404, "not-built-yet", title)
     }
 
     pub fn body(&self) -> Value {

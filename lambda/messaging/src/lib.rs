@@ -173,11 +173,6 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-fn storage_failure(what: &str, err: &StoreError) -> Problem {
-    tracing::error!(error = ?err, "{what} failed");
-    Problem::internal()
-}
-
 fn to_json<T: Serialize>(value: &T) -> Vec<u8> {
     serde_json::to_vec(value).expect("plain data serializes")
 }
@@ -271,7 +266,7 @@ impl<S: Store> Messaging<S> {
         match write {
             Ok(()) => Ok(Reply::accepted(body)),
             Err(StoreError::ConditionFailed) => Ok(Reply::ok(body)),
-            Err(e) => Err(storage_failure("writing a message", &e)),
+            Err(e) => Err(Problem::storage("writing a message", &e)),
         }
     }
 
@@ -281,7 +276,7 @@ impl<S: Store> Messaging<S> {
             .store
             .get(Bucket::Identities, key)
             .await
-            .map_err(|e| storage_failure("reading a knock", &e))?;
+            .map_err(|e| Problem::storage("reading a knock", &e))?;
         Ok(object
             .and_then(|o| serde_json::from_slice::<Stored>(&o.body).ok())
             .and_then(|s| s.proof))
@@ -322,7 +317,7 @@ impl<S: Store> Messaging<S> {
                 OFFSET_PAGE,
             )
             .await
-            .map_err(|e| storage_failure("listing messages", &e))?;
+            .map_err(|e| Problem::storage("listing messages", &e))?;
         let oldest = rfc3339(now - KEEP_DAYS * DAY);
         let mut items = Vec::new();
         let mut expired = false;
@@ -361,7 +356,7 @@ impl<S: Store> Messaging<S> {
             .store
             .get(Bucket::Identities, key)
             .await
-            .map_err(|e| storage_failure("reading a message", &e))?;
+            .map_err(|e| Problem::storage("reading a message", &e))?;
         let Some(object) = object else {
             return Ok(None);
         };
@@ -387,7 +382,7 @@ impl<S: Store> Messaging<S> {
         self.store
             .delete(Bucket::Identities, &id.key(&owner))
             .await
-            .map_err(|e| storage_failure("deleting a message", &e))?;
+            .map_err(|e| Problem::storage("deleting a message", &e))?;
         Ok(Reply::ok(json!({"message_id": id.text()})))
     }
 }
