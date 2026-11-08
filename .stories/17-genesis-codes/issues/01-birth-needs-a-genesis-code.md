@@ -30,6 +30,8 @@ The `genesis` crate in `lambda/world/genesis/`, which owns every `genesis/` key 
   that says "so don't retry. The exception is `origin-key-replaced`") gain `invalid-genesis-code` as a second exception:
   get a new code from `GET /world/genesis-code` and solve again, since the proof covers the code, so the retry is a new
   proof and a new identity, as its `detail` says.
+  `birth`'s `403` gets its own response saying so, not a `$ref` to the shared `Forbidden`, whose "so don't retry"
+  stays true for every other route.
 - `head` on the `Store` trait in `lambda/core/src/storage.rs`, returning metadata, for `MemoryStore` there and `S3Store`
   in `lambda/core/src/s3.rs`, and for the test fakes that implement `Store` (in `lambda/takedown/tests/takedown.rs`,
   `lambda/identity/tests/profile.rs` and `lambda/world/census/tests/census.rs`), unless `head` gets a default.
