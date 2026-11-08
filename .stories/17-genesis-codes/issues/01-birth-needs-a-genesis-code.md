@@ -22,6 +22,8 @@ The `genesis` crate in `lambda/world/genesis/`, which owns every `genesis/` key 
 - Story 2's `spec.md` "Wire contract" gains `invalid-genesis-code` (`403`), `none-left` (`404`) and the route's
   `not-built-yet`, and its `409` row, its lost-`birth` paragraph and the `409` row in `openapi/sfab.yaml` say a lost
   `birth` retry now gets `403 invalid-genesis-code`, as `docs/api-design.md` asks for new types.
+- `head` on the `Store` trait in `lambda/core/src/storage.rs`, for `S3Store` and `MemoryStore`, returning metadata, and
+  the viewer address carried in `Call` (`lambda/api/src/lib.rs`) to `birth`.
 - Choose the bucket for `genesis/` and record it in `spec.md`.
 
 ## Done when
