@@ -621,7 +621,9 @@ A failure in one step doesn't skip the others, and it's a function error, which 
 so the owner hears that a stop is incomplete. All steps can safely run twice, and the function emails
 the owner once, when a stop begins, naming the trigger: daily limit, budget alert or daily spend check. Reserved concurrency of 0 means a stop is in force, so every
 5-minute check makes sure all four steps are in place, and acts only on what's missing, which retries
-a failed step. While the steps propagate, agents may briefly get a `5xx`, which already means
+a failed step. If the email itself fails, the errors alarm still reaches the owner, without the trigger, and it
+isn't sent again, since the next check finds the stop in force. If the concurrency step fails, no stop is in force,
+so each check repeats the stop and its email until it holds. While the steps propagate, agents may briefly get a `5xx`, which already means
 "retry with backoff".
 
 **What triggers it:**
