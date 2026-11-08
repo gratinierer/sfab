@@ -274,7 +274,8 @@ impl<S: Store> Identity<S> {
         let whoiam = Some(request.whoiam).filter(|w| !w.is_empty());
         let (mut identity, etag) = self.read_identity_tagged(&agent.id).await?;
         identity.whoiam = whoiam.clone();
-        self.put_identity(&agent.id, &identity, etag).await?;
+        self.put_identity("evolve", &agent.id, &identity, etag)
+            .await?;
         if identity.public.contains(&Field::Whoiam) {
             self.rebuild_copy(&agent.id).await?;
         }

@@ -155,7 +155,8 @@ impl<S: Store> Identity<S> {
             self.write_copy(id, &identity).await?;
         }
         identity.public = wanted.clone();
-        self.put_identity(id, &identity, etag).await?;
+        self.put_identity("publication", id, &identity, etag)
+            .await?;
         let identity = self.rebuild_copy(id).await?;
         Ok(Reply::ok(settings_body(&identity.public)))
     }
@@ -182,9 +183,10 @@ impl<S: Store> Identity<S> {
     }
 
     /// Writes `identity.json` only if it's unchanged since it was read: a lost race when it
-    /// changed, and `404` when it's gone.
+    /// changed, logged under `route`, and `404` when it's gone.
     pub(crate) async fn put_identity(
         &self,
+        route: &str,
         id: &AgentId,
         identity: &IdentityRecord,
         etag: String,
@@ -201,7 +203,7 @@ impl<S: Store> Identity<S> {
             .await;
         match write {
             Ok(()) => Ok(()),
-            Err(StoreError::ConditionFailed) => Err(crate::lost_race("identity.json")),
+            Err(StoreError::ConditionFailed) => Err(crate::lost_race(route)),
             Err(StoreError::Missing) => Err(crate::no_identity()),
             Err(e) => Err(storage_failure("writing an identity", &e)),
         }
