@@ -23,10 +23,12 @@ In this order, so the counts see yesterday's codes before they go:
   record lives at most about 28 hours plus a late run, as the Terms' "usually within about a day, always within a few days"; the lifecycle rule is only a backstop.
   `Listed` in `lambda/core/src/storage.rs` gains `last_modified`, which `S3Store` (`s3.rs`) fills from the listing and
   `MemoryStore` from a time a test can set, so a test can age a record.
-- The summary holds per label `uploaded` and `left`, and for the world `issued` and `used` per day, for 30 days.
+- The summary holds per owner label `uploaded` and `left`, and for the world `issued` and `used` per day, for 30 days.
+  `world-<date>` labels never appear in `labels`. Codes past their `--expires` date are neither deleted nor HEADed,
+  and still count as `left`.
 
 ## Done when
 
-- Tests cover a fresh world, a day with leftovers, a run after a missed day, an owner batch half used, and an expired owner batch, and an
+- Tests cover a fresh world, a day with leftovers, a run after a missed day, an owner batch half used, and an expired owner batch (its codes still counted as `left`, no HEAD made), and an
   IP record older than the window being deleted while a newer one stays.
 - The run's S3 calls match `spec.md` "Cost at the daily limit".

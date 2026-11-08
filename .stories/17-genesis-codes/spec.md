@@ -102,6 +102,8 @@ The daily world job lists the genesis locations once a day and writes a private 
 days of world history. **No API route serves it**, and the Lambda never reads it. The owner reads it with
 `genesis-codes status`, using the owner's AWS credentials, as `takedown` does. Labels and counts are never
 public. The counts can be a day old, which is the price of not counting live.
+`labels` holds only the owner's labels; world days are in `world`. An owner code past its `--expires` date stays in
+`genesis/codes/` and still counts as `left`, since finding expiry would take a HEAD per code and the owner knows the date.
 
 ## Storage
 
