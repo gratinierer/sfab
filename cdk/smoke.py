@@ -487,7 +487,7 @@ def _world_birth(s: _Session) -> None:
     if response.status == 403:
         if s.check(name, response, 403, problem="invalid-genesis-code"):
             s.log(
-                "     note: the world's code was already used, which a racing birth may do, "
+                "note: the world's code was already used, which a racing birth may do, "
                 "since the pool is only mostly fresh"
             )
     elif response.status == 409:
