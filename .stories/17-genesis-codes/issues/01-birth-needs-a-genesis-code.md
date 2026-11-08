@@ -41,7 +41,10 @@ The `genesis` crate in `lambda/world/genesis/`, which owns every `genesis/` key 
   `lambda/api/tests/contract.rs`, `fn birth` sends `genesis_code`, the replay assert expects `403` (declared on `birth`),
   and `GET /world/genesis-code` is exercised for the every-`operationId` check; `lambda/identity/tests/identity.rs`,
   `profile.rs`, `lambda/messaging/tests/messages.rs`, `lambda/takedown/tests/takedown.rs` and
-  `lambda/api/tests/logging.rs` use the helper.
+  `lambda/api/tests/logging.rs` use the helper. The birth-replay tests (`identity.rs`
+  `a_birth_replay_gets_409_and_changes_nothing` and the takedown-marker case, `takedown.rs` `rebirth`) re-seed the used
+  code before the replay, so they still prove `409 already-exists` and that a taken-down ID can't be recreated, and a
+  new case proves a plain replay gets `403 invalid-genesis-code`.
 
 ## Done when
 
