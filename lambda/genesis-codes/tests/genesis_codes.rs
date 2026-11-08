@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use serde_json::json;
 use sfab_core::storage::MemoryStore;
-use sfab_genesis::{Daily, Genesis, Issue, Summary, daily, is_code, read_summary, testing};
+use sfab_genesis::{Daily, Genesis, Issue, Summary, Window, daily, is_code, read_summary, testing};
 use sfab_genesis_codes::{issue_codes, status};
 
 /// 2026-11-05T12:00:00Z.
@@ -18,7 +18,7 @@ const VIEWER: &str = "198.51.100.7:46532";
 
 const SETTINGS: Daily = Daily {
     codes_per_day: 0,
-    ip_window_hours: 4,
+    ip_window: Window::hours(4),
 };
 
 fn owner(label: &str) -> Issue {

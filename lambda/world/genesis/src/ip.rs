@@ -7,32 +7,58 @@ use hmac::{Hmac, KeyInit, Mac};
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 
+/// `genesis_ip_window_hours`: how long one address waits between births, and how old an IP
+/// record gets before the daily job deletes it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Window {
+    hours: u32,
+}
+
+impl Window {
+    pub const fn hours(hours: u32) -> Self {
+        Self { hours }
+    }
+
+    pub fn seconds(self) -> i64 {
+        i64::from(self.hours) * 3_600
+    }
+}
+
+/// Whole hours, as the CDK code sets `GENESIS_IP_WINDOW_HOURS`.
+impl std::str::FromStr for Window {
+    type Err = std::num::ParseIntError;
+
+    fn from_str(text: &str) -> Result<Self, Self::Err> {
+        text.parse().map(Self::hours)
+    }
+}
+
 /// The IP rule's settings: `ip_hash_key` and `genesis_ip_window_hours`.
 #[derive(Clone)]
 pub struct IpRule {
     key: Vec<u8>,
-    window_hours: u32,
+    window: Window,
 }
 
 impl std::fmt::Debug for IpRule {
     /// Never prints the key.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("IpRule")
-            .field("window_hours", &self.window_hours)
+            .field("window", &self.window)
             .finish_non_exhaustive()
     }
 }
 
 impl IpRule {
-    pub fn new(key: &str, window_hours: u32) -> Self {
+    pub fn new(key: &str, window: Window) -> Self {
         Self {
             key: key.as_bytes().to_vec(),
-            window_hours,
+            window,
         }
     }
 
     pub(crate) fn window_seconds(&self) -> i64 {
-        i64::from(self.window_hours) * 3_600
+        self.window.seconds()
     }
 
     /// The hex HMAC of the viewer's address, or its /64 for IPv6, or `None` when `viewer` isn't
@@ -98,8 +124,12 @@ mod tests {
 
     #[test]
     fn the_fingerprint_is_keyed() {
-        let a = IpRule::new("one", 4).fingerprint("198.51.100.7:1").unwrap();
-        let b = IpRule::new("two", 4).fingerprint("198.51.100.7:1").unwrap();
+        let a = IpRule::new("one", Window::hours(4))
+            .fingerprint("198.51.100.7:1")
+            .unwrap();
+        let b = IpRule::new("two", Window::hours(4))
+            .fingerprint("198.51.100.7:1")
+            .unwrap();
         assert_ne!(a, b);
         assert_eq!(a.len(), 64);
     }

@@ -9,14 +9,14 @@ use sfab_core::id::AgentId;
 use sfab_core::storage::{Bucket, Condition, MemoryStore, Store};
 use sfab_core::takedown::Action;
 use sfab_federation::{Fetch, Notify};
-use sfab_genesis::{Daily, Genesis, IpRule};
+use sfab_genesis::{Daily, Genesis, IpRule, Window};
 
 /// 2026-11-07T00:05:00Z.
 const NOW: i64 = 1_794_009_600 + 300;
 
 const GENESIS: Daily = Daily {
     codes_per_day: 3,
-    ip_window_hours: 4,
+    ip_window: Window::hours(4),
 };
 
 /// No server answers, and no email is sent: this file tests the census, and `outbound.rs` and
@@ -103,7 +103,7 @@ async fn the_job_makes_the_days_genesis_codes() {
         .unwrap();
 
     assert_eq!(report.genesis.issued, 3);
-    let rule = IpRule::new("anykeyanykeyanykeyanykeyanykey12", 4);
+    let rule = IpRule::new("anykeyanykeyanykeyanykeyanykey12", Window::hours(4));
     let genesis = Genesis::new(store.clone(), rule);
     assert!(genesis.pool_code(NOW).await.is_ok());
 }

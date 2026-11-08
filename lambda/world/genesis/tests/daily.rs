@@ -4,7 +4,9 @@
 use std::sync::Arc;
 
 use sfab_core::storage::{Calls, MemoryStore};
-use sfab_genesis::{Daily, Genesis, Issue, Summary, daily, issue, new_code, read_summary, testing};
+use sfab_genesis::{
+    Daily, Genesis, Issue, Summary, Window, daily, issue, new_code, read_summary, testing,
+};
 
 /// 2026-11-05T00:05:00Z, when the daily job runs.
 const RUN: i64 = 1_793_836_800 + 300;
@@ -13,7 +15,7 @@ const HOUR: i64 = 3_600;
 
 const SETTINGS: Daily = Daily {
     codes_per_day: 100,
-    ip_window_hours: 4,
+    ip_window: Window::hours(4),
 };
 
 fn genesis(store: &Arc<MemoryStore>) -> Genesis<MemoryStore> {

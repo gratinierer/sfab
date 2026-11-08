@@ -65,7 +65,7 @@ async fn main() -> Result<(), lambda_runtime::Error> {
     };
     let genesis = Daily {
         codes_per_day: number("GENESIS_CODES_PER_DAY"),
-        ip_window_hours: number("GENESIS_IP_WINDOW_HOURS"),
+        ip_window: number("GENESIS_IP_WINDOW_HOURS"),
     };
     let outbound = Outbound::production();
     let (store, alerts, outbound, genesis) = (&store, &alerts, &outbound, &genesis);

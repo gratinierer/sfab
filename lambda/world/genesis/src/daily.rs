@@ -10,7 +10,7 @@ use sfab_core::daily::{DAY, utc_date};
 use sfab_core::storage::{Condition, Metadata, Store, StoreError};
 
 use crate::{
-    BATCHES_PREFIX, BUCKET, CODES_PREFIX, IPS_PREFIX, Issue, WORLD_LABEL_PREFIX, code_key,
+    BATCHES_PREFIX, BUCKET, CODES_PREFIX, IPS_PREFIX, Issue, WORLD_LABEL_PREFIX, Window, code_key,
     issue_new, to_json, write_pool,
 };
 
@@ -25,8 +25,8 @@ const PARALLEL: usize = 50;
 pub struct Daily {
     /// `genesis_codes_per_day`: world codes made each day.
     pub codes_per_day: usize,
-    /// `genesis_ip_window_hours`: IP records older than this are deleted.
-    pub ip_window_hours: u32,
+    /// IP records older than this are deleted.
+    pub ip_window: Window,
 }
 
 /// What one run did, for the job's log.
@@ -186,7 +186,7 @@ pub async fn daily<S: Store>(
     };
     write_pool(store, now, &todays).await?;
 
-    let ips_deleted = forget_old_ips(store, now, settings.ip_window_hours).await?;
+    let ips_deleted = forget_old_ips(store, now, settings.ip_window).await?;
     Ok(DailyReport {
         issued,
         expired,
@@ -202,14 +202,14 @@ fn still_unused<'a>(
     codes.iter().filter(|c| unused.contains(*c))
 }
 
-/// Deletes every IP record last written more than `window_hours` before `now`, so a record
+/// Deletes every IP record last written more than `window` before `now`, so a record
 /// usually lives about a day at most; lifecycle is only the backstop.
 async fn forget_old_ips<S: Store>(
     store: &S,
     now: i64,
-    window_hours: u32,
+    window: Window,
 ) -> Result<usize, StoreError> {
-    let cutoff = now - i64::from(window_hours) * 3_600;
+    let cutoff = now - window.seconds();
     let old: Vec<String> = store
         .list_sized(BUCKET, IPS_PREFIX)
         .await?

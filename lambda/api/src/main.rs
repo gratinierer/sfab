@@ -29,10 +29,10 @@ async fn main() -> Result<(), lambda_http::Error> {
         domain: env("DOMAIN_NAME"),
         contact: env("ABUSE_CONTACT"),
     };
-    let window_hours = env("GENESIS_IP_WINDOW_HOURS")
+    let window = env("GENESIS_IP_WINDOW_HOURS")
         .parse()
         .expect("GENESIS_IP_WINDOW_HOURS is a whole number");
-    let ip_rule = sfab_genesis::IpRule::new(&env("IP_HASH_KEY"), window_hours);
+    let ip_rule = sfab_genesis::IpRule::new(&env("IP_HASH_KEY"), window);
     let app = sfab_api::app(
         Arc::new(store),
         required_bits,

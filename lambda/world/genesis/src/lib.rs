@@ -19,7 +19,7 @@ use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 
 pub use daily::{Batch, Daily, DailyReport, Summary, WorldDay, Written, daily, read_summary};
 use ip::IPS_PREFIX;
-pub use ip::IpRule;
+pub use ip::{IpRule, Window};
 
 /// The bucket every `genesis/` key lives in.
 const BUCKET: Bucket = Bucket::Identities;
@@ -360,7 +360,7 @@ pub mod testing {
 
     /// The IP rule tests use: a fixed key, and the 4-hour window `spec.md` starts with.
     pub fn ip_rule() -> IpRule {
-        IpRule::new("testkeytestkeytestkeytestkeytestkey", 4)
+        IpRule::new("testkeytestkeytestkeytestkeytestkey", Window::hours(4))
     }
 
     /// A fresh `--no-ip-limit` code that never expires, so a test can birth many times from one
