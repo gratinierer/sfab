@@ -16,6 +16,8 @@ The Lambda side of `spec.md` "What `birth` does", "The IP rule" and the `genesis
   address. No raw IP in any object or log line.
 - `GET /world/genesis-code`: one random code from `genesis/pool.json`, or `404 none-left` with `retry_after`, and its
   route in `openapi/sfab.yaml`.
+- The proof-of-work worked example in `openapi/sfab.yaml` gets a `genesis_code` in its `birth` body, with its body
+  hash and nonce recomputed and `lambda/core/tests/worked_example.rs` updated to match.
 - Choose the bucket for `genesis/` and record it in `spec.md`.
 
 ## Done when
