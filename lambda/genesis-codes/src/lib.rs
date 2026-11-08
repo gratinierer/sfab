@@ -10,7 +10,7 @@ use std::fmt::Write as _;
 
 use sfab_core::daily::rfc3339;
 use sfab_core::storage::{Store, StoreError};
-use sfab_genesis::{Issue, Written, issue, new_code, read_summary};
+use sfab_genesis::{Issue, Written, issue_new, read_summary};
 
 /// The daily summary as text to print, with when the daily job wrote it, since its counts are as
 /// of that run.
@@ -71,9 +71,7 @@ pub async fn issue_codes<S: Store>(
 ) -> Result<Vec<String>, StoreError> {
     let mut codes = Vec::with_capacity(count);
     for _ in 0..count {
-        let code = new_code();
-        issue(store, &code, how).await?;
-        codes.push(code);
+        codes.push(issue_new(store, how).await?);
     }
     Ok(codes)
 }

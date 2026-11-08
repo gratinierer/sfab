@@ -120,6 +120,13 @@ pub async fn issue<S: Store>(store: &S, code: &str, how: &Issue) -> Result<(), S
         .await
 }
 
+/// Makes a new code and issues it as `how` says.
+pub async fn issue_new<S: Store>(store: &S, how: &Issue) -> Result<String, StoreError> {
+    let code = new_code();
+    issue(store, &code, how).await?;
+    Ok(code)
+}
+
 /// `genesis/pool.json`: today's unused world codes, with the UTC date they're for.
 #[derive(Debug, Serialize, Deserialize)]
 struct Pool {
@@ -382,19 +389,17 @@ pub mod testing {
     }
 
     async fn seed<S: Store>(store: &S, no_ip_limit: bool) -> String {
-        let code = new_code();
-        let how = owner_batch(no_ip_limit);
-        issue(store, &code, &how).await.expect("seeding a code");
-        code
+        issue_new(store, &owner_batch(no_ip_limit))
+            .await
+            .expect("seeding a code")
     }
 
     /// `n` world codes for the UTC day of `now`, issued and in that day's pool.
     pub async fn seed_world_codes<S: Store>(store: &S, now: i64, n: usize) -> Vec<String> {
-        let codes: Vec<String> = (0..n).map(|_| new_code()).collect();
-        for code in &codes {
-            issue(store, code, &Issue::world(now))
-                .await
-                .expect("seeding a code");
+        let how = Issue::world(now);
+        let mut codes = Vec::with_capacity(n);
+        for _ in 0..n {
+            codes.push(issue_new(store, &how).await.expect("seeding a code"));
         }
         write_pool(store, now, &codes)
             .await

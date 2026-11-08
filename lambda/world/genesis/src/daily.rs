@@ -10,8 +10,8 @@ use sfab_core::daily::{DAY, utc_date};
 use sfab_core::storage::{Condition, Metadata, Store, StoreError};
 
 use crate::{
-    BATCHES_PREFIX, BUCKET, CODES_PREFIX, IPS_PREFIX, Issue, WORLD_LABEL_PREFIX, code_key, issue,
-    new_code, to_json, write_pool,
+    BATCHES_PREFIX, BUCKET, CODES_PREFIX, IPS_PREFIX, Issue, WORLD_LABEL_PREFIX, code_key,
+    issue_new, to_json, write_pool,
 };
 
 const SUMMARY_KEY: &str = "genesis/summary.json";
@@ -77,6 +77,18 @@ pub struct Written {
 /// The owner's summary, or `None` before the daily job's first run. One LIST, for the write
 /// time, and one GET.
 pub async fn read_summary<S: Store>(store: &S) -> Result<Option<Written>, StoreError> {
+    let Some((body, at)) = summary_object(store).await? else {
+        return Ok(None);
+    };
+    serde_json::from_slice(&body)
+        .map(|summary| Some(Written { summary, at }))
+        .map_err(|e| StoreError::Other(format!("{SUMMARY_KEY} doesn't parse: {e}")))
+}
+
+/// The summary's bytes and write time, or `None` before the first run. It lists the key before
+/// reading it, since a GET on a missing key gets `403` under the job's prefix-conditioned
+/// `ListBucket` (`docs/aws-facts.md`).
+async fn summary_object<S: Store>(store: &S) -> Result<Option<(Vec<u8>, i64)>, StoreError> {
     let listed = store.list_sized(BUCKET, SUMMARY_KEY).await?;
     let Some(at) = listed
         .iter()
@@ -85,12 +97,8 @@ pub async fn read_summary<S: Store>(store: &S) -> Result<Option<Written>, StoreE
     else {
         return Ok(None);
     };
-    let Some(object) = store.get(BUCKET, SUMMARY_KEY).await? else {
-        return Ok(None);
-    };
-    serde_json::from_slice(&object.body)
-        .map(|summary| Some(Written { summary, at }))
-        .map_err(|e| StoreError::Other(format!("{SUMMARY_KEY} doesn't parse: {e}")))
+    let object = store.get(BUCKET, SUMMARY_KEY).await?;
+    Ok(object.map(|o| (o.body, at)))
 }
 
 /// One run at `now`: counts every batch into the summary, then deletes every unused world code
@@ -116,7 +124,7 @@ pub async fn daily<S: Store>(
     let oldest = utc_date(now - HISTORY_DAYS * DAY);
     summary.world.retain(|date, _| *date >= oldest);
     for (label, codes) in &batches {
-        let left = codes.iter().filter(|c| unused.contains(*c)).count();
+        let left = still_unused(codes, &unused).count();
         match label.strip_prefix(WORLD_LABEL_PREFIX) {
             None => {
                 let batch = Batch {
@@ -150,7 +158,7 @@ pub async fn daily<S: Store>(
         let Some(date) = label.strip_prefix(WORLD_LABEL_PREFIX) else {
             continue;
         };
-        let still = codes.iter().filter(|c| unused.contains(*c)).cloned();
+        let still = still_unused(codes, &unused).cloned();
         if date < today.as_str() {
             stale.extend(still);
         } else if date == today {
@@ -169,13 +177,11 @@ pub async fn daily<S: Store>(
         0
     } else {
         let how = Issue::world(now);
-        let codes: Vec<String> = (0..settings.codes_per_day).map(|_| new_code()).collect();
-        stream::iter(&codes)
-            .map(|code| issue(store, code, &how))
+        todays = stream::iter(0..settings.codes_per_day)
+            .map(|_| issue_new(store, &how))
             .buffer_unordered(PARALLEL)
-            .try_collect::<Vec<()>>()
+            .try_collect()
             .await?;
-        todays = codes;
         todays.len()
     };
     write_pool(store, now, &todays).await?;
@@ -186,6 +192,14 @@ pub async fn daily<S: Store>(
         expired,
         ips_deleted,
     })
+}
+
+/// The codes of a batch that are still unused.
+fn still_unused<'a>(
+    codes: &'a [String],
+    unused: &'a BTreeSet<String>,
+) -> impl Iterator<Item = &'a String> {
+    codes.iter().filter(|c| unused.contains(*c))
 }
 
 /// Deletes every IP record last written more than `window_hours` before `now`, so a record
@@ -212,19 +226,14 @@ async fn forget_old_ips<S: Store>(
     Ok(deleted)
 }
 
-/// The last run's summary, or an empty one. It lists the key before reading it, since a GET on a
-/// missing key gets `403` under the job's prefix-conditioned `ListBucket` (`docs/aws-facts.md`).
+/// The last run's summary, or an empty one.
 async fn previous_summary<S: Store>(store: &S) -> Result<Summary, StoreError> {
-    let listed = store.list(BUCKET, SUMMARY_KEY).await?;
-    if !listed.iter().any(|k| k == SUMMARY_KEY) {
-        return Ok(Summary::default());
-    }
-    let Some(object) = store.get(BUCKET, SUMMARY_KEY).await? else {
+    let Some((body, _)) = summary_object(store).await? else {
         return Ok(Summary::default());
     };
     // Only this crate writes it, so this never happens; if it does, the world's history starts
     // again rather than the pool stopping.
-    Ok(serde_json::from_slice(&object.body).unwrap_or_else(|_| {
+    Ok(serde_json::from_slice(&body).unwrap_or_else(|_| {
         tracing::error!("{SUMMARY_KEY} doesn't parse, starting a new one");
         Summary::default()
     }))
