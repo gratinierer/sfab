@@ -1,6 +1,6 @@
 # Rules live in crates, behind one API Lambda
 
-Status: accepted; layout amended by ADR-0007
+Status: accepted; layout amended by ADR-0007 and ADR-0008
 
 The world's rules, from every story, run in one API Lambda, as ADR 0001 decided. Inside it, they live in one Cargo crate per institution, and the router only connects routes to them. Later stories add crates, not functions.
 

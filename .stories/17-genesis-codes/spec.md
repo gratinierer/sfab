@@ -110,6 +110,8 @@ public. The counts can be a day old, which is the price of not counting live.
 **Code:** a `genesis` crate, `lambda/world/genesis/`, owns every `genesis/` key, as `docs/adr/0004-rules-live-in-crates.md`
 says, and the API, the daily job and the owner's tool call it. The owner's tool is a binary, `genesis-codes`, in
 `lambda/genesis-codes/`, run on the owner's machine like `takedown`, so no key format exists outside the crate.
+`identity::birth` calls `genesis` after the proof and before the birth, so `identity` depends on `genesis`. ADR 0008
+adds both crates to ADR 0004's layout.
 
 All under a `genesis/` prefix in a bucket the API Lambda already writes; the exact bucket is chosen in the first
 issue. No per-agent data lives here, so `takedown` needs no new location.
