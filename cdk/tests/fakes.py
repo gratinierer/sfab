@@ -120,8 +120,11 @@ class FakeApi:
         # Unused genesis codes, by kind: "exempt" (`--no-ip-limit`), "world" or "ordinary".
         self.genesis: dict[str, str] = {}
         self.issued = 0
-        # Today's world pool; None until the daily job's first run.
+        # Today's world pool; None until the daily job's first run. Like the real pool it may
+        # hold a code a racing birth already used (story 17 "What `birth` does" step 5).
         self.pool: list[str] | None = self.issue(3, "world")
+        # Pool codes handed out so far: each GET hands out the next, as a random pick may.
+        self.handed = 0
         # The last birth from the one viewer address, under the IP rule.
         self.last_birth: int | None = None
 
@@ -192,7 +195,9 @@ class FakeApi:
                 return "genesis code", problem(404, "not-built-yet")
             if not self.pool:
                 return "genesis code", problem(409, "try-later", retry_after=NEXT_DAILY_RUN)
-            return "genesis code", ok(200, {"genesis_code": self.pool[0]})
+            code = self.pool[self.handed % len(self.pool)]
+            self.handed += 1
+            return "genesis code", ok(200, {"genesis_code": code})
         # The gateway's validator, with `additionalProperties: false`.
         if r.method in ("POST", "PUT") and path != "/v1/identity/reclaim" and not contact:
             try:

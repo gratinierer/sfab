@@ -112,15 +112,64 @@ def test_the_world_code_birth_may_meet_the_ip_rule():
     assert len(api.pool) == 3
 
 
-def test_a_world_code_a_racing_birth_used_passes_with_a_note():
+def test_a_world_code_a_racing_birth_used_is_retried_once_with_a_fresh_one():
     # The pool is only mostly fresh (spec.md "What `birth` does" step 5).
     clock = Clock()
     api = FakeApi(clock)
-    api.override["world birth"] = problem(403, "invalid-genesis-code")
+    del api.genesis[api.pool[0]]
     lines = []
 
     assert smoke(api, clock, log=lines.append).failures == []
     assert any("world" in line and "already used" in line for line in lines), lines
+    assert api.labels.count("genesis code") == 2
+    assert "world birth" in api.labels, "the fresh code was accepted"
+    assert len(api.pool) == 2
+    # The retry's GET and birth on top of the run's 43.
+    assert len(api.requests) <= 45
+
+
+def test_a_world_rejecting_both_world_codes_fails():
+    clock = Clock()
+    api = FakeApi(clock)
+    for code in api.pool:
+        del api.genesis[code]
+
+    failures = smoke(api, clock).failures
+
+    assert [f.split(":")[0] for f in failures] == ["birth with a fresh world code"]
+    assert api.labels.count("genesis code") == 2
+
+
+@pytest.mark.parametrize(
+    "response",
+    [problem(404, "not-built-yet"), problem(409, "try-later", retry_after="2026-11-06T00:05:00Z")],
+)
+def test_no_fresh_world_code_after_a_used_one_passes_and_skips_the_retry(response):
+    clock = Clock()
+    api = FakeApi(clock)
+    del api.genesis[api.pool[0]]
+    lines = []
+
+    def transport(request):
+        answer = api(request)
+        if api.labels[-1] == "invalid genesis code":
+            api.override["genesis code"] = response
+        return answer
+
+    result = run(
+        transport,
+        FULL,
+        production=False,
+        clock=clock,
+        sleep=clock.sleep,
+        log=lines.append,
+        codes=Codes(api.issue(2)),
+    )
+
+    assert result.failures == []
+    assert api.labels.count("genesis code") == 2
+    assert "world birth" not in api.labels
+    assert any("skip" in line and "world" in line for line in lines), lines
 
 
 def test_says_clearly_when_the_codes_run_out_and_skips_the_identity_checks():
