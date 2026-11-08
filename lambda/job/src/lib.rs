@@ -31,13 +31,20 @@ pub async fn run<S: Store, F: Fetch, N: Notify>(
     genesis: &Daily,
     now: i64,
 ) -> Result<Report, StoreError> {
-    let residents = sfab_identity::residents(store).await?;
-    let census = sfab_census::snapshot(store, &residents, &rfc3339(now)).await?;
-    let genesis = sfab_genesis::daily(store, now, genesis).await?;
+    let census = census(store, now).await;
+    // Runs whether or not the census worked, so a census fault can't leave the day without
+    // genesis codes; the census's error still fails the run.
+    let genesis = sfab_genesis::daily(store, now, genesis).await;
+    let (census, genesis) = (census?, genesis?);
     let federation = sfab_federation::daily(store, fetch, notify, now).await?;
     Ok(Report {
         census,
         genesis,
         federation,
     })
+}
+
+async fn census<S: Store>(store: &S, now: i64) -> Result<CensusReport, StoreError> {
+    let residents = sfab_identity::residents(store).await?;
+    sfab_census::snapshot(store, &residents, &rfc3339(now)).await
 }

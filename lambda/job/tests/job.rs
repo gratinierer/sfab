@@ -107,3 +107,18 @@ async fn the_job_makes_the_days_genesis_codes() {
     let genesis = Genesis::new(store.clone(), rule);
     assert!(genesis.pool_code(NOW).await.is_ok());
 }
+
+#[tokio::test]
+async fn a_failed_census_still_makes_the_days_genesis_codes_and_fails_the_run() {
+    // A census fault mustn't leave `GET /world/genesis-code` answering `try-later` all day.
+    let store = Arc::new(MemoryStore::new());
+    claim(&store, "aaaaaaaaaaaa").await;
+    store.fail_writes_under(Bucket::Identities, "world/");
+
+    let run = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, NOW).await;
+
+    assert!(run.is_err(), "the census's failure still fails the run");
+    let rule = IpRule::new("anykeyanykeyanykeyanykeyanykey12", Window::hours(4));
+    let genesis = Genesis::new(store.clone(), rule);
+    assert!(genesis.pool_code(NOW).await.is_ok());
+}
