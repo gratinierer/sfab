@@ -30,3 +30,8 @@ Stage 2. `spec.md` "World".
 - Unit tests cover the snapshot's paging, skipping markers and deleting surplus pages.
 - CDK assertion tests cover the schedule, timeout, reserved concurrency and permissions, and the kill
   switch's right to change this job's concurrency. A unit test covers the fourth stop step.
+
+## Comments
+
+- 2026-11-08: closed by review finding R182: the Done when tests pass, and `code-review.md` (2026-11-08T10:59:39,
+  up to ef30c3b, the last code commit for this issue) left no finding open.
