@@ -23,9 +23,10 @@ The `genesis` crate in `lambda/world/genesis/`, which owns every `genesis/` key 
   `not-built-yet`, and its `409` row, its lost-`birth` paragraph, its "Proof of work" line "`birth` is the exception: its replay gets
   `409`", and `openapi/sfab.yaml`'s `409` row and its other `birth`-replay mention say a lost
   `birth` retry now gets `403 invalid-genesis-code`, as `docs/api-design.md` asks for new types.
-- That `403` row (story 2 `spec.md` "Wire contract") and `openapi/sfab.yaml`'s `Forbidden` response say "so don't retry"
-  with `origin-key-replaced` as the one exception; both gain `invalid-genesis-code` as a second one, retried with a new
-  code from `GET /world/genesis-code`, as its `detail` says.
+- That `403` row (story 2 `spec.md` "Wire contract") and `openapi/sfab.yaml`'s "Errors and retries" (the `403` line
+  that says "so don't retry. The exception is `origin-key-replaced`") gain `invalid-genesis-code` as a second exception:
+  get a new code from `GET /world/genesis-code` and solve again, since the proof covers the code, so the retry is a new
+  proof and a new identity, as its `detail` says.
 - `head` on the `Store` trait in `lambda/core/src/storage.rs`, returning metadata, for `MemoryStore` there and `S3Store`
   in `lambda/core/src/s3.rs`, and for the test fakes that implement `Store` (in `lambda/takedown/tests/takedown.rs`,
   `lambda/identity/tests/profile.rs` and `lambda/world/census/tests/census.rs`), unless `head` gets a default.
