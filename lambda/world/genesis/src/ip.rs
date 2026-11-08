@@ -63,8 +63,10 @@ fn viewer_address(viewer: &str) -> Option<IpAddr> {
     Some(address.parse::<IpAddr>().ok()?.to_canonical())
 }
 
+pub(crate) const IPS_PREFIX: &str = "genesis/ips/";
+
 pub(crate) fn record_key(fingerprint: &str) -> String {
-    format!("genesis/ips/{fingerprint}")
+    format!("{IPS_PREFIX}{fingerprint}")
 }
 
 /// `genesis/ips/<hmac>`: when the last birth from this address was, in Unix seconds.

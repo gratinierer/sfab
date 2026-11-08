@@ -130,6 +130,8 @@ pub struct KeyPage {
 pub struct Listed {
     pub key: String,
     pub size: u64,
+    /// When the object was last written, as a Unix time, as S3's `LastModified` gives it.
+    pub last_modified: i64,
 }
 
 /// The in-memory fake every crate tests against. It can be told to fail writes under a prefix,
@@ -145,6 +147,10 @@ struct State {
     next_etag: u64,
     failing: HashSet<(Bucket, String)>,
     writes: HashMap<(Bucket, String), usize>,
+    /// When each object was last written, by the fake's clock.
+    modified: HashMap<(Bucket, String), i64>,
+    /// The time the next write records, which a test sets to age an object.
+    clock: i64,
     calls: Calls,
 }
 
@@ -177,6 +183,12 @@ impl MemoryStore {
             .get(&(bucket, key.to_owned()))
             .copied()
             .unwrap_or(0)
+    }
+
+    /// From now on, writes record `now`, a Unix time, as their `last_modified`, so a test can
+    /// age an object. Until set, it's 0.
+    pub fn set_time(&self, now: i64) {
+        self.lock().clock = now;
     }
 
     /// Every call so far, by kind.
@@ -252,6 +264,8 @@ impl Store for MemoryStore {
             _ => {}
         }
         state.next_etag += 1;
+        let clock = state.clock;
+        state.modified.insert((bucket, key.to_owned()), clock);
         let etag = format!("\"{}\"", state.next_etag);
         state.objects.insert(
             (bucket, key.to_owned()),
@@ -271,6 +285,7 @@ impl Store for MemoryStore {
             return Err(StoreError::Other(format!("injected failure on {key}")));
         }
         state.objects.remove(&(bucket, key.to_owned()));
+        state.modified.remove(&(bucket, key.to_owned()));
         Ok(())
     }
 
@@ -290,9 +305,10 @@ impl Store for MemoryStore {
             .objects
             .iter()
             .filter(|((b, k), _)| *b == bucket && k.starts_with(prefix))
-            .map(|((_, k), o)| Listed {
+            .map(|((b, k), o)| Listed {
                 key: k.clone(),
                 size: o.body.len() as u64,
+                last_modified: state.modified.get(&(*b, k.clone())).copied().unwrap_or(0),
             })
             .collect();
         listed.sort_by(|a, b| a.key.cmp(&b.key));

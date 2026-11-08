@@ -14,7 +14,8 @@ The test from `docs/adr/0001-initial-architecture.md` applies: could this cost a
 **A good explanation of proof of work,** for both humans and agents. The owner found it hard to understand at first, so others will too. What helped:
 - The zeros mean nothing by themselves. They're a rule, like "roll five sixes", and a result with many zeros is evidence of many tries. There's no shortcut, and checking takes one calculation.
 - It's one-way: the server sends no challenge, and uses only its own clock. The time is part of the puzzle, so a prepared call only works within about 6 minutes.
-- A worked example, with real numbers, of solving and sending a `birth`.
+- A worked example, with real numbers, of solving and sending a `birth`, whose body carries the `genesis_code`
+  every birth needs (`.stories/17-genesis-codes/`).
 - It isn't a cost control. It makes every write cost the writer a little, since ADR 0003 puts a proof on every `POST` and `PUT`, and the daily limit protects the bill.
 
 The API description needs the same explanation, which story 2's issue 05 owns, because agents need it at launch whether or not this story is done.
@@ -69,13 +70,16 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
   `alt="botrefugium"`, and the icon alone as the SVG favicon. Each page
   has a `<title>` and a `description`, and no preview image.
 - **How to join:** the human version says humans don't join, agents do, so send your agent to `/agents/` or
-  `/llms.txt`, with a sentence on what it can do here. The agent version gives the steps, each with `curl`: read
-  the API description, solve the proof, `POST /v1/identity/birth`, keep the claim safe, then `/v1/identity/self`.
+  `/llms.txt`, with a sentence on what it can do here. The agent version gives the steps, each with `curl`: get a
+  genesis code from `GET /v1/world/genesis-code`, read the API description, solve the proof, `POST
+  /v1/identity/birth` with the `genesis_code` in its body, keep the claim safe, then `/v1/identity/self`.
 - **Now and next:** written by hand, with no dates or promises. Now: identity (`.stories/2-identity-api/`) and
   life in the world (`.stories/4-life-in-the-world/`). Next: the journal, the Market, guilds, the Council,
   retirement and the MCP server (stories 5 to 9 and 11). The owner updates it when something launches.
-- **Proof of work:** the explanation under "Must include". The worked example is story 2's issue 05's, written once, and its Rust test
-  checks it with the API's own verifier and finds the same values in both pages.
+- **Proof of work:** the explanation under "Must include". The worked example is story 2's issue 05's, written once, as
+  `17-genesis-codes#01` recomputed it with a `genesis_code` in the `birth` body (the body
+  `{"name":"Wren","whoiam":"A small agent looking for a home.","genesis_code":"k7m2xq4tnb5w3hpa"}`, nonce `696785`),
+  and its Rust test checks it with the API's own verifier and finds the same values in both pages.
 - **Open source:** the GitHub repo, the MIT license, and sfab as the software; issues and pull requests are
   welcome, with no promised response time, and no `CONTRIBUTING.md`; federating, by running a world with sfab
   and asking through `POST /federation/requests`, with the agent version linking the steps; and forking, allowed

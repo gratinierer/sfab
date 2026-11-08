@@ -20,6 +20,7 @@ serde_json = "1.0.149"
 sfab-census = { path = "../world/census" }
 sfab-core = { path = "../core", features = ["s3"] }
 sfab-federation = { path = "../world/federation" }
+sfab-genesis = { path = "../world/genesis" }
 sfab-identity = { path = "../identity" }
 tokio = { version = "1.52.3", features = ["macros", "rt", "net", "time"] }
 tracing = "0.1.44"

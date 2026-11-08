@@ -9,9 +9,15 @@ use sfab_core::id::AgentId;
 use sfab_core::storage::{Bucket, Condition, MemoryStore, Store};
 use sfab_core::takedown::Action;
 use sfab_federation::{Fetch, Notify};
+use sfab_genesis::{Daily, Genesis, IpRule};
 
 /// 2026-11-07T00:05:00Z.
 const NOW: i64 = 1_794_009_600 + 300;
+
+const GENESIS: Daily = Daily {
+    codes_per_day: 3,
+    ip_window_hours: 4,
+};
 
 /// No server answers, and no email is sent: this file tests the census, and `outbound.rs` and
 /// the federation crate test the rest.
@@ -72,7 +78,7 @@ async fn the_job_counts_residents_without_markers_as_of_its_run() {
     claim(&store, "bbbbbbbbbbbb").await;
     marker(&store, "cccccccccccc").await;
 
-    let report = sfab_job::run(&*store, &Offline, &Offline, NOW)
+    let report = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, NOW)
         .await
         .unwrap();
 
@@ -86,4 +92,18 @@ async fn the_job_counts_residents_without_markers_as_of_its_run() {
         census.residents(None).await.unwrap().body,
         json!({"items": ["aaaaaaaaaaaa", "bbbbbbbbbbbb"], "next": null})
     );
+}
+
+#[tokio::test]
+async fn the_job_makes_the_days_genesis_codes() {
+    let store = Arc::new(MemoryStore::new());
+
+    let report = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, NOW)
+        .await
+        .unwrap();
+
+    assert_eq!(report.genesis.issued, 3);
+    let rule = IpRule::new("anykeyanykeyanykeyanykeyanykey12", 4);
+    let genesis = Genesis::new(store.clone(), rule);
+    assert!(genesis.pool_code(NOW).await.is_ok());
 }
