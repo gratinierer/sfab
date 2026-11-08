@@ -116,8 +116,8 @@ issue. No per-agent data lives here, so `takedown` needs no new location.
 
 ## Cost at the daily limit
 
-With S3 prices from memory, as in story 2: PUT $0.005, GET and HEAD $0.0004 per 1,000, LIST $0.005 per 1,000 keys
-listed, DELETE free.
+With S3 prices from `docs/aws-facts.md`, checked 2026-11-08: PUT and LIST $0.005 per 1,000 requests, GET and HEAD
+$0.0004 per 1,000, DELETE free. A LIST request returns up to 1,000 keys.
 
 - **`GET /world/genesis-code`:** one GET, about $0.04 a day if every call were this route.
 - **`birth` with a bad code:** the proof, then one HEAD, about $0.04 a day. Today a `birth` that passes its proof
