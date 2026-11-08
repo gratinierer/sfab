@@ -20,6 +20,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-08T21:37:20+00:00 | walkthrough | 01, 02, 03, 04, 05, 06 | claude-opus-5-5 (dispatched) | 0 new, 2 resolved, 0 still open | auto walkthrough, not a review pass; `scripts/check` passed |
 | 2026-11-08T21:55:00+00:00 | code-review | 01, 02, 03, 04, 05, 06 @ 486429f..290e82d | claude-fable-5-1 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5, round 4) | 1 new: 0 standards, 1 spec | C20 and C21 fixes confirmed, statuses flipped to `resolved`; minor smells (skip message repeats the docstring, a wording-based log assert) not filed |
 | 2026-11-08T21:44:14+00:00 | walkthrough | 06 | claude-opus-5-5 (dispatched) | 0 new, 1 resolved, 0 still open | auto walkthrough, not a review pass; `scripts/check` passed |
+| 2026-11-08T22:20:00+00:00 | code-review | 01, 02, 03, 04, 05, 06 @ 93d9433..3d83d72 | claude-fable-5-1 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5, round 5) | 0 new | C22 fix confirmed; two minor test smells not filed (a test calls `run` where the `smoke()` helper would do, `test_smoke.py:158-166`; the derived cap 47 written twice, `:173`, `:189`) |
 
 ## Findings
 
