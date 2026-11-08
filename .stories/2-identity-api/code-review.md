@@ -45,6 +45,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-08T10:42:32+00:00 | code-review | 01, 07, 08, 09, 11-15 @ ee473de..2f5571a | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 9 new: 5 standards, 4 spec | round 1 of `/code-review ee473de auto 5`; the fix commits of both auto passes and the 2026-11-08 walkthrough |
 | 2026-11-08T10:46:55+00:00 | walkthrough | 01, 07, 08, 09, 11-15 | claude-opus-5-5, auto | 0 new, 8 resolved, 1 superseded, 0 still open | auto walkthrough, not a review pass; address pass 1 of `/code-review ee473de auto 5` |
 | 2026-11-08T10:49:24+00:00 | code-review | 01, 07, 08, 09, 11-15 @ 2f5571a..b98386c | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, which also orchestrates) | 5 new: 3 standards, 2 spec | round 2 of `/code-review ee473de auto 5`: address pass 1's fixes |
+| 2026-11-08T10:51:41+00:00 | walkthrough | 01, 07, 08, 09, 11-15 | claude-opus-5-5, auto | 0 new, 5 resolved, 0 still open | auto walkthrough, not a review pass; address pass 2 of `/code-review ee473de auto 5` |
 
 ## Findings
 
