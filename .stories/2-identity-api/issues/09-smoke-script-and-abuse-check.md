@@ -21,7 +21,7 @@ the identity routes, and each later ticket adds its routes to the smoke script.
 
 ## Done when
 
-- The owner has run both against the deployed API with stage 1's routes, and they pass. This container has no AWS
+- The owner has run both against the deployed API with every route, and they pass. This container has no AWS
   credentials, but neither script needs any.
 - On that first run, the response to the `execute-api` request without the key is recorded in the
   `docs/aws-facts.md` row on a missing API key, and if it's the `problem+json` `403` with

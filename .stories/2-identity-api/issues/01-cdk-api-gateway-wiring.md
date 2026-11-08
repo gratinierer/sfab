@@ -27,10 +27,8 @@ R12.
 
 The code is agent work. The deploy needs the owner, because this container has no AWS credentials,
 so the owner runs steps 4 to 6 of `spec.md` "First deploy", which also gives the proofs below.
-The API has alert emails from this deploy, but no automatic stop until issue 07, which is the very next
-deploy. Keep its URL unpublished until the public launch.
-
-This is stage 1, along with issues 03-09. Later stages add routes to the same stacks.
+The same deploy brings the kill switch (issue 07) and the daily world job (issue 11), so the API has alert
+emails and an automatic stop from the start. Keep its URL unpublished until the public launch.
 
 ## Traps to handle
 

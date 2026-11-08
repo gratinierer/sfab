@@ -619,7 +619,7 @@ A small dedicated Rust function runs the same full stop, whatever triggers it:
 4. Sets the daily world job's reserved concurrency to 0, because its cost grows with what's stored, not with
    traffic, so it would otherwise keep spending during a stop. The census, Chronicle, standing and federation
    emails pause, and missing entries stay missing. The kill switch's own spend check keeps running. This
-   step arrives with the job, in issue 11, so until then the kill switch has three steps.
+   step arrives with the job, in issue 11, which is in the first API deploy.
 
 A failure in one step doesn't skip the others, and it's a function error, which fires the errors alarm,
 so the owner hears that a stop is incomplete. All steps can safely run twice, and the function emails
@@ -894,7 +894,7 @@ replaces the isolation that per-route IAM roles would have given.
   alerts until it's confirmed again, in the way "First deploy" describes.
 - **Clean up before launch:** done once for both stories, in the "Launch checklist" of
   `.stories/4-life-in-the-world/`, because that story creates more test data after this one is done.
-- **Order:** the work is built and privately deployed in this order, with the ID format and path
+- **Order:** the work is built in this order, now through stage 5, so the first deploy carries all of it, with the ID format and path
   rules in from the start: (1) identity, (2) world and the website, (3) public profile and friends,
   (4) messaging, (5) federation. There's **one public launch**, when everything is done. Until then
   the URL isn't published. Federation will only have been tested against a fake second world.
@@ -928,17 +928,17 @@ failure. Each step needs the one before it:
    Then confirm `aws sns get-subscription-attributes` shows it was authenticated. The stop budget publishes
    to the stop topic, but nothing listens until the kill switch arrives. If this stack fails, fix the cause and deploy again: bucket
    names are generated, so they can't collide, and any empty bucket left behind can be deleted by hand.
-5. Deploy the API stack. If it fails and rolls back, the base stack is untouched, so fix the
+5. Deploy the API stack, which also brings the kill switch and the daily world job, so a stop works from this
+   deploy on. If it fails and rolls back, the base stack is untouched, so fix the
    cause and deploy again. If it fails with "Your account must be verified before you can add
    new CloudFront resources", open an AWS Support case, wait for the answer, and deploy again.
    Forum reports describe this for new accounts; AWS doesn't document it.
 6. **Check that the distribution shows the Free flat-rate plan in the console.** If it isn't
    attached, CloudFront and WAF bill per request.
-7. Build and deploy the kill switch as the very next deploy, because until then only the alert emails
-   and the throttle protect the bill. At the throttle, that's at most about $15 a day.
+7. Deploy the website stack, and check its distribution shows the Free flat-rate plan in the console, as in step 6.
 
-After this, each stage in "Order" deploys all stacks with the `deploy` script. Stage 2 adds the website
-stack, with the same plan check for its distribution, and "Done" lists the checks for the end.
+After this, every deploy runs all stacks with the `deploy` script. The next one is story 17
+(`.stories/17-genesis-codes/` intro), and "Done" lists the checks for the end.
 
 ## Prerequisites
 

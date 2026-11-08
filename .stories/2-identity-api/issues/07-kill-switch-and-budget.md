@@ -20,7 +20,7 @@ base stack, from issue 01.
 
 - The kill switch unit tests and the CDK assertion tests in `spec.md` "Testing" pass, including that the
   50,000-call warning can't reach the stop topic.
-- The owner has redeployed the API stack, because this container has no AWS credentials. The
+- The owner has deployed the API stack, in issue 01's first deploy, because this container has no AWS credentials. The
   drills themselves are in issue 10.
 
 ## Comments
