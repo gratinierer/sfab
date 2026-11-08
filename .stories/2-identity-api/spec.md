@@ -288,8 +288,8 @@ A message is at most 80 characters of UTF-8, which is one object in the recipien
   removes expired objects some time later. `DELETE` is the API Lambda's only delete, so it may delete
   under `messages/` alone.
 - **Code:** the `messaging` crate owns the `messages/` keys and their takedown location. It asks the
-  `identity` crate who is calling and how the recipient lists the sender, so ADR 0004's layout, which
-  puts messages in `identity/`, is refined by one crate.
+  `identity` crate who is calling and how the recipient lists the sender, as
+  `docs/adr/0007-messages-get-their-own-crate.md` records, amending ADR 0004's layout.
 - **Cost at the daily limit** of 100,000 calls, with S3 prices from memory: sending is the claim, the
   recipient's `contacts.json`, maybe its `identity.json` and the knock, then one `PUT`, about $0.66 a
   day; reading is the claim, one listing and up to 20 `GET`s, about $1.34; removing is the claim and a
