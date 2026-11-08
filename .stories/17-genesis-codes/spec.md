@@ -123,8 +123,8 @@ $0.0004 per 1,000, DELETE free. A LIST request returns up to 1,000 keys.
 - **`birth` with a bad code:** the proof, then one HEAD, about $0.04 a day. Today a `birth` that passes its proof
   writes three files, so this makes a flood of births with valid proofs cheaper than it is now.
 - **`birth` blocked by the IP rule:** one HEAD and one GET, about $0.08 a day.
-- **A successful `birth`:** story 2's writes plus one HEAD, one GET, one DELETE, one or two PUTs, and for a world code
-  one GET and one PUT on the pool, about $0.015 more per 1,000. Successful births are limited by the number of codes,
+- **A successful `birth`:** story 2's writes plus one HEAD, one GET, one DELETE and the IP record's PUT, and for a world
+  code one GET and one PUT on the pool, so at most two PUTs and three reads, about $0.011 more per 1,000. Successful births are limited by the number of codes,
   about 100 a day plus the owner's, so this is fractions of a cent.
 - **The daily job:** 100 PUTs for codes and 100 for their batch entries, one pool write, and listings of
   `genesis/codes/` and `genesis/batches/`, which at 10,000 issued codes is 20 LIST calls, all well under a cent.
