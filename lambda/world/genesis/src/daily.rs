@@ -158,11 +158,11 @@ pub async fn daily<S: Store>(
         let Some(date) = label.strip_prefix(WORLD_LABEL_PREFIX) else {
             continue;
         };
-        let still = still_unused(codes, &unused).cloned();
+        let still = parsed(still_unused(codes, &unused));
         if date < today.as_str() {
             stale.extend(still);
         } else if date == today {
-            todays.extend(still.filter_map(|c| Code::parse(&c)));
+            todays.extend(still);
         }
     }
     let expired = stale.len();
@@ -200,6 +200,11 @@ fn still_unused<'a>(
     unused: &'a BTreeSet<String>,
 ) -> impl Iterator<Item = &'a String> {
     codes.iter().filter(|c| unused.contains(*c))
+}
+
+/// `keys`, the code part of batch entries, as codes.
+fn parsed<'a>(keys: impl Iterator<Item = &'a String>) -> impl Iterator<Item = Code> {
+    keys.filter_map(|key| Code::parse(key))
 }
 
 /// Deletes every IP record last written more than `window` before `now`, so a record

@@ -38,17 +38,19 @@ const SET: &str = "true";
 const CODES_PREFIX: &str = "genesis/codes/";
 const BATCHES_PREFIX: &str = "genesis/batches/";
 
-fn code_key(code: &str) -> String {
+fn code_key(code: &Code) -> String {
     format!("{CODES_PREFIX}{code}")
 }
 
-fn batch_key(label: &str, code: &str) -> String {
+fn batch_key(label: &str, code: &Code) -> String {
     format!("{BATCHES_PREFIX}{label}/{code}")
 }
 
 /// A genesis code: 16 characters of lowercase base32. Only `new_code` and `Code::parse` make
-/// one, so every `Code` is safe in a key.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// one, so every `Code` is safe in a key. It serializes as its text, and deserializes only from
+/// text with a code's form.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
 pub struct Code(String);
 
 impl Code {
@@ -73,6 +75,14 @@ impl std::ops::Deref for Code {
 impl std::fmt::Display for Code {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.0)
+    }
+}
+
+impl TryFrom<String> for Code {
+    type Error = String;
+
+    fn try_from(text: String) -> Result<Self, String> {
+        Self::parse(&text).ok_or_else(|| format!("not a genesis code: {text:?}"))
     }
 }
 
@@ -171,14 +181,14 @@ pub async fn issue_new<S: Store>(store: &S, how: &Issue) -> Result<Code, StoreEr
 #[derive(Debug, Serialize, Deserialize)]
 struct Pool {
     date: String,
-    codes: Vec<String>,
+    codes: Vec<Code>,
 }
 
 /// Writes `genesis/pool.json` with `codes`, for the UTC day of `now`.
 pub async fn write_pool<S: Store>(store: &S, now: i64, codes: &[Code]) -> Result<(), StoreError> {
     let pool = Pool {
         date: utc_date(now),
-        codes: codes.iter().map(|c| c.0.clone()).collect(),
+        codes: codes.to_vec(),
     };
     store
         .put(
@@ -333,7 +343,7 @@ impl<S: Store> Genesis<S> {
             return tracing::error!("the genesis pool doesn't parse");
         };
         let before = pool.codes.len();
-        pool.codes.retain(|c| *c != code.0);
+        pool.codes.retain(|c| c != code);
         if pool.codes.len() == before {
             return;
         }
