@@ -229,12 +229,14 @@ async fn making_a_field_private_drops_it_from_the_copy_first_so_a_failure_leaves
     assert_eq!(settings.body["whoiam"], true);
 }
 
-/// The fake, where another call rewrites `identity.json` just before each of the first `races`
-/// conditional writes to it, as a concurrent `evolve` would.
+/// The fake, where another call rewrites the file ending in `on` just before each of the first
+/// `races` conditional writes to it, as a concurrent `evolve` or friend write would.
 struct Racing {
     inner: Arc<MemoryStore>,
     races: AtomicUsize,
-    whoiam: &'static str,
+    on: &'static str,
+    /// Their version of the file, from what's there now, if anything.
+    theirs: fn(Option<Value>) -> Value,
 }
 
 impl Store for Racing {
@@ -250,15 +252,14 @@ impl Store for Racing {
         metadata: Metadata,
         condition: Condition,
     ) -> Result<(), StoreError> {
-        if key.ends_with("/identity.json")
-            && matches!(condition, Condition::IfMatch(_))
+        if key.ends_with(self.on)
+            && !matches!(condition, Condition::Always)
             && self.races.load(Ordering::SeqCst) > 0
         {
             self.races.fetch_sub(1, Ordering::SeqCst);
-            let current = self.inner.get(bucket, key).await?.unwrap();
-            let mut theirs: Value = serde_json::from_slice(&current.body).unwrap();
-            theirs["whoiam"] = json!(self.whoiam);
-            let theirs = serde_json::to_vec(&theirs).unwrap();
+            let current = self.inner.get(bucket, key).await?;
+            let current = current.map(|o| serde_json::from_slice(&o.body).unwrap());
+            let theirs = serde_json::to_vec(&(self.theirs)(current)).unwrap();
             self.inner
                 .put(bucket, key, theirs, Metadata::new(), Condition::Always)
                 .await?;
@@ -279,11 +280,17 @@ impl Store for Racing {
     }
 }
 
+/// Another call's `evolve` racing ours, setting `whoiam` to "theirs".
 fn racing(w: &World, races: usize) -> Arc<Racing> {
     Arc::new(Racing {
         inner: w.store.clone(),
         races: races.into(),
-        whoiam: "theirs",
+        on: "/identity.json",
+        theirs: |current| {
+            let mut theirs = current.unwrap();
+            theirs["whoiam"] = json!("theirs");
+            theirs
+        },
     })
 }
 
@@ -439,6 +446,35 @@ fn other_id(n: usize) -> String {
     id[10] = alphabet[n / 32];
     id[11] = alphabet[n % 32];
     String::from_utf8(id.to_vec()).unwrap()
+}
+
+#[tokio::test]
+async fn a_conflict_on_contacts_json_answers_500_and_the_retry_keeps_both_friends() {
+    let w = world();
+    let a = born(&w, "Wren").await;
+    let store = Arc::new(Racing {
+        inner: w.store.clone(),
+        races: 1.into(),
+        on: "/contacts.json",
+        // Another call adds `other_id(9)` first.
+        theirs: |_| json!({"friends": [{"id": other_id(9), "added_at": "2026-11-05T00:00:00Z"}]}),
+    });
+    let identity = Identity::new(store.clone(), BITS);
+    let mine = other_id(0);
+    let call = add_call(&a, List::Friends, &mine);
+
+    // One try only: the agent retries on the `500`, and nothing of ours was saved meanwhile.
+    let lost = identity
+        .add_contact(List::Friends, &call.call(), &mine, NOW)
+        .await;
+    assert_eq!(status(&lost), 500);
+    assert_eq!(listed(&w, &a, List::Friends).await, vec![other_id(9)]);
+    let added = identity
+        .add_contact(List::Friends, &call.call(), &mine, NOW)
+        .await;
+
+    assert_eq!(status(&added), 201);
+    assert_eq!(listed(&w, &a, List::Friends).await, vec![other_id(9), mine]);
 }
 
 #[tokio::test]
