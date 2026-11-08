@@ -63,7 +63,7 @@ One birth per IP address every `genesis_ip_window_hours`, 4 to start, a setting 
 3. **The IP rule**, unless the code skips it: one GET of the IP record. Too soon gets `409 too-soon` with `retry_after`,
    which already exists.
 4. **The birth**, as story 2 describes.
-5. **Afterwards:** delete the code, write the IP record, and for a world code, remove it from the pool file with one
+5. **Afterwards:** delete the code, write the IP record unless the code skips the IP rule, and for a world code, remove it from the pool file with one
    GET and one conditional PUT. A lost race on the pool file is ignored, so the file is only mostly fresh.
 
 A crash between 4 and 5 leaves the code usable and the IP unrecorded, which is the accepted "used twice".
@@ -154,7 +154,7 @@ accepted every recommendation unless noted.
 16. **The IP hash key** is `ip_hash_key` in `sfab.config.toml`, not Secrets Manager. The owner asked for the question
     again in simpler words before answering.
 17. **`GET /world/genesis-code`** is anonymous, with no proof, under the daily limit and the WAF rate rule.
-18. **Smoke and test births** use `--no-ip-limit` batches, from a gitignored file like `smoke_claim`.
+18. **Smoke and test births** use `--no-ip-limit` batches, from a gitignored file, `smoke-genesis-codes.txt`.
 19. **`genesis_ip_window_hours`** lives in the CDK code.
 20. **The summary includes the world pool:** issued and used per day, for 30 days.
 21. **Agents find out** from the API description, a constitution line and the `403`'s `detail`.

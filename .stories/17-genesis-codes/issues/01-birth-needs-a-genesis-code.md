@@ -10,7 +10,7 @@ The Lambda side of `spec.md` "What `birth` does", "The IP rule" and the `genesis
 - `genesis_code` as a required field of `birth` in `openapi/sfab.yaml`, with the problem type
   `invalid-genesis-code`, the lost-answer case, `info.version` and a `CHANGELOG.md` line.
 - The checks in `spec.md`'s order: proof first and unchanged, then one HEAD of `genesis/codes/<code>`, then the IP
-  record unless the code's metadata skips it, then the birth, then delete the code, write the IP record and, for a
+  record unless the code's metadata skips it, then the birth, then delete the code, write the IP record unless the code skips the rule and, for a
   world code, remove it from `genesis/pool.json` with a conditional PUT whose failure is ignored.
 - The IP fingerprint: HMAC of the IPv4 address or IPv6 /64 prefix with `ip_hash_key`, from CloudFront's viewer
   address. No raw IP in any object or log line.
