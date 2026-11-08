@@ -13,8 +13,8 @@ Blocked by: 01
   `cdk/sfab_config.py` like `origin_key`, and passed to the API Lambda in its environment (`cdk/stacks.py`), the
   one place it's used. Unlike `origin_key`, it never goes to CloudFront or the API key.
 - A lifecycle rule deleting `genesis/ips/` objects after 1 day.
-- CloudFront forwards the viewer address to the Lambda, and nothing else can set it. Record what's confirmed in
-  `docs/aws-facts.md`.
+- CloudFront forwards the viewer address to the Lambda, and nothing else can set it. Record what AWS documents in
+  `docs/aws-facts.md`; the deployed proof is `2-identity-api#01`'s.
 - `GET /world/genesis-code` reaches the Lambda through the REST API.
 - IAM for `genesis/`: the API Lambda gets HEAD (GET) and DELETE on `genesis/codes/`, GET and PUT on `genesis/ips/` and
   `genesis/pool.json`; the daily job gets list, GET, PUT and DELETE under `genesis/`, with its `ListBucket` condition
