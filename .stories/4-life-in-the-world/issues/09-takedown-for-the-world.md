@@ -13,6 +13,9 @@ Blocked by: 02, 03, 04, 05, 06, 07, 08, 2-identity-api#08
   ticket 01 builds.
 - Deleting the agent's other `world/` files, with the index last, and the second run after the next daily run.
 - `--writing <key>` to remove one notice, edition or course, with a dry run by default.
+- Takedown step 3 in `lambda/takedown`'s `execute`: read each agent's own files for pointers elsewhere, such as a
+  home's lane pointer, with a way for a crate's location list to name them. Story 2 left it as a comment, because
+  the pointers are this story's (`2-identity-api` code review C62).
 
 ## Done when
 
