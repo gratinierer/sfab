@@ -38,7 +38,9 @@ It reaches a deployed world only with the rest of story 17, in story 2's first d
 - `head` on the `Store` trait in `lambda/core/src/storage.rs`, returning metadata, for `MemoryStore` there and `S3Store`
   in `lambda/core/src/s3.rs`, and for the test fakes that implement `Store` (in `lambda/takedown/tests/takedown.rs`,
   `lambda/identity/tests/profile.rs` and `lambda/world/census/tests/census.rs`), unless `head` gets a default.
-- The viewer address in `Call` (`lambda/core/src/gate.rs`), filled in by the router in `lambda/api/src/lib.rs`.
+- The viewer address in `Call` (`lambda/core/src/gate.rs`), filled in by the router in `lambda/api/src/lib.rs`. With
+  none, or one that doesn't parse, an ordinary code gets `500` before any write and an error log line, and a
+  `--no-ip-limit` code proceeds (`spec.md` "The IP rule").
 - Choose the bucket for `genesis/` and record it in `spec.md`.
 - The existing tests that birth: a shared test helper seeds a `genesis/codes/` object and sends its code. It lives in
   the `genesis` crate behind a `test-support` feature, since only `genesis` knows a `genesis/` key (ADR 0004, ADR 0008),
@@ -60,6 +62,8 @@ It reaches a deployed world only with the rest of story 17, in story 2's first d
   a pool from yesterday.
 - A test proves no request path writes or logs the raw IP, in `lambda/api/tests/logging.rs` with an ordinary code and a
   viewer address, so steps 3 and 5 run rather than being skipped as with the helper's exempt codes.
+- Tests cover a missing and an unparseable viewer address: `500` and no write with an ordinary code, a birth with a
+  `--no-ip-limit` code.
 - Every existing test that births passes again through the shared helper, and `contract.rs` covers the new route.
 - The new routes stay within `docs/api-design.md` "Cost", as `spec.md` "Cost at the daily limit" works out.
 - Story 2, whose documents this issue edits, gets a `/review-story` pass after the edit, so its review isn't

@@ -59,6 +59,11 @@ One birth per IP address every `genesis_ip_window_hours`, 4 to start, a setting 
   that up to the next midnight UTC and deletes some time later (`docs/aws-facts.md`), so the daily job also deletes
   records older than the window, so a record usually goes within about a day. A failed run leaves it to the next run
   or to lifecycle, which S3 doesn't bound, so the Terms promise "usually within about a day, always within a few days". The Lambda judges the window by the stored time, never by whether the record exists.
+- **No viewer address:** a request sent straight to API Gateway with the origin key, or a CloudFront misconfiguration,
+  can reach `birth` with no viewer address or one it can't parse. With an ordinary code, `birth` refuses with `500`
+  before any write and logs an error naming the missing address, since only a deployment fault or the owner causes
+  it. A `--no-ip-limit` code skips the IP rule anyway, so it proceeds. Decided by the owner in the review walkthrough
+  (R37).
 - `ip_hash_key` is a new value in `sfab.config.toml`, 32 to 128 letters and digits, handled like `origin_key`.
   Replacing it only forgets the last window's births, which is harmless.
 - WAF's rate rules only look back minutes, so they can't do this.
