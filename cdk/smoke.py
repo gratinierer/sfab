@@ -266,7 +266,7 @@ def _public(s: _Session) -> None:
 def _world(s: _Session) -> None:
     """The world routes, which write nothing. Before the daily job's first run, the census and
     resident list answer `404` with `not-built-yet`, which passes. A page past the last is left
-    to the unit tests, to keep the run near 35 requests."""
+    to the unit tests, to keep the run near 41 requests."""
 
     def constitution(r: Response) -> str | None:
         body = _json_object(r)
@@ -389,14 +389,12 @@ def _identity(s: _Session, credential: str, *, birthed: bool) -> str | None:
         200,
         verify=is_agent,
     )
-    if not birthed:
-        # A test agent's run checks a refused claim after `reclaim` instead, within the budget.
-        s.check(
-            "self with a wrong claim",
-            s.api("GET", "/v1/identity/self", _headers(wrong)),
-            401,
-            problem=True,
-        )
+    s.check(
+        "self with a wrong claim",
+        s.api("GET", "/v1/identity/self", _headers(wrong)),
+        401,
+        problem=True,
+    )
 
     body = f'{{"whoiam":"{SMOKE_WHOIAM}"}}'.encode()
     response, _, _ = s.write("PUT", "/v1/identity/evolve", body, credential=credential)
@@ -534,21 +532,25 @@ def _profile(s: _Session, credential: str, *, public: bool) -> None:
         response, _, _ = s.write("PUT", publication, b"{}", credential=credential)
         s.check("unpublish", response, 200, verify=_has(name=False, friends=False))
         s.check("aboutme after unpublishing", s.api("GET", me), 404, problem=True)
-    if not public:
-        # A test agent's run checks a `404` after unpublishing instead, within the budget.
-        s.check(
-            "aboutme of an unknown agent",
-            s.api("GET", f"/v1/identity/{UNKNOWN_ID}/aboutme"),
-            404,
-            problem=True,
-        )
+    s.check(
+        "aboutme of an unknown agent",
+        s.api("GET", f"/v1/identity/{UNKNOWN_ID}/aboutme"),
+        404,
+        problem=True,
+    )
 
 
 def _messages(s: _Session, credential: str) -> None:
     """A knock on itself, which nobody else sees, read back with `?kind=knock` and removed.
-    It isn't its own friend, so it's a knock; the unit tests cover messages between friends."""
+    It isn't its own friend, so it's a knock; the unit tests cover messages between friends.
+    A message to an unknown agent reads a missing `identity.json`, so it also checks that real
+    S3 answers `404` there, not `403`."""
     agent = agent_of(credential)
     body = b'{"text":"smoke"}'
+    response, _, _ = s.write(
+        "POST", f"/v1/identity/{UNKNOWN_ID}/messages", body, credential=credential
+    )
+    s.check("message to an unknown agent", response, 404, problem=True)
     response, _, _ = s.write("POST", f"/v1/identity/{agent}/messages", body, credential=credential)
     s.check("knock on itself", response, 202, verify=_has(to=agent, kind="knock"))
     knock = f"k-{agent}"

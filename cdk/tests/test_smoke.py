@@ -14,7 +14,7 @@ from fakes import (
     problem,
 )
 
-from smoke import SMOKE_FRIEND, SMOKE_WHOIAM, Target, run
+from smoke import SMOKE_FRIEND, SMOKE_WHOIAM, UNKNOWN_ID, Target, run
 
 FULL = Target(api_url=API_HOST, execute_api_url=EXECUTE_API)
 PRODUCTION = Target(api_url=API_HOST, execute_api_url=EXECUTE_API, credential=SMOKE_CREDENTIAL)
@@ -69,13 +69,14 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "read blocked",
         "unblock",
         "send message",
+        "message to an unknown agent",
         "read knocks",
         "remove message",
         "execute-api no key",
         "execute-api wrong key",
     }
-    # About 35, plus the three federation routes: still well under WAF's 100 per 5 minutes.
-    assert len(api.requests) <= 38
+    # About 41 (spec.md "Testing"); the 4-second pace keeps any length under WAF's 100 per 5 minutes.
+    assert len(api.requests) <= 41
 
 
 def test_paces_one_request_every_4_seconds():
@@ -245,6 +246,7 @@ def test_production_births_nothing_and_writes_only_privately():
         ("PUT", f"{API_HOST}/v1/identity/self/friends/{SMOKE_FRIEND}"),
         ("PUT", f"{API_HOST}/v1/identity/self/blocked/{SMOKE_FRIEND}"),
         ("POST", f"{API_HOST}/v1/identity/{SMOKE_ID}/messages"),
+        ("POST", f"{API_HOST}/v1/identity/{UNKNOWN_ID}/messages"),  # refused, nothing stored
     }
     assert api.public[SMOKE_ID] == set(), "nothing published"
     assert api.contacts[SMOKE_ID] == {"friends": [], "blocked": []}, "contacts cleaned up"
@@ -274,6 +276,7 @@ def test_production_births_nothing_and_writes_only_privately():
         "read blocked",
         "unblock",
         "send message",
+        "message to an unknown agent",
         "read knocks",
         "remove message",
         "execute-api no key",
@@ -283,21 +286,23 @@ def test_production_births_nothing_and_writes_only_privately():
     assert api.identities[SMOKE_ID] == {"name": "smoke", "whoiam": SMOKE_WHOIAM}
 
 
+@pytest.mark.parametrize("production", [False, True])
 @pytest.mark.parametrize(
     "label, response, failed",
     [
         ("aboutme 404", ok(200, {"id": "aaaaaaaaaaaa"}), "aboutme of an unknown agent"),
         ("unauthorized", ok(200, {"id": SMOKE_ID}), "self with a wrong claim"),
+        ("message to an unknown agent", ok(202, {}), "message to an unknown agent"),
     ],
 )
-def test_production_checks_what_a_test_agent_s_run_covers_otherwise(label, response, failed):
-    """Within the request budget, these run only where no birth, reclaim or unpublish covers
-    them."""
+def test_unknown_ids_and_a_wrong_claim_are_refused_in_both_modes(label, response, failed, production):
+    """spec.md "Testing": refusals of what the script can't create run in both modes."""
     clock = Clock()
     api = FakeApi(clock)
     api.override[label] = response
+    target = PRODUCTION if production else FULL
 
-    assert failed in failing_checks(api, clock, target=PRODUCTION, production=True)
+    assert failed in failing_checks(api, clock, target=target, production=production)
 
 
 def test_the_federation_request_is_for_a_subdomain_nobody_else_can_own_and_may_repeat():

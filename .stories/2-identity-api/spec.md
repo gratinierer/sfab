@@ -786,9 +786,13 @@ Logs are the most likely place for a claim to leak.
   `problem+json` format of gateway errors, and that a birth with no proof gets `400` with
   `required_bits`. `self` proves `Authorization` reaches the origin, a path outside `/v1/`
   must get the CloudFront Function's `404`, an unknown route inside `/v1/` must get the gateway's
-  `problem+json` `404`, and a request straight to `execute-api` must be rejected. It
-  sends about 35 requests, one every 4 seconds to stay safely under the WAF limit of 100 per 5 minutes,
-  which isn't precise. It solves a `Proof` for each write. It treats WAF's plain `403` as "blocked, wait and rerun" rather than as
+  `problem+json` `404`, and a request straight to `execute-api` must be rejected. It also reads the federation world
+  and directory, and before launch sends one federation request. An unknown agent's `aboutme`, `self` with a wrong
+  claim and a message to an unknown agent run in both modes; the message also proves real S3 answers a missing
+  `identity.json` with `404`. After a `reclaim`, the next request uses the new claim. The unit tests cover what it
+  leaves out: a page past the last resident page and messages between friends. It sends about 41 requests before
+  launch and 30 with `--production`, one every 4 seconds, so it stays under the WAF limit of 100 per 5 minutes
+  whatever its length. It solves a `Proof` for each write. It treats WAF's plain `403` as "blocked, wait and rerun" rather than as
   a failure, and accepts the census and resident routes' `404` before the daily job's first run.
 - A WAF check that sends about one `birth` request per second with no proof, for up to 5 minutes, and
   passes at the first plain `403` that isn't `problem+json`. AWS says WAF can take several minutes to
