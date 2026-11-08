@@ -199,7 +199,8 @@ fn to_json<T: Serialize>(value: &T) -> Vec<u8> {
 #[derive(Debug, Clone)]
 pub struct Admission {
     code: Code,
-    world: bool,
+    /// Whether it is a world code, from the daily pool, which `use_up` takes it out of.
+    from_pool: bool,
     /// The IP record to write, or `None` for a code that skips the rule.
     ip: Option<String>,
 }
@@ -245,7 +246,7 @@ impl<S: Store> Genesis<S> {
         {
             return Err(invalid_code());
         }
-        let world = metadata
+        let from_pool = metadata
             .get(LABEL)
             .is_some_and(|l| l.starts_with(WORLD_LABEL_PREFIX));
         let ip = if metadata.get(NO_IP_LIMIT).is_some_and(|v| v == SET) {
@@ -260,7 +261,11 @@ impl<S: Store> Genesis<S> {
             self.check_window(&fingerprint, now).await?;
             Some(fingerprint)
         };
-        Ok(Admission { code, world, ip })
+        Ok(Admission {
+            code,
+            from_pool,
+            ip,
+        })
     }
 
     /// `409 too-soon` when the IP record holds a birth inside the window. Judged by the stored
@@ -311,7 +316,7 @@ impl<S: Store> Genesis<S> {
                 tracing::warn!(error = ?e, "writing an IP record failed, ignored");
             }
         }
-        if admission.world {
+        if admission.from_pool {
             self.leave_pool(&admission.code).await;
         }
     }
@@ -372,7 +377,7 @@ impl<S: Store> Genesis<S> {
     }
 }
 
-/// A random index below `n`, which is never 0.
+/// A random index below `n`; `n` is never 0.
 fn random_below(n: usize) -> usize {
     let r = getrandom::u64().expect("the system's random source");
     (r % n as u64) as usize
