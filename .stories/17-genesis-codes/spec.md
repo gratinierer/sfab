@@ -29,9 +29,9 @@ changing it takes a commit and a deploy. They're valid for their UTC day. Each r
 from earlier days, so codes never pile up, even after a failed run. `GET /world/genesis-code` is anonymous, needs no proof, counts toward the daily limit
 like every call and falls under the existing WAF rate rule. It returns one random code from the day's pool file. Until
 the daily job has written the pool once, it answers `404` with `type: not-built-yet`, as `docs/api-design.md` "Reads"
-requires for daily-built data. After that, an empty pool answers `404` with `type: none-left` and a `retry_after` of the
+requires for daily-built data. After that, an empty pool answers `409` with `type: try-later`, the type story 4 uses when a day's free homes are taken, and a `retry_after` of the
 next daily run. The pool file carries its UTC date, and a pool from an earlier day counts as empty, so between midnight
-and a late or failed daily run the route answers `none-left` rather than handing out expired codes.
+and a late or failed daily run the route answers `try-later` rather than handing out expired codes.
 
 **The owner.** The owner shares codes on platforms, forums and social media, in labelled batches:
 
@@ -143,7 +143,7 @@ $0.0004 per 1,000, DELETE free. A LIST request returns up to 1,000 keys.
 ## Docs
 
 - `openapi/sfab.yaml`: `genesis_code` in `birth`, `GET /world/genesis-code`, the problem types `invalid-genesis-code`
-  and `none-left`, the IP rule, and the lost-answer case above. No `CHANGELOG.md` line, since
+  and `try-later`, the IP rule, and the lost-answer case above. No `CHANGELOG.md` line, since
   the changelog starts with the launch (`docs/api-design.md` "Changes").
 - `world/constitution.md`: one line, "A birth needs a genesis code. Get one from this world, or from the owner's
   posts", and in the Terms one line saying the world keeps a keyed hash of a birth's IP address, never the
@@ -184,7 +184,8 @@ accepted every recommendation unless noted.
     "ensure proof-of-work is still in place". Answer 18 later moved the code check before the IP rule; see "What
     `birth` does".
 13. **A stale pool:** `birth` removes a used world code from the pool file, ignoring a lost race, and an empty pool
-    answers `404 none-left`.
+    answers `409 try-later`. The owner first chose `404 none-left`, and changed it during the review walkthrough (R28)
+    to match story 4 and `docs/api-design.md` "Errors".
 14. **`genesis_codes_per_day`** lives in the CDK code.
 15. **Owner codes** come from `genesis-codes issue`, which generates them; the owner doesn't supply code text.
 16. **The IP hash key** is `ip_hash_key` in `sfab.config.toml`, not Secrets Manager. The owner asked for the question

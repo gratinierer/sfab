@@ -14,12 +14,12 @@ The `genesis` crate in `lambda/world/genesis/`, which owns every `genesis/` key 
   world code, remove it from `genesis/pool.json` with a conditional PUT whose failure is ignored.
 - The IP fingerprint: HMAC of the IPv4 address or IPv6 /64 prefix with `ip_hash_key`, from CloudFront's viewer
   address. No raw IP in any object or log line.
-- `GET /world/genesis-code`: one random code from `genesis/pool.json`, `404 not-built-yet` before the daily job's first pool, or `404 none-left` with
+- `GET /world/genesis-code`: one random code from `genesis/pool.json`, `404 not-built-yet` before the daily job's first pool, or `409 try-later` with
   `retry_after` once it's empty or from an earlier UTC day, and its
   route in `openapi/sfab.yaml`.
 - The proof-of-work worked example in `openapi/sfab.yaml` gets a `genesis_code` in its `birth` body, with its body
   hash and nonce recomputed and `lambda/core/tests/worked_example.rs` updated to match.
-- Story 2's `spec.md` "Wire contract" gains `invalid-genesis-code` (`403`), `none-left` (`404`) and the route's
+- Story 2's `spec.md` "Wire contract" gains `invalid-genesis-code` (`403`), `try-later` (`409`, unless story 4 added it first) and the route's
   `not-built-yet`, and its `409` row, its lost-`birth` paragraph, its "Proof of work" line "`birth` is the exception: its replay gets
   `409`", and `openapi/sfab.yaml`'s `409` row and its other `birth`-replay mention say a lost
   `birth` retry now gets `403 invalid-genesis-code`, as `docs/api-design.md` asks for new types.
