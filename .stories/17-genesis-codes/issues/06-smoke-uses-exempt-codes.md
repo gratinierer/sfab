@@ -17,7 +17,10 @@ Blocked by: 03, 04, 2-identity-api#09
 - The proof-less `birth` probe that learns `required_bits` and the server's clock sends a well-formed dummy
   `genesis_code`, so the gateway's validator passes it on and the Lambda answers `400` with `required_bits`.
 - The `birth` replay check expects `403 invalid-genesis-code`, not `409 already-exists`.
-- `cdk/tests/fakes.py` follows both changes.
+- `cdk/tests/fakes.py` follows both changes, and `cdk/tests/test_smoke.py` gets the new labels (:41-77) and caps that
+  allow the extra requests (one more in both modes for the route, one more in the full run for the world-code birth,
+  so about 43 and 31, still well under the WAF limit at one every 4 seconds); story 2 `spec.md`'s "about 41 ... and 30"
+  and `cdk/smoke.py`'s "near 41 requests" follow.
 - Update `.stories/4-life-in-the-world/issues/10-launch-checklist.md` and `11-birth-the-founders.md`: the smoke identity
   and the founders birth with `--no-ip-limit` codes, and both gain `17-genesis-codes#04` on their `Blocked by` lines.
 - Document how the owner tops up the file with `genesis-codes issue --label smoke --no-ip-limit`.
