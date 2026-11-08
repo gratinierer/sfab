@@ -62,3 +62,5 @@ It reaches a deployed world only with the rest of story 17, in story 2's first d
   viewer address, so steps 3 and 5 run rather than being skipped as with the helper's exempt codes.
 - Every existing test that births passes again through the shared helper, and `contract.rs` covers the new route.
 - The new routes stay within `docs/api-design.md` "Cost", as `spec.md` "Cost at the daily limit" works out.
+- Story 2, whose documents this issue edits, gets a `/review-story` pass after the edit, so its review isn't
+  left stale (`docs/agents/issue-tracker.md` "Before implementing a story").

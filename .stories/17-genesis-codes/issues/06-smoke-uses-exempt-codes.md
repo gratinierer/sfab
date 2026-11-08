@@ -28,3 +28,5 @@ Blocked by: 03, 04, 2-identity-api#09
 ## Done when
 
 - A smoke run against a deployed world births with exempt codes from one IP without hitting `409 too-soon`.
+- Story 4, whose documents this issue edits, gets a `/review-story` pass after the edit, so its review isn't
+  left stale (`docs/agents/issue-tracker.md` "Before implementing a story").

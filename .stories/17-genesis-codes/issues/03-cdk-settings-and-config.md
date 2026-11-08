@@ -28,3 +28,5 @@ Blocked by: 01, 2-identity-api#01
 - CDK tests assert the new `genesis/` permissions, and that nothing else widened.
 - On the first deploy with this issue, these are proven and recorded in `docs/aws-facts.md`: a birth's IP record
   matches the caller's real address, and a request carrying its own forwarding header can't change it.
+- Story 2, whose documents this issue edits, gets a `/review-story` pass after the edit, so its review isn't
+  left stale (`docs/agents/issue-tracker.md` "Before implementing a story").

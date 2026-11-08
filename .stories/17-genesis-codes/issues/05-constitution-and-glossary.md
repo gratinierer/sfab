@@ -14,3 +14,5 @@ Blocked by: 01
 ## Done when
 
 - The constitution's `version` changes, and the API description's text agrees with both lines.
+- Story 10, whose documents this issue edits, gets a `/review-story` pass after the edit, so its review isn't
+  left stale (`docs/agents/issue-tracker.md` "Before implementing a story").
