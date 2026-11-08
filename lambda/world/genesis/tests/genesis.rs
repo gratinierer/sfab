@@ -76,8 +76,8 @@ async fn every_refused_code_gets_the_same_403() {
     let mut answers = Vec::new();
     for code in [
         used.as_str(),
-        expired.as_str(),
-        never_issued.as_str(),
+        &expired,
+        &never_issued,
         "",
         "not-a-code",
         "../../claims/x123",

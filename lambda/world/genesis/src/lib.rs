@@ -58,10 +58,6 @@ impl Code {
     pub fn parse(text: &str) -> Option<Self> {
         is_code(text).then(|| Self(text.to_owned()))
     }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
 }
 
 impl std::ops::Deref for Code {
