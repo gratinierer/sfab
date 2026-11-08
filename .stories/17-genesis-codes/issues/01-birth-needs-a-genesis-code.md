@@ -37,6 +37,11 @@ The `genesis` crate in `lambda/world/genesis/`, which owns every `genesis/` key 
   `lambda/identity/tests/profile.rs` and `lambda/world/census/tests/census.rs`), unless `head` gets a default.
 - The viewer address in `Call` (`lambda/core/src/gate.rs`), filled in by the router in `lambda/api/src/lib.rs`.
 - Choose the bucket for `genesis/` and record it in `spec.md`.
+- The existing tests that birth: a shared test helper seeds a `genesis/codes/` object and sends its code. In
+  `lambda/api/tests/contract.rs`, `fn birth` sends `genesis_code`, the replay assert expects `403` (declared on `birth`),
+  and `GET /world/genesis-code` is exercised for the every-`operationId` check; `lambda/identity/tests/identity.rs`,
+  `profile.rs`, `lambda/messaging/tests/messages.rs`, `lambda/takedown/tests/takedown.rs` and
+  `lambda/api/tests/logging.rs` use the helper.
 
 ## Done when
 
@@ -44,4 +49,5 @@ The `genesis` crate in `lambda/world/genesis/`, which owns every `genesis/` key 
   an expired code, IPv6 addresses in one /64 sharing a record, the pool losing a used code, and an empty pool, and
   a pool from yesterday.
 - A test proves no request path writes or logs the raw IP.
+- Every existing test that births passes again through the shared helper, and `contract.rs` covers the new route.
 - The new routes stay within `docs/api-design.md` "Cost", as `spec.md` "Cost at the daily limit" works out.
