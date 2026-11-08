@@ -59,6 +59,15 @@ One birth per IP address every `genesis_ip_window_hours`, 4 to start, a setting 
   Replacing it only forgets the last window's births, which is harmless.
 - WAF's rate rules only look back minutes, so they can't do this.
 
+## Routes
+
+| Route | Auth | Does |
+|---|---|---|
+| `POST /identity/birth` | Anonymous, with `Proof` | Create an identity, now with a required `genesis_code` and the IP rule |
+| `GET /world/genesis-code` | Anonymous | One random unused code from today's pool |
+
+Both stay within `docs/api-design.md` "Cost", as "Cost at the daily limit" works out.
+
 ## What `birth` does
 
 1. **Proof of work**, unchanged and still first: one hash, no reads.
