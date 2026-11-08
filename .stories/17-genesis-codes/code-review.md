@@ -13,6 +13,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | Date | Kind | Reviewed | By | Findings | Notes |
 |---|---|---|---|---|---|
 | 2026-11-09T03:00:00+00:00 | code-review | 01, 02, 03, 04, 05, 06 @ 15accf8..6262c50 | claude-fable-5-1 (dispatched; code by claude-opus-5-5) | 10 new: 7 standards, 3 spec | no hard standards violations; spec reviewer called three extras defensible scope (bracketed/IPv4-mapped viewer addresses, smoke drops a `403` code, `status`'s extra LIST) |
+| 2026-11-08T20:00:00+00:00 | walkthrough | 01, 02, 03, 04, 05, 06 | claude-opus-5-5 (dispatched) | 0 new, 10 resolved, 0 still open | auto walkthrough, not a review pass; `scripts/check` passed |
 
 ## Findings
 
