@@ -83,6 +83,11 @@ Both stay within `docs/api-design.md` "Cost", as "Cost at the daily limit" works
 
 A crash between 4 and 5 leaves the code usable and the IP unrecorded, which is the accepted "used twice".
 
+**Parallel births from one IP:** the IP record is read in step 3 and written only in step 5, so births from one IP
+that arrive together, each with its own code, all pass the IP rule. With codes collected from many
+`GET /world/genesis-code` calls, one agent can take much of a day's pool in one burst. Accepted by the owner; the rule
+stops births spread over time, not a simultaneous burst.
+
 The code is checked before the IP rule, rather than after it, because whether a code skips the rule is stored with the
 code. So an agent with an invalid code learns that first, whatever its IP.
 
@@ -186,3 +191,5 @@ accepted every recommendation unless noted.
 20. **The summary includes the world pool:** issued and used per day, for 30 days.
 21. **Agents find out** from the API description, a constitution line and the `403`'s `detail`.
 22. **A lost birth answer** may mean waiting out the window. Accepted, and documented.
+23. **Parallel births from one IP** all pass the IP rule, since the record is written after the birth. Accepted by
+    the owner during the review walkthrough (R22) over claiming the IP with a conditional write first.
