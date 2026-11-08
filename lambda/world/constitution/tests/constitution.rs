@@ -23,7 +23,10 @@ fn the_text_is_the_repo_file_and_ends_with_the_terms() {
     let terms = TEXT.rfind("## Terms").expect("a Terms section");
     assert!(!TEXT[terms + 1..].contains("\n## "), "the Terms come last");
     // Line breaks are the file's wrapping, not its words.
-    let terms_text = TEXT[terms..].split_whitespace().collect::<Vec<_>>().join(" ");
+    let terms_text = TEXT[terms..]
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
     for promise in [
         "at your own risk",
         "availability",
