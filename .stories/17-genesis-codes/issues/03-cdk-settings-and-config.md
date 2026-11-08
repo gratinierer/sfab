@@ -5,8 +5,10 @@ Blocked by: 01, 2-identity-api#01
 
 ## Scope
 
-- `genesis_codes_per_day = 100` and `genesis_ip_window_hours = 4` in the CDK code, passed to the Lambda and the daily
-  job.
+- `genesis_codes_per_day = 100` and `genesis_ip_window_hours = 4` in the CDK code. The environment variables, named
+  here once for issues 01 and 02: the API Lambda (`cdk/stacks.py`) gets `IP_HASH_KEY` and `GENESIS_IP_WINDOW_HOURS`,
+  and the daily job (`cdk/world_job.py`) gets `GENESIS_CODES_PER_DAY` and `GENESIS_IP_WINDOW_HOURS`. The exact-set env
+  tests in `cdk/tests/test_stacks.py` and `cdk/tests/test_world_job.py` follow.
 - `ip_hash_key` in `sfab.config.toml` and `sfab.config.example.toml`, 32 to 128 letters and digits, checked by
   `cdk/sfab_config.py` like `origin_key`, and passed to the API Lambda in its environment (`cdk/stacks.py`), the
   one place it's used. Unlike `origin_key`, it never goes to CloudFront or the API key.
@@ -23,7 +25,8 @@ Blocked by: 01, 2-identity-api#01
 
 ## Done when
 
-- Synth refuses a missing or malformed `ip_hash_key`, and a CDK test asserts it reaches the API Lambda's environment.
+- Synth refuses a missing or malformed `ip_hash_key`, and the exact-set env tests assert each Lambda gets the variables
+  named in the scope, and no others.
 - A CDK test asserts the lifecycle rule and the two settings.
 - CDK tests assert the new `genesis/` permissions, and that nothing else widened.
 - On the first deploy with this issue, these are proven and recorded in `docs/aws-facts.md`: a birth's IP record

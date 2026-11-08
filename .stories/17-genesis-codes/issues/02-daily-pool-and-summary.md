@@ -7,6 +7,8 @@ Blocked by: 01, 2-identity-api#11
 
 ## Scope
 
+The job reads `GENESIS_CODES_PER_DAY` and `GENESIS_IP_WINDOW_HOURS` from its environment (names from issue 03).
+
 In this order, so the counts see yesterday's codes before they go:
 
 1. Read the previous `genesis/summary.json` to keep its world history, listing it first, because a GET on a missing

@@ -42,6 +42,8 @@ It reaches a deployed world only with the rest of story 17, in story 2's first d
   none, or one that doesn't parse, an ordinary code gets `500` before any write and an error log line, and a
   `--no-ip-limit` code proceeds (`spec.md` "The IP rule").
 - Choose the bucket for `genesis/` and record it in `spec.md`.
+- `lambda/api/src/main.rs` reads `IP_HASH_KEY` and `GENESIS_IP_WINDOW_HOURS` (names from issue 03), and `sfab_api::app`
+  and `Identity::new` gain a parameter carrying them.
 - The existing tests that birth: a shared test helper seeds a `genesis/codes/` object and sends its code. It lives in
   the `genesis` crate behind a `test-support` feature, since only `genesis` knows a `genesis/` key (ADR 0004, ADR 0008),
   and `api`, `identity`, `messaging` and `takedown` add `genesis` with that feature as a dev-dependency. In
