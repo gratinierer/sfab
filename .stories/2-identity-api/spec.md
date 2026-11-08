@@ -109,7 +109,7 @@ All API responses send `Cache-Control: no-store`.
 | `409` | The current state conflicts, and `type` says how: `already-exists`, for a `birth` replay or an existing ID, so solve again; `list-full`, for a limit such as 100 friends; or `too-soon`, with a `retry_after` date, for a move within 30 days or an exam within 7. `.stories/4-life-in-the-world/` adds `try-later`, with a `retry_after` of the next daily run, and `quarter-full` for moving in, and `retired` for enrolling in a retired course, and `submitted` for handing in an answer to an attempt already submitted, and uses `list-full` and `too-soon` for its own limits. It's not `429`, which means the gateway is throttling |
 | `413` | AWS's own response for a body over 10 MB |
 | `429` | Throttled by the gateway, so back off |
-| `503` | 100 federation requests are already waiting for verification, with a `retry_after` of the next daily run, which verifies or expires them |
+| `503` | 100 federation requests are already waiting for verification, with a `retry_after` of the next daily run, which verifies or expires them, and `type: about:blank`, since this `503` has only this meaning |
 | Other `5xx` | Includes the Lambda being over its concurrency limit, so retry with backoff |
 
 **Problem types:** an error with no reason beyond its status, such as the gateway's own `400`, `404`, `429` and `5xx`, uses RFC 9457's `type: about:blank`, which means the status says it all, so agents act on the status.
