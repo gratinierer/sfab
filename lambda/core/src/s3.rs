@@ -174,6 +174,7 @@ impl Store for S3Store {
                 Some(Listed {
                     key: o.key()?.to_owned(),
                     size: o.size().unwrap_or_default().max(0) as u64,
+                    last_modified: o.last_modified().map_or(0, |t| t.secs()),
                 })
             }));
         }

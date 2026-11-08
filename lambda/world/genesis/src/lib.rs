@@ -5,6 +5,7 @@
 //!
 //! Everything lives in the identities bucket, which the API Lambda already writes.
 
+mod daily;
 mod ip;
 
 use std::sync::Arc;
@@ -16,6 +17,8 @@ use sfab_core::daily::{DAY, is_rfc3339_second, next_daily_run, rfc3339, utc_date
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 
+pub use daily::{Batch, Daily, DailyReport, Summary, WorldDay, daily, read_summary};
+use ip::IPS_PREFIX;
 pub use ip::IpRule;
 
 /// The bucket every `genesis/` key lives in.
@@ -30,12 +33,15 @@ const LABEL: &str = "label";
 const EXPIRES: &str = "expires";
 const NO_IP_LIMIT: &str = "no-ip-limit";
 
+const CODES_PREFIX: &str = "genesis/codes/";
+const BATCHES_PREFIX: &str = "genesis/batches/";
+
 fn code_key(code: &str) -> String {
-    format!("genesis/codes/{code}")
+    format!("{CODES_PREFIX}{code}")
 }
 
 fn batch_key(label: &str, code: &str) -> String {
-    format!("genesis/batches/{label}/{code}")
+    format!("{BATCHES_PREFIX}{label}/{code}")
 }
 
 /// A new genesis code: 16 characters of lowercase base32, 80 random bits.

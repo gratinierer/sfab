@@ -2286,6 +2286,7 @@ dependencies = [
 name = "sfab-genesis"
 version = "0.1.0"
 dependencies = [
+ "futures-util",
  "getrandom 0.3.4",
  "hmac",
  "serde",
@@ -2330,6 +2331,7 @@ dependencies = [
  "sfab-census",
  "sfab-core",
  "sfab-federation",
+ "sfab-genesis",
  "sfab-identity",
  "tokio",
  "tokio-rustls",

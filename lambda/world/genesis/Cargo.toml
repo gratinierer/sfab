@@ -10,6 +10,7 @@ publish.workspace = true
 test-support = []
 
 [dependencies]
+futures-util = { version = "0.3.34", default-features = false, features = ["alloc"] }
 getrandom = "0.3.4"
 hmac = "0.13.0"
 serde = { version = "1.0.228", features = ["derive"] }

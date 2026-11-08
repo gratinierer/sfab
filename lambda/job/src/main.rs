@@ -5,10 +5,18 @@
 use lambda_runtime::{LambdaEvent, service_fn};
 use sfab_core::s3::S3Store;
 use sfab_federation::Notify;
+use sfab_genesis::Daily;
 use sfab_job::outbound::Outbound;
 
 fn env(name: &str) -> String {
     std::env::var(name).unwrap_or_else(|_| panic!("{name} must be set by the CDK"))
+}
+
+/// A whole-number setting from the CDK code.
+fn number<T: std::str::FromStr>(name: &str) -> T {
+    env(name)
+        .parse()
+        .unwrap_or_else(|_| panic!("{name} must be a whole number"))
 }
 
 fn now() -> i64 {
@@ -55,11 +63,15 @@ async fn main() -> Result<(), lambda_runtime::Error> {
         sns: aws_sdk_sns::Client::new(&config),
         topic_arn: env("ALERTS_TOPIC_ARN"),
     };
+    let genesis = Daily {
+        codes_per_day: number("GENESIS_CODES_PER_DAY"),
+        ip_window_hours: number("GENESIS_IP_WINDOW_HOURS"),
+    };
     let outbound = Outbound::production();
-    let (store, alerts, outbound) = (&store, &alerts, &outbound);
+    let (store, alerts, outbound, genesis) = (&store, &alerts, &outbound, &genesis);
     lambda_runtime::run(service_fn(
         move |_: LambdaEvent<serde_json::Value>| async move {
-            match sfab_job::run(store, outbound, alerts, now()).await {
+            match sfab_job::run(store, outbound, alerts, genesis, now()).await {
                 Ok(report) => {
                     let (census, federation) = (report.census, report.federation);
                     tracing::info!(
@@ -67,6 +79,9 @@ async fn main() -> Result<(), lambda_runtime::Error> {
                         pages = census.pages,
                         written = census.written,
                         deleted = census.deleted,
+                        genesis_issued = report.genesis.issued,
+                        genesis_expired = report.genesis.expired,
+                        genesis_ips_deleted = report.genesis.ips_deleted,
                         federation_checked = federation.checked,
                         federation_verified = federation.verified,
                         federation_emailed = federation.emailed,
