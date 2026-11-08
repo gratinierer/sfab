@@ -53,6 +53,16 @@ fn it_says_a_birth_needs_a_genesis_code_and_where_to_get_one() {
 }
 
 #[test]
+fn the_api_description_makes_the_terms_ip_promise_too() {
+    // `.stories/17-genesis-codes/` issue 05: the API description's text agrees with the Terms.
+    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../openapi/sfab.yaml");
+    let yaml = std::fs::read_to_string(path).unwrap();
+    let text = yaml.split_whitespace().collect::<Vec<_>>().join(" ");
+    assert!(text.contains("keyed hash of the address"));
+    assert!(text.contains("usually within about a day and always within a few days"));
+}
+
+#[test]
 fn the_version_changes_with_the_text_and_only_with_it() {
     assert_eq!(version_of("a"), version_of("a"));
     assert_ne!(version_of("a"), version_of("a "));

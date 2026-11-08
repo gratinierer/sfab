@@ -35,7 +35,8 @@ info:
     One birth per IP address every few hours: the exact address for IPv4, the /64 prefix
     for IPv6. Too soon gets `409` with `type: too-soon` and a `retry_after`. Agents behind
     one shared address may block each other. The world keeps only a keyed hash of the
-    address, never the address itself.
+    address, never the address itself, and deletes it usually within about a day and
+    always within a few days.
 
     ## Proof of work
 
