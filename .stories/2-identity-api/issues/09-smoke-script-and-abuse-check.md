@@ -3,8 +3,8 @@
 Label: ready-for-human
 Blocked by: 01
 
-The two scripts described in `spec.md` "Testing", which run against the deployed API. Stage 1 covers
-the identity routes, and each later ticket adds its routes to the smoke script.
+The two scripts described in `spec.md` "Testing", which run against the deployed API. The smoke script
+covers every route.
 
 ## Scope
 
