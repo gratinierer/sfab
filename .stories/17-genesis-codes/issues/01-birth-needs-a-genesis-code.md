@@ -56,6 +56,7 @@ The `genesis` crate in `lambda/world/genesis/`, which owns every `genesis/` key 
 - Tests cover each `403` reason giving the same answer, `409 too-soon` inside the window, an exempt code skipping it,
   an expired code, IPv6 addresses in one /64 sharing a record, the pool losing a used code, and an empty pool, and
   a pool from yesterday.
-- A test proves no request path writes or logs the raw IP.
+- A test proves no request path writes or logs the raw IP, in `lambda/api/tests/logging.rs` with an ordinary code and a
+  viewer address, so steps 3 and 5 run rather than being skipped as with the helper's exempt codes.
 - Every existing test that births passes again through the shared helper, and `contract.rs` covers the new route.
 - The new routes stay within `docs/api-design.md` "Cost", as `spec.md` "Cost at the daily limit" works out.
