@@ -36,7 +36,7 @@ and a late or failed daily run the route answers `none-left` rather than handing
 **The owner.** The owner shares codes on platforms, forums and social media, in labelled batches:
 
 - `scripts/genesis-codes issue --label <label> --count <n> [--expires <date>] [--no-ip-limit]` generates the codes,
-  uploads them and prints them to post. A label is `[a-z0-9-]`, and a label that exists already adds to its batch.
+  uploads them and prints them to post. A label is `[a-z0-9-]` and doesn't start with `world-`, which the world's days use, and a label that exists already adds to its batch.
   Codes never expire unless the batch sets `--expires`.
 - `--no-ip-limit` makes codes that skip the IP rule, for the smoke script and test births before launch. Each still
   works only once, so a leaked one gives a single birth. Only the owner script can make them.
