@@ -38,7 +38,7 @@ impl List {
 }
 
 /// One entry, which can gain fields later: unknown ones are kept as they are.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub(crate) struct Entry {
     pub id: String,
     pub added_at: String,
@@ -47,7 +47,7 @@ pub(crate) struct Entry {
 }
 
 /// `contacts.json`.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub(crate) struct Contacts {
     #[serde(default)]
     pub friends: Vec<Entry>,
@@ -145,9 +145,8 @@ impl<S: Store> Identity<S> {
         if list == List::Blocked {
             after.remove(List::Friends, &other);
         }
-        // A retry, with nothing left to change: redo only the copy's rebuild.
-        let unchanged = existing.is_some() && after.friends.len() == before.friends.len();
-        if !unchanged {
+        // A retry, with nothing left to change, redoes only the copy's rebuild.
+        if after != before {
             match self.save_contacts(id, &before, &after, etag).await? {
                 Saved::Yes => {}
                 Saved::Raced => return Err(crate::lost_race("contacts")),
