@@ -15,7 +15,6 @@ import sys
 from pathlib import Path
 
 import sfab_config
-from stacks import api_host
 
 ROOT = sfab_config.REPO_ROOT
 SOURCE = ROOT / "website"
@@ -52,7 +51,7 @@ def generate(source: Path, out: Path, *, api_host: str) -> None:
 
 def main() -> None:
     try:
-        generate(SOURCE, OUTPUT, api_host=api_host(sfab_config.load()))
+        generate(SOURCE, OUTPUT, api_host=sfab_config.load().api_host)
     except (sfab_config.ConfigError, GenerateError) as e:
         sys.exit(f"generate_website: {e}")
     print(f"wrote {OUTPUT.relative_to(ROOT)}/")

@@ -91,10 +91,6 @@ class SynthError(Exception):
     """The stacks can't be built; the message says why."""
 
 
-def api_host(config: Config) -> str:
-    return config.api_host
-
-
 def fill_openapi(text: str, *, api_lambda_arn: str, api_host: str) -> dict:
     """sfab.yaml with its two placeholders filled in memory, so no real ARN reaches the
     repo. A placeholder left over deploys fine and shows agents the raw text, so it fails."""
@@ -149,7 +145,7 @@ class BaseStack(cdk.Stack):
             self,
             "Certificate",
             domain_name=config.domain_name,
-            subject_alternative_names=[api_host(config)],
+            subject_alternative_names=[config.api_host],
             validation=acm.CertificateValidation.from_dns(self.hosted_zone),
         )
 
@@ -344,7 +340,7 @@ class ApiStack(cdk.Stack):
         errors_alarm.add_alarm_action(cw_actions.SnsAction(base.alerts_topic))
 
         definition = fill_openapi(
-            openapi_text, api_lambda_arn=self.function.function_arn, api_host=api_host(config)
+            openapi_text, api_lambda_arn=self.function.function_arn, api_host=config.api_host
         )
         self.rest_api = apigw.SpecRestApi(
             self,
@@ -426,14 +422,14 @@ class ApiStack(cdk.Stack):
             self,
             "OutsideV1",
             runtime=cloudfront.FunctionRuntime.JS_2_0,
-            code=cloudfront.FunctionCode.from_inline(outside_v1_function(api_host(config))),
+            code=cloudfront.FunctionCode.from_inline(outside_v1_function(config.api_host)),
             comment="A problem+json 404 for any path outside /v1/",
         )
 
         self.distribution = cloudfront.Distribution(
             self,
             "Distribution",
-            domain_names=[api_host(config)],
+            domain_names=[config.api_host],
             certificate=base.certificate,
             web_acl_id=self.web_acl.attr_arn,
             default_behavior=cloudfront.BehaviorOptions(
@@ -471,7 +467,7 @@ class ApiStack(cdk.Stack):
             self,
             "Api",
             zone=base.hosted_zone,
-            record_name=api_host(config),
+            record_name=config.api_host,
             distribution=self.distribution,
         )
 
