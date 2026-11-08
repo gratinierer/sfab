@@ -30,6 +30,10 @@ It reaches a deployed world only with the rest of story 17, in the deploy after 
   `not-built-yet`, and its `409` row, its lost-`birth` paragraph, its "Proof of work" line "`birth` is the exception: its replay gets
   `409`", and `openapi/sfab.yaml`'s `409` row and its other `birth`-replay mention say a lost
   `birth` retry now gets `403 invalid-genesis-code`, as `docs/api-design.md` asks for new types.
+- Story 2's deployed takedown check (`spec.md` "Testing", "`birth` can't recreate that ID", run in `2-identity-api#10`)
+  changes: recreating the ID means resending the same body with its now-used code, so the check expects
+  `403 invalid-genesis-code`, and the takedown marker itself is proven by the unit tests that re-seed the code
+  (`identity.rs`, `takedown.rs` `rebirth`), since no code can be re-issued on a deployed world.
 - That `403` row (story 2 `spec.md` "Wire contract") and `openapi/sfab.yaml`'s "Errors and retries" (the `403` line
   that says "so don't retry. The exception is `origin-key-replaced`") gain `invalid-genesis-code` as a second exception:
   get a new code from `GET /world/genesis-code` and solve again, since the proof covers the code, so the retry is a new
