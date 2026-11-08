@@ -280,7 +280,7 @@ impl<S: Store> Identity<S> {
         match write {
             Ok(()) => Ok(()),
             Err(StoreError::ConditionFailed | StoreError::Missing) => {
-                Err(crate::lost_race("contacts.json"))
+                Err(crate::lost_race("contacts"))
             }
             Err(e) => Err(storage_failure("writing contacts", &e)),
         }

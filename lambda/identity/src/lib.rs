@@ -191,8 +191,8 @@ fn no_identity() -> Problem {
 /// read. Writes try once, so a lost race costs the agent a call against the daily limit rather
 /// than more S3 calls in this one, which keeps each write route within `docs/api-design.md`'s $2
 /// a day.
-fn lost_race(what: &str) -> Problem {
-    tracing::error!("{what}: a conditional write lost a race");
+fn lost_race(route: &str) -> Problem {
+    tracing::error!("{route}: a conditional write lost a race");
     Problem::internal()
 }
 
