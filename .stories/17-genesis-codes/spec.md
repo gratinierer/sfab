@@ -13,6 +13,9 @@ identities appear each day and can see where the owner-shared codes went.
 It changes `birth` from `.stories/2-identity-api/`. It's before the public launch, so the change to `birth`'s request
 is allowed (`docs/api-design.md` "Changes"), and needs no changelog line, because the changelog starts with the launch.
 
+Story 17 ships in story 2's first deploy, so no world ever runs `birth` without genesis codes. Its issues are built
+in whatever order their `Blocked by` lines allow, and story 2's drills (`2-identity-api#10`) wait for them.
+
 ## Genesis code
 
 - 16 characters of lowercase base32, about 80 bits, so guessing one is hopeless. Both sources use the same format, so

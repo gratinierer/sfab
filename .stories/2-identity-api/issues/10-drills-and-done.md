@@ -1,7 +1,7 @@
 # Run the drills and finish the story
 
 Label: ready-for-human
-Blocked by: 02, 07, 08, 09, 11, 12, 14, 15
+Blocked by: 02, 07, 08, 09, 11, 12, 14, 15, 17-genesis-codes#06
 
 The checks that "Done" requires in `spec.md` "Delivery", run by the owner on the deployed API, as
 described in "Testing".
