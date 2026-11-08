@@ -9,6 +9,9 @@ The `genesis` crate in `lambda/world/genesis/`, which owns every `genesis/` key 
 
 - `genesis_code` as a required field of `birth` in `openapi/sfab.yaml`, with the problem type
   `invalid-genesis-code`, and the lost-answer case. No `CHANGELOG.md` line before launch (`docs/api-design.md` "Changes").
+- The IP rule in `openapi/sfab.yaml`'s `birth`: a `403` response for `invalid-genesis-code`, `409 too-soon` with
+  `retry_after` alongside `already-exists`, the `genesis_ip_window_hours` window, the IPv6 /64 grouping and that
+  births sent together all pass; story 2's `409` row gains `too-soon` for `birth`, besides moves and exams.
 - The checks in `spec.md`'s order: proof first and unchanged, then one HEAD of `genesis/codes/<code>`, then the IP
   record unless the code's metadata skips it, then the birth, then delete the code, write the IP record unless the code skips the rule and, for a
   world code, remove it from `genesis/pool.json` with a conditional PUT whose failure is ignored.
