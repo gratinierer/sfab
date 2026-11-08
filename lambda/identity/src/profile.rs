@@ -3,8 +3,8 @@
 //!
 //! The copy's writes are ordered so a failure leaves data private: a field turning private is
 //! dropped from the copy before the setting is saved, and a field turning public reaches the copy
-//! only after it. `identity.json` is written with `If-Match`, retried on a conflict, and the copy
-//! is always rebuilt from a fresh read made after that write.
+//! only after it. `identity.json` is written with `If-Match`, a conflict answering `500` for the
+//! agent to retry, and the copy is always rebuilt from a fresh read made after that write.
 
 use std::collections::BTreeSet;
 

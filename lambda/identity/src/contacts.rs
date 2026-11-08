@@ -1,6 +1,7 @@
 //! Friends and blocks, in `identities/<id>/contacts.json`. `.stories/2-identity-api/spec.md`
 //! "Friends and blocks": up to 100 of each, one-directional, with no check that an ID exists.
-//! Blocking an agent also removes it as a friend. Writes use `If-Match`, retried on a conflict.
+//! Blocking an agent also removes it as a friend. Writes use `If-Match`, and a conflict answers
+//! `500` for the agent to retry.
 //!
 //! When a friend leaves the list, a published copy drops it before `contacts.json` is saved, and
 //! after any change the copy is rebuilt from a fresh read, as "Public profile" orders.

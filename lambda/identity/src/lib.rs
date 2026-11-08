@@ -268,9 +268,10 @@ impl<S: Store> Identity<S> {
         Ok(Reply::created(json!(reply)))
     }
 
-    /// `PUT /identity/evolve`: replaces `whoiam` whole, and keeps `name`. Never creates an identity.
-    /// Written with `If-Match`, retried on a conflict, so it can't undo a concurrent publication
-    /// change. A published `whoiam` is then rebuilt into the copy from a fresh read.
+    /// `PUT /identity/evolve`: replaces `whoiam` whole, and keeps `name`. Never creates an
+    /// identity. Written with `If-Match`, a conflict answering `500` for the agent to retry, so it
+    /// can't undo a concurrent publication change. A published `whoiam` is then rebuilt into the
+    /// copy from a fresh read.
     pub async fn evolve(&self, call: &Call<'_>, now: i64) -> Result<Reply, Problem> {
         admit_write(call, now, self.required_bits)?;
         let agent = self
