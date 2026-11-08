@@ -480,7 +480,8 @@ def _world_birth(s: _Session) -> None:
     passes; only `201` uses up the pool code. The pool is only mostly fresh, so after a `403
     invalid-genesis-code` it fetches a fresh code and births once more, which must be accepted:
     a racing birth may use one code, but a world that rejects two is broken. A refetch that
-    finds no code skips the retry, as a first fetch would."""
+    finds no code skips the retry, as a first fetch would, and so does one that hands back the
+    same used code, since the pool picks at random and keeps a code a race used."""
     if s.world_code is None:
         s.log("skip birth with the world's code: GET /v1/world/genesis-code gave none")
         return
@@ -493,10 +494,16 @@ def _world_birth(s: _Session) -> None:
             "note: the world's code was already used, which a racing birth may do, "
             "since the pool is only mostly fresh; trying a fresh one"
         )
-        s.world_code = None
+        used, s.world_code = s.world_code, None
         _genesis_code(s)
         if s.world_code is None:
             s.log("skip birth with a fresh world code: GET /v1/world/genesis-code gave none")
+            return
+        if s.world_code == used:
+            s.log(
+                "skip birth with a fresh world code: GET /v1/world/genesis-code gave the same "
+                "used code again, which the pool's random pick may do while it holds it"
+            )
             return
         response, _, digest = s.write("POST", "/v1/identity/birth", _birth_body(s.world_code))
         name = "birth with a fresh world code"

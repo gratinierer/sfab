@@ -140,6 +140,22 @@ def test_a_world_rejecting_both_world_codes_fails():
     assert api.labels.count("genesis code") == 2
 
 
+def test_the_same_used_world_code_again_passes_and_skips_the_retry():
+    # The pool picks at random and a lost race leaves the used code in it, so the refetch may
+    # hand back the very code just rejected: that's the stale entry, not a fault.
+    clock = Clock()
+    api = FakeApi(clock)
+    stale = api.pool[0]
+    del api.genesis[stale]
+    api.pool = [stale]
+    lines = []
+
+    assert smoke(api, clock, log=lines.append).failures == []
+    assert api.labels.count("genesis code") == 2
+    assert api.labels.count("invalid genesis code") == 1, "the same code isn't sent twice"
+    assert any("skip" in line and "same" in line for line in lines), lines
+
+
 @pytest.mark.parametrize(
     "response",
     [problem(404, "not-built-yet"), problem(409, "try-later", retry_after="2026-11-06T00:05:00Z")],
