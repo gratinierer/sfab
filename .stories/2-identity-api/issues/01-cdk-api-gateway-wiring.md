@@ -1,6 +1,6 @@
 # CDK: build both stacks and wire CloudFront, the REST API and the Lambda
 
-Label: ready-for-agent
+Label: ready-for-human
 Blocked by: 05, 06
 
 Build the REST API from `openapi/sfab.yaml` with `SpecRestApi` in the Python CDK, behind a
@@ -104,3 +104,7 @@ This is stage 1, along with issues 03-09. Later stages add routes to the same st
 - <https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/flat-rate-pricing-plan.html>
 - <https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_apigateway-readme.html>
 - <https://github.com/aws/aws-cdk/blob/main/packages/aws-cdk-lib/aws-apigateway/lib/restapi.ts>
+
+## Comments
+
+- 2026-11-08: relabelled `ready-for-human` (review finding R183): the CDK code (`cdk/stacks.py`, `cdk/app.py`) and its assertion tests are built and code-reviewed (`code-review.md`, 2026-11-08); what remains is the owner's first deploy and the proofs above.

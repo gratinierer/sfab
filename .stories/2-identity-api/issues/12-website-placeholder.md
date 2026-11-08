@@ -1,6 +1,6 @@
 # Host the website placeholder
 
-Label: ready-for-agent
+Label: ready-for-human
 Blocked by: 01
 
 Stage 2. `spec.md` "Architecture" (website). See `docs/adr/0001-initial-architecture.md`.
@@ -24,3 +24,7 @@ Stage 2. `spec.md` "Architecture" (website). See `docs/adr/0001-initial-architec
 - On a deploy: `/agents` answers `301` to `/agents/`, and a path under `/.well-known/` is never redirected.
 - On a deploy: the distribution shows the Free flat-rate plan in the console, and `<domain_name>` and `api.<domain_name>` are both on separate plans and working. If AWS
   refuses this, stop and bring it to the owner, because the design has to change.
+
+## Comments
+
+- 2026-11-08: relabelled `ready-for-human` (review finding R183): the website stack (`cdk/website_stack.py`) and its assertion tests are built and code-reviewed (`code-review.md`, 2026-11-08); what remains is the owner's deploy checks above.

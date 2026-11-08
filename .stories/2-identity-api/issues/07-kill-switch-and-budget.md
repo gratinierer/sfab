@@ -1,6 +1,6 @@
 # Build the kill switch and daily limit
 
-Label: ready-for-agent
+Label: ready-for-human
 Blocked by: 01
 
 The first line of defence: `spec.md` "Abuse and cost controls", "Kill switch" and the email list in
@@ -22,3 +22,7 @@ base stack, from issue 01.
   50,000-call warning can't reach the stop topic.
 - The owner has redeployed the API stack, because this container has no AWS credentials. The
   drills themselves are in issue 10.
+
+## Comments
+
+- 2026-11-08: relabelled `ready-for-human` (review finding R183): the kill switch (`cdk/kill_switch.py`, `lambda/killswitch/`), the budgets and `docs/restart-after-a-stop.md` are built and code-reviewed (`code-review.md`, 2026-11-08); what remains is the owner's deploy.

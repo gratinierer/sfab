@@ -1,6 +1,6 @@
 # Write the smoke script and WAF check
 
-Label: ready-for-agent
+Label: ready-for-human
 Blocked by: 01
 
 The two scripts described in `spec.md` "Testing", which run against the deployed API. Stage 1 covers
@@ -42,3 +42,5 @@ the identity routes, and each later ticket adds its routes to the smoke script.
   expects the Lambda's `400` whose title names "32 KB", which proves it passed the gateway. A request to
   `execute-api` without the key passes on any `403`, because `docs/aws-facts.md` has only memory for which
   gateway response it raises; with a wrong key it needs `problem+json` with `type: origin-key-replaced`.
+- 2026-11-08: relabelled `ready-for-human` (review finding R183): the scripts are built and code-reviewed;
+  what remains is the owner's run against the deployed API.
