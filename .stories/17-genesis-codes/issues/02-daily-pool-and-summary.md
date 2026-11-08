@@ -17,6 +17,8 @@ In this order, so the counts see yesterday's codes before they go:
 
 - Each run deletes the previous day's unused world codes, makes `genesis_codes_per_day` new ones under
   `genesis/codes/` and `genesis/batches/world-<date>/`, valid for the UTC day, and writes `genesis/pool.json` with its UTC date.
+- It lists `genesis/ips/` and deletes every record whose `LastModified` is older than `genesis_ip_window_hours`, so a
+  record lives at most about 28 hours plus a late run, well inside the Terms' 2 days; the lifecycle rule is only a backstop.
 - The summary holds per label `uploaded` and `left`, and for the world `issued` and `used` per day, for 30 days.
 
 ## Done when
