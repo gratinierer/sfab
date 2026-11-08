@@ -89,6 +89,7 @@ Rows below that mention $1000 predate the owner's correction of the rule to $100
 | 2026-11-08T22:25:00+00:00 | review | b7969ca | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 3) | 0 new, 1 closure upheld, 1 open | audited auto walkthrough 2; R181 waits on the owner |
 | 2026-11-08T22:45:00+00:00 | walkthrough | 480379a | claude-opus-5-5, with the owner | 0 new, 1 resolved, 0 still open | walkthrough, not a review pass |
 | 2026-11-08T23:55:00+00:00 | review | 12b655d | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 1) | 2 new, 1 closure upheld, 2 open | audited R181 and story 17's edits (1cf0230) |
+| 2026-11-09T00:05:00+00:00 | walkthrough | 0f45bb8 | claude-opus-5-5, auto | 0 new, 2 resolved, 0 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
