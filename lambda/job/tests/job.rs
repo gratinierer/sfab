@@ -122,3 +122,46 @@ async fn a_failed_census_still_makes_the_days_genesis_codes_and_fails_the_run() 
     let genesis = Genesis::new(store.clone(), rule);
     assert!(genesis.pool_code(NOW).await.is_ok());
 }
+
+#[derive(Clone, Default)]
+struct Captured(Arc<std::sync::Mutex<Vec<u8>>>);
+
+impl std::io::Write for Captured {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0.lock().unwrap().extend_from_slice(buf);
+        Ok(buf.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a> tracing_subscriber::fmt::MakeWriter<'a> for Captured {
+    type Writer = Captured;
+    fn make_writer(&'a self) -> Self::Writer {
+        self.clone()
+    }
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn when_the_census_and_genesis_both_fail_the_genesis_error_is_logged() {
+    let captured = Captured::default();
+    let subscriber = tracing_subscriber::fmt()
+        .with_writer(captured.clone())
+        .finish();
+    let _guard = tracing::subscriber::set_default(subscriber);
+    let store = Arc::new(MemoryStore::new());
+    claim(&store, "aaaaaaaaaaaa").await;
+    store.fail_writes_under(Bucket::Identities, "world/");
+    store.fail_writes_under(Bucket::Identities, "genesis/");
+
+    let run = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, NOW).await;
+
+    let error = format!("{:?}", run.unwrap_err());
+    assert!(
+        !error.contains("genesis/"),
+        "the run returns the census's error: {error}"
+    );
+    let logs = String::from_utf8(captured.0.lock().unwrap().clone()).unwrap();
+    assert!(logs.contains("injected failure on genesis/"), "{logs}");
+}

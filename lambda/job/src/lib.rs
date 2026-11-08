@@ -35,7 +35,14 @@ pub async fn run<S: Store, F: Fetch, N: Notify>(
     // Runs whether or not the census worked, so a census fault can't leave the day without
     // genesis codes; the census's error still fails the run.
     let genesis = sfab_genesis::daily(store, now, genesis).await;
-    let (census, genesis) = (census?, genesis?);
+    let (census, genesis) = match (census, genesis) {
+        (Err(census), Err(genesis)) => {
+            // The run returns the census's error, so the genesis one is logged here.
+            tracing::error!(error = ?genesis, "the genesis step failed too");
+            return Err(census);
+        }
+        (census, genesis) => (census?, genesis?),
+    };
     let federation = sfab_federation::daily(store, fetch, notify, now).await?;
     Ok(Report {
         census,
