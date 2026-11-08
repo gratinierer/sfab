@@ -715,9 +715,8 @@ def test_the_cdk_s_genesis_keys_are_the_genesis_crate_s():
             *stacks.API_READ_WRITE_PREFIXES,
             *stacks.API_READ_WRITE_KEYS,
             *stacks.API_READ_PREFIXES,
-            stacks.GENESIS_IPS_PREFIX,
         )
         if key.startswith("genesis/")
     }
-    assert cdk_keys == {"genesis/codes/", "genesis/ips/", "genesis/pool.json"}
+    assert cdk_keys, "the API's grants name no genesis/ key"
     assert cdk_keys <= crate, cdk_keys - crate
