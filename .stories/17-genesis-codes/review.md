@@ -37,6 +37,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-08T20:40:00+00:00 | walkthrough | 872383e | claude-opus-5-5, auto | 0 new, 0 resolved, 1 still open | auto walkthrough, not a review pass |
 | 2026-11-08T20:55:00+00:00 | walkthrough | 241df02 | claude-opus-5-5, with the owner | 0 new, 1 resolved, 0 still open | walkthrough, not a review pass |
 | 2026-11-08T23:00:00+00:00 | review | be421b2 | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 1) | 1 new, 1 reopened, 2 open | audited the owner walkthrough of R35; story 2 references rechecked after its edits |
+| 2026-11-08T23:10:00+00:00 | walkthrough | 768d310 | claude-opus-5-5, auto | 0 new, 1 resolved, 1 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
