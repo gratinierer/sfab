@@ -11,12 +11,13 @@ In this order, so the counts see yesterday's codes before they go:
 
 1. Read the previous `genesis/summary.json` to keep its world history, listing it first, because a GET on a missing
    key gets `403` under the job's prefix-conditioned `ListBucket` (`docs/aws-facts.md`), as `lambda/world/census` does.
-2. List `genesis/codes/` and `genesis/batches/` once each, and count per label `uploaded` and `left`, and for
-   yesterday's world batch `used`.
+2. List `genesis/codes/` and `genesis/batches/` once each, and count per label `uploaded` and `left`, and `used` for
+   every world day before today not yet in the summary, so a missed run's day is still counted.
 3. Write `genesis/summary.json`, dropping world days older than 30.
 4. Then the pool, below.
 
-- Each run deletes the previous day's unused world codes, makes `genesis_codes_per_day` new ones under
+- Each run deletes every unused world code from any day before today, not only yesterday's, so a failed run leaves
+  nothing behind, makes `genesis_codes_per_day` new ones under
   `genesis/codes/` and `genesis/batches/world-<date>/`, valid for the UTC day, and writes `genesis/pool.json` with its UTC date.
 - It lists `genesis/ips/` and deletes every record whose `LastModified` is older than `genesis_ip_window_hours`, so a
   record lives at most about 28 hours plus a late run, well inside the Terms' 2 days; the lifecycle rule is only a backstop.
@@ -24,5 +25,5 @@ In this order, so the counts see yesterday's codes before they go:
 
 ## Done when
 
-- Tests cover a fresh world, a day with leftovers, an owner batch half used, and an expired owner batch.
+- Tests cover a fresh world, a day with leftovers, a run after a missed day, an owner batch half used, and an expired owner batch.
 - The run's S3 calls match `spec.md` "Cost at the daily limit".

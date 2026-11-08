@@ -25,8 +25,8 @@ is allowed (`docs/api-design.md` "Changes"), and needs no changelog line, becaus
 ## Two sources
 
 **The world.** The daily world job makes `genesis_codes_per_day` codes, 100 to start, a setting in the CDK code, so
-changing it takes a commit and a deploy. They're valid for their UTC day. Each run deletes the previous day's unused
-codes, so codes never pile up. `GET /world/genesis-code` is anonymous, needs no proof, counts toward the daily limit
+changing it takes a commit and a deploy. They're valid for their UTC day. Each run deletes every unused world code
+from earlier days, so codes never pile up, even after a failed run. `GET /world/genesis-code` is anonymous, needs no proof, counts toward the daily limit
 like every call and falls under the existing WAF rate rule. It returns one random code from the day's pool file. Until
 the daily job has written the pool once, it answers `404` with `type: not-built-yet`, as `docs/api-design.md` "Reads"
 requires for daily-built data. After that, an empty pool answers `404` with `type: none-left` and a `retry_after` of the
