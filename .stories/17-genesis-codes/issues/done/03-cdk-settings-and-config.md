@@ -1,6 +1,5 @@
 # CDK settings, `ip_hash_key` and the lifecycle rule
 
-Label: ready-for-agent
 Blocked by: 01
 
 ## Scope

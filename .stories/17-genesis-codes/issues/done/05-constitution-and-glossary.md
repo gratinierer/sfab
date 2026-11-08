@@ -1,6 +1,5 @@
 # Constitution and glossary lines
 
-Label: ready-for-agent
 Blocked by: 01
 
 ## Scope
