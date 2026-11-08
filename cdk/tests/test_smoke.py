@@ -112,6 +112,17 @@ def test_the_world_code_birth_may_meet_the_ip_rule():
     assert len(api.pool) == 3
 
 
+def test_a_world_code_a_racing_birth_used_passes_with_a_note():
+    # The pool is only mostly fresh (spec.md "What `birth` does" step 5).
+    clock = Clock()
+    api = FakeApi(clock)
+    api.override["world birth"] = problem(403, "invalid-genesis-code")
+    lines = []
+
+    assert smoke(api, clock, log=lines.append).failures == []
+    assert any("world" in line and "already used" in line for line in lines), lines
+
+
 def test_says_clearly_when_the_codes_run_out_and_skips_the_identity_checks():
     clock = Clock()
     api = FakeApi(clock)
@@ -175,7 +186,7 @@ JSON = {"content-type": "application/json", "cache-control": "no-store"}
         ("genesis code", ok(200, {"genesis_code": "short"}), "GET /v1/world/genesis-code"),
         ("genesis code", problem(409, "try-later"), "GET /v1/world/genesis-code"),
         ("genesis code", problem(404, "about:blank"), "GET /v1/world/genesis-code"),
-        ("world birth", problem(403, "invalid-genesis-code"), "birth with the world's code"),
+        ("world birth", problem(403, "about:blank"), "birth with the world's code"),
         ("world birth", problem(409, "too-soon"), "birth with the world's code"),
         ("evolve", ok(200, {"whoiam": "old"}), "evolve"),
         ("no proof", problem(400), "birth without a proof"),

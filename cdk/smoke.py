@@ -477,13 +477,20 @@ def _birth(s: _Session, codes: Codes) -> str | None:
 def _world_birth(s: _Session) -> None:
     """A birth with the world's code. The code is checked before the IP rule, so `201` or
     `409 too-soon` both prove it was accepted, and a rerun from one IP within the window still
-    passes; only `201` uses up the pool code."""
+    passes; only `201` uses up the pool code. The pool is only mostly fresh, so `403
+    invalid-genesis-code` passes too, with a note: a racing birth may have used the code."""
     if s.world_code is None:
         s.log("skip birth with the world's code: GET /v1/world/genesis-code gave none")
         return
     response, _, digest = s.write("POST", "/v1/identity/birth", _birth_body(s.world_code))
     name = "birth with the world's code"
-    if response.status == 409:
+    if response.status == 403:
+        if s.check(name, response, 403, problem="invalid-genesis-code"):
+            s.log(
+                "     note: the world's code was already used, which a racing birth may do, "
+                "since the pool is only mostly fresh"
+            )
+    elif response.status == 409:
 
         def retry_after(r: Response) -> str | None:
             return None if _json_object(r).get("retry_after") else "no retry_after"
