@@ -9,7 +9,8 @@ Blocked by: 01, 2-identity-api#11
 
 In this order, so the counts see yesterday's codes before they go:
 
-1. Read the previous `genesis/summary.json`, if any, to keep its world history.
+1. Read the previous `genesis/summary.json` to keep its world history, listing it first, because a GET on a missing
+   key gets `403` under the job's prefix-conditioned `ListBucket` (`docs/aws-facts.md`), as `lambda/world/census` does.
 2. List `genesis/codes/` and `genesis/batches/` once each, and count per label `uploaded` and `left`, and for
    yesterday's world batch `used`.
 3. Write `genesis/summary.json`, dropping world days older than 30.
