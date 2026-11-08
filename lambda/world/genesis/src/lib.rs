@@ -33,7 +33,7 @@ const LABEL: &str = "label";
 const EXPIRES: &str = "expires";
 const NO_IP_LIMIT: &str = "no-ip-limit";
 /// `no-ip-limit`'s value on a code that skips the IP rule.
-const SET: &str = "true";
+const NO_IP_LIMIT_ON: &str = "true";
 
 const CODES_PREFIX: &str = "genesis/codes/";
 const BATCHES_PREFIX: &str = "genesis/batches/";
@@ -137,7 +137,7 @@ impl Issue {
             metadata.insert(EXPIRES.to_owned(), rfc3339(expires));
         }
         if self.no_ip_limit {
-            metadata.insert(NO_IP_LIMIT.to_owned(), SET.to_owned());
+            metadata.insert(NO_IP_LIMIT.to_owned(), NO_IP_LIMIT_ON.to_owned());
         }
         metadata
     }
@@ -255,7 +255,10 @@ impl<S: Store> Genesis<S> {
         let from_pool = metadata
             .get(LABEL)
             .is_some_and(|l| l.starts_with(WORLD_LABEL_PREFIX));
-        let ip = if metadata.get(NO_IP_LIMIT).is_some_and(|v| v == SET) {
+        let ip = if metadata
+            .get(NO_IP_LIMIT)
+            .is_some_and(|v| v == NO_IP_LIMIT_ON)
+        {
             None
         } else {
             let Some(fingerprint) = viewer.and_then(|v| self.rule.fingerprint(v)) else {
