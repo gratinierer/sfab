@@ -21,9 +21,12 @@ In this order, so the counts see yesterday's codes before they go:
   `genesis/codes/` and `genesis/batches/world-<date>/`, valid for the UTC day, and writes `genesis/pool.json` with its UTC date.
 - It lists `genesis/ips/` and deletes every record whose `LastModified` is older than `genesis_ip_window_hours`, so a
   record lives at most about 28 hours plus a late run, well inside the Terms' 2 days; the lifecycle rule is only a backstop.
+  `Listed` in `lambda/core/src/storage.rs` gains `last_modified`, which `S3Store` (`s3.rs`) fills from the listing and
+  `MemoryStore` from a time a test can set, so a test can age a record.
 - The summary holds per label `uploaded` and `left`, and for the world `issued` and `used` per day, for 30 days.
 
 ## Done when
 
-- Tests cover a fresh world, a day with leftovers, a run after a missed day, an owner batch half used, and an expired owner batch.
+- Tests cover a fresh world, a day with leftovers, a run after a missed day, an owner batch half used, and an expired owner batch, and an
+  IP record older than the window being deleted while a newer one stays.
 - The run's S3 calls match `spec.md` "Cost at the daily limit".
