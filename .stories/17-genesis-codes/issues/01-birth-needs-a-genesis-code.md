@@ -44,7 +44,9 @@ The `genesis` crate in `lambda/world/genesis/`, which owns every `genesis/` key 
   `lambda/api/tests/logging.rs` use the helper. The birth-replay tests (`identity.rs`
   `a_birth_replay_gets_409_and_changes_nothing` and the takedown-marker case, `takedown.rs` `rebirth`) re-seed the used
   code before the replay, so they still prove `409 already-exists` and that a taken-down ID can't be recreated, and a
-  new case proves a plain replay gets `403 invalid-genesis-code`.
+  new case proves a plain replay gets `403 invalid-genesis-code`. The helper seeds `--no-ip-limit` codes, so tests that
+  birth several times in one store from one address keep passing; the IP-rule tests seed ordinary codes and set the
+  viewer address themselves.
 
 ## Done when
 
