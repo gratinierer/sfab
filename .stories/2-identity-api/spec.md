@@ -963,8 +963,8 @@ stack, with the same plan check for its distribution, and "Done" lists the check
   budget is the main signal for unusual spending anywhere in the account.
 - **An alert address the owner reads on their phone,** because every defence here ends in an email. The
   drill confirms one arrives.
-- A Lambda concurrency quota of at least 105 on that account. AWS requires 100 units to
-  stay unreserved, so a new account with a lower quota needs an increase, or the deploy
+- A Lambda concurrency quota of at least 106 on that account: the stacks reserve 6 (the API Lambda's 5 and the
+  daily world job's 1), and AWS requires 100 units to stay unreserved, so a new account with a lower quota needs an increase, or the deploy
   fails.
 
 ## Open questions

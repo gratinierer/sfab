@@ -10,7 +10,7 @@ deploy". They need the owner's AWS account and card.
 - `domain_name` is `botrefugium.com`, decided 2026-11-04. If Route 53 can't register it, stop and
   choose again, because it's also this world's federation ID.
 - Set up the dedicated account in `us-east-1` on the Paid plan, with a Lambda concurrency quota of
-  at least 105.
+  at least 106.
 - Secure it: MFA on the root and your user, no long-lived access keys, and only `aws login`.
 - Switch on AWS Cost Anomaly Detection, emailing an address you read on your phone.
 - Run `aws login` and `cdk bootstrap aws://<account_id>/us-east-1` from the repo root, not `cdk/`,
