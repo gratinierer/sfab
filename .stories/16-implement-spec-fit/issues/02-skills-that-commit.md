@@ -13,6 +13,9 @@ becomes a general rule, so `/implement-story` (issue 01) can commit and make its
   of the policy for the number and trailers, never pushes, and `nocommit` turns it off where the skill offers it.
   The four review skills stay named as examples. The "Don't create a new branch" rule in "When asked to commit or
   push" points to the exception for such branches.
+- On those short-lived branches, whatever they are named (an agent worktree's `worktree-agent-<id>`, say), the
+  skill's commits take the story's `(#<n>)` as step 1 would, and step 2's "stop and give the user this choice"
+  doesn't apply; the exception says so.
 - A new ADR, `docs/adr/0010-skills-that-commit-may-commit.md` (or the next free number), records the decision and
   why it generalizes 0006; `docs/adr/0006-review-skills-commit-by-default.md`'s status line says it is amended by
   it. ADR 0006 is otherwise unchanged.
