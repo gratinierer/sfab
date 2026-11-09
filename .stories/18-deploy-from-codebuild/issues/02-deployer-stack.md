@@ -21,7 +21,10 @@ Blocked by: 01
 - `SfabDeployer`'s account comes from `deploy_account()` (issue 01), not from the config. The synth tests, which run
   `app.py` in a subprocess (`cdk/tests/test_app.py:10-14`), set `CDK_DEFAULT_ACCOUNT` and pass their configs as fixtures
   through `SFAB_CONFIG`, a missing file for "no config" and an incomplete one for "incomplete", so no subprocess
-  reaches Secrets Manager or STS.
+  reaches Secrets Manager or STS. Two existing tests in `cdk/tests/test_app.py` (:17-31) change with this:
+  `test_synth_refuses_a_missing_config`, which expects a non-zero exit and "sfab config error", becomes the
+  no-config test (exit 0, only `SfabDeployer`, the note), and `test_synth_succeeds_with_the_fixture`, which expects
+  exactly three templates, also expects `SfabDeployer`'s.
 - `cdk/app.py` synthesizes only `SfabDeployer`, with a note naming what's missing, while the config fails to load or
   the Lambda builds or website pages are missing. `app.py` reads the two build paths from `SFAB_LAMBDA_BUILDS` and
   `SFAB_WEBSITE_BUILD` only when `SFAB_CONFIG` is set, as in tests, and otherwise uses today's `lambda/target/lambda`
