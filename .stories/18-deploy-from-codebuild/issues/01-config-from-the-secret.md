@@ -41,6 +41,14 @@ Label: ready-for-agent
 - `scripts/deploy` drops its `sfab.config.toml` checks, keeps refusing `SFAB_CONFIG`, and takes `DEPLOY_STACKS`-style
   arguments: `--all` or one or more of the app's stack names, refusing anything else before any CDK command. It
   passes `--require-approval never`.
+- `scripts/deploy` syncs `cdk/.venv` first, as `scripts/check` does today, then runs the region check and the loader in
+  it, then `scripts/check`, then `cdk`. So tests can run it and `scripts/check` without recursing or reaching AWS,
+  each step tests must not run takes an override naming the command to run instead: `SFAB_CHECK_CMD` for
+  `scripts/deploy`'s call of `scripts/check`, `SFAB_CDK_CMD` for its `cdk`, and `SFAB_LOAD_CMD` for the loader
+  check, which a test points at a stub that prints a config error or succeeds. Inside `scripts/check`, the steps
+  before the generate step (builds, audit) and pytest take the same kind of override, so a test runs only the config
+  load and the generate step. The tests' stubs record their arguments, so a test can assert what ran and in which
+  mode.
 - Add `boto3`, pinned, to `cdk/requirements.in` and regenerate the hash-locked `cdk/requirements.txt`, since the
   loader, `deploy_account()` and `scripts/deploy`'s region check use it and `scripts/check` syncs with
   `--require-hashes`; `scripts/audit` then covers it.
