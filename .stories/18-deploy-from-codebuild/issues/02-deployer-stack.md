@@ -28,7 +28,8 @@ Blocked by: 01
   version from one place.
 - Confirm in AWS's documentation and record in `docs/aws-facts.md`: CodeBuild's GitHub source through a
   CodeConnection (resource type and auth type), the Arm small image's name and price, which CDK bootstrap roles a
-  `cdk deploy` assumes, Secrets Manager's price.
+  `cdk deploy` assumes, Secrets Manager's price, and the concurrent-build quota a new account starts with (forum
+  reports say 0; record it as unconfirmed if AWS doesn't document it).
 
 ## Done when
 

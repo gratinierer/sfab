@@ -100,7 +100,8 @@ whoever can push there can already change everything the build deploys, so this 
 
 Done once, by the owner, in story 2's "First deploy" and `2-identity-api#03`, which this story rewrites:
 
-1. `aws login` and `cdk bootstrap aws://<account>/us-east-1`.
+1. `aws login` and `cdk bootstrap aws://<account>/us-east-1`. Check CodeBuild's concurrent-build quota for the Arm
+   small image in Service Quotas, and ask for an increase if it's 0, as story 2's "Prerequisites" does for Lambda.
 2. `scripts/deploy SfabDeployer` from a machine, which works before the secret exists ("Synth without the config").
 3. Approve the GitHub connection in the console.
 4. Create and protect the `production` branch (issue 05).
