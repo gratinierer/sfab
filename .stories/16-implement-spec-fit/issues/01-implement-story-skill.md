@@ -43,7 +43,8 @@ keeps this repo's rules.
 - **Seams**: the implementer brief says the issue file stands in for `/tdd`'s confirmation of the seams under test:
   the implementer takes the seams the issue's Scope and "Done when" imply and names them in its commit body ("Seams:
   …"), and the review's Spec reviewer checks them against the issue. When the issue doesn't make them clear, the
-  implementer stops without guessing, and the ticket is reported as needing the owner. `tdd` itself stays
+  implementer stops without guessing, and the ticket is reported as needing the owner. A ticket branch with no
+  commit carrying a `Seams:` line goes back to the implementer, as a failed check does, before the merger takes it. `tdd` itself stays
   unchanged.
 - When the owner waived a failing
   baseline, only failures the baseline didn't show count.
