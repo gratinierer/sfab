@@ -23,6 +23,9 @@ Label: ready-for-agent
 - `scripts/deploy` drops its `sfab.config.toml` checks, keeps refusing `SFAB_CONFIG`, and takes `DEPLOY_STACKS`-style
   arguments: `--all` or one or more of the app's stack names, refusing anything else before any CDK command. It
   passes `--require-approval never`.
+- `cdk/tests/test_app.py`'s `test_synth_refuses_the_copied_example` synthesizes from the example file; it becomes the
+  same test on a stubbed secret holding `CHANGE_ME` values. `cdk/waf_check.py` (:10) and `cdk/smoke.py` (:7) say
+  they need no AWS credentials, which stops being true.
 - Remove `sfab.config.example.toml` and the `.gitignore` line for `sfab.config.toml`, and update the comments and
   docstrings that name the file (`cdk/sfab_config.py`, `scripts/check`, `scripts/deploy`, `cdk/smoke.py`,
   `cdk/tests/conftest.py`, `cdk/tests/test_stacks.py`, `cdk/tests/test_smoke_args.py`).
