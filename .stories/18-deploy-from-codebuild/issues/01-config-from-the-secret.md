@@ -13,7 +13,9 @@ Label: ready-for-agent
   which reads `CDK_DEFAULT_ACCOUNT` (the CDK CLI sets it from the credentials) and calls STS only when it's unset,
   separate from `load()`, so `cdk/app.py` can target `SfabDeployer`'s account when the config doesn't load. With
   `SFAB_CONFIG`, the fixture still carries `account_id` and supplies it with no STS call, so tests never reach AWS;
-  in the secret, `account_id` is refused as an unknown key. `Config` keeps an `account_id` field so the
+  in the secret, `account_id` is refused as an unknown key. Record in `docs/aws-facts.md` that the CDK CLI sets
+  `CDK_DEFAULT_ACCOUNT` for the app from the resolved credentials and leaves it unset without them, so
+  `deploy_account()` then calls STS, and synth with neither credentials nor `SFAB_CONFIG` fails. `Config` keeps an `account_id` field so the
   stacks don't change; the fixture keeps its `000000000000`.
 - A deploy run in a region other than us-east-1 refuses before synth, naming both regions.
 - `smoke_claim`: the smoke script reads it from the same source as the rest (secret or fixture), not from raw TOML
