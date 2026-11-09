@@ -71,6 +71,11 @@ Label: ready-for-agent
 - Remove `sfab.config.example.toml` and the `.gitignore` line for `sfab.config.toml`, and update the comments and
   docstrings that name the file (`cdk/sfab_config.py`, `scripts/check`, `scripts/deploy`, `cdk/smoke.py`,
   `cdk/tests/conftest.py`, `cdk/tests/test_stacks.py`, `cdk/tests/test_smoke_args.py`).
+- `cdk/tests/test_sfab_config.py` reads the removed file and the removed path seam: `test_copied_example_is_refused`
+  and `test_example_mentions_smoke_claim_commented_out` go, `test_example_and_fixture_hold_the_same_keys` becomes a
+  check that the fixture holds the secret's required keys plus `account_id` and `version_id`, and
+  `test_sfab_config_env_var_names_the_file` becomes one that `SFAB_CONFIG` selects the fixture (:65-69, :129-143).
+  Its tests that write TOML files and pass their paths set `SFAB_CONFIG` instead.
 
 ## Done when
 
