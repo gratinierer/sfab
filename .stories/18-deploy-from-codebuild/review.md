@@ -16,6 +16,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-09T16:03:00+00:00 | review | cca647d | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 1) | 14 new, 0 resolved, 14 open | first review |
 | 2026-11-09T16:40:00+00:00 | walkthrough | ace6d7f | claude-opus-5-5, auto | 0 new, 11 resolved, 3 still open | auto walkthrough, not a review pass |
 | 2026-11-09T16:55:00+00:00 | review | e3105b1 | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 2) | 5 new, 10 closures upheld, 1 reopened, 9 open | audited the round-1 walkthrough (R2-R13) |
+| 2026-11-09T17:10:00+00:00 | walkthrough | d2ecf66 | claude-opus-5-5, auto | 0 new, 5 resolved, 5 still open | auto walkthrough, not a review pass; R14 skipped as still waiting |
 
 ## Findings
 
