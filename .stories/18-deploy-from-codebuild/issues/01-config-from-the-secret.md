@@ -10,6 +10,7 @@ Label: ready-for-agent
   file when it is. The checks are the ones the TOML has today, plus "the secret is missing", "it has no value" and
   "its value isn't a JSON object", each named in the one error.
 - `account_id` comes from `sts get-caller-identity`, not the config, through its own function, `deploy_account()`,
+  which reads `CDK_DEFAULT_ACCOUNT` (the CDK CLI sets it from the credentials) and calls STS only when it's unset,
   separate from `load()`, so `cdk/app.py` can target `SfabDeployer`'s account when the config doesn't load. With
   `SFAB_CONFIG`, the fixture still carries `account_id` and supplies it with no STS call, so tests never reach AWS;
   in the secret, `account_id` is refused as an unknown key. `Config` keeps an `account_id` field so the
