@@ -26,6 +26,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-09T18:25:00+00:00 | review | ea493ea | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 6) | 0 new, 1 closure upheld, 4 open | audited the round-5 walkthrough (R23); loop ends at its limit of 5 address passes |
 | 2026-11-09T17:35:00+00:00 | walkthrough | a7a2c84 | claude-opus-5-5 | 0 new, 3 resolved, 1 waived, 0 still open | walkthrough, not a review pass |
 | 2026-11-09T17:39:00+00:00 | review | 53461fc | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 1) | 3 new, 4 closures upheld, 3 open | audited the walkthrough's closures of R1, R4, R14 and R18; dated from the clock, so it sits below rows whose times are later than their commits (R24) |
+| 2026-11-09T17:39:00+00:00 | walkthrough | 1ec55f9 | claude-opus-5-5, auto | 0 new, 2 resolved, 1 still open | auto walkthrough, not a review pass; R24 left for the owner |
 
 ## Findings
 
