@@ -20,8 +20,9 @@ Blocked by: 01
   naming the project by its fixed name.
 - `SfabDeployer`'s account comes from `deploy_account()` (issue 01), not from the config.
 - `cdk/app.py` synthesizes only `SfabDeployer`, with a note naming what's missing, while the config fails to load or
-  the Lambda builds or website pages are missing. `cdk deploy --all` in that state fails, naming every problem.
-- `scripts/deploy SfabDeployer` works with no loadable config: it accepts only `SfabDeployer` then, and runs
+  the Lambda builds or website pages are missing. It can't see which stacks the
+  CLI selected, so `scripts/deploy` holds the guard below; a raw `cdk deploy --all` stays unguarded.
+- `scripts/deploy` runs the loader first. `scripts/deploy SfabDeployer` works with no loadable config: it accepts only `SfabDeployer` then, and runs
   `scripts/check` with its fixture fallback, so the generate step writes the fixture's pages the tests need. `--all` or any other stack
   name fails with the config's errors.
 - The CDK CLI gets a pinned version in the repo, and `.github/workflows/ci.yml` and the buildspec read every tool
