@@ -9,11 +9,9 @@ Label: ready-for-agent
 - `sfab_config.load()` reads `sfab/config` in us-east-1 through boto3 when `SFAB_CONFIG` isn't set, and the fixture
   file when it is. The checks are the ones the TOML has today, plus "the secret is missing", "it has no value" and
   "its value isn't a JSON object", each named in the one error.
-- `Config` also carries the secret's `version_id`, the `VersionId` that `GetSecretValue` returned, for issue 03's
-  references. `account_id` and `version_id` aren't keys in the secret: the required keys become the secret's
-  entries only, not every `Config` field (today `REQUIRED_KEYS` at `cdk/sfab_config.py:49`), and the secret refuses
-  both names as unknown keys. The fixture carries both as keys, a fixed `version_id` beside its `account_id`, so
-  tests never call AWS.
+- `account_id` isn't a key in the secret: the required keys become the secret's entries only, not every `Config`
+  field (today `REQUIRED_KEYS` at `cdk/sfab_config.py:49`), and the secret refuses it as an unknown key. The fixture
+  carries it as a key, so tests never call AWS.
 - `account_id` comes from `sts get-caller-identity`, not the config, through its own function, `deploy_account()`,
   which takes, in this order, `CDK_DEFAULT_ACCOUNT` (the CDK CLI sets it from the credentials), then the fixture's
   `account_id` when `SFAB_CONFIG` names a loadable fixture, then STS, separate from `load()`, so `cdk/app.py` can target `SfabDeployer`'s account when the config doesn't load. With
@@ -76,7 +74,7 @@ Label: ready-for-agent
   `cdk/tests/conftest.py`, `cdk/tests/test_stacks.py`, `cdk/tests/test_smoke_args.py`).
 - `cdk/tests/test_sfab_config.py` reads the removed file and the removed path seam: `test_copied_example_is_refused`
   and `test_example_mentions_smoke_claim_commented_out` go, `test_example_and_fixture_hold_the_same_keys` becomes a
-  check that the fixture holds the secret's required keys plus `account_id` and `version_id`, and
+  check that the fixture holds the secret's required keys plus `account_id`, and
   `test_sfab_config_env_var_names_the_file` becomes one that `SFAB_CONFIG` selects the fixture (:65-69, :129-143).
   `test_smoke_claim_is_allowed_and_ignored` (:116-119), which asserts `Config` has no `smoke_claim`, becomes one that
   `load()` passes it through. Its tests that pass a path to `load()`, whether they write a TOML file or not, set
@@ -91,8 +89,7 @@ Label: ready-for-agent
 
 - Tests, with a stubbed Secrets Manager and STS (no real AWS), cover: a full secret loads; each missing, blank,
   `CHANGE_ME`, unknown or malformed entry is named; a missing secret, an empty one and a non-JSON one; the account
-  comes from the caller identity; `SFAB_CONFIG` still selects the fixture; `version_id` is
-  the stub's `VersionId`.
+  comes from the caller identity; `SFAB_CONFIG` still selects the fixture.
 - Tests cover `deploy_plan`: a set `SFAB_CONFIG` is refused before anything else; `--all`, one and several stack
   names pass; a flag or an unknown name is refused, and so
   is a region other than us-east-1, or none, each before the config is loaded.
