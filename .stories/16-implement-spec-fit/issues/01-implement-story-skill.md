@@ -72,7 +72,8 @@ keeps this repo's rules.
   to move the story to `.stories/done/` and to run `gh issue close <n>`, and does neither without the owner's yes.
 - **End**: no draft pull request. It reports the branch, the commits as short shas with subjects, the review's stop
   reason and what needs the user, and opens a pull request only when asked. It cleans up the worktrees and their
-  branches.
+  branches, except those of tickets that stopped unmerged (second failed check, unclear seams): it keeps them and
+  names them in the report, so their work isn't lost.
 - **`tdd` is vendored** to `.claude/skills/tdd/` unchanged (`SKILL.md`, `mocking.md`, `tests.md`,
   `agents/openai.yaml`), since `implement-story` calls it.
 - `.claude/skills/VENDORED.md`: rows for `implement-story` (mattpocock/skills, `skills/engineering/implement-spec/`,
