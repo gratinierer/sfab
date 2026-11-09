@@ -27,7 +27,7 @@ Blocked by: 01
   `SFAB_WEBSITE_BUILD` when set, defaulting to today's `lambda/target/lambda` (`cdk/app.py:13`) and `build/website`
   (`cdk/stacks.py:42`), so the missing-builds test points them at an empty directory instead of deleting real output. It can't see which stacks the
   CLI selected, so `scripts/deploy` holds the guard below; a raw `cdk deploy --all` stays unguarded.
-- `scripts/deploy` runs the loader first. `scripts/deploy SfabDeployer` works with no loadable config: it accepts only `SfabDeployer` then, and runs
+- `scripts/deploy` runs issue 01's `deploy_plan` first (arguments, then region, then the config). `scripts/deploy SfabDeployer` works with no loadable config: it accepts only `SfabDeployer` then, and runs
   `scripts/check` with its fixture fallback, so the generate step writes the fixture's pages the tests need. It's the one case
   where `scripts/deploy` lets `scripts/check` fall back (issue 01). `--all` or any other stack
   name fails with the config's errors.
@@ -57,6 +57,6 @@ Blocked by: 01
 - A test asserts `ci.yml` and the buildspec take every tool version from `tool-versions.env` and pin none inline.
 - Tests cover synth with no config, an incomplete one and missing builds (only `SfabDeployer`, with the note, in the
   caller's account), and a full config (all four stacks).
-- A test covers `scripts/deploy SfabDeployer` with no config (the check generates from the fixture, and only
-  `SfabDeployer` deploys) and `scripts/deploy --all` with no config (refused before any CDK command).
+- `deploy_plan` tests cover `SfabDeployer` with no config (allowed, with the fallback and only `SfabDeployer`) and
+  `--all` with no config (refused with the config's errors).
 - The deployed proof (a build from `production` deploys) belongs to `2-identity-api#01`, which waits for this issue.
