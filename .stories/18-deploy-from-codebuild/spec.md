@@ -47,7 +47,7 @@ TOML, "not Secrets Manager" (`.stories/17-genesis-codes/spec.md` Clarification 1
 - **A leak:** replace the value in the secret, then start a build. Each resource holding a dynamic reference also
   carries a short hash of its own value, which synth reads with the values, so a new `origin_key` replaces the API key
   and updates the CloudFront header, and a new `ip_hash_key` updates `IP_HASH_KEY`. An unchanged reference isn't
-  resolved again, and an edit to any other entry changes none of them.
+  resolved again, and an edit to any other entry never replaces the API key.
 
 ## The deployer stack
 

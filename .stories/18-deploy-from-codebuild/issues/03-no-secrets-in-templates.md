@@ -38,8 +38,10 @@ Blocked by: 01
 - A CDK test asserts that no synthesized template of any stack contains the fixture's `origin_key` or `ip_hash_key`
   text, and that each place above holds a `{{resolve:secretsmanager:sfab/config:SecretString:<key>}}` reference with
   no version id.
-- A CDK test asserts that a different `origin_key` changes the `OriginKey` logical id and the distribution, a
-  different `ip_hash_key` changes the API Lambda, and a different value of any other entry, such as `alert_email`,
-  leaves those three resources unchanged.
+- A CDK test asserts that a different `origin_key` changes the `OriginKey` logical id and the distribution's
+  `comment`, a different `ip_hash_key` changes the API Lambda's `description`, and a different value of any other
+  entry, such as `abuse_contact` or `domain_name`, leaves the `OriginKey` logical id, the `comment` and the
+  `description` unchanged. Those entries still reach the Lambda's environment and the distribution as plain values
+  (`cdk/stacks.py` :343-344, :462), so they update those resources as they do today, but never replace the key.
 - `cdk/generate_public_openapi.py`'s existing check that `origin_key` never reaches the public description still
   passes.
