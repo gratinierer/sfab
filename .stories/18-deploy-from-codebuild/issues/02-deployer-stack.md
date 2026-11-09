@@ -18,6 +18,7 @@ Blocked by: 01
   - an S3 cache bucket for cargo and uv, with a lifecycle rule.
 - In `SfabBase`: an EventBridge rule on `sfab-deploy`'s `FAILED` and `STOPPED` states, publishing to the alerts topic,
   naming the project by its fixed name.
+- `SfabDeployer`'s account comes from `deploy_account()` (issue 01), not from the config.
 - `cdk/app.py` synthesizes only `SfabDeployer`, with a note naming what's missing, while the config fails to load or
   the Lambda builds or website pages are missing. `cdk deploy --all` in that state fails, naming every problem.
 - `scripts/deploy SfabDeployer` works with no loadable config: it accepts only `SfabDeployer` then, and runs
@@ -35,8 +36,8 @@ Blocked by: 01
   project's source branch, image, `DEPLOY_STACKS` default and buildspec path, and the role's exact grants, so
   nothing wider sneaks in.
 - A CDK test asserts the EventBridge rule in `SfabBase` and its target.
-- Tests cover synth with no config, an incomplete one and missing builds (only `SfabDeployer`, with the note), and a
-  full config (all four stacks).
+- Tests cover synth with no config, an incomplete one and missing builds (only `SfabDeployer`, with the note, in the
+  caller's account), and a full config (all four stacks).
 - A test covers `scripts/deploy SfabDeployer` with no config (the check runs without the generate step, and only
   `SfabDeployer` deploys) and `scripts/deploy --all` with no config (refused before any CDK command).
 - The deployed proof (a build from `production` deploys) belongs to `2-identity-api#01`, which waits for this issue.
