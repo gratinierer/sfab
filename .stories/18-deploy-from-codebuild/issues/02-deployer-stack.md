@@ -19,7 +19,9 @@ Blocked by: 01
 - In `SfabBase`: an EventBridge rule on `sfab-deploy`'s `FAILED` and `STOPPED` states, publishing to the alerts topic,
   naming the project by its fixed name.
 - `SfabDeployer`'s account comes from `deploy_account()` (issue 01), not from the config. The synth tests, which run
-  `app.py` in a subprocess (`cdk/tests/test_app.py:10-14`), set `CDK_DEFAULT_ACCOUNT`, so they never reach AWS.
+  `app.py` in a subprocess (`cdk/tests/test_app.py:10-14`), set `CDK_DEFAULT_ACCOUNT` and pass their configs as fixtures
+  through `SFAB_CONFIG`, a missing file for "no config" and an incomplete one for "incomplete", so no subprocess
+  reaches Secrets Manager or STS.
 - `cdk/app.py` synthesizes only `SfabDeployer`, with a note naming what's missing, while the config fails to load or
   the Lambda builds or website pages are missing. It can't see which stacks the
   CLI selected, so `scripts/deploy` holds the guard below; a raw `cdk deploy --all` stays unguarded.
