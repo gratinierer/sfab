@@ -41,14 +41,17 @@ Label: ready-for-agent
 - `scripts/deploy` drops its `sfab.config.toml` checks, keeps refusing `SFAB_CONFIG`, and takes `DEPLOY_STACKS`-style
   arguments: `--all` or one or more of the app's stack names, refusing anything else before any CDK command. It
   passes `--require-approval never`.
-- `scripts/deploy` syncs `cdk/.venv` first, as `scripts/check` does today, then runs the region check and the loader in
-  it, then `scripts/check`, then `cdk`. So tests can run it and `scripts/check` without recursing or reaching AWS,
-  each step tests must not run takes an override naming the command to run instead: `SFAB_CHECK_CMD` for
-  `scripts/deploy`'s call of `scripts/check`, `SFAB_CDK_CMD` for its `cdk`, and `SFAB_LOAD_CMD` for the loader
-  check, which a test points at a stub that prints a config error or succeeds. Inside `scripts/check`, the steps
-  before the generate step (builds, audit) and pytest take the same kind of override, so a test runs only the config
-  load and the generate step. The tests' stubs record their arguments, so a test can assert what ran and in which
-  mode.
+- The decisions live in Python and are tested in-process with stubbed Secrets Manager and STS; the two scripts are
+  thin wrappers that tests never run, and no environment variable changes which steps they run, so a build's
+  `--environment-variables-override` can't skip a check or replace `cdk`.
+  - `cdk/deploy_plan.py` takes the arguments and the environment and, in this order, checks the arguments, then the
+    region, then loads the config. It returns the stacks to deploy and whether `scripts/check` must use the secret
+    or may fall back (only `SfabDeployer` with no loadable config, issue 02), or the errors.
+  - `sfab_config.load_for_check(require_secret)` makes `scripts/check`'s choice: the secret, or the fixture with a
+    message naming the problems. The generators call it, and `scripts/check` passes `--require-secret` through to
+    them when given it.
+  - `scripts/deploy` syncs `cdk/.venv`, runs the plan in it and stops on its errors, then runs `scripts/check`, with
+    `--require-secret` unless the plan allows the fallback, then `cdk deploy` with the plan's stacks.
 - Add `boto3`, pinned, to `cdk/requirements.in` and regenerate the hash-locked `cdk/requirements.txt`, since the
   loader, `deploy_account()` and `scripts/deploy`'s region check use it and `scripts/check` syncs with
   `--require-hashes`; `scripts/audit` then covers it.
@@ -66,9 +69,9 @@ Label: ready-for-agent
   `CHANGE_ME`, unknown or malformed entry is named; a missing secret, an empty one and a non-JSON one; the account
   comes from the caller identity; `SFAB_CONFIG` still selects the fixture; `version_id` is
   the stub's `VersionId`.
-- Tests cover `scripts/deploy`'s argument check: `--all`, one and several stack names pass; a flag or an unknown name
-  is refused before `cdk` runs, and so is a region other than us-east-1, or none.
-- Tests cover `scripts/check` falling back to the fixture without credentials and with a readable but incomplete
-  secret, and refusing to in the mode
-  `scripts/deploy` uses.
+- Tests cover `deploy_plan`: `--all`, one and several stack names pass; a flag or an unknown name is refused, and so
+  is a region other than us-east-1, or none, each before the config is loaded.
+- Tests cover `load_for_check` falling back to the fixture when the secret can't be read and when it is readable but
+  incomplete, and refusing to with `require_secret`. They never run the generate step, so they write nothing under
+  `build/`.
 - `scripts/check` passes in CI with the fixture.
