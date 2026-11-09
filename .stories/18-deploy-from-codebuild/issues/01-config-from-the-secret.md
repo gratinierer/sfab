@@ -41,6 +41,9 @@ Label: ready-for-agent
 - `scripts/deploy` drops its `sfab.config.toml` checks, keeps refusing `SFAB_CONFIG`, and takes `DEPLOY_STACKS`-style
   arguments: `--all` or one or more of the app's stack names, refusing anything else before any CDK command. It
   passes `--require-approval never`.
+- Add `boto3`, pinned, to `cdk/requirements.in` and regenerate the hash-locked `cdk/requirements.txt`, since the
+  loader, `deploy_account()` and `scripts/deploy`'s region check use it and `scripts/check` syncs with
+  `--require-hashes`; `scripts/audit` then covers it.
 - `cdk/tests/test_app.py`'s `test_synth_refuses_the_copied_example` synthesizes from the example file; it becomes a
   test with an incomplete fixture through `SFAB_CONFIG`, still holding `CHANGE_ME` values, which after issue 02
   expects only `SfabDeployer` and a note naming them, since `app.py` runs in a subprocess no stub reaches. `cdk/waf_check.py` (:10) and `cdk/smoke.py` (:7) say
