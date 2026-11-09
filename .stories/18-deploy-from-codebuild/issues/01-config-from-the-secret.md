@@ -10,7 +10,9 @@ Label: ready-for-agent
   file when it is. The checks are the ones the TOML has today, plus "the secret is missing", "it has no value" and
   "its value isn't a JSON object", each named in the one error.
 - `account_id` comes from `sts get-caller-identity`, not the config, through its own function, `deploy_account()`,
-  separate from `load()`, so `cdk/app.py` can target `SfabDeployer`'s account when the config doesn't load. `Config` keeps an `account_id` field so the
+  separate from `load()`, so `cdk/app.py` can target `SfabDeployer`'s account when the config doesn't load. With
+  `SFAB_CONFIG`, the fixture still carries `account_id` and supplies it with no STS call, so tests never reach AWS;
+  in the secret, `account_id` is refused as an unknown key. `Config` keeps an `account_id` field so the
   stacks don't change; the fixture keeps its `000000000000`.
 - A deploy run in a region other than us-east-1 refuses before synth, naming both regions.
 - `smoke_claim`: the smoke script reads it from the same source as the rest (secret or fixture), not from raw TOML

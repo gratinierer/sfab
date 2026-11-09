@@ -27,7 +27,7 @@ TOML, "not Secrets Manager" (`.stories/17-genesis-codes/spec.md` Clarification 1
 - **`account_id` leaves the config.** The deploy targets the account of the credentials it runs with, read with
   `sts get-caller-identity`: the build's own account in CodeBuild, the owner's on a machine. This drops story 2's
   guard that credentials for another account fail at synth, which is accepted: the build can only reach its own
-  account, and the owner has one.
+  account, and the owner has one. The test fixture keeps its `account_id`, so tests never call STS.
 - **The region stays fixed at us-east-1 in the CDK code**, because the CloudFront certificate and the
   CLOUDFRONT-scope WAF need it. A deploy run in any other region refuses before synth.
 - **The stack never writes the values.** CDK creates the secret with no value it controls, and the owner fills it
