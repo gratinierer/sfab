@@ -23,7 +23,9 @@ Blocked by: 01
   through `SFAB_CONFIG`, a missing file for "no config" and an incomplete one for "incomplete", so no subprocess
   reaches Secrets Manager or STS.
 - `cdk/app.py` synthesizes only `SfabDeployer`, with a note naming what's missing, while the config fails to load or
-  the Lambda builds or website pages are missing. It can't see which stacks the
+  the Lambda builds or website pages are missing. `app.py` reads the two build paths from `SFAB_LAMBDA_BUILDS` and
+  `SFAB_WEBSITE_BUILD` when set, defaulting to today's `lambda/target/lambda` (`cdk/app.py:13`) and `build/website`
+  (`cdk/stacks.py:42`), so the missing-builds test points them at an empty directory instead of deleting real output. It can't see which stacks the
   CLI selected, so `scripts/deploy` holds the guard below; a raw `cdk deploy --all` stays unguarded.
 - `scripts/deploy` runs the loader first. `scripts/deploy SfabDeployer` works with no loadable config: it accepts only `SfabDeployer` then, and runs
   `scripts/check` with its fixture fallback, so the generate step writes the fixture's pages the tests need. It's the one case
