@@ -105,6 +105,10 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `GetSecretValue` raises `ResourceNotFoundException` both for a missing secret and for one with no `AWSCURRENT` value, the second with a message naming the staging label, which is how `sfab_config` tells them apart | memory | [sm-get] documents only the code, not the messages; the first `scripts/deploy SfabDeployer` before the secret is filled shows the real message | 2026-11-09 |
 | A secret value's `SecretString` is at least 1 character, so an empty value can't be stored, but a blank one can | docs | [sm-get] | 2026-11-09 |
 | boto3 (botocore 1.43) resolves the region from `AWS_DEFAULT_REGION`, then the profile, and ignores `AWS_REGION`, so `sfab_config.Aws.region()` reads `AWS_REGION` first itself | docs | botocore 1.43.126 source, `BOTOCORE_DEFAUT_SESSION_VARIABLES["region"]` in `configprovider.py`, and a session with only `AWS_REGION` set resolving `None` | 2026-11-09 |
+| CloudFormation retrieves a `secretsmanager` dynamic reference's value only when it creates a resource or when an update modifies the resource holding the reference; a changed secret alone isn't picked up, so an unchanged reference isn't resolved again | docs | [cfn-dynref-sm] "Considerations" | 2026-11-09 |
+| A `secretsmanager` dynamic reference with neither `version-stage` nor `version-id` resolves the `AWSCURRENT` version, so the update or replacement that resolves it reads the current value | docs | [cfn-dynref-sm] "Reference pattern" | 2026-11-09 |
+| The `secretsmanager` dynamic reference can be used in all resource properties, except in custom resources, `AWS::CloudFormation::Init` metadata and EC2 `UserData`, and shouldn't sit in a property of the resource's primary identifier. So `AWS::ApiGateway::ApiKey`'s `Value` (its `Ref` is the key ID, not the value), `AWS::Lambda::Function`'s `Environment.Variables` and `AWS::CloudFront::Distribution`'s origin `OriginCustomHeaders` `HeaderValue` all accept one | docs | [cfn-dynref-sm] "Considerations", [cfn-dynref] "General considerations", [apikey-cfn] "Ref", the implementer's reading | 2026-11-09 |
+| A stack template can hold up to 60 dynamic references | docs | [cfn-dynref] | 2026-11-09 |
 
 ## Route 53, Budgets and other services
 
@@ -199,3 +203,5 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 [cf-custom-origin]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/RequestAndResponseBehaviorCustomOrigin.html
 [cdk-env]: https://docs.aws.amazon.com/cdk/v2/guide/configure-env.html
 [sm-get]: https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+[cfn-dynref]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references.html
+[cfn-dynref-sm]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references-secretsmanager.html
