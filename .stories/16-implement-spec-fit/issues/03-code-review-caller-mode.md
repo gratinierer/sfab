@@ -14,12 +14,13 @@ own commits on a shared branch.
   - the reviewers' model (step 4 uses it, still checking it is neither the code's author nor the orchestrator);
   - the baseline `scripts/check` result, and whether the owner waived check gating;
   - the owner's branch ruling;
-  - a commit filter: only commits whose subject ends `(#<n>)`;
-  - an extra line for the Spec sub-agent's brief, which then also gets the full commit messages (with a
-    commit filter, `git log <fixed-point>..HEAD --grep='(#<n>)$'`, not `--oneline`). `/implement-story` uses it to have each commit body's "Seams:" line
+  - a commit filter: only commits whose subject (not any message line, as `--grep` would match) ends `(#<n>)`;
+  - an extra line for the Spec sub-agent's brief, which then also gets the full commit messages (`git log
+    <fixed-point>..HEAD`, not `--oneline`, limited to the filtered commits). `/implement-story` uses it to have each commit body's "Seams:" line
     checked against its issue's Scope and "Done when".
-- With a commit filter, both sub-agents review only the filtered commits' changes (for instance the diffs of
-  `git log <fixed-point>..HEAD --grep='(#<n>)$'`, or an equivalent the skill states), other stories' commits in the
+- With a commit filter, both sub-agents review only the filtered commits' changes, merge commits included, in a
+  form that shows a merge's conflict resolutions (for instance `git log -p --cc` over the filtered commits, or an
+  equivalent the skill states; plain `git log -p` prints no diff for a merge), other stories' commits in the
   range don't trigger step 2's "spans two stories, ask", and the journal's `Notes` say the range was filtered.
 - With all answers supplied, "Up front, then unattended" asks nothing; any answer missing is asked as today.
 - Without caller mode, behaviour is unchanged.
