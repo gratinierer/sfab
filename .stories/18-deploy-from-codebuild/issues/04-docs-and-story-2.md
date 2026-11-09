@@ -13,6 +13,8 @@ Blocked by: 02, 03
   - "First deploy": `aws login` and `cdk bootstrap`; `cdk deploy SfabDeployer`; approve the connection; the
     protected `production` branch (`18-deploy-from-codebuild#05`); fill `sfab/config` except `hosted_zone_id`; then
     the existing steps, each stack deployed by a build with `DEPLOY_STACKS` naming it. "Prerequisites" follow.
+- `.stories/2-identity-api/issues/03-prepare-account-and-buy-domain.md`: its `cdk bootstrap` and config steps follow
+  the new setup: no TOML, the secret filled after `SfabDeployer`.
 - `.stories/2-identity-api/issues/01-*.md` (already `Blocked by` `18-deploy-from-codebuild#04` and `#05`): its deploy
   steps match the rewritten "First deploy", including the deployed proof that a build from `production` deploys.
 - `docs/restart-after-a-stop.md`: a redeploy after a stop is a build; update it if any step's command changes.

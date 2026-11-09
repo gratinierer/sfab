@@ -98,7 +98,7 @@ whoever can push there can already change everything the build deploys, so this 
 
 ## One-time manual setup
 
-Done once, by the owner, in story 2's "First deploy", which this story rewrites:
+Done once, by the owner, in story 2's "First deploy" and `2-identity-api#03`, which this story rewrites:
 
 1. `aws login` and `cdk bootstrap aws://<account>/us-east-1`.
 2. `scripts/deploy SfabDeployer` from a machine, which works before the secret exists ("Synth without the config").
