@@ -24,6 +24,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-09T18:10:00+00:00 | review | 56f86cb | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 5) | 1 new, 2 closures upheld, 5 open | audited the round-4 walkthrough (R21, R22) |
 | 2026-11-09T18:15:00+00:00 | walkthrough | 5f5a40f | claude-opus-5-5, auto | 0 new, 1 resolved, 4 still open | auto walkthrough, not a review pass; R4 and R18 skipped as still waiting |
 | 2026-11-09T18:25:00+00:00 | review | ea493ea | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 6) | 0 new, 1 closure upheld, 4 open | audited the round-5 walkthrough (R23); loop ends at its limit of 5 address passes |
+| 2026-11-09T17:35:00+00:00 | walkthrough | a7a2c84 | claude-opus-5-5 | 0 new, 3 resolved, 1 waived, 0 still open | walkthrough, not a review pass |
 
 ## Findings
 
