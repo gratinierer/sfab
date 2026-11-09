@@ -14,10 +14,11 @@ Blocked by: 01
   Manager versions the whole secret, and so replace the `OriginKey` API key, with 403s until the new key joins the
   usage plan, even when `origin_key` didn't change (R43).
 - Each resource that holds a reference also carries a short sha256 prefix of its own value, where a change forces
-  CloudFormation to update it: the `OriginKey` logical id (a new key, as today when the value changes), and a
-  property of the API Lambda and of the CloudFront distribution's origin. So a resource changes only when its own
-  value changes, and an edit to any other entry, such as adding `smoke_claim`, changes nothing. Both values are at
-  least 20 random letters and digits (`cdk/sfab_config.py` :104-107), so the prefix gives nothing away.
+  CloudFormation to update it: `origin_key`'s in the `OriginKey` logical id (a new key, as today when the value
+  changes) and in the distribution's `comment`, and `ip_hash_key`'s in the API Lambda's `description`. Free-text
+  fields, so the hash reaches no request, header or environment variable, and the exact env-var set and origin-header
+  list stay as they are. Both values are at least 20 random letters and digits (`cdk/sfab_config.py` :104-107), so the
+  prefix gives nothing away.
 - First confirm in AWS's documentation that CloudFormation doesn't re-resolve an unchanged dynamic reference, and
   that an update to the resource holding it (or its replacement) resolves the current version, and record both in
   `docs/aws-facts.md`. If either doesn't hold, stop and ask the owner.
@@ -26,6 +27,11 @@ Blocked by: 01
 - Synth still loads and checks the values (issue 01); only the template changes.
 - Rewrite the `OriginKey` comment in `cdk/stacks.py` (:397-399), whose "a changed value replaces the key" assumes the
   value is in the template: the value's hash prefix in the logical id now replaces the key instead.
+- Rewrite the `cdk/tests/test_stacks.py` tests that assert the values themselves, to assert the references instead:
+  `IP_HASH_KEY == config.ip_hash_key` (:311), `test_the_ip_hash_key_goes_only_to_the_api_lambda` (:319-328), which
+  then counts resources holding the `ip_hash_key` reference, the `OriginKey` `Value` in
+  `test_the_origin_key_is_unnamed_and_in_a_usage_plan_on_v1_without_a_throttle` (:524), and the `x-api-key`
+  `HeaderValue` in `test_the_origin_is_the_api_without_a_doubled_stage_and_with_the_origin_key` (:616-618).
 
 ## Done when
 
