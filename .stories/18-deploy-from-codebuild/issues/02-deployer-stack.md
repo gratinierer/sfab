@@ -24,8 +24,9 @@ Blocked by: 01
   reaches Secrets Manager or STS.
 - `cdk/app.py` synthesizes only `SfabDeployer`, with a note naming what's missing, while the config fails to load or
   the Lambda builds or website pages are missing. `app.py` reads the two build paths from `SFAB_LAMBDA_BUILDS` and
-  `SFAB_WEBSITE_BUILD` when set, defaulting to today's `lambda/target/lambda` (`cdk/app.py:13`) and `build/website`
-  (`cdk/stacks.py:42`), so the missing-builds test points them at an empty directory instead of deleting real output. It can't see which stacks the
+  `SFAB_WEBSITE_BUILD` only when `SFAB_CONFIG` is set, as in tests, and otherwise uses today's `lambda/target/lambda`
+  (`cdk/app.py:13`) and `build/website` (`cdk/stacks.py:42`), so the missing-builds test points them at an empty
+  directory, and a real deploy, where `deploy_plan` refuses `SFAB_CONFIG`, can't be pointed elsewhere. It can't see which stacks the
   CLI selected, so `scripts/deploy` holds the guard below; a raw `cdk deploy --all` stays unguarded.
 - `scripts/deploy` runs issue 01's `deploy_plan` first (a set `SFAB_CONFIG` refused, then the arguments, the region and the config). `scripts/deploy SfabDeployer` works with no loadable config: it accepts only `SfabDeployer` then, and runs
   `scripts/check` with its fixture fallback, so the generate step writes the fixture's pages the tests need. It's the one case
@@ -54,6 +55,8 @@ Blocked by: 01
   project's source branch, image, `DEPLOY_STACKS` default and buildspec path, and the role's exact grants, so
   nothing wider sneaks in.
 - A CDK test asserts the EventBridge rule in `SfabBase` and its target.
+- An in-process test of `app.py`'s build-path choice shows `SFAB_LAMBDA_BUILDS` and `SFAB_WEBSITE_BUILD` ignored
+  while `SFAB_CONFIG` is unset, and used while it is set.
 - A test asserts `ci.yml` and the buildspec take every tool version from `tool-versions.env` and pin none inline.
 - Tests cover synth with no config, an incomplete one and missing builds (only `SfabDeployer`, with the note, in the
   caller's account), and a full config (all four stacks).
