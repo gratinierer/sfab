@@ -15,8 +15,8 @@ own commits on a shared branch.
   - the baseline `scripts/check` result, and whether the owner waived check gating;
   - the owner's branch ruling;
   - a commit filter: only commits whose subject ends `(#<n>)`;
-  - an extra line for the Spec sub-agent's brief, which then also gets the full commit messages (`git log
-    <fixed-point>..HEAD`, not `--oneline`). `/implement-story` uses it to have each commit body's "Seams:" line
+  - an extra line for the Spec sub-agent's brief, which then also gets the full commit messages (with a
+    commit filter, `git log <fixed-point>..HEAD --grep='(#<n>)$'`, not `--oneline`). `/implement-story` uses it to have each commit body's "Seams:" line
     checked against its issue's Scope and "Done when".
 - With a commit filter, both sub-agents review only the filtered commits' changes (for instance the diffs of
   `git log <fixed-point>..HEAD --grep='(#<n>)$'`, or an equivalent the skill states), other stories' commits in the

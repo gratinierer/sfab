@@ -58,8 +58,9 @@ keeps this repo's rules.
 - **Review**: replaces upstream's step 7. After the last merge it reads `.claude/skills/code-review/SKILL.md` by
   path and follows it inline, with `<review base> auto 3` and issue 03's caller mode: the story, every open issue
   of it with a commit since the run log's first line (whether this run or an earlier one made it, and whether or
-  not its commits fall in the range), the start gate's answers, the filter to the story's own `(#<n>)` commits, and the Spec brief line that checks
-  each commit body's "Seams:" against its issue.
+  not its commits fall in the range), the start gate's answers, the filter to the story's own `(#<n>)` commits, and the Spec brief line: "for each commit
+  whose body has a `Seams:` line, check those seams against its issue; a commit without one (run log, merge,
+  closing, review fixes) is not a finding". Later rounds' ranges hold only fix commits, so it finds nothing there.
   It doesn't call it by name through the Skill tool, since Claude Code ships a built-in `code-review` too. The
   skill says this is the repo
   skill in `.claude/skills/code-review/`, whose arguments are a fixed point and `auto`, not Claude Code's built-in
