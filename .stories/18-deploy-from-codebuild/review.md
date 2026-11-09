@@ -14,6 +14,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | Date | Kind | Reviewed | By | Findings | Notes |
 |---|---|---|---|---|---|
 | 2026-11-09T16:03:00+00:00 | review | cca647d | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 1) | 14 new, 0 resolved, 14 open | first review |
+| 2026-11-09T16:40:00+00:00 | walkthrough | ace6d7f | claude-opus-5-5, auto | 0 new, 11 resolved, 3 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
