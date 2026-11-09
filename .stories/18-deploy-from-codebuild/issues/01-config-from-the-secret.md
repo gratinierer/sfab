@@ -75,7 +75,10 @@ Label: ready-for-agent
   and `test_example_mentions_smoke_claim_commented_out` go, `test_example_and_fixture_hold_the_same_keys` becomes a
   check that the fixture holds the secret's required keys plus `account_id` and `version_id`, and
   `test_sfab_config_env_var_names_the_file` becomes one that `SFAB_CONFIG` selects the fixture (:65-69, :129-143).
-  Its tests that write TOML files and pass their paths set `SFAB_CONFIG` instead.
+  `test_smoke_claim_is_allowed_and_ignored` (:116-119), which asserts `Config` has no `smoke_claim`, becomes one that
+  `load()` passes it through. Its tests that pass a path to `load()`, whether they write a TOML file or not, set
+  `SFAB_CONFIG` instead, including `test_fixture_loads` (:23-25) and `test_missing_file_names_the_path` (:28-31),
+  whose error still names the missing file.
 
 ## Done when
 
