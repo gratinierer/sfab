@@ -10,9 +10,11 @@ Blocked by: 02, 03
     credentials.
   - "Delivery": deploys run in CodeBuild through `scripts/deploy`, started by hand, with an emergency deploy from a
     machine.
-  - "First deploy": `aws login` and `cdk bootstrap`; `cdk deploy SfabDeployer`; approve the connection; the
+  - "First deploy": `aws login` and `cdk bootstrap`; `scripts/deploy SfabDeployer`; approve the connection; the
     protected `production` branch (`18-deploy-from-codebuild#05`); fill `sfab/config` except `hosted_zone_id`; then
-    the existing steps, each stack deployed by a build with `DEPLOY_STACKS` naming it. "Prerequisites" follow.
+    the existing steps, each stack deployed by a build with `DEPLOY_STACKS` naming it, with any code change between
+    steps, such as the budget filter's registrar service name, committed and `production` moved forward before the
+    next build. "Prerequisites" follow, including the CodeBuild quota check.
 - `.stories/2-identity-api/issues/03-prepare-account-and-buy-domain.md`: its `cdk bootstrap` and config steps follow
   the new setup: no TOML, the secret filled after `SfabDeployer`.
 - `.stories/2-identity-api/issues/01-*.md` (already `Blocked by` `18-deploy-from-codebuild#04` and `#05`): its deploy

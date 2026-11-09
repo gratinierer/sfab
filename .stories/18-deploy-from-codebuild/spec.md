@@ -107,7 +107,9 @@ Done once, by the owner, in story 2's "First deploy" and `2-identity-api#03`, wh
 3. Approve the GitHub connection in the console.
 4. Create and protect the `production` branch (issue 05).
 5. Fill `sfab/config`, except `hosted_zone_id` until the domain is bought, then the rest of story 2's steps,
-   starting builds with `DEPLOY_STACKS` naming one stack at a time where story 2 deploys them one by one.
+   starting builds with `DEPLOY_STACKS` naming one stack at a time where story 2 deploys them one by one. A code
+   change between steps, such as story 2's registrar service name in the budget filter, is committed and `production`
+   moved forward before the next build.
 
 Buying the domain, confirming the SNS subscription and checking the Free flat-rate plan stay manual, as story 2 has
 them.
