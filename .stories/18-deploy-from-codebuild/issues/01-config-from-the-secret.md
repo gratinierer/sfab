@@ -68,7 +68,8 @@ Label: ready-for-agent
 - `cdk/tests/test_app.py`'s `test_synth_refuses_the_copied_example` synthesizes from the example file; it becomes a
   test with an incomplete fixture through `SFAB_CONFIG`, still holding `CHANGE_ME` values, which after issue 02
   expects only `SfabDeployer` and a note naming them, since `app.py` runs in a subprocess no stub reaches. `cdk/waf_check.py` (:10) and `cdk/smoke.py` (:7) say
-  they need no AWS credentials, which stops being true.
+  they need no AWS credentials, which stops being true, and so do their wrappers' header comments, `scripts/smoke`
+  (:2) and `scripts/waf-check` (:2).
 - Remove `sfab.config.example.toml` and the `.gitignore` line for `sfab.config.toml`, and update the comments and
   docstrings that name the file (`cdk/sfab_config.py`, `scripts/check`, `scripts/deploy`, `cdk/smoke.py`,
   `cdk/tests/conftest.py`, `cdk/tests/test_stacks.py`, `cdk/tests/test_smoke_args.py`).
