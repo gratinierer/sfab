@@ -24,7 +24,8 @@ Label: ready-for-agent
   arguments: `--all` or one or more of the app's stack names, refusing anything else before any CDK command. It
   passes `--require-approval never`.
 - Remove `sfab.config.example.toml` and the `.gitignore` line for `sfab.config.toml`, and update the comments and
-  docstrings that name the file (`cdk/sfab_config.py`, `scripts/check`, `scripts/deploy`, `cdk/smoke.py`).
+  docstrings that name the file (`cdk/sfab_config.py`, `scripts/check`, `scripts/deploy`, `cdk/smoke.py`,
+  `cdk/tests/conftest.py`, `cdk/tests/test_stacks.py`, `cdk/tests/test_smoke_args.py`).
 
 ## Done when
 

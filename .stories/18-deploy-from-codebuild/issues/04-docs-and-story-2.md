@@ -18,11 +18,15 @@ Blocked by: 02, 03
 - `docs/restart-after-a-stop.md`: a redeploy after a stop is a build; update it if any step's command changes.
 - `.stories/17-genesis-codes/spec.md` "The IP rule": `ip_hash_key` lives in `sfab/config`, with a note pointing here.
 - `.stories/12-public-repo/spec.md:21`, which lists `sfab.config.toml` as never public: the file no longer exists.
-- Any other mention of `sfab.config.toml` outside `.stories/done/` (`grep`).
+- `.stories/4-life-in-the-world/spec.md` (:295) and `issues/10-launch-checklist.md` (:16), on `smoke_claim`;
+  `.stories/2-identity-api/issues/03-prepare-account-and-buy-domain.md` and `issues/09-*.md`; `federation/world.yaml`
+  (:2).
+- Any other mention of `sfab.config.toml` (`grep`), leaving closed issues in any `issues/done/` and the rows of
+  `review.md` and `code-review.md` files as history.
 
 ## Done when
 
-- `grep -rn "sfab.config.toml"` outside `.stories/done/` and this story finds only the history notes this issue
-  leaves on purpose.
-- Stories 2, 12 and 17, whose documents this issue edits, each get a `/review-story` pass after the edit, so their
+- `grep -rn "sfab.config.toml"`, outside `issues/done/` folders, `review.md` and `code-review.md` files, `.stories/done/`
+  and this story, finds only the history notes this issue leaves on purpose.
+- Stories 2, 4, 12 and 17, whose documents this issue edits, each get a `/review-story` pass after the edit, so their
   reviews aren't left stale (`docs/agents/issue-tracker.md` "Before implementing a story").
