@@ -5,6 +5,7 @@ See .stories/2-identity-api/spec.md "Architecture" and "Abuse and cost controls"
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from dataclasses import dataclass
@@ -108,6 +109,21 @@ THROTTLE_BURST = 20
 # Per IP per 5 minutes, across all routes; WAF's lowest is 10 (spec.md "WAF limit").
 WAF_RATE_LIMIT = 100
 WAF_RATE_WINDOW_SECONDS = 300
+
+
+def secret_ref(key: str) -> str:
+    """A CloudFormation dynamic reference to one entry of the secret `sfab/config`, so the
+    template holds a pointer rather than the value. Versionless, so it reads the current
+    version, and an edit to another entry changes no reference (docs/aws-facts.md)."""
+    return f"{{{{resolve:secretsmanager:{sfab_config.SECRET_ID}:SecretString:{key}}}}}"
+
+
+def value_hash(value: str) -> str:
+    """A short sha256 prefix of a secret value, for a free-text field or logical id of the
+    resource holding its reference: CloudFormation resolves an unchanged reference only when
+    something else about that resource changes, so the hash makes a new value an update.
+    The values are at least 20 random letters and digits, so 8 hex digits give nothing away."""
+    return hashlib.sha256(value.encode()).hexdigest()[:8]
 
 
 class SynthError(Exception):
@@ -365,6 +381,8 @@ class ApiStack(cdk.Stack):
             architecture=lambda_.Architecture.ARM_64,
             handler="bootstrap",
             code=api_code,
+            # Changes with IP_HASH_KEY's value, so a new key updates the function.
+            description=f"The API; IP hash key {value_hash(config.ip_hash_key)}",
             environment={
                 "REQUIRED_BITS": str(REQUIRED_BITS),
                 "IDENTITIES_BUCKET": base.identities_bucket.bucket_name,
@@ -373,7 +391,7 @@ class ApiStack(cdk.Stack):
                 "DOMAIN_NAME": config.domain_name,
                 "ABUSE_CONTACT": config.abuse_contact,
                 # The IP rule. The key goes only here, never to CloudFront or the API key.
-                "IP_HASH_KEY": config.ip_hash_key,
+                "IP_HASH_KEY": secret_ref("ip_hash_key"),
                 "GENESIS_IP_WINDOW_HOURS": str(GENESIS_IP_WINDOW_HOURS),
             },
             reserved_concurrent_executions=API_RESERVED_CONCURRENCY,
@@ -426,8 +444,15 @@ class ApiStack(cdk.Stack):
         self.rest_api.latest_deployment.add_to_logical_id(definition)
         # The origin key: CloudFront adds it, and every operation in sfab.yaml requires it.
         # It works only through a usage plan; the stage holds the throttles, so the plan has
-        # none. No name, because a changed value replaces the key, and a named key can't be.
-        origin_key = apigw.ApiKey(self, "OriginKey", value=config.origin_key, enabled=True)
+        # none. The value is a dynamic reference, so the template can't show a change: the
+        # value's hash in the logical id replaces the key when origin_key changes, and only
+        # then. No name, because a named key can't be replaced.
+        origin_key = apigw.ApiKey(
+            self,
+            f"OriginKey{value_hash(config.origin_key)}",
+            value=secret_ref("origin_key"),
+            enabled=True,
+        )
         plan = self.rest_api.add_usage_plan(
             "OriginKeyPlan",
             api_stages=[
@@ -491,6 +516,8 @@ class ApiStack(cdk.Stack):
         self.distribution = cloudfront.Distribution(
             self,
             "Distribution",
+            # Changes with origin_key's value, so a new key updates the x-api-key header.
+            comment=f"The API; origin key {value_hash(config.origin_key)}",
             domain_names=[config.api_host],
             certificate=base.certificate,
             web_acl_id=self.web_acl.attr_arn,
@@ -500,7 +527,7 @@ class ApiStack(cdk.Stack):
                     # RestApiOrigin defaults to the stage, but public URLs already hold /v1.
                     # CDK writes "/" as an empty OriginPath (docs/aws-facts.md "CDK").
                     origin_path="/",
-                    custom_headers={"x-api-key": config.origin_key},
+                    custom_headers={"x-api-key": secret_ref("origin_key")},
                 ),
                 # Not a redirect: that would come after the token was already sent.
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,

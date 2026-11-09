@@ -8,6 +8,7 @@ own tests are in test_website_stack.py.
 import json
 import re
 import subprocess
+from dataclasses import replace
 from pathlib import Path
 
 import aws_cdk as cdk
@@ -47,6 +48,65 @@ def test_every_stack_targets_the_config_account_in_us_east_1(built, config):
     for stack in (built.base, built.api, built.website):
         assert stack.account == config.account_id
         assert stack.region == "us-east-1"
+
+
+def secret_ref(key: str) -> str:
+    # The current version: no version stage or id, so an edit to another entry of the
+    # secret changes no reference (docs/aws-facts.md "Secrets Manager and the SDK").
+    return "{{resolve:secretsmanager:sfab/config:SecretString:%s}}" % key
+
+
+def test_no_template_holds_the_origin_key_or_the_ip_hash_key(built, config):
+    for stack in (built.base, built.api, built.website):
+        text = json.dumps(Template.from_stack(stack).to_json())
+        assert config.origin_key not in text, stack.stack_name
+        assert config.ip_hash_key not in text, stack.stack_name
+
+
+def test_the_secret_values_reach_cloudformation_as_dynamic_references(api):
+    _, key = only(api, "AWS::ApiGateway::ApiKey")
+    assert key["Value"] == secret_ref("origin_key")
+    _, dist = only(api, "AWS::CloudFront::Distribution")
+    (origin,) = dist["DistributionConfig"]["Origins"]
+    assert origin["OriginCustomHeaders"] == [
+        {"HeaderName": "x-api-key", "HeaderValue": secret_ref("origin_key")}
+    ]
+    _, function = api_function(api)
+    assert function["Properties"]["Environment"]["Variables"]["IP_HASH_KEY"] == secret_ref(
+        "ip_hash_key"
+    )
+
+
+def update_triggers(config, tmp_path_factory) -> tuple[str, str, str]:
+    """What forces CloudFormation to resolve a reference again: the OriginKey logical id,
+    the distribution's comment and the API Lambda's description."""
+    api = Template.from_stack(build_with_stand_ins(cdk.App(), config, tmp_path_factory).api)
+    key_id, _ = only(api, "AWS::ApiGateway::ApiKey")
+    _, dist = only(api, "AWS::CloudFront::Distribution")
+    _, function = api_function(api)
+    return key_id, dist["DistributionConfig"]["Comment"], function["Properties"]["Description"]
+
+
+def test_a_secret_value_s_hash_updates_only_the_resources_holding_its_reference(
+    config, tmp_path_factory
+):
+    key_id, comment, description = update_triggers(config, tmp_path_factory)
+
+    new_origin_key = replace(config, origin_key="NewOriginKey000000000000")
+    new_key_id, new_comment, same_description = update_triggers(new_origin_key, tmp_path_factory)
+    assert new_key_id != key_id
+    assert new_comment != comment
+    assert same_description == description
+
+    new_ip_hash_key = replace(config, ip_hash_key="NewIpHashKey000000000000")
+    assert update_triggers(new_ip_hash_key, tmp_path_factory)[:2] == (key_id, comment)
+    assert update_triggers(new_ip_hash_key, tmp_path_factory)[2] != description
+
+    for other in (
+        replace(config, abuse_contact="other-abuse@example.org"),
+        replace(config, domain_name="other.example.org"),
+    ):
+        assert update_triggers(other, tmp_path_factory) == (key_id, comment, description)
 
 
 # The base stack: buckets
@@ -347,7 +407,7 @@ def test_the_api_lambda_gets_required_bits_both_buckets_this_world_and_the_ip_ru
     assert env["REQUIRED_BITS"] == "20"
     # Story 17 "The IP rule": one birth per IP address every 4 hours, hashed with the key.
     assert env["GENESIS_IP_WINDOW_HOURS"] == "4"
-    assert env["IP_HASH_KEY"] == config.ip_hash_key
+    assert env["IP_HASH_KEY"] == secret_ref("ip_hash_key")
     # GET /federation/world publishes both.
     assert env["DOMAIN_NAME"] == config.domain_name
     assert env["ABUSE_CONTACT"] == config.abuse_contact
@@ -355,13 +415,13 @@ def test_the_api_lambda_gets_required_bits_both_buckets_this_world_and_the_ip_ru
     assert bucket_export(base, "Claims") in str(env["CLAIMS_BUCKET"])
 
 
-def test_the_ip_hash_key_goes_only_to_the_api_lambda(built, config):
+def test_the_ip_hash_key_goes_only_to_the_api_lambda(built):
     # Unlike origin_key, it never reaches CloudFront, the API key or another stack.
     found = [
         (resource["Type"], logical_id)
         for stack in (built.base, built.api, built.website)
         for logical_id, resource in Template.from_stack(stack).to_json()["Resources"].items()
-        if config.ip_hash_key in json.dumps(resource)
+        if secret_ref("ip_hash_key") in json.dumps(resource)
     ]
     assert len(found) == 1, found
     assert found[0][0] == "AWS::Lambda::Function" and found[0][1].startswith("ApiFunction")
@@ -560,13 +620,13 @@ def test_an_edit_to_sfab_yaml_gives_a_new_deployment(config, tmp_path):
     assert synth(source) != synth(source.replace("Create an identity", "Make an identity"))
 
 
-def test_the_origin_key_is_unnamed_and_in_a_usage_plan_on_v1_without_a_throttle(api, config):
+def test_the_origin_key_is_unnamed_and_in_a_usage_plan_on_v1_without_a_throttle(api):
     keys = api.find_resources("AWS::ApiGateway::ApiKey")
     assert len(keys) == 1
     key_id, key = next(iter(keys.items()))
-    # A named key can't be replaced, and changing Value replaces it.
+    # A named key can't be replaced, and the value's hash in the logical id replaces it.
     assert "Name" not in key["Properties"]
-    assert key["Properties"]["Value"] == config.origin_key
+    assert key["Properties"]["Value"] == secret_ref("origin_key")
     assert key["Properties"]["Enabled"] is True
 
     plans = api.find_resources("AWS::ApiGateway::UsagePlan")
@@ -645,7 +705,7 @@ def test_the_viewer_address_reaches_the_lambda_and_no_function_rewrites_headers(
     assert "request.headers" not in function["FunctionCode"]
 
 
-def test_the_origin_is_the_api_without_a_doubled_stage_and_with_the_origin_key(api, config):
+def test_the_origin_is_the_api_without_a_doubled_stage_and_with_the_origin_key(api):
     _, props = only(api, "AWS::CloudFront::Distribution")
     (origin,) = props["DistributionConfig"]["Origins"]
     assert "execute-api" in json.dumps(origin["DomainName"])
@@ -653,7 +713,7 @@ def test_the_origin_is_the_api_without_a_doubled_stage_and_with_the_origin_key(a
     assert origin.get("OriginPath", "") == ""
     assert origin["CustomOriginConfig"]["OriginProtocolPolicy"] == "https-only"
     assert origin["OriginCustomHeaders"] == [
-        {"HeaderName": "x-api-key", "HeaderValue": config.origin_key}
+        {"HeaderName": "x-api-key", "HeaderValue": secret_ref("origin_key")}
     ]
 
 
