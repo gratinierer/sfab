@@ -1,0 +1,37 @@
+# The `SfabDeployer` stack and the build
+
+Label: ready-for-agent
+Blocked by: 01
+
+`spec.md` "The deployer stack" and "A build".
+
+## Scope
+
+- A fourth stack, `SfabDeployer`, in `cdk/app.py`, in the account from the credentials and us-east-1, holding:
+  - the secret `sfab/config`, created with no value the template controls and retained on stack deletion;
+  - a CodeConnection to GitHub for `gratinierer/sfab`;
+  - the CodeBuild project `sfab-deploy`: this repo through the connection, branch `production`, an Arm small Linux
+    image, `DEPLOY_STACKS=--all`, and a buildspec in the repo that installs the pinned tools and runs
+    `scripts/deploy $DEPLOY_STACKS`;
+  - its role: `secretsmanager:GetSecretValue` on `sfab/config`, `sts:AssumeRole` on the four CDK bootstrap roles, the
+    connection use CodeBuild needs, its own logs and the cache bucket, and nothing else;
+  - an S3 cache bucket for cargo and uv, with a lifecycle rule.
+- In `SfabBase`: an EventBridge rule on `sfab-deploy`'s `FAILED` and `STOPPED` states, publishing to the alerts topic,
+  naming the project by its fixed name.
+- `cdk/app.py` synthesizes only `SfabDeployer`, with a note naming what's missing, while the config fails to load or
+  the Lambda builds or website pages are missing. `cdk deploy --all` in that state fails, naming every problem.
+- The CDK CLI gets a pinned version in the repo, and `.github/workflows/ci.yml` and the buildspec read every tool
+  version from one place.
+- Confirm in AWS's documentation and record in `docs/aws-facts.md`: CodeBuild's GitHub source through a
+  CodeConnection (resource type and auth type), the Arm small image's name and price, which CDK bootstrap roles a
+  `cdk deploy` assumes, Secrets Manager's price.
+
+## Done when
+
+- CDK tests assert `SfabDeployer`'s resources: the secret has no template-controlled value and is retained, the
+  project's source branch, image, `DEPLOY_STACKS` default and buildspec path, and the role's exact grants, so
+  nothing wider sneaks in.
+- A CDK test asserts the EventBridge rule in `SfabBase` and its target.
+- Tests cover synth with no config, an incomplete one and missing builds (only `SfabDeployer`, with the note), and a
+  full config (all four stacks).
+- The deployed proof (a build from `production` deploys) belongs to `2-identity-api#01`, which waits for this issue.
