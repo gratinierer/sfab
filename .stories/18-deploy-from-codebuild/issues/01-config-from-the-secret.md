@@ -20,7 +20,8 @@ Label: ready-for-agent
 - `scripts/check`: with `SFAB_CONFIG` unset it uses the secret. When the secret can't be read, as in an agent's
   container with no AWS credentials, it falls back to the fixture with a message, as it does today for a missing
   TOML. `scripts/deploy` runs it in a mode that requires the secret, so a deploy can't generate the public
-  description from the fixture.
+  description from the fixture. The one exception, `scripts/deploy SfabDeployer` with no loadable config, is issue
+  02's: it allows the fallback, because that stack publishes nothing generated.
 - `scripts/deploy` drops its `sfab.config.toml` checks, keeps refusing `SFAB_CONFIG`, and takes `DEPLOY_STACKS`-style
   arguments: `--all` or one or more of the app's stack names, refusing anything else before any CDK command. It
   passes `--require-approval never`.

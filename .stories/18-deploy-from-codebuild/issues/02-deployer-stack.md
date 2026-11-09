@@ -23,7 +23,8 @@ Blocked by: 01
   the Lambda builds or website pages are missing. It can't see which stacks the
   CLI selected, so `scripts/deploy` holds the guard below; a raw `cdk deploy --all` stays unguarded.
 - `scripts/deploy` runs the loader first. `scripts/deploy SfabDeployer` works with no loadable config: it accepts only `SfabDeployer` then, and runs
-  `scripts/check` with its fixture fallback, so the generate step writes the fixture's pages the tests need. `--all` or any other stack
+  `scripts/check` with its fixture fallback, so the generate step writes the fixture's pages the tests need. It's the one case
+  where `scripts/deploy` lets `scripts/check` fall back (issue 01). `--all` or any other stack
   name fails with the config's errors.
 - The CDK CLI gets a pinned version in the repo, and `.github/workflows/ci.yml` and the buildspec read every tool
   version from one file, `tool-versions.env` at the repo root: `ci.yml` loads it instead of its inline `env:` pins
