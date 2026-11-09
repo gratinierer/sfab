@@ -18,7 +18,9 @@ Blocked by: 02, 03
 - `.stories/2-identity-api/issues/03-prepare-account-and-buy-domain.md`: its `cdk bootstrap` and config steps follow
   the new setup: no TOML, the secret filled after `SfabDeployer`.
 - `.stories/2-identity-api/issues/01-*.md` (already `Blocked by` `18-deploy-from-codebuild#04` and `#05`): its deploy
-  steps match the rewritten "First deploy", including the deployed proof that a build from `production` deploys.
+  steps match the rewritten "First deploy", including the deployed proof that a build from `production` deploys,
+  and its "Target account" bullet (:50-51) becomes the account of the credentials (`spec.md` "The config
+  secret"), its assertion test following the fixture's `account_id`.
 - `docs/restart-after-a-stop.md`: a redeploy after a stop is a build; update it if any step's command changes.
 - `.stories/17-genesis-codes/spec.md` "The IP rule": `ip_hash_key` lives in `sfab/config`, with a note pointing here.
 - `.stories/12-public-repo/spec.md:21`, which lists `sfab.config.toml` as never public: the file no longer exists.
