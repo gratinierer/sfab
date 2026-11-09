@@ -29,7 +29,8 @@ TOML, "not Secrets Manager" (`.stories/17-genesis-codes/spec.md` Clarification 1
   guard that credentials for another account fail at synth, which is accepted: the build can only reach its own
   account, and the owner has one. The test fixture keeps its `account_id`, so tests never call STS.
 - **The region stays fixed at us-east-1 in the CDK code**, because the CloudFront certificate and the
-  CLOUDFRONT-scope WAF need it. A deploy run in any other region refuses before synth.
+  CLOUDFRONT-scope WAF need it. A deploy run in any other region refuses before synth: `scripts/deploy` checks the region boto3 resolves, and the
+  owner's tools that only read the secret run from any region.
 - **The stack never writes the values.** CDK creates the secret with no value it controls, and the owner fills it
   with `aws secretsmanager put-secret-value` or the console. A template that carried the values, or placeholders,
   would overwrite the owner's values on a later update. The secret is retained if its stack is deleted.

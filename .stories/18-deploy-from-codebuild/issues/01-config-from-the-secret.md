@@ -26,7 +26,10 @@ Label: ready-for-agent
   `account_id` under `SFAB_CONFIG`, never from `CDK_DEFAULT_ACCOUNT`, so a fixture-backed synth targets
   `000000000000` and the fixture still can't deploy, even through a raw `cdk deploy`; with the secret it fills it
   from `deploy_account()`.
-- A deploy run in a region other than us-east-1 refuses before synth, naming both regions.
+- A deploy run in a region other than us-east-1 refuses before synth, naming both regions. `scripts/deploy` checks
+  it, not `load()`, so the smoke script, `waf_check.py` and the generators still run anywhere; `load()` always reads
+  the secret in us-east-1. The region is the one boto3 resolves (`AWS_REGION`, then `AWS_DEFAULT_REGION`, then the
+  profile), which CodeBuild sets to the project's region; none at all refuses too.
 - `smoke_claim`: the smoke script reads it from the same source as the rest (secret or fixture), not from raw TOML
   (`cdk/smoke.py` :801-813).
 - `scripts/check`: with `SFAB_CONFIG` unset it uses the secret. When the config doesn't load, whether the secret
@@ -50,10 +53,10 @@ Label: ready-for-agent
 
 - Tests, with a stubbed Secrets Manager and STS (no real AWS), cover: a full secret loads; each missing, blank,
   `CHANGE_ME`, unknown or malformed entry is named; a missing secret, an empty one and a non-JSON one; the account
-  comes from the caller identity; a wrong region refuses; `SFAB_CONFIG` still selects the fixture; `version_id` is
+  comes from the caller identity; `SFAB_CONFIG` still selects the fixture; `version_id` is
   the stub's `VersionId`.
 - Tests cover `scripts/deploy`'s argument check: `--all`, one and several stack names pass; a flag or an unknown name
-  is refused before `cdk` runs.
+  is refused before `cdk` runs, and so is a region other than us-east-1, or none.
 - Tests cover `scripts/check` falling back to the fixture without credentials and with a readable but incomplete
   secret, and refusing to in the mode
   `scripts/deploy` uses.
