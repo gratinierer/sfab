@@ -13,8 +13,17 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 
 | Date | Kind | Reviewed | By | Findings | Notes |
 |---|---|---|---|---|---|
+| 2026-11-09T20:22 | review | 9c489ec + working tree (spec.md, issues/01 uncommitted) | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5) | 8 new, 0 resolved, 8 open | First review; spec rewritten with the 2026-11-09 decisions, issue 01 added. |
 
 ## Findings
 
 | # | Status | Axis | Affects | Description | Comments |
 |---|---|---|---|---|---|
+| R1 | open | completeness | 01, spec.md | `docs/agents/commit-policy.md` lets only the four review skills commit unasked and says "don't create a new branch"; `/implement-story` commits unattended (run log, implementers, merger, closing) and makes a branch per ticket, so 01's "Done when" can't hold unless the exception is extended (ADR 0006 updated or a new ADR). | 2026-11-09: found. commit-policy.md:7-14, :51, :61; spec.md:20-21. |
+| R2 | open | completeness | 01 | `code-review` auto asks up front (reviewer model, branch ruling, uncommitted story documents, baseline `scripts/check`), which here lands after the whole implementation; 01 should settle these in `/implement-story`'s start gate, and say implementers or the merger run `scripts/check` before merging. | 2026-11-09: found. code-review/SKILL.md:151-164; 01 start gate. |
+| R3 | open | consistency | 01 | Review and Closing name "every issue the run implemented" and "the implemented issue files"; a resumed run that implements nothing new would pass no issues to `code-review` and close nothing. Name every open issue whose commits lie in the range. | 2026-11-09: found. 01 Run log, Review, Closing bullets. |
+| R4 | open | completeness | 01, spec.md | The range from the first run-log line to `HEAD` takes in other stories' commits on a shared branch (this one carries stories 2, 14, 16, 18), which `code-review` step 2 asks about, and round 1 of a resumed run re-reviews ranges already recorded, refiling findings. Say what a resumed run reviews from. | 2026-11-09: found. spec.md "The start commit is recorded"; code-review/SKILL.md:33; commit-policy.md:44-46. |
+| R5 | open | completeness | 01 | Implementers run `/tdd`, which isn't in `.claude/skills/` but only linked in by the devcontainer, against ADR 0005; vendor `tdd` (skills-lock hash `daf55026f456`) or record the dependency as an exception. | 2026-11-09: found. `ls .claude/skills`; docs/adr/0005-skills-live-in-the-repo.md:5-6, :12-14. |
+| R6 | open | completeness | 01 | Closing doesn't say what happens when the last open issue closes: the tracker moves the story to `.stories/done/` and offers `gh issue close`, never closing unasked. Say whether the skill does, offers or leaves it. | 2026-11-09: found. issue-tracker.md:30-32, :199-204. |
+| R7 | open | consistency | 01 | spec "Decisions" puts implementer **and merger** commits under the `(#<n>)` / "Issue NN of story N" rule; 01 only briefs implementers, so a default `Merge branch …` subject breaks the policy and gives `code-review` nothing to match. | 2026-11-09: found. spec.md "Commits follow the policy" vs 01 Commits bullet. |
+| R8 | open | completeness | 01 | Adding an 11th Matt Pocock skill makes `VENDORED.md`'s "copied in once on 2026-11-04" (:3) and "Matt Pocock's ten were identical … at `4ae2317`" (:26) untrue; 01 doesn't say to update them. Upstream facts hold: commit `4ae2317`, hash `0ccc13c6766b`. | 2026-11-09: found. VENDORED.md:3, :26. |
