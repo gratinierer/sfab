@@ -69,9 +69,9 @@ the config. So while `sfab/config` is missing, has no value, or fails the loader
 `SfabDeployer` and prints a note naming what's missing. The same holds when the Lambda builds or the website pages
 are missing, which `cdk/app.py` refuses today. A full deploy (`--all`) with an incomplete config still fails, naming
 every problem, so a forgotten value can't silently leave a stack out. `scripts/deploy` follows the same rule: with
-no loadable config it accepts only `SfabDeployer`, and runs `scripts/check` without its generate step, since
-`SfabDeployer` needs no generated files. The Lambda build, the audit and the tests still run, the tests on the
-fixture as always.
+no loadable config it accepts only `SfabDeployer`, and runs `scripts/check` with its fixture fallback, so
+the generate step writes the fixture's pages, which the tests need and `SfabDeployer` doesn't publish. The next full
+deploy regenerates them from the secret.
 
 **The build deploys its own stack.** `--all` includes `SfabDeployer`, so a change to the build itself ships without a
 machine too, and the build can rewrite its own role. Only the protected `production` branch reaches the build, and

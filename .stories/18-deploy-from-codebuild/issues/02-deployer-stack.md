@@ -22,7 +22,7 @@ Blocked by: 01
 - `cdk/app.py` synthesizes only `SfabDeployer`, with a note naming what's missing, while the config fails to load or
   the Lambda builds or website pages are missing. `cdk deploy --all` in that state fails, naming every problem.
 - `scripts/deploy SfabDeployer` works with no loadable config: it accepts only `SfabDeployer` then, and runs
-  `scripts/check` without the generate step, through an option `scripts/check` takes. `--all` or any other stack
+  `scripts/check` with its fixture fallback, so the generate step writes the fixture's pages the tests need. `--all` or any other stack
   name fails with the config's errors.
 - The CDK CLI gets a pinned version in the repo, and `.github/workflows/ci.yml` and the buildspec read every tool
   version from one file, `tool-versions.env` at the repo root: `ci.yml` loads it instead of its inline `env:` pins
@@ -41,6 +41,6 @@ Blocked by: 01
 - A test asserts `ci.yml` and the buildspec take every tool version from `tool-versions.env` and pin none inline.
 - Tests cover synth with no config, an incomplete one and missing builds (only `SfabDeployer`, with the note, in the
   caller's account), and a full config (all four stacks).
-- A test covers `scripts/deploy SfabDeployer` with no config (the check runs without the generate step, and only
+- A test covers `scripts/deploy SfabDeployer` with no config (the check generates from the fixture, and only
   `SfabDeployer` deploys) and `scripts/deploy --all` with no config (refused before any CDK command).
 - The deployed proof (a build from `production` deploys) belongs to `2-identity-api#01`, which waits for this issue.
