@@ -38,7 +38,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-09T17:50:00+00:00 | review | c0b0d85 | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 6) | 2 new, 3 closures upheld, 1 reopened, 4 open | audited the walkthrough's closures of R31, R33-R35; reopened R35; loop ends at its limit of 5 address passes |
 | 2026-11-09T19:37:00+00:00 | walkthrough | 3dfa047 | claude-opus-5-5 | 0 new, 3 resolved, 1 waived, 0 still open | walkthrough, not a review pass |
 | 2026-11-09T19:41:00+00:00 | review | 31e5d8a | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 1) | 3 new, 4 closures upheld, 3 open | audited the walkthrough's closures of R24 (owner's option (a)), R35, R36, R37 |
-| 2026-11-09T19:45:00+00:00 | walkthrough | 928d97e | claude-opus-5-5, auto | 0 new, 3 resolved, 0 still open | auto walkthrough, not a review pass |
+| 2026-11-09T19:41:58+00:00 | walkthrough | fe36c2e | claude-opus-5-5, auto | 0 new, 3 resolved, 0 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
