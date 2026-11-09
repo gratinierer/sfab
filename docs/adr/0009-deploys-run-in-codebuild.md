@@ -5,8 +5,8 @@ Status: accepted
 Deploys run in an AWS CodeBuild project, `sfab-deploy`, which builds the protected `production` branch through a
 CodeConnection and deploys to its own account and us-east-1. The owner's private config lives in one Secrets Manager
 secret, `sfab/config`, not in a gitignored `sfab.config.toml` on the owner's machine. A fourth stack, `SfabDeployer`,
-holds the secret, the connection and the build, and is the only stack a machine deploys, once. See
-`.stories/18-deploy-from-codebuild/`.
+holds the secret, the connection and the build, and is the only stack that must first be deployed from a machine.
+An emergency deploy of any stack from a machine stays possible. See `.stories/18-deploy-from-codebuild/`.
 
 ## Why
 
