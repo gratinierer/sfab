@@ -29,6 +29,8 @@ Blocked by: 01
 - The CDK CLI gets a pinned version in the repo, and `.github/workflows/ci.yml` and the buildspec read every tool
   version from one file, `tool-versions.env` at the repo root: `ci.yml` loads it instead of its inline `env:` pins
   (`UV_VERSION`, `CARGO_LAMBDA_VERSION`, `ZIGLANG_VERSION`, `CARGO_AUDIT_VERSION`), with `CDK_CLI_VERSION` added.
+  `ci.yml` loads the file into `$GITHUB_ENV` in a step right after checkout, before the cache step whose key reads
+  `env.CARGO_AUDIT_VERSION` (`ci.yml:39`).
 - Confirm in AWS's documentation and record in `docs/aws-facts.md`: CodeBuild's GitHub source through a
   CodeConnection (resource type and auth type), the Arm small image's name and price, which CDK bootstrap roles a
   `cdk deploy` assumes, Secrets Manager's price, and the concurrent-build quota a new account starts with (forum
