@@ -32,7 +32,10 @@ Label: ready-for-agent
   profile), which CodeBuild sets to the project's region; none at all refuses too.
 - `smoke_claim`: the smoke script reads it from the same source as the rest (secret or fixture), not from raw TOML
   (`cdk/smoke.py` :801-813). `Config` gains an optional `smoke_claim` (`None` when absent), which `load()` fills from
-  either source, and `_smoke_claim` validates that value instead of reading a file.
+  either source, and `_smoke_claim` validates that value instead of reading a file. As today (`IGNORED_KEYS`,
+  `cdk/sfab_config.py:51`), `load()` doesn't apply its blank, `CHANGE_ME` or pattern checks to `smoke_claim`, only
+  that it is a string, so a placeholder never blocks synth or a deploy; `_smoke_claim` keeps treating a missing or
+  `CHANGE_ME` value as absent and checking `<id>.<claim>` (`cdk/smoke.py:801-814`) for `--production` alone.
 - The path seam goes: `load()` takes no path, its source is `SFAB_CONFIG`'s fixture or else the secret, and
   `config_path()` and `DEFAULT_PATH` (`cdk/sfab_config.py:21,63-70`) are removed, since with `SFAB_CONFIG` unset they
   name the deleted `sfab.config.toml`. `cdk/smoke.py`'s `main(config_path=None)` and `load_target(args,

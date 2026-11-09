@@ -23,7 +23,8 @@ TOML, "not Secrets Manager" (`.stories/17-genesis-codes/spec.md` Clarification 1
   the console shows and edits each entry on its own: `alert_email`, `abuse_contact`, `domain_name`, `hosted_zone_id`,
   `origin_key`, `ip_hash_key`, and the optional `smoke_claim`. The rules `cdk/sfab_config.py` applies to the TOML
   today carry over unchanged: every value a string, none blank or `CHANGE_ME`, unknown keys refused, the
-  `origin_key` and `ip_hash_key` patterns, and one error naming every problem.
+  `origin_key` and `ip_hash_key` patterns, and one error naming every problem. `smoke_claim` stays outside the blank
+  and `CHANGE_ME` checks, as today: only the smoke script's `--production` checks it.
 - **`account_id` leaves the config.** The deploy targets the account of the credentials it runs with, read with
   `sts get-caller-identity`: the build's own account in CodeBuild, the owner's on a machine. This drops story 2's
   guard that credentials for another account fail at synth, which is accepted: the build can only reach its own
