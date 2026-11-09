@@ -22,7 +22,10 @@ Label: ready-for-agent
   in the secret, `account_id` is refused as an unknown key. Record in `docs/aws-facts.md` that the CDK CLI sets
   `CDK_DEFAULT_ACCOUNT` for the app from the resolved credentials and leaves it unset without them, so
   `deploy_account()` then calls STS, and synth with neither credentials nor `SFAB_CONFIG` fails. `Config` keeps an `account_id` field so the
-  stacks don't change; the fixture keeps its `000000000000`.
+  stacks don't change; the fixture keeps its `000000000000`. `load()` fills `Config.account_id` from the fixture's
+  `account_id` under `SFAB_CONFIG`, never from `CDK_DEFAULT_ACCOUNT`, so a fixture-backed synth targets
+  `000000000000` and the fixture still can't deploy, even through a raw `cdk deploy`; with the secret it fills it
+  from `deploy_account()`.
 - A deploy run in a region other than us-east-1 refuses before synth, naming both regions.
 - `smoke_claim`: the smoke script reads it from the same source as the rest (secret or fixture), not from raw TOML
   (`cdk/smoke.py` :801-813).
