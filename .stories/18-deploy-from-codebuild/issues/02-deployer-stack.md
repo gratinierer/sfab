@@ -39,7 +39,8 @@ Blocked by: 01
 - Confirm in AWS's documentation and record in `docs/aws-facts.md`: CodeBuild's GitHub source through a
   CodeConnection (resource type and auth type), the Arm small image's name and price, which CDK bootstrap roles a
   `cdk deploy` assumes, Secrets Manager's price, and the concurrent-build quota a new account starts with (forum
-  reports say 0; record it as unconfirmed if AWS doesn't document it).
+  reports say 0; record it as unconfirmed if AWS doesn't document it), and that a build's environment has `AWS_REGION`
+  and `AWS_DEFAULT_REGION` set to the project's region, which issue 01's region check relies on.
 - Also confirm in CDK's and AWS's documentation what a secret created with no value holds: CDK's
   `secretsmanager.Secret` with neither `secret_string_value` nor `generate_secret_string` may emit
   `GenerateSecretString: {}` and start with a random password, and whether a raw `CfnSecret` with neither is allowed.
