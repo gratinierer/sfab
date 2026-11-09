@@ -31,7 +31,14 @@ Label: ready-for-agent
   the secret in us-east-1. The region is the one boto3 resolves (`AWS_REGION`, then `AWS_DEFAULT_REGION`, then the
   profile), which CodeBuild sets to the project's region; none at all refuses too.
 - `smoke_claim`: the smoke script reads it from the same source as the rest (secret or fixture), not from raw TOML
-  (`cdk/smoke.py` :801-813).
+  (`cdk/smoke.py` :801-813). `Config` gains an optional `smoke_claim` (`None` when absent), which `load()` fills from
+  either source, and `_smoke_claim` validates that value instead of reading a file.
+- The path seam goes: `load()` takes no path, its source is `SFAB_CONFIG`'s fixture or else the secret, and
+  `config_path()` and `DEFAULT_PATH` (`cdk/sfab_config.py:21,63-70`) are removed, since with `SFAB_CONFIG` unset they
+  name the deleted `sfab.config.toml`. `cdk/smoke.py`'s `main(config_path=None)` and `load_target(args,
+  config_path)` (:783-793, :833-841) drop the path and call `load()`, so the owner's smoke run reads the secret;
+  `cdk/tests/test_smoke_args.py` sets `SFAB_CONFIG` to its TOML files with `monkeypatch.setenv` instead of passing
+  their paths.
 - `scripts/check`: with `SFAB_CONFIG` unset it uses the secret. When the config doesn't load, whether the secret
   can't be read, as in an agent's container with no AWS credentials, or is readable but incomplete, such as before
   `hosted_zone_id` is known, it falls back to the fixture with a message naming the problems, as it does today for a missing
