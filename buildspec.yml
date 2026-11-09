@@ -1,0 +1,49 @@
+# The deploy build, which the CodeBuild project sfab-deploy (cdk/deployer_stack.py) runs on the
+# protected production branch: .stories/18-deploy-from-codebuild/spec.md "A build".
+# It installs the tools tool-versions.env pins, the same CI installs, then runs scripts/deploy
+# with the stacks DEPLOY_STACKS names (--all unless a start-build overrides it). scripts/deploy
+# refuses anything but --all or the app's stack names, so the override can't carry CDK flags.
+version: 0.2
+
+env:
+  shell: bash
+
+phases:
+  install:
+    commands:
+      - |
+        set -euo pipefail
+        set -a; . ./tool-versions.env; set +a
+        python3 -m pip install --quiet "uv==${UV_VERSION}"
+        # cargo-lambda finds zig through `python3 -m ziglang`, so both go in one virtual
+        # environment whose python3 comes first on PATH, as in CI.
+        uv venv /opt/sfab-tools
+        uv pip install --python /opt/sfab-tools/bin/python \
+          "cargo-lambda==${CARGO_LAMBDA_VERSION}" "ziglang==${ZIGLANG_VERSION}"
+        npm install --global --no-fund --no-audit "aws-cdk@${CDK_CLI_VERSION}"
+        # rustup only installs the toolchain lambda/rust-toolchain.toml pins.
+        if ! command -v rustup >/dev/null; then
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+            | sh -s -- -y --profile minimal --default-toolchain none
+        fi
+        export PATH="$HOME/.cargo/bin:$PATH"
+        (cd lambda && rustup toolchain install)
+        if ! cargo-audit --version 2>/dev/null | grep -q " ${CARGO_AUDIT_VERSION}$"; then
+          cargo install cargo-audit --version "${CARGO_AUDIT_VERSION}" --locked --force
+        fi
+  build:
+    commands:
+      - |
+        set -euo pipefail
+        export PATH="/opt/sfab-tools/bin:$HOME/.cargo/bin:$PATH"
+        # Unquoted, so a DEPLOY_STACKS naming several stacks splits into one argument each.
+        scripts/deploy $DEPLOY_STACKS
+
+# The cargo and uv downloads, in the project's S3 cache bucket, which expires them.
+cache:
+  paths:
+    - /root/.cargo/registry/index/**/*
+    - /root/.cargo/registry/cache/**/*
+    - /root/.cargo/git/db/**/*
+    - /root/.cargo/bin/cargo-audit
+    - /root/.cache/uv/**/*

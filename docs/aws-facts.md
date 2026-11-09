@@ -105,6 +105,25 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `GetSecretValue` raises `ResourceNotFoundException` both for a missing secret and for one with no `AWSCURRENT` value, the second with a message naming the staging label, which is how `sfab_config` tells them apart | memory | [sm-get] documents only the code, not the messages; the first `scripts/deploy SfabDeployer` before the secret is filled shows the real message | 2026-11-09 |
 | A secret value's `SecretString` is at least 1 character, so an empty value can't be stored, but a blank one can | docs | [sm-get] | 2026-11-09 |
 | boto3 (botocore 1.43) resolves the region from `AWS_DEFAULT_REGION`, then the profile, and ignores `AWS_REGION`, so `sfab_config.Aws.region()` reads `AWS_REGION` first itself | docs | botocore 1.43.126 source, `BOTOCORE_DEFAUT_SESSION_VARIABLES["region"]` in `configprovider.py`, and a session with only `AWS_REGION` set resolving `None` | 2026-11-09 |
+| An `AWS::SecretsManager::Secret` with neither `SecretString` nor `GenerateSecretString` creates an empty secret, with no value | docs | [cfn-secret], both properties: "If you omit both … you create an empty secret" | 2026-11-09 |
+| CDK's `secretsmanager.Secret` with neither `secret_string_value` nor `generate_secret_string` synthesizes `GenerateSecretString: {}`, so the secret starts with a random password, and an update could regenerate it; `SfabDeployer` uses a raw `CfnSecret` instead | docs | aws-cdk-lib 2.275.0's synth | 2026-11-09 |
+| A secret costs $0.40 a month, and API calls $0.05 per 10,000 | docs | [sm-pricing] | 2026-11-09 |
+
+## CodeBuild and CodeConnections
+
+| Fact | Status | Source | Checked |
+|---|---|---|---|
+| A CodeBuild project reads a GitHub repo through a CodeConnections connection with source `Type: GITHUB`, the clone URL as `Location`, and `Auth` `Type: CODECONNECTIONS` with the connection's ARN as `Resource` | docs | [cb-source], [cb-sourceauth] (`OAUTH`, `CODECONNECTIONS` or `SECRETS_MANAGER`), [cb-tokens] | 2026-11-09 |
+| The build role needs `codeconnections:GetConnection` and `codeconnections:GetConnectionToken` on the connection | docs | [cb-github-app], [cb-tokens] | 2026-11-09 |
+| `AWS::CodeConnections::Connection` with `ProviderType: GitHub` is created `PENDING`, and only the console makes it `AVAILABLE` | docs | [cfn-connection] | 2026-11-09 |
+| The Arm small image is `aws/codebuild/amazonlinux-aarch64-standard:3.0` (Amazon Linux 2023), on environment type `ARM_CONTAINER` with compute type `BUILD_GENERAL1_SMALL` (`arm1.small`) | docs | [cb-images]; the compute type from the price list's `arm1.small` | 2026-11-09 |
+| `arm1.small` on demand costs $0.0034 a minute in us-east-1, so a 20-minute build about 7 cents; the free tier gives 100 minutes a month of `general1.small` or `arm1.small` | docs | [cb-price-list] (`USE1-Build-Min:ARM:g1.small`), [cb-pricing] for the free tier | 2026-11-09 |
+| The default quota of concurrently running builds for ARM/Small is 1 per region, adjustable, though "internal metrics will determine the default quotas", and forum reports say a new account can start at 0 | docs, forum | [cb-quotas] (`L-5ED1D25B`); the 0 is unconfirmed, so check Service Quotas before the first build | 2026-11-09 |
+| A build's environment has `AWS_REGION` and `AWS_DEFAULT_REGION` set to the region the build runs in, the project's, which `deploy_plan`'s region check reads | docs | [cb-env-vars] | 2026-11-09 |
+| The service role CodeBuild needs for S3 caching and CloudWatch logs: `s3:GetObject`, `s3:PutObject`, `s3:GetBucketAcl`, `s3:GetBucketLocation`, `logs:CreateLogGroup`, `logs:CreateLogStream`, `logs:PutLogEvents`, which `SfabDeployer` scopes to its cache bucket and log group | docs | [cb-service-role], AWS's example with `Resource: *` | 2026-11-09 |
+| A `CodeBuild Build State Change` event's `detail` carries `build-status` (`IN_PROGRESS`, `SUCCEEDED`, `FAILED`, `STOPPED`) and `project-name` | docs | [cb-notifications] | 2026-11-09 |
+| EventBridge publishes to an SNS topic through the topic's policy for `events.amazonaws.com`; AWS's SNS example has no condition, and `SfabBase` adds `aws:SourceArn` of the rule, as AWS's examples for other targets do | memory | [eb-resource-policy]; the first failed build proves the email arrives | 2026-11-09 |
+| `cdk deploy` assumes the bootstrap's `deploy`, `file-publishing`, `image-publishing` and `lookup` roles, named `cdk-hnb659fds-<name>-role-<account>-<region>`, and CloudFormation assumes `cfn-exec`, so the build needs `sts:AssumeRole` on the first four only | docs | [cdk-bootstrap]; the names from CDK CLI 2.1146.1's `bootstrap-template.yaml` | 2026-11-09 |
 
 ## Route 53, Budgets and other services
 
@@ -199,3 +218,19 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 [cf-custom-origin]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/RequestAndResponseBehaviorCustomOrigin.html
 [cdk-env]: https://docs.aws.amazon.com/cdk/v2/guide/configure-env.html
 [sm-get]: https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+[cfn-secret]: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-secretsmanager-secret.html
+[sm-pricing]: https://aws.amazon.com/secrets-manager/pricing/
+[cb-source]: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-codebuild-project-source.html
+[cb-sourceauth]: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-codebuild-project-sourceauth.html
+[cb-tokens]: https://docs.aws.amazon.com/codebuild/latest/userguide/multiple-access-tokens.html
+[cb-github-app]: https://docs.aws.amazon.com/codebuild/latest/userguide/connections-github-app.html
+[cfn-connection]: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-codeconnections-connection.html
+[cb-images]: https://docs.aws.amazon.com/codebuild/latest/userguide/ec2-compute-images.html
+[cb-price-list]: https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/CodeBuild/current/us-east-1/index.json
+[cb-pricing]: https://aws.amazon.com/codebuild/pricing/
+[cb-quotas]: https://docs.aws.amazon.com/codebuild/latest/userguide/limits.html
+[cb-env-vars]: https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-env-vars.html
+[cb-service-role]: https://docs.aws.amazon.com/codebuild/latest/userguide/setting-up-service-role.html
+[cb-notifications]: https://docs.aws.amazon.com/codebuild/latest/userguide/sample-build-notifications.html
+[eb-resource-policy]: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-use-resource-based.html
+[cdk-bootstrap]: https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping-env.html

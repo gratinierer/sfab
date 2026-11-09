@@ -16,10 +16,6 @@ permissions:
 
 env:
   SFAB_CONFIG: cdk/tests/fixtures/sfab.config.test.toml
-  UV_VERSION: "0.13.6"
-  CARGO_LAMBDA_VERSION: "1.9.2"
-  ZIGLANG_VERSION: "0.16.0" # the devcontainer's zig on 2026-11-04; it comes from apt there, unpinned
-  CARGO_AUDIT_VERSION: "0.22.2"
 
 jobs:
   check:
@@ -27,6 +23,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Every tool version, shared with the deploy build's buildspec.yml. Before the cache
+      # step, whose key reads CARGO_AUDIT_VERSION.
+      - name: Load the pinned tool versions
+        run: grep -E '^[A-Z_]+=' tool-versions.env >> "$GITHUB_ENV"
 
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:

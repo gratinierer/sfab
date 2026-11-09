@@ -5,8 +5,10 @@
 Checks, in this order, stopping at the first that fails: `SFAB_CONFIG` isn't set, so the
 fixture can't deploy; the arguments are `--all` or one or more of the app's stacks, so a
 build's `DEPLOY_STACKS` can't carry other CDK flags; the deploy runs in us-east-1; and the
-config loads from the secret. On success it prints the mode scripts/check runs in
-(`require-secret`) and then the stacks for `cdk deploy`, one per line; on failure it prints
+config loads from the secret, unless the stacks are `SfabDeployer` alone, which creates the
+secret and so deploys without it ("Synth without the config"). On success it prints the mode
+scripts/check runs in (`require-secret`, or `fallback` for that one case, where scripts/check
+may use the fixture) and then the stacks for `cdk deploy`, one per line; on failure it prints
 every problem to stderr and exits 1. scripts/deploy is a thin wrapper around it, so no
 environment variable changes which checks run.
 """
@@ -18,12 +20,14 @@ import sys
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
+import deployer_stack
 import sfab_config
 
-STACKS = ("SfabBase", "SfabApi", "SfabWebsite")
+STACKS = ("SfabBase", "SfabApi", "SfabWebsite", deployer_stack.STACK_NAME)
 ALL = "--all"
 REGION = "us-east-1"
 REQUIRE_SECRET = "require-secret"
+FALLBACK = "fallback"
 
 
 @dataclass(frozen=True)
@@ -69,7 +73,17 @@ def plan(
     try:
         sfab_config.load(environ, aws)
     except sfab_config.ConfigError as e:
-        return Plan(errors=[f"the config doesn't load: {e}"])
+        # SfabDeployer creates the secret, so it deploys before the config exists, and
+        # scripts/check falls back to the fixture for the pages the tests need.
+        if argv == [deployer_stack.STACK_NAME]:
+            return Plan(stacks=list(argv), require_secret=False)
+        return Plan(
+            errors=[
+                f"the config doesn't load: {e}",
+                f"With no config, deploy only {deployer_stack.STACK_NAME}, which creates "
+                f"{sfab_config.SECRET}.",
+            ]
+        )
     return Plan(stacks=list(argv), require_secret=True)
 
 
@@ -94,7 +108,7 @@ def main(
     if found.errors:
         print("deploy:", *found.errors, sep="\n  ", file=sys.stderr)
         return 1
-    print(REQUIRE_SECRET if found.require_secret else "fallback")
+    print(REQUIRE_SECRET if found.require_secret else FALLBACK)
     print(*found.stacks, sep="\n")
     return 0
 

@@ -6,6 +6,7 @@ from fake_aws import NoAws, StubbedAws
 from test_sfab_config import ACCOUNT, FIXTURE, secret_data
 
 import deploy_plan
+import deployer_stack
 
 
 def full_secret(region="us-east-1"):
@@ -34,7 +35,48 @@ def test_all_one_or_several_stacks_pass_with_the_secret_required(argv):
 
 def test_the_plan_knows_every_stack_the_app_builds(built):
     names = {built.base.stack_name, built.api.stack_name, built.website.stack_name}
-    assert set(deploy_plan.STACKS) == names
+    assert set(deploy_plan.STACKS) == names | {deployer_stack.STACK_NAME}
+
+
+NO_SECRET = ("ResourceNotFoundException", "Secrets Manager can't find the specified secret.")
+
+
+def test_the_deployer_alone_deploys_with_no_config_and_the_check_falls_back():
+    found = deploy_plan.plan(
+        ["SfabDeployer"], environ={}, aws=StubbedAws(secret_error=NO_SECRET, account=ACCOUNT)
+    )
+
+    assert found.errors == []
+    assert found.stacks == ["SfabDeployer"]
+    assert found.require_secret is False
+
+
+def test_the_deployer_with_a_loadable_config_still_requires_the_secret():
+    found = deploy_plan.plan(["SfabDeployer"], environ={}, aws=full_secret())
+
+    assert found.errors == []
+    assert found.stacks == ["SfabDeployer"]
+    assert found.require_secret is True
+
+
+@pytest.mark.parametrize("argv", [["--all"], ["SfabApi"], ["SfabDeployer", "SfabBase"]])
+def test_anything_but_the_deployer_alone_is_refused_with_no_config(argv):
+    found = deploy_plan.plan(
+        argv, environ={}, aws=StubbedAws(secret_error=NO_SECRET, account=ACCOUNT)
+    )
+
+    assert found.stacks == []
+    assert any("the secret is missing" in error for error in found.errors), found.errors
+    assert any("SfabDeployer" in error for error in found.errors), found.errors
+
+
+def test_main_prints_fallback_for_the_deployer_with_no_config(capsys):
+    code = deploy_plan.main(
+        ["SfabDeployer"], environ={}, aws=StubbedAws(secret_error=NO_SECRET, account=ACCOUNT)
+    )
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == ["fallback", "SfabDeployer"]
 
 
 @pytest.mark.parametrize(

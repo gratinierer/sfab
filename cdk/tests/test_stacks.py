@@ -145,11 +145,50 @@ def test_there_are_two_topics_and_only_the_alerts_topic_emails_the_owner(base, c
     ]
 
 
-def test_the_alerts_topic_lets_budgets_and_cloudwatch_publish(base):
+def test_the_alerts_topic_lets_budgets_cloudwatch_and_eventbridge_publish(base):
     assert publishers(base, topic_id(base, "Alerts")) == {
         "budgets.amazonaws.com",
         "cloudwatch.amazonaws.com",
+        "events.amazonaws.com",
     }
+
+
+def test_a_failed_or_stopped_deploy_build_emails_the_alerts_topic(base):
+    # Story 18 "The deployer stack": SfabBase can't depend on SfabDeployer, so the rule names
+    # the project by its fixed name.
+    rules = base.find_resources("AWS::Events::Rule")
+    assert len(rules) == 1
+    rule = next(iter(rules.values()))["Properties"]
+
+    assert rule["EventPattern"] == {
+        "source": ["aws.codebuild"],
+        "detail-type": ["CodeBuild Build State Change"],
+        "detail": {"build-status": ["FAILED", "STOPPED"], "project-name": ["sfab-deploy"]},
+    }
+    assert rule["State"] == "ENABLED"
+    assert [t["Arn"] for t in rule["Targets"]] == [{"Ref": topic_id(base, "Alerts")}]
+
+
+def test_only_the_deploy_failure_rule_may_publish_to_the_alerts_topic_through_eventbridge(base):
+    rule_id = next(iter(base.find_resources("AWS::Events::Rule")))
+    statements = [
+        s
+        for policy in base.find_resources("AWS::SNS::TopicPolicy").values()
+        for s in policy["Properties"]["PolicyDocument"]["Statement"]
+        if s["Principal"] == {"Service": "events.amazonaws.com"}
+    ]
+    for statement in statements:
+        statement.pop("Sid", None)
+
+    assert statements == [
+        {
+            "Action": "sns:Publish",
+            "Effect": "Allow",
+            "Principal": {"Service": "events.amazonaws.com"},
+            "Resource": {"Ref": topic_id(base, "Alerts")},
+            "Condition": {"ArnEquals": {"aws:SourceArn": {"Fn::GetAtt": [rule_id, "Arn"]}}},
+        }
+    ]
 
 
 def test_the_stop_topic_lets_only_budgets_publish(base):

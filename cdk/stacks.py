@@ -20,6 +20,7 @@ from aws_cdk import aws_cloudfront as cloudfront
 from aws_cdk import aws_cloudfront_origins as origins
 from aws_cdk import aws_cloudwatch as cloudwatch
 from aws_cdk import aws_cloudwatch_actions as cw_actions
+from aws_cdk import aws_events as events
 from aws_cdk import aws_route53 as route53
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as lambda_
@@ -29,6 +30,7 @@ from aws_cdk import aws_sns as sns
 from aws_cdk import aws_sns_subscriptions as subs
 from constructs import Construct
 
+import deployer_stack
 import front_door
 import sfab_config
 from kill_switch import KillSwitch
@@ -204,6 +206,34 @@ class BaseStack(cdk.Stack):
         self.alerts_topic = sns.Topic(self, "Alerts")
         self.alerts_topic.add_subscription(subs.EmailSubscription(config.alert_email))
         self._let_publish(self.alerts_topic, "budgets.amazonaws.com", "cloudwatch.amazonaws.com")
+        # A failed or stopped deploy build emails the owner (story 18 "The deployer stack").
+        # SfabDeployer deploys before the config exists, so it can't hold this rule or depend
+        # on this topic; the rule names its project by the fixed name instead.
+        deploy_failed = events.CfnRule(
+            self,
+            "DeployFailed",
+            event_pattern={
+                "source": ["aws.codebuild"],
+                "detail-type": ["CodeBuild Build State Change"],
+                "detail": {
+                    "build-status": ["FAILED", "STOPPED"],
+                    "project-name": [deployer_stack.PROJECT_NAME],
+                },
+            },
+            state="ENABLED",
+            targets=[
+                events.CfnRule.TargetProperty(id="Alerts", arn=self.alerts_topic.topic_arn)
+            ],
+        )
+        # Only this rule may publish, the condition EventBridge's docs give for its targets.
+        self.alerts_topic.add_to_resource_policy(
+            iam.PolicyStatement(
+                actions=["sns:Publish"],
+                principals=[iam.ServicePrincipal("events.amazonaws.com")],
+                resources=[self.alerts_topic.topic_arn],
+                conditions={"ArnEquals": {"aws:SourceArn": deploy_failed.attr_arn}},
+            )
+        )
         # Receives only the stop budget's alert; any message on it stops the API: KillSwitch in
         # kill_switch.py subscribes to it.
         self.stop_topic = sns.Topic(self, "Stop")
