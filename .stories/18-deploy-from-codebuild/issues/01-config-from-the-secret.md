@@ -9,6 +9,8 @@ Label: ready-for-agent
 - `sfab_config.load()` reads `sfab/config` in us-east-1 through boto3 when `SFAB_CONFIG` isn't set, and the fixture
   file when it is. The checks are the ones the TOML has today, plus "the secret is missing", "it has no value" and
   "its value isn't a JSON object", each named in the one error.
+- `Config` also carries the secret's `version_id`, the `VersionId` that `GetSecretValue` returned, for issue 03's
+  references. The fixture has a fixed `version_id`, so tests never call AWS.
 - `account_id` comes from `sts get-caller-identity`, not the config, through its own function, `deploy_account()`,
   which takes, in this order, `CDK_DEFAULT_ACCOUNT` (the CDK CLI sets it from the credentials), then the fixture's
   `account_id` when `SFAB_CONFIG` names a loadable fixture, then STS, separate from `load()`, so `cdk/app.py` can target `SfabDeployer`'s account when the config doesn't load. With
@@ -42,7 +44,8 @@ Label: ready-for-agent
 
 - Tests, with a stubbed Secrets Manager and STS (no real AWS), cover: a full secret loads; each missing, blank,
   `CHANGE_ME`, unknown or malformed entry is named; a missing secret, an empty one and a non-JSON one; the account
-  comes from the caller identity; a wrong region refuses; `SFAB_CONFIG` still selects the fixture.
+  comes from the caller identity; a wrong region refuses; `SFAB_CONFIG` still selects the fixture; `version_id` is
+  the stub's `VersionId`.
 - Tests cover `scripts/deploy`'s argument check: `--all`, one and several stack names pass; a flag or an unknown name
   is refused before `cdk` runs.
 - Tests cover `scripts/check` falling back to the fixture without credentials and with a readable but incomplete

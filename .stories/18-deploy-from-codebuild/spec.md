@@ -42,7 +42,9 @@ TOML, "not Secrets Manager" (`.stories/17-genesis-codes/spec.md` Clarification 1
 - **Tests never read the secret.** `SFAB_CONFIG` keeps pointing the loader at the committed fixture, as CI does, and
   `scripts/deploy` still refuses to run with it set, so the fixture can't deploy. The TOML file and
   `sfab.config.example.toml` go away; the fixture keeps the TOML format.
-- **A leak** is handled as before, with no rotation procedure: replace the value in the secret, then start a build.
+- **A leak:** replace the value in the secret, then start a build. Each dynamic reference names the secret's
+  version, which synth reads with the values, so the new version changes the template and CloudFormation updates the
+  API key, the CloudFront header and `IP_HASH_KEY`. An unchanged reference isn't resolved again.
 
 ## The deployer stack
 
