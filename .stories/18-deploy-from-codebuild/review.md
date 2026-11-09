@@ -40,6 +40,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-09T19:41:00+00:00 | review | 31e5d8a | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 1) | 3 new, 4 closures upheld, 3 open | audited the walkthrough's closures of R24 (owner's option (a)), R35, R36, R37 |
 | 2026-11-09T19:41:58+00:00 | walkthrough | fe36c2e | claude-opus-5-5, auto | 0 new, 3 resolved, 0 still open | auto walkthrough, not a review pass |
 | 2026-11-09T19:43:56+00:00 | review | a2226b9 | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 2) | 2 new, 2 closures upheld, 1 reopened, 3 open | audited the walkthrough's closures of R38-R40, whose Status the walkthrough left `open` though its comments said fixed; set here; reopened R39 |
+| 2026-11-09T19:44:35+00:00 | walkthrough | 1c86d88 | claude-opus-5-5, auto | 0 new, 3 resolved, 0 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
