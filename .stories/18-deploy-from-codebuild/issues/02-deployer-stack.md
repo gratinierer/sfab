@@ -38,6 +38,12 @@ Blocked by: 01
   CodeConnection (resource type and auth type), the Arm small image's name and price, which CDK bootstrap roles a
   `cdk deploy` assumes, Secrets Manager's price, and the concurrent-build quota a new account starts with (forum
   reports say 0; record it as unconfirmed if AWS doesn't document it).
+- Also confirm in CDK's and AWS's documentation what a secret created with no value holds: CDK's
+  `secretsmanager.Secret` with neither `secret_string_value` nor `generate_secret_string` may emit
+  `GenerateSecretString: {}` and start with a random password, and whether a raw `CfnSecret` with neither is allowed.
+  Record it in `docs/aws-facts.md`, pick the construct that leaves the value to the owner, and make sure the
+  loader's error for that starting value, "it has no value" or "its value isn't a JSON object", tells the owner to
+  fill the secret.
 
 ## Done when
 
