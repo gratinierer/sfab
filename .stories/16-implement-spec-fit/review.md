@@ -19,6 +19,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-09T20:34 | review | 14d56bb | claude-fable-5-2 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 3 new, 0 resolved, 9 still open, 12 open | Auto round 1. Independent re-audit agrees with 20:31 on R1-R8; R4's resumed-run half also fails. |
 | 2026-11-09T20:37 | walkthrough | working tree | claude-opus-5-5 with the owner | 12 resolved, 0 open | Owner ruled R2-R4, R9-R12, R14, R15; R13, R16, R17 fixed; issue 03 added. Earlier walkthrough row's date corrected from 20:40 to 20:28. |
 | 2026-11-09T20:46:30 | review | 12b4373 | claude-fable-5-2 (dispatched; story authored by claude-opus-5-5) | 2 new, 9 closures upheld, 3 reopened, 5 open | Closure audit of the 20:37 walkthrough: R2, R3, R10-R14, R16, R17 hold; R4, R9, R15 reopened. |
+| 2026-11-09T20:56 | walkthrough | 47f8909 | claude-opus-5-5, auto | 0 new, 3 resolved, 2 still open | auto walkthrough, not a review pass; R4 and R19 left for the owner |
 
 ## Findings
 
