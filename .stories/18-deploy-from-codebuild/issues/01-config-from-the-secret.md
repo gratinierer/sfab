@@ -17,9 +17,10 @@ Label: ready-for-agent
 - A deploy run in a region other than us-east-1 refuses before synth, naming both regions.
 - `smoke_claim`: the smoke script reads it from the same source as the rest (secret or fixture), not from raw TOML
   (`cdk/smoke.py` :801-813).
-- `scripts/check`: with `SFAB_CONFIG` unset it uses the secret; with no AWS credentials it fails with a message saying
-  to set `SFAB_CONFIG` to the fixture, instead of silently falling back, so a check can't generate the public
-  description from the fixture before a deploy.
+- `scripts/check`: with `SFAB_CONFIG` unset it uses the secret. When the secret can't be read, as in an agent's
+  container with no AWS credentials, it falls back to the fixture with a message, as it does today for a missing
+  TOML. `scripts/deploy` runs it in a mode that requires the secret, so a deploy can't generate the public
+  description from the fixture.
 - `scripts/deploy` drops its `sfab.config.toml` checks, keeps refusing `SFAB_CONFIG`, and takes `DEPLOY_STACKS`-style
   arguments: `--all` or one or more of the app's stack names, refusing anything else before any CDK command. It
   passes `--require-approval never`.
@@ -37,4 +38,6 @@ Label: ready-for-agent
   comes from the caller identity; a wrong region refuses; `SFAB_CONFIG` still selects the fixture.
 - Tests cover `scripts/deploy`'s argument check: `--all`, one and several stack names pass; a flag or an unknown name
   is refused before `cdk` runs.
+- Tests cover `scripts/check` falling back to the fixture without credentials, and refusing to in the mode
+  `scripts/deploy` uses.
 - `scripts/check` passes in CI with the fixture.
