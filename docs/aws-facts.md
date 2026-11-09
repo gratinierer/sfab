@@ -96,6 +96,15 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `BucketDeployment` copies a folder during `cdk deploy`, refreshes a distribution's `distribution_paths` with an invalidation, and needs no Docker | memory | Issue 12 of story `2-identity-api` proves it; `cdk/website_stack.py` relies on the refresh | 2026-11-07 |
 | `SpecRestApi` adds no Lambda invoke permission, and creates no method resources | docs | Earlier review, R12 and R61 | 2026-10-30 |
 | `cdk bootstrap aws://<account>/<region>` still synthesizes the app when run beside a `cdk.json`, though it names the target, so run it where there's none | docs | CDK CLI 2.1147.0 source, `defineEnvironments` in `lib/cli/cdk-toolkit.js`; corrected from "doesn't need the app" | 2026-11-04 |
+| The CDK CLI sets `CDK_DEFAULT_ACCOUNT` for the app from the account of the resolved credentials, and leaves it unset when it can't resolve one, so `sfab_config.deploy_account()` then calls STS, and synth with neither credentials nor `SFAB_CONFIG` fails | docs | CDK CLI 2.1146.1 source, `prepareDefaultEnvironment` in `lib/index.js` (toolkit-lib `api/cloud-assembly/environment.ts`); [cdk-env] says only that it comes from the credentials | 2026-11-09 |
+
+## Secrets Manager and the SDK
+
+| Fact | Status | Source | Checked |
+|---|---|---|---|
+| `GetSecretValue` raises `ResourceNotFoundException` both for a missing secret and for one with no `AWSCURRENT` value, the second with a message naming the staging label, which is how `sfab_config` tells them apart | memory | [sm-get] documents only the code, not the messages; the first `scripts/deploy SfabDeployer` before the secret is filled shows the real message | 2026-11-09 |
+| A secret value's `SecretString` is at least 1 character, so an empty value can't be stored, but a blank one can | docs | [sm-get] | 2026-11-09 |
+| boto3 (botocore 1.43) resolves the region from `AWS_DEFAULT_REGION`, then the profile, and ignores `AWS_REGION`, so `sfab_config.Aws.region()` reads `AWS_REGION` first itself | docs | botocore 1.43.126 source, `BOTOCORE_DEFAUT_SESSION_VARIABLES["region"]` in `configprovider.py`, and a session with only `AWS_REGION` set resolving `None` | 2026-11-09 |
 
 ## Route 53, Budgets and other services
 
@@ -188,3 +197,5 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 [orp-managed]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-origin-request-policies.html
 [cf-headers]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/adding-cloudfront-headers.html
 [cf-custom-origin]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/RequestAndResponseBehaviorCustomOrigin.html
+[cdk-env]: https://docs.aws.amazon.com/cdk/v2/guide/configure-env.html
+[sm-get]: https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html

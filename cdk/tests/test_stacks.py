@@ -1,6 +1,6 @@
 """CDK assertion tests for the base and API stacks, from spec.md "Testing".
 
-Built from the committed fixture config, never a real sfab.config.toml, and with a
+Built from the committed fixture config, never the real config in `sfab/config`, and with a
 stand-in Lambda asset and website folder, so they need no build. The website stack's
 own tests are in test_website_stack.py.
 """

@@ -4,7 +4,9 @@
     scripts/smoke --execute-api <stage URL> [--production] [--api-url https://api.<domain_name>]
 
 The stage URL is the API stack's `Endpoint` output that `cdk deploy` prints, such as
-`https://abc123.execute-api.us-east-1.amazonaws.com/v1/`. Needs no AWS credentials.
+`https://abc123.execute-api.us-east-1.amazonaws.com/v1/`. Reads the config through the shared
+loader, so it needs AWS credentials that can read the secret `sfab/config`, unless `--api-url`
+is given without `--production`.
 
 - Before launch, the full run births a test agent and covers every route, the gateway's
   validation and errors, both `404`s, and the direct `execute-api` way in. It births with the
@@ -18,7 +20,7 @@ The stage URL is the API stack's `Endpoint` output that `cdk deploy` prints, suc
   It also births once with a code from `GET /world/genesis-code`, when the pool has one.
 - After launch, `--production` births nothing and writes nothing public: it reads every read
   route and makes only private writes, as the fixed smoke identity, whose `<id>.<claim>` is
-  `smoke_claim` in `sfab.config.toml`.
+  `smoke_claim` in the secret `sfab/config`.
 
 It sends one request every 4 seconds, to stay under WAF's 100 per 5 minutes, and solves a
 `Proof` for each write. WAF's plain `403` means this IP is blocked, or the API is stopped:
@@ -33,7 +35,6 @@ import secrets
 import string
 import sys
 import time
-import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -780,17 +781,18 @@ class UsageError(Exception):
     pass
 
 
-def load_target(args: argparse.Namespace, config_path) -> Target:
+def load_target(args: argparse.Namespace) -> Target:
     """The URLs and, for `--production`, the smoke identity, from the arguments and config."""
-    api_url = args.api_url
-    if api_url is None:
+    config = None
+    if args.api_url is None or args.production:
         try:
-            api_url = sfab_config.load(config_path).api_url
+            config = sfab_config.load()
         except sfab_config.ConfigError as e:
             raise UsageError(str(e)) from None
+    api_url = args.api_url if args.api_url is not None else config.api_url
     credential = None
     if args.production:
-        credential = _smoke_claim(config_path)
+        credential = _smoke_claim(config.smoke_claim)
     if not args.execute_api.startswith("https://"):
         raise UsageError(
             "--execute-api must be the stage's https:// URL, the stack's Endpoint output"
@@ -798,20 +800,16 @@ def load_target(args: argparse.Namespace, config_path) -> Target:
     return Target(api_url.rstrip("/"), args.execute_api, credential)
 
 
-def _smoke_claim(config_path) -> str:
-    try:
-        value = tomllib.loads(config_path.read_text(encoding="utf-8")).get("smoke_claim")
-    except (OSError, tomllib.TOMLDecodeError) as e:
-        raise UsageError(f"{config_path}: can't read smoke_claim: {e}") from None
+def _smoke_claim(value: str | None) -> str:
     if value is None or value == "CHANGE_ME":
         raise UsageError(
-            f"--production needs smoke_claim in {config_path}: the fixed smoke identity's "
+            f"--production needs smoke_claim in {sfab_config.SECRET}: the fixed smoke identity's "
             '<id>.<claim>. Birth it once after launch and add it, as spec.md "Local config" says.'
         )
-    agent, _, claim = str(value).partition(".")
+    agent, _, claim = value.partition(".")
     if not (_ID.fullmatch(agent) and _SECRET.fullmatch(claim)):
-        raise UsageError(f"{config_path}: smoke_claim must be <id>.<claim>, as in Authorization")
-    return str(value)
+        raise UsageError("smoke_claim must be <id>.<claim>, as in Authorization")
+    return value
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -833,12 +831,11 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
 def main(
     argv: list[str] | None = None,
     transport: Transport = urllib_transport,
-    config_path=None,
     codes_path: Path = CODES_FILE,
 ) -> int:
     args = parse_args(argv)
     try:
-        target = load_target(args, config_path or sfab_config.config_path())
+        target = load_target(args)
     except UsageError as e:
         print(e, file=sys.stderr)
         return 2

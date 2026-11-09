@@ -7,7 +7,8 @@ out of the smoke script: don't run the smoke script just after it.
 
     scripts/waf-check [--api-url https://api.<domain_name>]
 
-Needs no AWS credentials. Without `--api-url`, it reads `domain_name` from the config.
+Without `--api-url`, it reads `domain_name` from the config through the shared loader, which
+needs AWS credentials that can read the secret `sfab/config`.
 """
 
 from __future__ import annotations

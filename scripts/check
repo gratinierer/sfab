@@ -2,15 +2,21 @@
 # The steps CI and the deploy script both run, in this order:
 # generate, build, audit, test. See .stories/2-identity-api/spec.md "Delivery".
 # Stops at the first failure.
+#   scripts/check [--require-secret]
+# The generate step reads the config from SFAB_CONFIG's fixture when it's set, as in CI, or else
+# from the secret sfab/config. When the secret doesn't load, as in an agent's container with no
+# AWS credentials, it falls back to the committed fixture with a message naming the problems,
+# unless --require-secret, which scripts/deploy passes so a deploy never publishes the fixture's
+# values. See sfab_config.load_for_check.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# With no config at all, as in an agent's container, check against the committed fixture, as CI
-# does. A deploy can't use it: cdk/app.py reads sfab.config.toml and stops when it's missing.
-if [ -z "${SFAB_CONFIG:-}" ] && [ ! -f sfab.config.toml ]; then
-  export SFAB_CONFIG=cdk/tests/fixtures/sfab.config.test.toml
-  echo "check: no sfab.config.toml, so using $SFAB_CONFIG" >&2
-fi
+require_secret=()
+case "${1:-}" in
+  "") ;;
+  --require-secret) require_secret=(--require-secret) ;;
+  *) echo "check: unknown argument $1; takes only --require-secret" >&2; exit 2 ;;
+esac
 
 step() { printf '\n==> %s\n' "$*"; }
 
@@ -19,10 +25,10 @@ step "Python environment (cdk/.venv)"
 uv pip sync -q --python cdk/.venv/bin/python --require-hashes cdk/requirements.txt
 
 step "Generate"
-# The public API description and the website pages, from the active config (SFAB_CONFIG or
-# sfab.config.toml), so a deploy publishes the real abuse_contact and API host.
-cdk/.venv/bin/python cdk/generate_public_openapi.py
-cdk/.venv/bin/python cdk/generate_website.py
+# The public API description and the website pages, from the active config, so a deploy
+# publishes the real abuse_contact and API host.
+cdk/.venv/bin/python cdk/generate_public_openapi.py "${require_secret[@]}"
+cdk/.venv/bin/python cdk/generate_website.py "${require_secret[@]}"
 
 step "Build the Lambdas (arm64)"
 (cd lambda && cargo lambda build --release --arm64 --locked)

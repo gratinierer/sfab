@@ -27,7 +27,8 @@ _ROW = re.compile(r"^\| `(GET|POST|PUT|DELETE) (/[^`]+)` \| ([^|]+) \| ([^|]*) \
 
 @pytest.fixture(scope="module")
 def config():
-    return sfab_config.load(FIXTURE)
+    # SFAB_CONFIG set for this call alone, so a plain pytest never reads the secret.
+    return sfab_config.load(environ={"SFAB_CONFIG": str(FIXTURE)})
 
 
 @pytest.fixture(scope="module")

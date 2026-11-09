@@ -1,5 +1,3 @@
-# Private per-owner values: never commit. See sfab.config.example.toml.
-/sfab.config.toml
 # The owner's --no-ip-limit genesis codes for the smoke script: never commit.
 /smoke-genesis-codes.txt
 
