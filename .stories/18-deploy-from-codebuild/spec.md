@@ -61,7 +61,8 @@ A fourth stack, `SfabDeployer`, in the same CDK app as `SfabBase`, `SfabApi` and
 **The failure alert lives in `SfabBase`**, not `SfabDeployer`: an EventBridge rule on the `sfab-deploy` project's
 `FAILED` and `STOPPED` build states publishes to the existing alerts topic. `SfabDeployer` must deploy before the
 config exists, so it can't depend on `SfabBase`'s topic or on `alert_email`; the rule names the project by its fixed
-name instead.
+name instead. Until `SfabBase` exists, which needs the full config, a failed build sends no email, so the owner
+watches those first builds in the console.
 
 **Synth without the config.** CDK synthesizes the whole app even to deploy one stack, and the other three stacks need
 the config. So while `sfab/config` is missing, has no value, or fails the loader's checks, the app synthesizes only
