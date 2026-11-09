@@ -74,7 +74,9 @@ keeps this repo's rules.
 - **End**: no draft pull request. It reports the branch, the commits as short shas with subjects, the review's stop
   reason and what needs the user, and opens a pull request only when asked. It cleans up the worktrees and their
   branches, except those of tickets that stopped unmerged (second failed check, unclear seams): it keeps them and
-  names them in the report, so their work isn't lost.
+  names them in the report, so their work isn't lost. It relabels each such issue `ready-for-human` and adds a
+  line under its Scope saying why it stopped and naming the kept branch, so a later run doesn't start it again
+  until the owner relabels it; a later run's End never removes an earlier run's kept worktrees.
 - **`tdd` is vendored** to `.claude/skills/tdd/` unchanged (`SKILL.md`, `mocking.md`, `tests.md`,
   `agents/openai.yaml`), since `implement-story` calls it.
 - `.claude/skills/VENDORED.md`: rows for `implement-story` (mattpocock/skills, `skills/engineering/implement-spec/`,
