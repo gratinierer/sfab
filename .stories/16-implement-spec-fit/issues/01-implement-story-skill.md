@@ -38,7 +38,8 @@ keeps this repo's rules.
   the skill. Each ticket still gets a fresh sub-agent in its own
   worktree on a branch off the story branch, using `/tdd`, and a merger sub-agent merges it back. The ticket's
   branch passes `scripts/check` after merging the story branch's tip into it, before the merger takes it; a failure
-  goes back to the implementer, and a second one stops the run and reports.
+  goes back to the implementer, and a second one stops that ticket, which stays open (see "When the frontier
+  empties").
 - **Seams**: the implementer brief says the issue file stands in for `/tdd`'s confirmation of the seams under test:
   the implementer takes the seams the issue's Scope and "Done when" imply and names them in its commit body ("Seams:
   …"), and the review's Spec reviewer checks them against the issue. When the issue doesn't make them clear, the
