@@ -10,7 +10,10 @@ Label: ready-for-agent
   file when it is. The checks are the ones the TOML has today, plus "the secret is missing", "it has no value" and
   "its value isn't a JSON object", each named in the one error.
 - `Config` also carries the secret's `version_id`, the `VersionId` that `GetSecretValue` returned, for issue 03's
-  references. The fixture has a fixed `version_id`, so tests never call AWS.
+  references. `account_id` and `version_id` aren't keys in the secret: the required keys become the secret's
+  entries only, not every `Config` field (today `REQUIRED_KEYS` at `cdk/sfab_config.py:49`), and the secret refuses
+  both names as unknown keys. The fixture carries both as keys, a fixed `version_id` beside its `account_id`, so
+  tests never call AWS.
 - `account_id` comes from `sts get-caller-identity`, not the config, through its own function, `deploy_account()`,
   which takes, in this order, `CDK_DEFAULT_ACCOUNT` (the CDK CLI sets it from the credentials), then the fixture's
   `account_id` when `SFAB_CONFIG` names a loadable fixture, then STS, separate from `load()`, so `cdk/app.py` can target `SfabDeployer`'s account when the config doesn't load. With
