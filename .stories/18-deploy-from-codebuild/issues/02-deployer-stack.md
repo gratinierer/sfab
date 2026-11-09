@@ -25,7 +25,8 @@ Blocked by: 01
   `scripts/check` without the generate step, through an option `scripts/check` takes. `--all` or any other stack
   name fails with the config's errors.
 - The CDK CLI gets a pinned version in the repo, and `.github/workflows/ci.yml` and the buildspec read every tool
-  version from one place.
+  version from one file, `tool-versions.env` at the repo root: `ci.yml` loads it instead of its inline `env:` pins
+  (`UV_VERSION`, `CARGO_LAMBDA_VERSION`, `ZIGLANG_VERSION`, `CARGO_AUDIT_VERSION`), with `CDK_CLI_VERSION` added.
 - Confirm in AWS's documentation and record in `docs/aws-facts.md`: CodeBuild's GitHub source through a
   CodeConnection (resource type and auth type), the Arm small image's name and price, which CDK bootstrap roles a
   `cdk deploy` assumes, Secrets Manager's price, and the concurrent-build quota a new account starts with (forum
@@ -37,6 +38,7 @@ Blocked by: 01
   project's source branch, image, `DEPLOY_STACKS` default and buildspec path, and the role's exact grants, so
   nothing wider sneaks in.
 - A CDK test asserts the EventBridge rule in `SfabBase` and its target.
+- A test asserts `ci.yml` and the buildspec take every tool version from `tool-versions.env` and pin none inline.
 - Tests cover synth with no config, an incomplete one and missing builds (only `SfabDeployer`, with the note, in the
   caller's account), and a full config (all four stacks).
 - A test covers `scripts/deploy SfabDeployer` with no config (the check runs without the generate step, and only
