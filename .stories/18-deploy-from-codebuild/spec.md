@@ -71,7 +71,7 @@ watches those first builds in the console.
 the config. So while `sfab/config` is missing, has no value, or fails the loader's checks, the app synthesizes only
 `SfabDeployer` and prints a note naming what's missing. The same holds when the Lambda builds or the website pages
 are missing, which `cdk/app.py` refuses today. `cdk/app.py` can't tell which stacks the CLI was asked for, so `scripts/deploy`
-guards the rest: it runs the loader first, and with no loadable config it accepts only `SfabDeployer`, refusing
+guards the rest: it runs `deploy_plan` first (the arguments, then the region, then the config), and with no loadable config it accepts only `SfabDeployer`, refusing
 `--all` or any other stack with every problem named, so a forgotten value can't silently leave a stack out. A raw
 `cdk deploy --all` stays unguarded, which is why every deploy goes through `scripts/deploy`. `scripts/deploy
 SfabDeployer` with no loadable config runs `scripts/check` with its fixture fallback, so
