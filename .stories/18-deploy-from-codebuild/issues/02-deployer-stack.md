@@ -27,7 +27,7 @@ Blocked by: 01
   `SFAB_WEBSITE_BUILD` when set, defaulting to today's `lambda/target/lambda` (`cdk/app.py:13`) and `build/website`
   (`cdk/stacks.py:42`), so the missing-builds test points them at an empty directory instead of deleting real output. It can't see which stacks the
   CLI selected, so `scripts/deploy` holds the guard below; a raw `cdk deploy --all` stays unguarded.
-- `scripts/deploy` runs issue 01's `deploy_plan` first (arguments, then region, then the config). `scripts/deploy SfabDeployer` works with no loadable config: it accepts only `SfabDeployer` then, and runs
+- `scripts/deploy` runs issue 01's `deploy_plan` first (a set `SFAB_CONFIG` refused, then the arguments, the region and the config). `scripts/deploy SfabDeployer` works with no loadable config: it accepts only `SfabDeployer` then, and runs
   `scripts/check` with its fixture fallback, so the generate step writes the fixture's pages the tests need. It's the one case
   where `scripts/deploy` lets `scripts/check` fall back (issue 01). `--all` or any other stack
   name fails with the config's errors.

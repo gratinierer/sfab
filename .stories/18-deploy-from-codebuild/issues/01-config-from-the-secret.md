@@ -37,18 +37,20 @@ Label: ready-for-agent
   `hosted_zone_id` is known, it falls back to the fixture with a message naming the problems, as it does today for a missing
   TOML. `scripts/deploy` runs it in a mode that requires the secret, so a deploy can't generate the public
   description from the fixture. The one exception, `scripts/deploy SfabDeployer` with no loadable config, is issue
-  02's: it allows the fallback, because that stack publishes nothing generated.
+  02's: it allows the fallback, because that stack publishes nothing generated. Remove `scripts/check`'s block
+  (:10-13) that exports the fixture when `sfab.config.toml` is missing; the fallback is `load_for_check`'s alone.
 - `scripts/deploy` drops its `sfab.config.toml` checks, keeps refusing `SFAB_CONFIG`, and takes `DEPLOY_STACKS`-style
   arguments: `--all` or one or more of the app's stack names, refusing anything else before any CDK command. It
   passes `--require-approval never`.
 - The decisions live in Python and are tested in-process with stubbed Secrets Manager and STS; the two scripts are
   thin wrappers that tests never run, and no environment variable changes which steps they run, so a build's
   `--environment-variables-override` can't skip a check or replace `cdk`.
-  - `cdk/deploy_plan.py` takes the arguments and the environment and, in this order, checks the arguments, then the
-    region, then loads the config. It returns the stacks to deploy and whether `scripts/check` must use the secret
+  - `cdk/deploy_plan.py` takes the arguments and the environment and, in this order, refuses a set `SFAB_CONFIG`, checks
+    the arguments, then the region, then loads the config. It returns the stacks to deploy and whether `scripts/check` must use the secret
     or may fall back (only `SfabDeployer` with no loadable config, issue 02), or the errors.
   - `sfab_config.load_for_check(require_secret)` makes `scripts/check`'s choice: the secret, or the fixture with a
-    message naming the problems. The generators call it, and `scripts/check` passes `--require-secret` through to
+    message naming the problems. With `SFAB_CONFIG` set it uses that fixture and never reads the secret, as CI does;
+    with `require_secret` it refuses a set `SFAB_CONFIG`, naming it. The generators call it, and `scripts/check` passes `--require-secret` through to
     them when given it.
   - `scripts/deploy` syncs `cdk/.venv`, runs the plan in it and stops on its errors, then runs `scripts/check`, with
     `--require-secret` unless the plan allows the fallback, then `cdk deploy` with the plan's stacks.
@@ -69,9 +71,11 @@ Label: ready-for-agent
   `CHANGE_ME`, unknown or malformed entry is named; a missing secret, an empty one and a non-JSON one; the account
   comes from the caller identity; `SFAB_CONFIG` still selects the fixture; `version_id` is
   the stub's `VersionId`.
-- Tests cover `deploy_plan`: `--all`, one and several stack names pass; a flag or an unknown name is refused, and so
+- Tests cover `deploy_plan`: a set `SFAB_CONFIG` is refused before anything else; `--all`, one and several stack
+  names pass; a flag or an unknown name is refused, and so
   is a region other than us-east-1, or none, each before the config is loaded.
 - Tests cover `load_for_check` falling back to the fixture when the secret can't be read and when it is readable but
-  incomplete, and refusing to with `require_secret`. They never run the generate step, so they write nothing under
+  incomplete, and refusing to with `require_secret`; using a set `SFAB_CONFIG` without touching Secrets Manager, and
+  refusing it with `require_secret`. They never run the generate step, so they write nothing under
   `build/`.
 - `scripts/check` passes in CI with the fixture.
