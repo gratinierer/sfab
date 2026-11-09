@@ -83,7 +83,8 @@ The open questions this story first recorded are answered here.
   branch ruling, uncommitted story documents, a failing baseline `scripts/check`) is settled in `/implement-story`'s
   own start gate, before any sub-agent runs, so the run isn't stopped at its end.
 - **`/code-review` gains a caller mode.** A calling skill can hand it the story and issues, the reviewers' model,
-  the baseline check's result and a filter to the story's own `(#<n>)` commits. Given those, its auto loop asks
+  the baseline check's result, a filter to the story's own `(#<n>)` commits, and an extra line for the Spec
+  reviewer's brief, with the full commit messages, which carries the seam check. Given those, its auto loop asks
   nothing up front and reviews only the filtered commits. Without them it behaves as today.
 - **One auto review at the end.** After the last merge, the skill runs this repo's `/code-review` inline, with
   `<review base> auto 3` and the caller mode's answers: up to three review-and-address rounds, on a model other than

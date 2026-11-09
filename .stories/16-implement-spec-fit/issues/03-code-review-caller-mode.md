@@ -14,7 +14,10 @@ own commits on a shared branch.
   - the reviewers' model (step 4 uses it, still checking it is neither the code's author nor the orchestrator);
   - the baseline `scripts/check` result, and whether the owner waived check gating;
   - the owner's branch ruling;
-  - a commit filter: only commits whose subject ends `(#<n>)`.
+  - a commit filter: only commits whose subject ends `(#<n>)`;
+  - an extra line for the Spec sub-agent's brief, which then also gets the full commit messages (`git log
+    <fixed-point>..HEAD`, not `--oneline`). `/implement-story` uses it to have each commit body's "Seams:" line
+    checked against its issue's Scope and "Done when".
 - With a commit filter, both sub-agents review only the filtered commits' changes (for instance the diffs of
   `git log <fixed-point>..HEAD --grep='(#<n>)$'`, or an equivalent the skill states), other stories' commits in the
   range don't trigger step 2's "spans two stories, ask", and the journal's `Notes` say the range was filtered.
@@ -24,5 +27,5 @@ own commits on a shared branch.
 
 ## Done when
 
-- `code-review`'s skill file states the caller mode, the commit filter and the journal note.
+- `code-review`'s skill file states the caller mode, the commit filter, the extra Spec brief and the journal note.
 - A run given every answer has no step that asks the user before its final report.
