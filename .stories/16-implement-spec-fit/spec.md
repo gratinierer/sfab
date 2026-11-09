@@ -51,28 +51,46 @@ The open questions this story first recorded are answered here.
 - **The review base.** The review starts after the newest `code-review` journal row's reviewed `HEAD` in the story's
   `code-review.md`, or at the first run-log line's commit when there is none, so a resumed run reviews only what no
   review has covered, and still reaches every issue's commits. On a shared branch, the range can hold other stories'
-  commits: the skill names the story's own (subjects ending `(#<n>)`) to the review, and the rest as out of scope.
-  The review names every open issue of the story whose commits fall in the range, not only this run's.
-- **One implementer at a time.** The frontier is worked one ticket after another, not in parallel: `scripts/check`
-  takes minutes and every checkout shares `lambda/target/`, so parallel builds would only wait on Cargo's lock or
-  build cold. Each ticket still gets a fresh sub-agent, its own worktree and `/tdd`.
+  commits: the review is told to take only the story's own, subjects ending `(#<n>)`, through `/code-review`'s new
+  caller mode (below). The review names every open issue of the story with a commit since the run log's first
+  line, not only those in the range, so a resumed run still names, and can close, an earlier run's issues.
+- **Only `ready-for-agent` issues are implemented.** Issues labelled `ready-for-human`, `needs-info` or
+  `needs-triage` are listed in the start gate and left open; issues they block wait. The run then reports that the
+  story can't close yet.
+- **One implementer at a time.** The frontier is worked one ticket after another, not in parallel: every worktree
+  builds cold in its own `lambda/target/`, and `scripts/check` takes minutes, so parallel tickets would contend for
+  CPU and disk and make harder merges for little gain. Each ticket still gets a fresh sub-agent, its own worktree
+  and `/tdd`.
+- **The issue file confirms the seams.** `/tdd` confirms the seams under test with the user before any test, which
+  an unattended implementer can't. Its brief says the issue file stands in for that: it takes the seams its Scope
+  and "Done when" imply, names them in its commit body, and the end-of-run review's Spec reviewer checks them. When
+  the issue doesn't make the seams clear, the ticket stops and is reported rather than guessed.
 - **Commits follow the policy.** Implementer and merger commits end their subject with `(#<n>)`, name the issue in
   the body ("Issue NN of story N"), and carry the trailers of `docs/agents/commit-policy.md`. `/code-review` finds
-  the issues and the author model from exactly these. Each ticket passes `scripts/check` before it merges.
+  the issues and the author model from exactly these. Each ticket passes `scripts/check` before it merges; when
+  the owner waived a failing baseline, only failures the baseline didn't show count.
 - **A skill that commits may commit.** `docs/agents/commit-policy.md` generalizes its review-skill exception: running
   any skill whose process includes commits is the explicit ask for that skill's own commits, and for the
   short-lived branches its process makes, such as one per ticket. Pushing still needs an explicit ask. A new ADR
   amends `docs/adr/0006-review-skills-commit-by-default.md`.
 - **Every dependency is in the repo.** A skill under `.claude/skills/` calls only skills that are also there, so
-  `tdd` is vendored with `implement-story`, and the rule is written down next to ADR 0005's.
+  `tdd` is vendored with `implement-story`, and the rule is written in `.claude/skills/VENDORED.md` and `AGENTS.md`
+  "Skills", where ADR 0005's rule already lives. The ADR itself isn't edited.
+- **A run that can't finish every ticket still reviews.** When the frontier empties with issues still open
+  (blocked by another story, not `ready-for-agent`, or stopped after a failed check), the run goes on to the
+  review and closing for what was merged, and reports what stays open.
 - **Questions up front.** Whatever the end-of-run `/code-review ... auto` would ask before its loop (reviewer model,
   branch ruling, uncommitted story documents, a failing baseline `scripts/check`) is settled in `/implement-story`'s
   own start gate, before any sub-agent runs, so the run isn't stopped at its end.
-- **One auto review at the end.** After the last merge, the skill runs this repo's `/code-review` inline through
-  the Skill tool, with `<review base> auto 3`: up to three review-and-address rounds, on a model other than the
-  code's author, recorded in the story's `code-review.md`, with `/address-code-review-findings` treating the
-  findings. This replaces upstream's "fix all issues in one sub-agent". The skill says it means the repo's skill,
-  whose arguments are a fixed point and `auto`, not Claude Code's built-in `/code-review`. Neither skill is renamed.
+- **`/code-review` gains a caller mode.** A calling skill can hand it the story and issues, the reviewers' model,
+  the baseline check's result and a filter to the story's own `(#<n>)` commits. Given those, its auto loop asks
+  nothing up front and reviews only the filtered commits. Without them it behaves as today.
+- **One auto review at the end.** After the last merge, the skill runs this repo's `/code-review` inline, with
+  `<review base> auto 3` and the caller mode's answers: up to three review-and-address rounds, on a model other than
+  the code's author, recorded in the story's `code-review.md`, with `/address-code-review-findings` treating the
+  findings. This replaces upstream's "fix all issues in one sub-agent". Claude Code also ships a built-in
+  `code-review`, so the skill reads and follows `.claude/skills/code-review/SKILL.md` by path rather than calling it
+  by name through the Skill tool. Neither skill is renamed.
 - **Closing.** Issue files move to `issues/done/` only when the auto review ends clean. If it stops on its limit,
   without progress or on a failing check, the skill reports and leaves the issues open. When that closes the
   story's last open issue, it offers to move the story to `.stories/done/` and to run `gh issue close <n>`, and does
