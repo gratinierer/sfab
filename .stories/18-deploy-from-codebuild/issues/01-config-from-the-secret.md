@@ -82,6 +82,10 @@ Label: ready-for-agent
   `load()` passes it through. Its tests that pass a path to `load()`, whether they write a TOML file or not, set
   `SFAB_CONFIG` instead, including `test_fixture_loads` (:23-25) and `test_missing_file_names_the_path` (:28-31),
   whose error still names the missing file.
+- `cdk/tests/conftest.py`'s session `config` fixture (:40-42), behind every stack test, and
+  `cdk/tests/test_openapi.py` (:28-30) call `sfab_config.load(FIXTURE)`. They set `SFAB_CONFIG` to the fixture
+  themselves for the call, rather than relying on `scripts/check`'s export, so a plain `pytest` still never reads
+  the secret.
 
 ## Done when
 
