@@ -53,7 +53,7 @@ The open questions this story first recorded are answered here.
   (`<issues> @ <a>..<b>`): a commit naming an issue is left out when a `code-review` row naming that issue has it
   in its range, and one naming no issue (such as an `Address C<n>` fix) when any `code-review` row has it in its
   range. Rows can cover one issue, start late or end behind an older row, so no single row's `HEAD` is a base. A
-  resumed run so reviews only what no review has covered, and still reaches every issue's commits. On a shared branch, the range can hold other stories'
+  resumed run so reviews only what no review has covered, and still reaches every named issue's commits. On a shared branch, the range can hold other stories'
   commits: the review is told to take only the story's own, subjects ending `(#<n>)`, through `/code-review`'s new
   caller mode (below). The review names every open issue of the story whose ticket branch a run merged since the run log's
   first line, not only those in the range, so a resumed run still names, and can close, an earlier run's issues.
