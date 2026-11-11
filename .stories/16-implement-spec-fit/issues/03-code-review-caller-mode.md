@@ -16,8 +16,9 @@ own commits on a shared branch.
   - the owner's branch ruling;
   - the answer on uncommitted story documents: that the caller committed them, or the owner's choice;
   - a commit filter: only commits whose subject (not any message line, as `--grep` would match) ends `(#<n>)`,
-    optionally with a base per issue: a commit whose body names an issue ("Issue NN of story N") is kept only after
-    that issue's base, and one naming no issue is kept from the fixed point;
+    optionally less covered ranges, given as `code-review` journal rows' `<issues> @ <a>..<b>`: a commit whose body
+    names an issue ("Issue NN of story N") is dropped when a range naming that issue holds it, and one naming no
+    issue when any range holds it;
   - an extra line for the Spec sub-agent's brief, which then also gets the full commit messages (`git log
     <fixed-point>..HEAD`, not `--oneline`, limited to the filtered commits). `/implement-story` uses it to have each commit body's "Seams:" line
     checked against its issue's Scope and "Done when".

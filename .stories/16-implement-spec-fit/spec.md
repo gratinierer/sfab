@@ -48,11 +48,12 @@ The open questions this story first recorded are answered here.
 - **The start commit is recorded.** Each run appends a line, `- <date> run started at <sha>`, to the story's
   `implementation.md`, with `<sha>` the branch's `HEAD` before that line's own commit, and commits it. The file
   only grows, so it keeps every run. A resumed run counts issues in `issues/done/`, or whose ticket branch a run merged, as finished.
-- **The review base.** Each issue has its own base: the reviewed `HEAD` of the newest `code-review` journal row in
-  the story's `code-review.md` that names it, or the first run-log line's commit when no row does, since rows can
-  cover one issue and aren't in `HEAD` order. The review's fixed point is the oldest of those bases, and its commit
-  filter leaves out each issue's commits up to its own base, so a resumed run reviews only what no review has
-  covered, and still reaches every issue's commits. On a shared branch, the range can hold other stories'
+- **The review base.** The review's fixed point is the first run-log line's commit, and what a review already
+  covered is left out per issue, from the ranges the story's `code-review.md` journal rows record
+  (`<issues> @ <a>..<b>`): a commit naming an issue is left out when a `code-review` row naming that issue has it
+  in its range, and one naming no issue (such as an `Address C<n>` fix) when any `code-review` row has it in its
+  range. Rows can cover one issue, start late or end behind an older row, so no single row's `HEAD` is a base. A
+  resumed run so reviews only what no review has covered, and still reaches every issue's commits. On a shared branch, the range can hold other stories'
   commits: the review is told to take only the story's own, subjects ending `(#<n>)`, through `/code-review`'s new
   caller mode (below). The review names every open issue of the story whose ticket branch a run merged since the run log's
   first line, not only those in the range, so a resumed run still names, and can close, an earlier run's issues.
@@ -92,7 +93,7 @@ The open questions this story first recorded are answered here.
   reviewer's brief, with the full commit messages, which carries the seam check. Given those, its auto loop asks
   nothing up front and reviews only the filtered commits. Without them it behaves as today.
 - **One auto review at the end.** After the last merge, the skill runs this repo's `/code-review` inline, with
-  `<review base> auto 3` and the caller mode's answers: up to three review-and-address rounds, on a model other than
+  `<run log's first commit> auto 3` and the caller mode's answers: up to three review-and-address rounds, on a model other than
   the code's author, recorded in the story's `code-review.md`, with `/address-code-review-findings` treating the
   findings. This replaces upstream's "fix all issues in one sub-agent". Claude Code also ships a built-in
   `code-review`, so the skill reads and follows `.claude/skills/code-review/SKILL.md` by path rather than calling it

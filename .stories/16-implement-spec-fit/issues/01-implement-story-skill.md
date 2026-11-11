@@ -31,11 +31,12 @@ keeps this repo's rules.
   alone as `Start implementing story <n> (#<n>)`. The file is only appended to. A resumed run treats issues in
   `issues/done/`, or whose ticket branch a run already merged (a merge commit since the run log's first line whose
   body names the issue), as finished; commits made by hand don't make an issue finished.
-- **Review base**: per issue, the reviewed `HEAD` of the newest `code-review` journal row in the story's
-  `code-review.md` that names the issue, or, with no such row, the commit on the run log's first line. Rows can
-  cover one issue and aren't in `HEAD` order, so the newest row overall is no base. The review's fixed point is the
-  oldest of these bases, and the per-issue bases go to issue 03's commit filter, so a resumed run reviews only what
-  no review covered, and no finding is filed twice.
+- **Review base**: the fixed point is the commit on the run log's first line. The covered ranges go to issue 03's
+  commit filter: each `code-review` journal row's `<issues> @ <a>..<b>` in the story's `code-review.md`. A commit
+  naming an issue is covered when a row naming that issue has it in its range; one naming no issue (an `Address
+  C<n>` fix, which names only its finding) when any row has it in its range. Rows can cover one issue, start late
+  (`04 @ 7124f67..d8ac678` in story 2) or end behind an older row, so no single row's `HEAD` serves as a base. So a
+  resumed run reviews only what no review covered, and no finding is filed twice.
 - **One implementer at a time**: the frontier is worked sequentially, the reason (each worktree builds cold in its
   own `lambda/target/` and `scripts/check` takes minutes, so parallel tickets contend for CPU and disk) stated in
   the skill. Each ticket still gets a fresh sub-agent in its own
@@ -61,9 +62,9 @@ keeps this repo's rules.
   ticket merged or some stay open (blocked by another story's open issue, not `ready-for-agent`, or stopped after a
   second failed check). It reviews and closes what was merged, and reports what stays open and why.
 - **Review**: replaces upstream's step 7. After the last merge it reads `.claude/skills/code-review/SKILL.md` by
-  path and follows it inline, with `<review base> auto 3` and issue 03's caller mode: the story, every open issue
+  path and follows it inline, with `<run log's first commit> auto 3` and issue 03's caller mode: the story, every open issue
   of it whose ticket branch a run merged since the run log's first line (this run or an earlier one, whether or
-  not its commits fall in the range; an issue only committed to by hand isn't named, so it isn't closed), the start gate's answers, the filter to the story's own `(#<n>)` commits with each issue's base, and the Spec brief line: "for each commit
+  not its commits fall in the range; an issue only committed to by hand isn't named, so it isn't closed), the start gate's answers, the filter to the story's own `(#<n>)` commits less the covered ranges, and the Spec brief line: "for each commit
   whose body has a `Seams:` line, check those seams, or a `Seams: none` reason, against its issue; a commit without one (run log, merge,
   closing, review fixes) is not a finding". Later rounds' ranges hold only fix commits, so it finds nothing there.
   It doesn't call it by name through the Skill tool, since Claude Code ships a built-in `code-review` too. The
