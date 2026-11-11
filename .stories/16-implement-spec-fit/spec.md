@@ -48,9 +48,11 @@ The open questions this story first recorded are answered here.
 - **The start commit is recorded.** Each run appends a line, `- <date> run started at <sha>`, to the story's
   `implementation.md`, with `<sha>` the branch's `HEAD` before that line's own commit, and commits it. The file
   only grows, so it keeps every run. A resumed run counts issues in `issues/done/`, or already merged, as finished.
-- **The review base.** The review starts after the newest `code-review` journal row's reviewed `HEAD` in the story's
-  `code-review.md`, or at the first run-log line's commit when there is none, so a resumed run reviews only what no
-  review has covered, and still reaches every issue's commits. On a shared branch, the range can hold other stories'
+- **The review base.** Each issue has its own base: the reviewed `HEAD` of the newest `code-review` journal row in
+  the story's `code-review.md` that names it, or the first run-log line's commit when no row does, since rows can
+  cover one issue and aren't in `HEAD` order. The review's fixed point is the oldest of those bases, and its commit
+  filter leaves out each issue's commits up to its own base, so a resumed run reviews only what no review has
+  covered, and still reaches every issue's commits. On a shared branch, the range can hold other stories'
   commits: the review is told to take only the story's own, subjects ending `(#<n>)`, through `/code-review`'s new
   caller mode (below). The review names every open issue of the story with a commit since the run log's first
   line, not only those in the range, so a resumed run still names, and can close, an earlier run's issues.

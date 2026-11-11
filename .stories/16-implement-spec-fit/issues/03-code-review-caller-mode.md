@@ -14,7 +14,9 @@ own commits on a shared branch.
   - the reviewers' model (step 4 uses it, still checking it is neither the code's author nor the orchestrator);
   - the baseline `scripts/check` result, and whether the owner waived check gating;
   - the owner's branch ruling;
-  - a commit filter: only commits whose subject (not any message line, as `--grep` would match) ends `(#<n>)`;
+  - a commit filter: only commits whose subject (not any message line, as `--grep` would match) ends `(#<n>)`,
+    optionally with a base per issue: a commit whose body names an issue ("Issue NN of story N") is kept only after
+    that issue's base, and one naming no issue is kept from the fixed point;
   - an extra line for the Spec sub-agent's brief, which then also gets the full commit messages (`git log
     <fixed-point>..HEAD`, not `--oneline`, limited to the filtered commits). `/implement-story` uses it to have each commit body's "Seams:" line
     checked against its issue's Scope and "Done when".

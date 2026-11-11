@@ -30,9 +30,11 @@ keeps this repo's rules.
   creating it with a one-line heading if missing, where `<sha>` is `HEAD` before that commit, and commits the file
   alone as `Start implementing story <n> (#<n>)`. The file is only appended to. A resumed run treats issues in
   `issues/done/`, or whose commits are already merged into the branch, as finished.
-- **Review base**: the reviewed `HEAD` of the newest `code-review` journal row in the story's `code-review.md`, or,
-  with no such row, the commit on the run log's first line. So a resumed run reviews only what no review covered,
-  and no finding is filed twice.
+- **Review base**: per issue, the reviewed `HEAD` of the newest `code-review` journal row in the story's
+  `code-review.md` that names the issue, or, with no such row, the commit on the run log's first line. Rows can
+  cover one issue and aren't in `HEAD` order, so the newest row overall is no base. The review's fixed point is the
+  oldest of these bases, and the per-issue bases go to issue 03's commit filter, so a resumed run reviews only what
+  no review covered, and no finding is filed twice.
 - **One implementer at a time**: the frontier is worked sequentially, the reason (each worktree builds cold in its
   own `lambda/target/` and `scripts/check` takes minutes, so parallel tickets contend for CPU and disk) stated in
   the skill. Each ticket still gets a fresh sub-agent in its own
@@ -59,7 +61,7 @@ keeps this repo's rules.
 - **Review**: replaces upstream's step 7. After the last merge it reads `.claude/skills/code-review/SKILL.md` by
   path and follows it inline, with `<review base> auto 3` and issue 03's caller mode: the story, every open issue
   of it with a commit since the run log's first line (whether this run or an earlier one made it, and whether or
-  not its commits fall in the range), the start gate's answers, the filter to the story's own `(#<n>)` commits, and the Spec brief line: "for each commit
+  not its commits fall in the range), the start gate's answers, the filter to the story's own `(#<n>)` commits with each issue's base, and the Spec brief line: "for each commit
   whose body has a `Seams:` line, check those seams against its issue; a commit without one (run log, merge,
   closing, review fixes) is not a finding". Later rounds' ranges hold only fix commits, so it finds nothing there.
   It doesn't call it by name through the Skill tool, since Claude Code ships a built-in `code-review` too. The
