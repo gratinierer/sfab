@@ -59,7 +59,7 @@ keeps this repo's rules.
   subject ending `(#<n>)`, body naming "Issue NN of story N", and the policy's trailers including `Co-Authored-By:`
   with the model. The merger merges with `--no-ff`, since the ticket branch already holds the story tip and would otherwise
   fast-forward with no merge commit, and writes its merge commit's message that way, with a `Merged by
-  /implement-story` line in the body, never git's default `Merge branch …`. The implementer's merge of the story
+  /implement-story` line in the body, in its own paragraph above the trailer paragraph so the trailers still parse, never git's default `Merge branch …`. The implementer's merge of the story
   tip into its ticket branch follows the same rule, and a ticket branch with a commit whose subject doesn't end
   `(#<n>)` goes back to the implementer before the merger takes it, as a failed check does, since issue 03's filter
   would leave that commit out of the review.
