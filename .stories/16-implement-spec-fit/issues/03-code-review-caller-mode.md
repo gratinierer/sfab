@@ -14,6 +14,7 @@ own commits on a shared branch.
   - the reviewers' model (step 4 uses it, still checking it is neither the code's author nor the orchestrator);
   - the baseline `scripts/check` result, and whether the owner waived check gating;
   - the owner's branch ruling;
+  - the answer on uncommitted story documents: that the caller committed them, or the owner's choice;
   - a commit filter: only commits whose subject (not any message line, as `--grep` would match) ends `(#<n>)`,
     optionally with a base per issue: a commit whose body names an issue ("Issue NN of story N") is kept only after
     that issue's base, and one naming no issue is kept from the fixed point;
@@ -23,7 +24,8 @@ own commits on a shared branch.
 - With a commit filter, both sub-agents review only the filtered commits' changes, merge commits included, in a
   form that shows a merge's conflict resolutions (for instance `git log -p --cc` over the filtered commits, or an
   equivalent the skill states; plain `git log -p` prints no diff for a merge), other stories' commits in the
-  range don't trigger step 2's "spans two stories, ask", and the journal's `Notes` say the range was filtered.
+  range don't trigger step 2's "spans two stories, ask", step 4 finds the author from the filtered commits only (so
+  another story's author can't reject the supplied model), and the journal's `Notes` say the range was filtered.
 - With all answers supplied, "Up front, then unattended" asks nothing; any answer missing is asked as today.
 - Without caller mode, behaviour is unchanged.
 - `VENDORED.md` "Changes from upstream" for `code-review` mentions the caller mode.
