@@ -50,7 +50,7 @@ keeps this repo's rules.
   the implementer takes the seams the issue's Scope and "Done when" imply and names them in its commit body ("Seams:
   …"), and the review's Spec reviewer checks them against the issue. When the issue doesn't make them clear, the
   implementer stops without guessing, and the ticket is reported as needing the owner. A ticket branch with no
-  commit carrying a `Seams:` line goes back to the implementer, as a failed check does, before the merger takes it.
+  commit in `<story tip>..<ticket branch>` carrying a `Seams:` line goes back to the implementer, as a failed check does, before the merger takes it.
   An issue whose Scope changes nothing with a public boundary to test (docs, skill files) gets `Seams: none` with
   the reason, which the Spec reviewer checks against the issue too. `tdd` itself stays unchanged.
 - When the owner waived a failing
@@ -60,7 +60,7 @@ keeps this repo's rules.
   with the model. The merger merges with `--no-ff`, since the ticket branch already holds the story tip and would otherwise
   fast-forward with no merge commit, and writes its merge commit's message that way, with a `Merged by
   /implement-story` line in the body, in its own paragraph above the trailer paragraph so the trailers still parse, never git's default `Merge branch …`. The implementer's merge of the story
-  tip into its ticket branch follows the same rule, and a ticket branch with a commit whose subject doesn't end
+  tip into its ticket branch follows the same rule, and a ticket branch with a commit in `<story tip>..<ticket branch>` whose subject doesn't end
   `(#<n>)` goes back to the implementer before the merger takes it, as a failed check does, since issue 03's filter
   would leave that commit out of the review.
   Implementers don't move issue files to `done/`. The commits and per-ticket branches rest on issue 02's rule.
