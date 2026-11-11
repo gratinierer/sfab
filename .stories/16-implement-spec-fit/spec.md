@@ -82,7 +82,8 @@ The open questions this story first recorded are answered here.
   "Skills", where ADR 0005's rule already lives. The ADR itself isn't edited.
 - **A run that can't finish every ticket still reviews.** When the frontier empties with issues still open
   (blocked by another story, not `ready-for-agent`, or stopped after a failed check), the run goes on to the
-  review and closing for what was merged, and reports what stays open.
+  review and closing for what was merged, and reports what stays open. A ticket that stopped unmerged is relabelled
+  `ready-for-human` with a note, in one commit; that makes the review stale, so the next run asks first.
 - **Questions up front.** Whatever the end-of-run `/code-review ... auto` would ask before its loop (reviewer model,
   branch ruling, uncommitted story documents, a failing baseline `scripts/check`) is settled in `/implement-story`'s
   own start gate, before any sub-agent runs, so the run isn't stopped at its end.

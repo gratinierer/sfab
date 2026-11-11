@@ -80,7 +80,10 @@ keeps this repo's rules.
   branches, except those of tickets that stopped unmerged (second failed check, unclear seams): it keeps them and
   names them in the report, so their work isn't lost. It relabels each such issue `ready-for-human` and adds a
   line under its Scope saying why it stopped and naming the kept branch, so a later run doesn't start it again
-  until the owner relabels it; a later run's End never removes an earlier run's kept worktrees.
+  until the owner relabels it; a later run's End never removes an earlier run's kept worktrees. It commits these
+  issue files alone, as `Stop issues <NN, …> of story <n> (#<n>)`, so no run ends with uncommitted story documents.
+  That edit postdates the newest review row, so the next run's start gate finds `review.md` stale and asks, which
+  is where the owner, having relabelled the issue, chooses a re-review or the go-ahead.
 - **`tdd` is vendored** to `.claude/skills/tdd/` unchanged (`SKILL.md`, `mocking.md`, `tests.md`,
   `agents/openai.yaml`), since `implement-story` calls it.
 - `.claude/skills/VENDORED.md`: rows for `implement-story` (mattpocock/skills, `skills/engineering/implement-spec/`,
