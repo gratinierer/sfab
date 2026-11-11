@@ -71,7 +71,8 @@ The open questions this story first recorded are answered here.
   `Seams: none` and why), and the end-of-run review's Spec reviewer checks them. When
   the issue doesn't make the seams clear, the ticket stops and is reported rather than guessed.
 - **Commits follow the policy.** Implementer and merger commits end their subject with `(#<n>)`, name the issue in
-  the body ("Issue NN of story N"), and carry the trailers of `docs/agents/commit-policy.md`. `/code-review` finds
+  the body ("Issue NN of story N"; the merger's `--no-ff` merge also says `Merged by /implement-story`, which is how
+  a later run knows a run merged it), and carry the trailers of `docs/agents/commit-policy.md`. `/code-review` finds
   the issues and the author model from exactly these. Each ticket passes `scripts/check` before it merges; when
   the owner waived a failing baseline, only failures the baseline didn't show count.
 - **A skill that commits may commit.** `docs/agents/commit-policy.md` generalizes its review-skill exception: running

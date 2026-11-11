@@ -30,7 +30,8 @@ keeps this repo's rules.
   creating it with a one-line heading if missing, where `<sha>` is `HEAD` before that commit, and commits the file
   alone as `Start implementing story <n> (#<n>)`. The file is only appended to. A resumed run treats issues in
   `issues/done/`, or whose ticket branch a run already merged (a merge commit since the run log's first line whose
-  body names the issue), as finished; commits made by hand don't make an issue finished.
+  body names the issue and carries the merger's `Merged by /implement-story` line), as finished; commits and merges
+  made by hand don't make an issue finished.
 - **Review base**: the fixed point is the commit on the run log's first line. The covered ranges go to issue 03's
   commit filter: each `code-review` journal row's `<issues> @ <a>..<b>` in the story's `code-review.md`. A commit
   naming an issue is covered when a row naming that issue has it in its range; one naming no issue (an `Address
@@ -55,7 +56,9 @@ keeps this repo's rules.
   baseline, only failures the baseline didn't show count.
 - **Commits**: the implementer **and merger** briefs say every commit follows `docs/agents/commit-policy.md`:
   subject ending `(#<n>)`, body naming "Issue NN of story N", and the policy's trailers including `Co-Authored-By:`
-  with the model. The merger writes its merge commit's message that way, never git's default `Merge branch …`.
+  with the model. The merger merges with `--no-ff`, since the ticket branch already holds the story tip and would otherwise
+  fast-forward with no merge commit, and writes its merge commit's message that way, with a `Merged by
+  /implement-story` line in the body, never git's default `Merge branch …`.
   Implementers don't move issue files to `done/`. The commits and per-ticket branches rest on issue 02's rule.
 - **Exploration notes** go in the session's scratchpad directory, passed to each implementer as a path.
 - **When the frontier empties**: the run moves on to the review once no further ticket can start, whether every
