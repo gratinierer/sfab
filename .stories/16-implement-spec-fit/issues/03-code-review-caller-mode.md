@@ -18,7 +18,9 @@ own commits on a shared branch.
   - a commit filter: only commits whose subject (not any message line, as `--grep` would match) ends `(#<n>)`,
     optionally less covered ranges, given as `code-review` journal rows' `<issues> @ <a>..<b>`: a commit whose body
     names an issue ("Issue NN of story N") is dropped when a range naming that issue holds it, and one naming no
-    issue when any range holds it. A commit naming one of the story's issues that the caller didn't name is dropped
+    issue when any range holds it. A range holds the commits `git rev-list <a>..<b>` lists, merges included; an
+    `<issues>` part like `11-15` names 11 to 15; a row whose `Reviewed` cell doesn't parse as `<issues> @ <a>..<b>`
+    (story 2 has two, such as `06, and R165, R171, R176 @ 39c2bed..b10a267`) covers nothing. A commit naming one of the story's issues that the caller didn't name is dropped
     too, and the final report lists it as not reviewed;
   - an extra line for the Spec sub-agent's brief, which then also gets the full commit messages (`git log
     <fixed-point>..HEAD`, not `--oneline`, limited to the filtered commits). `/implement-story` uses it to have each commit body's "Seams:" line

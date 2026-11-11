@@ -36,7 +36,8 @@ keeps this repo's rules.
   commit filter: each `code-review` journal row's `<issues> @ <a>..<b>` in the story's `code-review.md`. A commit
   naming an issue is covered when a row naming that issue has it in its range; one naming no issue (an `Address
   C<n>` fix, which names only its finding) when any row has it in its range. Rows can cover one issue, start late
-  (`04 @ 7124f67..d8ac678` in story 2) or end behind an older row, so no single row's `HEAD` serves as a base. So a
+  (`04 @ 7124f67..d8ac678` in story 2) or end behind an older row, so no single row's `HEAD` serves as a base. A
+  row that doesn't parse covers nothing (issue 03 says how rows are read). So a
   resumed run reviews only what no review covered, and no finding is filed twice.
 - **One implementer at a time**: the frontier is worked sequentially, the reason (each worktree builds cold in its
   own `lambda/target/` and `scripts/check` takes minutes, so parallel tickets contend for CPU and disk) stated in
