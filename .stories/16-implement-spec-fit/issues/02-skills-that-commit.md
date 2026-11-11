@@ -9,7 +9,8 @@ becomes a general rule, so `/implement-story` (issue 01) can commit and make its
 
 - `docs/agents/commit-policy.md`: the "Exception, the review skills" paragraph becomes a general one. Running a
   skill whose process includes commits is the explicit ask to commit for that skill's own commits, and to create
-  and delete the short-lived branches its process describes. It stages only the paths it touched, follows the rest
+  and delete the short-lived branches its process describes. On those branches, while unpushed, it may also rewrite its own commits
+  where its process says so (such as `/implement-story`'s squash of a ticket branch); nowhere else. It stages only the paths it touched, follows the rest
   of the policy for the number and trailers, never pushes, and `nocommit` turns it off where the skill offers it.
   The four review skills stay named as examples. The "Don't create a new branch" rule in "When asked to commit or
   push" points to the exception for such branches.

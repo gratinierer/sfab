@@ -62,7 +62,8 @@ keeps this repo's rules.
   /implement-story` line in the body, in its own paragraph above the trailer paragraph so the trailers still parse, never git's default `Merge branch …`. The implementer's merge of the story
   tip into its ticket branch follows the same rule, and a ticket branch with a commit in `<story tip>..<ticket branch>` whose subject doesn't end
   `(#<n>)` goes back to the implementer before the merger takes it, as a failed check does, since issue 03's filter
-  would leave that commit out of the review.
+  would leave that commit out of the review. The implementer fixes it by squashing: `git reset --soft <story tip>`, then one commit
+  that follows the policy and keeps the `Seams:` line (the story tip is already merged in, so nothing is lost).
   Implementers don't move issue files to `done/`. The commits and per-ticket branches rest on issue 02's rule.
 - **Exploration notes** go in the session's scratchpad directory, passed to each implementer as a path.
 - **When the frontier empties**: the run moves on to the review once no further ticket can start, whether every
