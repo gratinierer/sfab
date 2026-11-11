@@ -59,7 +59,10 @@ keeps this repo's rules.
   subject ending `(#<n>)`, body naming "Issue NN of story N", and the policy's trailers including `Co-Authored-By:`
   with the model. The merger merges with `--no-ff`, since the ticket branch already holds the story tip and would otherwise
   fast-forward with no merge commit, and writes its merge commit's message that way, with a `Merged by
-  /implement-story` line in the body, never git's default `Merge branch …`.
+  /implement-story` line in the body, never git's default `Merge branch …`. The implementer's merge of the story
+  tip into its ticket branch follows the same rule, and a ticket branch with a commit whose subject doesn't end
+  `(#<n>)` goes back to the implementer before the merger takes it, as a failed check does, since issue 03's filter
+  would leave that commit out of the review.
   Implementers don't move issue files to `done/`. The commits and per-ticket branches rest on issue 02's rule.
 - **Exploration notes** go in the session's scratchpad directory, passed to each implementer as a path.
 - **When the frontier empties**: the run moves on to the review once no further ticket can start, whether every
