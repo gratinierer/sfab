@@ -66,8 +66,8 @@ The open questions this story first recorded are answered here.
   and `/tdd`.
 - **The issue file confirms the seams.** `/tdd` confirms the seams under test with the user before any test, which
   an unattended implementer can't. Its brief says the issue file stands in for that: it takes the seams its Scope
-  and "Done when" imply, names them in its commit body (a ticket branch without one isn't merged), and the end-of-run review's Spec
-  reviewer checks them. When
+  and "Done when" imply, names them in its commit body (a ticket branch without one isn't merged; an issue with nothing to test, such as docs or skill files, writes
+  `Seams: none` and why), and the end-of-run review's Spec reviewer checks them. When
   the issue doesn't make the seams clear, the ticket stops and is reported rather than guessed.
 - **Commits follow the policy.** Implementer and merger commits end their subject with `(#<n>)`, name the issue in
   the body ("Issue NN of story N"), and carry the trailers of `docs/agents/commit-policy.md`. `/code-review` finds

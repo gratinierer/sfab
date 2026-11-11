@@ -47,8 +47,9 @@ keeps this repo's rules.
   the implementer takes the seams the issue's Scope and "Done when" imply and names them in its commit body ("Seams:
   …"), and the review's Spec reviewer checks them against the issue. When the issue doesn't make them clear, the
   implementer stops without guessing, and the ticket is reported as needing the owner. A ticket branch with no
-  commit carrying a `Seams:` line goes back to the implementer, as a failed check does, before the merger takes it. `tdd` itself stays
-  unchanged.
+  commit carrying a `Seams:` line goes back to the implementer, as a failed check does, before the merger takes it.
+  An issue whose Scope changes nothing with a public boundary to test (docs, skill files) gets `Seams: none` with
+  the reason, which the Spec reviewer checks against the issue too. `tdd` itself stays unchanged.
 - When the owner waived a failing
   baseline, only failures the baseline didn't show count.
 - **Commits**: the implementer **and merger** briefs say every commit follows `docs/agents/commit-policy.md`:
@@ -63,7 +64,7 @@ keeps this repo's rules.
   path and follows it inline, with `<review base> auto 3` and issue 03's caller mode: the story, every open issue
   of it whose ticket branch a run merged since the run log's first line (this run or an earlier one, whether or
   not its commits fall in the range; an issue only committed to by hand isn't named, so it isn't closed), the start gate's answers, the filter to the story's own `(#<n>)` commits with each issue's base, and the Spec brief line: "for each commit
-  whose body has a `Seams:` line, check those seams against its issue; a commit without one (run log, merge,
+  whose body has a `Seams:` line, check those seams, or a `Seams: none` reason, against its issue; a commit without one (run log, merge,
   closing, review fixes) is not a finding". Later rounds' ranges hold only fix commits, so it finds nothing there.
   It doesn't call it by name through the Skill tool, since Claude Code ships a built-in `code-review` too. The
   skill says this is the repo
