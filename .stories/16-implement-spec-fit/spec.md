@@ -57,7 +57,8 @@ The open questions this story first recorded are answered here.
   commits: the review is told to take only the story's own, subjects ending `(#<n>)`, through `/code-review`'s new
   caller mode (below). The review names every open issue of the story whose ticket branch a run merged since the run log's
   first line, not only those in the range, so a resumed run still names, and can close, an earlier run's issues.
-  An issue only committed to by hand isn't named, so the run never closes it.
+  An issue only committed to by hand isn't named, so the run never closes it, and the filter leaves its commits
+  out, reported as left for a manual `/code-review`.
 - **Only `ready-for-agent` issues are implemented.** Issues labelled `ready-for-human`, `needs-info` or
   `needs-triage` are listed in the start gate and left open; issues they block wait. The run then reports that the
   story can't close yet.
