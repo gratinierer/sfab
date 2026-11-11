@@ -60,7 +60,8 @@ keeps this repo's rules.
   with the model. The merger merges with `--no-ff`, since the ticket branch already holds the story tip and would otherwise
   fast-forward with no merge commit, and writes its merge commit's message that way, with a `Merged by
   /implement-story` line in the body, in its own paragraph above the trailer paragraph so the trailers still parse, never git's default `Merge branch …`. The implementer's merge of the story
-  tip into its ticket branch follows the same rule, and a ticket branch with a commit in `<story tip>..<ticket branch>` whose subject doesn't end
+  tip into its ticket branch follows the same message rule, without the `Merged by /implement-story` line, which only
+  the merger writes, and a ticket branch with a commit in `<story tip>..<ticket branch>` whose subject doesn't end
   `(#<n>)` goes back to the implementer before the merger takes it, as a failed check does, since issue 03's filter
   would leave that commit out of the review. The implementer fixes it by squashing: `git reset --soft <story tip>`, then one commit
   that follows the policy and keeps the `Seams:` line (the story tip is already merged in, so nothing is lost).
