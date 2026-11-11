@@ -31,6 +31,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-11T06:14:10 | review | 66e4a6c | claude-fable-5-2 (dispatched; story authored and loop orchestrated by claude-opus-5-5, auto round 3) | 4 new, 2 closures upheld, 1 reopened, 5 open | Audited the auto walkthrough's closures of R4, R31, R32; R32 reopened; R4 holds with a residual left for the owner. |
 | 2026-11-11T06:14:55 | walkthrough | dbbfcf2 | claude-opus-5-5, auto | 0 new, 4 resolved, 1 still open | auto walkthrough, not a review pass; R32 left for the owner |
 | 2026-11-11T06:17:46 | review | b49eefd | claude-fable-5-2 (dispatched; story authored and loop orchestrated by claude-opus-5-5, auto round 4) | 3 new, 4 closures upheld, 4 open | Audited the auto walkthrough's closures of R33-R36; R32 still true, left for the owner. Loop stopped at its limit. |
+| 2026-11-11T18:29:38 | walkthrough | 41f8379 | claude-opus-5-5 with the owner | 0 new, 3 resolved, 1 wontfix, 0 still open | walkthrough, not a review pass; owner waived R32 ("rare case"), R37-R39 fixed in 01, 02 |
 
 ## Findings
 
