@@ -71,7 +71,7 @@ the user's explicit go-ahead. Work through open findings with
 ### Before closing an issue
 
 An issue whose commits touch files outside `.stories/` and `docs/` needs a
-`/code-review` before it moves to `done/`: a `code-review` row in the story's
+`/review-code` before it moves to `done/`: a `code-review` row in the story's
 `code-review.md` that reaches its last such commit, and no finding against it
 still `open`. Work through findings with `/address-code-review-findings`. See
 `docs/agents/issue-tracker.md`, sections "Code review file" and "Closing an

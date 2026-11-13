@@ -155,21 +155,21 @@ Rules:
 ## Code review file
 
 A story's code reviews are recorded in `.stories/<story>/code-review.md`, beside `review.md`. The repo's
-`code-review` skill (`/code-review`) creates it on its first run and writes every run's findings to it, so they
+`review-code` skill (`/review-code`) creates it on its first run and writes every run's findings to it, so they
 outlive the conversation. It holds the same two tables as `review.md`:
 
-- a **review journal**, one row per pass, newest last. `Kind` is `code-review` for a `/code-review` run or
-  `walkthrough` for a pass of `/address-code-review-findings`. `Reviewed` names the issues and the commit range,
+- a **review journal**, one row per pass, newest last. `Kind` is `code-review` for a `/review-code` run or
+  `walkthrough` for a pass of `/address-code-review-findings`, or `check` for the `scripts/check` run before a review. `Reviewed` names the issues and the commit range,
   such as `04, 05 @ 862ddba..e2b740c`, and `By` names the reviewers' model and the code's author, which differ:
-  `/code-review` runs its reviewers on a model other than the one that wrote the code.
-- a **findings table**, with IDs `C1`, `C2` and so on, never reused, and `Axis` as `standards` or `spec`. The two
+  `/review-code` runs its reviewers on a model other than the one that wrote the code.
+- a **findings table**, with IDs `C1`, `C2` and so on, never reused, and `Axis` as `standards`, `spec` or `security`. The
   axes stay apart and aren't ranked against each other.
 
 The statuses and the rules for rows are those of the review file: rows are never deleted or renumbered, `wontfix`
 needs the user's own reason, and anyone may flip a row to `resolved` with a dated comment. Acting on the findings is
 `/address-code-review-findings`, which walks the open rows one at a time with the user, or unattended with `auto`.
-Both skills commit their own work without asking unless told `nocommit`: `/code-review` the record file, the
-walkthrough each treated finding. `/code-review <fixed-point> auto [X]` loops review and `auto` walkthrough up to X
+Both skills commit their own work without asking unless told `nocommit`: `/review-code` the record file, the
+walkthrough each treated finding. `/review-code <fixed-point> auto [X]` loops review and `auto` walkthrough up to X
 times (default 3), re-reviewing only the fix commits and always ending on a review; see its "Auto mode".
 
 ## Before implementing a story
