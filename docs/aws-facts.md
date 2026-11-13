@@ -47,6 +47,11 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `HTTPS_ONLY` answers `http://` with `403` | docs | [https-viewers], the reviewer's reading; issue 01 of story `2-identity-api` proves it | 2026-11-01 |
 | Port 80 can't be closed on a distribution | memory | | 2026-11-01 |
 | A new account may need Support verification before creating CloudFront resources | forum | re:Post search summaries | 2026-11-01 |
+| The managed origin request policy `AllViewerExceptHostHeader` (`b689b0a8-53d0-40ab-baf2-68738e2966ac`) forwards every viewer header except `Host`, and adds CloudFront's headers for protocol, HTTP version, TLS version, device type and viewer location | docs | [orp-managed] | 2026-11-08 |
+| `CloudFront-Viewer-Address` is a viewer location header holding the viewer's IP address and source port, such as `198.51.100.10:46532`, and can be added in an origin request policy but not a cache policy | docs | [cf-headers] | 2026-11-08 |
+| So `AllViewerExceptHostHeader` forwards `CloudFront-Viewer-Address` to the origin | docs | [orp-managed] and [cf-headers] together, the reviewer's reading: the policy page says "all … viewer location headers" without naming each one. Issue 01 of story `2-identity-api` proves it, by a birth whose IP record matches the caller's address | 2026-11-08 |
+| A `CloudFront-Viewer-Address` header the viewer sends is replaced by CloudFront's own value, so a client can't set it | memory | AWS doesn't say. Its list of request headers CloudFront removes or replaces omits it ([cf-custom-origin]). Story 17's IP rule relies on it; issue 01 of story `2-identity-api` proves it, by a birth that sends its own header | 2026-11-08 |
+| CloudFront appends the connecting address to a viewer's `X-Forwarded-For` rather than replacing it, so its leading entries are the viewer's to choose | docs | [cf-custom-origin] "Client IP addresses"; why story 17 reads `CloudFront-Viewer-Address` instead | 2026-11-08 |
 
 ## WAF
 
@@ -91,6 +96,19 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `BucketDeployment` copies a folder during `cdk deploy`, refreshes a distribution's `distribution_paths` with an invalidation, and needs no Docker | memory | Issue 12 of story `2-identity-api` proves it; `cdk/website_stack.py` relies on the refresh | 2026-11-07 |
 | `SpecRestApi` adds no Lambda invoke permission, and creates no method resources | docs | Earlier review, R12 and R61 | 2026-10-30 |
 | `cdk bootstrap aws://<account>/<region>` still synthesizes the app when run beside a `cdk.json`, though it names the target, so run it where there's none | docs | CDK CLI 2.1147.0 source, `defineEnvironments` in `lib/cli/cdk-toolkit.js`; corrected from "doesn't need the app" | 2026-11-04 |
+| The CDK CLI sets `CDK_DEFAULT_ACCOUNT` for the app from the account of the resolved credentials, and leaves it unset when it can't resolve one, so `sfab_config.deploy_account()` then calls STS, and synth with neither credentials nor `SFAB_CONFIG` fails | docs | CDK CLI 2.1146.1 source, `prepareDefaultEnvironment` in `lib/index.js` (toolkit-lib `api/cloud-assembly/environment.ts`); [cdk-env] says only that it comes from the credentials | 2026-11-09 |
+
+## Secrets Manager and the SDK
+
+| Fact | Status | Source | Checked |
+|---|---|---|---|
+| `GetSecretValue` raises `ResourceNotFoundException` both for a missing secret and for one with no `AWSCURRENT` value, the second with a message naming the staging label, which is how `sfab_config` tells them apart | memory | [sm-get] documents only the code, not the messages; the first `scripts/deploy SfabDeployer` before the secret is filled shows the real message | 2026-11-09 |
+| A secret value's `SecretString` is at least 1 character, so an empty value can't be stored, but a blank one can | docs | [sm-get] | 2026-11-09 |
+| boto3 (botocore 1.43) resolves the region from `AWS_DEFAULT_REGION`, then the profile, and ignores `AWS_REGION`, so `sfab_config.Aws.region()` reads `AWS_REGION` first itself | docs | botocore 1.43.126 source, `BOTOCORE_DEFAUT_SESSION_VARIABLES["region"]` in `configprovider.py`, and a session with only `AWS_REGION` set resolving `None` | 2026-11-09 |
+| CloudFormation retrieves a `secretsmanager` dynamic reference's value only when it creates a resource or when an update modifies the resource holding the reference; a changed secret alone isn't picked up, so an unchanged reference isn't resolved again | docs | [cfn-dynref-sm] "Considerations" | 2026-11-09 |
+| A `secretsmanager` dynamic reference with neither `version-stage` nor `version-id` resolves the `AWSCURRENT` version, so the update or replacement that resolves it reads the current value | docs | [cfn-dynref-sm] "Reference pattern" | 2026-11-09 |
+| The `secretsmanager` dynamic reference can be used in all resource properties, except in custom resources, `AWS::CloudFormation::Init` metadata and EC2 `UserData`, and shouldn't sit in a property of the resource's primary identifier. So `AWS::ApiGateway::ApiKey`'s `Value` (its `Ref` is the key ID, not the value), `AWS::Lambda::Function`'s `Environment.Variables` and `AWS::CloudFront::Distribution`'s origin `OriginCustomHeaders` `HeaderValue` all accept one | docs | [cfn-dynref-sm] "Considerations", [cfn-dynref] "General considerations", [apikey-cfn] "Ref", the implementer's reading | 2026-11-09 |
+| A stack template can hold up to 60 dynamic references | docs | [cfn-dynref] | 2026-11-09 |
 
 ## Route 53, Budgets and other services
 
@@ -180,3 +198,10 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 [deletion-policy]: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-attribute-deletionpolicy.html
 [s3-price-list]: https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-east-1/index.json
 [s3-pricing]: https://aws.amazon.com/s3/pricing/
+[orp-managed]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-origin-request-policies.html
+[cf-headers]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/adding-cloudfront-headers.html
+[cf-custom-origin]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/RequestAndResponseBehaviorCustomOrigin.html
+[cdk-env]: https://docs.aws.amazon.com/cdk/v2/guide/configure-env.html
+[sm-get]: https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+[cfn-dynref]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references.html
+[cfn-dynref-sm]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references-secretsmanager.html

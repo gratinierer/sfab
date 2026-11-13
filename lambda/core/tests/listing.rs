@@ -30,12 +30,38 @@ async fn a_sized_listing_gives_every_key_under_the_prefix_with_its_size() {
         [
             Listed {
                 key: "claims/a/claim.json".into(),
-                size: 2
+                size: 2,
+                last_modified: 0,
             },
             Listed {
                 key: "claims/b/claim.json".into(),
-                size: 0
+                size: 0,
+                last_modified: 0,
             },
         ]
     );
+}
+
+#[tokio::test]
+async fn a_sized_listing_gives_each_object_the_time_it_was_last_written() {
+    let store = MemoryStore::new();
+    store.set_time(1_000);
+    let put = |key: &'static str| {
+        store.put(
+            Bucket::Identities,
+            key,
+            Vec::new(),
+            Metadata::new(),
+            Condition::Always,
+        )
+    };
+    put("ips/a").await.unwrap();
+    put("ips/b").await.unwrap();
+    store.set_time(5_000);
+    put("ips/b").await.unwrap();
+
+    let listed = store.list_sized(Bucket::Identities, "ips/").await.unwrap();
+
+    let times: Vec<i64> = listed.iter().map(|l| l.last_modified).collect();
+    assert_eq!(times, [1_000, 5_000]);
 }

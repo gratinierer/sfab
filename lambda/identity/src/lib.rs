@@ -22,6 +22,7 @@ use sfab_core::id::AgentId;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Object, Store, StoreError};
 use sfab_core::takedown::{Action, Location, Phase};
+use sfab_genesis::Genesis;
 
 /// Where `birth` points agents for the constitution, which ends with the Terms. Issue 11 serves it.
 pub const CONSTITUTION: &str = "/v1/world/constitution";
@@ -151,6 +152,7 @@ struct BirthRequest {
     name: String,
     #[serde(default)]
     whoiam: Option<String>,
+    genesis_code: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -177,6 +179,7 @@ pub struct Identity<S> {
     store: Arc<S>,
     required_bits: u32,
     marked: MarkedToday,
+    genesis: Arc<Genesis<S>>,
 }
 
 fn malformed() -> Problem {
@@ -196,27 +199,24 @@ fn lost_race(route: &str) -> Problem {
     Problem::internal()
 }
 
-/// Logs a storage error, which never holds a secret, and answers `500`.
-fn storage_failure(what: &str, err: &StoreError) -> Problem {
-    tracing::error!(error = ?err, "{what} failed");
-    Problem::internal()
-}
-
 fn to_json<T: Serialize>(value: &T) -> Vec<u8> {
     serde_json::to_vec(value).expect("plain data serializes")
 }
 
 impl<S: Store> Identity<S> {
-    pub fn new(store: Arc<S>, required_bits: u32) -> Self {
+    /// `genesis` holds `birth`'s genesis checks and IP rule, shared with the pool route.
+    pub fn new(store: Arc<S>, required_bits: u32, genesis: Arc<Genesis<S>>) -> Self {
         Self {
+            genesis,
             store,
             required_bits,
             marked: MarkedToday::default(),
         }
     }
 
-    /// `POST /identity/birth`: the claim first with `If-None-Match: *`, which rejects replays and
-    /// taken-down IDs, then the identity, then `vitals/<id>.json`.
+    /// `POST /identity/birth`, in `.stories/17-genesis-codes/spec.md`'s order: the proof, the
+    /// genesis code and the IP rule, then the claim with `If-None-Match: *`, which rejects replays
+    /// and taken-down IDs, the identity and `vitals/<id>.json`, and last the code is used up.
     pub async fn birth(&self, call: &Call<'_>, now: i64) -> Result<Reply, Problem> {
         let admitted = admit_write(call, now, self.required_bits)?;
         let request: BirthRequest = serde_json::from_slice(call.body).map_err(|_| malformed())?;
@@ -224,6 +224,10 @@ impl<S: Store> Identity<S> {
         if name_chars == 0 || name_chars > NAME_MAX_CHARS {
             return Err(Problem::bad_request("name must be 1 to 128 characters"));
         }
+        let admission = self
+            .genesis
+            .admit(&request.genesis_code, call.viewer, now)
+            .await?;
         let id = AgentId::from_hash(&admitted.hash);
         let born_at = rfc3339(now);
         let (record, secrets) = ClaimRecord::with_new_secrets(born_at.clone());
@@ -245,7 +249,7 @@ impl<S: Store> Identity<S> {
                     "This ID already exists, or this proof was used: solve again",
                 ));
             }
-            Err(e) => return Err(storage_failure("writing a new claim", &e)),
+            Err(e) => return Err(Problem::storage("writing a new claim", &e)),
         }
         let identity = IdentityRecord {
             name: request.name,
@@ -254,9 +258,10 @@ impl<S: Store> Identity<S> {
         };
         self.put_plain(&identity_key(&id), to_json(&identity))
             .await
-            .map_err(|e| storage_failure("writing a new identity", &e))?;
+            .map_err(|e| Problem::storage("writing a new identity", &e))?;
         self.marked.first_today(id.as_str(), now);
         self.write_vitals(&id, &born_at).await;
+        self.genesis.use_up(&admission, now).await;
         let reply = secrets.birth_reply(&id);
         Ok(Reply::created(json!(reply)))
     }
@@ -317,7 +322,7 @@ impl<S: Store> Identity<S> {
             Err(StoreError::ConditionFailed | StoreError::Missing) => {
                 return Err(Problem::unauthorized());
             }
-            Err(e) => return Err(storage_failure("rewriting a claim", &e)),
+            Err(e) => return Err(Problem::storage("rewriting a claim", &e)),
         }
         let reply = secrets.reclaim_reply(&agent.id);
         Ok(Reply::ok(json!(reply)))
@@ -345,7 +350,7 @@ impl<S: Store> Identity<S> {
             .store
             .get(Bucket::Claims, &claim_key(&bearer.id))
             .await
-            .map_err(|e| storage_failure("reading a claim", &e))?;
+            .map_err(|e| Problem::storage("reading a claim", &e))?;
         let Some(Object { body, etag, .. }) = object else {
             return Err(Problem::unauthorized());
         };
@@ -386,7 +391,7 @@ impl<S: Store> Identity<S> {
             .store
             .get(Bucket::Identities, &identity_key(id))
             .await
-            .map_err(|e| storage_failure("reading an identity", &e))?
+            .map_err(|e| Problem::storage("reading an identity", &e))?
             .ok_or_else(no_identity)?;
         let record = serde_json::from_slice(&object.body).map_err(|_| {
             tracing::error!("an identity in storage doesn't parse");

@@ -1,27 +1,27 @@
 #!/usr/bin/env bash
-# Deploy sfab: always runs every check first, audits included, and stops if any
-# fails. With no argument it deploys all stacks; name one for the first deploy.
-#   scripts/deploy [stack]
-# See .stories/2-identity-api/spec.md "Delivery" and "First deploy".
+# Deploy sfab, in CodeBuild or from a machine: plans first, then runs every check, audits
+# included, and stops if any fails.
+#   scripts/deploy --all | <stack>...
+# cdk/deploy_plan.py makes every decision: it refuses a set SFAB_CONFIG, any argument but
+# --all or the app's stack names, a region other than us-east-1, and a config that doesn't
+# load from the secret sfab/config. See .stories/18-deploy-from-codebuild/spec.md "A build".
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-if [ -n "${SFAB_CONFIG:-}" ]; then
-  echo "deploy: SFAB_CONFIG is set ($SFAB_CONFIG); deploys only use sfab.config.toml. Unset it." >&2
-  exit 1
-fi
+[ -d cdk/.venv ] || (cd cdk && uv venv -q .venv)
+uv pip sync -q --python cdk/.venv/bin/python --require-hashes cdk/requirements.txt
 
-if [ ! -f sfab.config.toml ]; then
-  echo "deploy: no sfab.config.toml. Copy sfab.config.example.toml and fill it in." >&2
-  exit 1
-fi
+# The mode for scripts/check on the first line, then the stacks, one per line.
+plan_output="$(cdk/.venv/bin/python cdk/deploy_plan.py "$@")"
+mapfile -t plan <<<"$plan_output"
+mode="${plan[0]}"
+stacks=("${plan[@]:1}")
 
-scripts/check
-
-# Fails with a clear message on a missing or unfinished sfab.config.toml.
-cd cdk
-if [ $# -eq 0 ]; then
-  cdk deploy --all
+if [ "$mode" = require-secret ]; then
+  scripts/check --require-secret
 else
-  cdk deploy "$1"
+  scripts/check
 fi
+
+cd cdk
+cdk deploy --require-approval never "${stacks[@]}"

@@ -1,6 +1,6 @@
-"""What the CDK assertion tests share: the committed fixture config, never a real
-sfab.config.toml, and the stacks built once from it with stand-in Lambda assets and website
-folder, so they need no build or generate step."""
+"""What the CDK assertion tests share: the committed fixture config, never the real one in
+the secret `sfab/config`, and the stacks built once from it with stand-in Lambda assets and
+website folder, so they need no build or generate step."""
 
 from pathlib import Path
 
@@ -39,7 +39,8 @@ def build_with_stand_ins(app: cdk.App, config, tmp_path_factory) -> stacks.Stack
 
 @pytest.fixture(scope="session")
 def config():
-    return sfab_config.load(FIXTURE)
+    # SFAB_CONFIG set for this call alone, so a plain pytest never reads the secret.
+    return sfab_config.load(environ={"SFAB_CONFIG": str(FIXTURE)})
 
 
 @pytest.fixture(scope="session")

@@ -9,6 +9,9 @@ copy that leaks anything private. See .stories/2-identity-api/spec.md "Architect
 
 The copy is written to build/openapi.yaml, which the API Lambda compiles in, and is
 never committed.
+
+The config is scripts/check's (`sfab_config.load_for_check`): the secret, or the fixture
+with a message, unless `--require-secret`, which scripts/deploy passes through.
 """
 
 from __future__ import annotations
@@ -152,7 +155,7 @@ def generate(config: sfab_config.Config) -> str:
 
 def main() -> None:
     try:
-        text = generate(sfab_config.load())
+        text = generate(sfab_config.load_for_check("--require-secret" in sys.argv[1:]))
     except (sfab_config.ConfigError, GenerateError) as e:
         sys.exit(f"generate_public_openapi: {e}")
     OUTPUT.parent.mkdir(exist_ok=True)

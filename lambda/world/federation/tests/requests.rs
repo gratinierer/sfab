@@ -54,6 +54,7 @@ async fn send(
         authorization: None,
         proof,
         body,
+        viewer: None,
     };
     f.request(&call, NOW).await
 }
@@ -253,6 +254,7 @@ async fn a_request_past_its_expiry_that_s3_hasnt_removed_yet_is_made_anew() {
         authorization: None,
         proof: Some(&proof),
         body: &b,
+        viewer: None,
     };
 
     let again = f.request(&call, later).await.unwrap();

@@ -1,7 +1,7 @@
 # CDK: build both stacks and wire CloudFront, the REST API and the Lambda
 
 Label: ready-for-human
-Blocked by: 03, 05, 06, 17-genesis-codes#05, 17-genesis-codes#06
+Blocked by: 03, 05, 06, 17-genesis-codes#05, 17-genesis-codes#06, 18-deploy-from-codebuild#02, 18-deploy-from-codebuild#03, 18-deploy-from-codebuild#04, 18-deploy-from-codebuild#05
 
 Build the REST API from `openapi/sfab.yaml` with `SpecRestApi` in the Python CDK, behind a
 CloudFront distribution, as described in `spec.md` "Architecture". Filed from review finding

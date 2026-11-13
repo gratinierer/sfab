@@ -20,6 +20,9 @@ pub struct Call<'a> {
     pub authorization: Option<&'a str>,
     pub proof: Option<&'a str>,
     pub body: &'a [u8],
+    /// CloudFront's `CloudFront-Viewer-Address`, `<address>:<port>`, for `birth`'s IP rule. Never
+    /// logged or stored as it is.
+    pub viewer: Option<&'a str>,
 }
 
 /// A write that passed the gate.
@@ -69,6 +72,7 @@ mod tests {
             authorization: None,
             proof: Some("1000:x"),
             body,
+            viewer: None,
         }
     }
 

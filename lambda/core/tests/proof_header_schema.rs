@@ -40,7 +40,7 @@ fn the_pattern_accepts_exactly_what_the_parser_accepts() {
     let nonce = |n| "a".repeat(n);
     // (what the case is for, header)
     let cases = [
-        ("the worked example", "1793836800:614135".to_string()),
+        ("the worked example", "1793836800:696785".to_string()),
         ("the smallest timestamp", "0:a".to_string()),
         ("every nonce character class", "1:A-z_9".to_string()),
         (

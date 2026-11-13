@@ -75,6 +75,27 @@ impl Store for S3Store {
         }))
     }
 
+    /// One `HeadObject`: the metadata, without the body.
+    async fn head(&self, bucket: Bucket, key: &str) -> Result<Option<Metadata>, StoreError> {
+        let out = match self
+            .client
+            .head_object()
+            .bucket(self.name(bucket))
+            .key(key)
+            .send()
+            .await
+        {
+            Ok(out) => out,
+            Err(e) if e.as_service_error().is_some_and(|s| s.is_not_found()) => return Ok(None),
+            Err(e) => return Err(store_error(e)),
+        };
+        Ok(Some(
+            out.metadata()
+                .map(|m| m.iter().map(|(k, v)| (k.clone(), v.clone())).collect())
+                .unwrap_or_default(),
+        ))
+    }
+
     async fn put(
         &self,
         bucket: Bucket,
@@ -153,6 +174,7 @@ impl Store for S3Store {
                 Some(Listed {
                     key: o.key()?.to_owned(),
                     size: o.size().unwrap_or_default().max(0) as u64,
+                    last_modified: o.last_modified().map_or(0, |t| t.secs()),
                 })
             }));
         }

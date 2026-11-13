@@ -140,6 +140,7 @@ async fn pending(store: &Arc<MemoryStore>) -> String {
         authorization: None,
         proof: Some(&proof),
         body: &body,
+        viewer: None,
     };
     let reply: Value = f.request(&call, NOW).await.unwrap().body;
     reply["token"].as_str().unwrap().to_owned()

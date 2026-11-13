@@ -4,13 +4,23 @@
     scripts/smoke --execute-api <stage URL> [--production] [--api-url https://api.<domain_name>]
 
 The stage URL is the API stack's `Endpoint` output that `cdk deploy` prints, such as
-`https://abc123.execute-api.us-east-1.amazonaws.com/v1/`. Needs no AWS credentials.
+`https://abc123.execute-api.us-east-1.amazonaws.com/v1/`. Reads the config through the shared
+loader, so it needs AWS credentials that can read the secret `sfab/config`, unless `--api-url`
+is given without `--production`.
 
 - Before launch, the full run births a test agent and covers every route, the gateway's
-  validation and errors, both `404`s, and the direct `execute-api` way in.
+  validation and errors, both `404`s, and the direct `execute-api` way in. It births with the
+  owner's `--no-ip-limit` genesis codes from `smoke-genesis-codes.txt` at the repo root
+  (gitignored), one per line, and drops each code it spends, so reruns from one IP pass. The
+  owner tops the file up, with the owner's AWS credentials, from `lambda/`:
+
+      IDENTITIES_BUCKET=<name> CLAIMS_BUCKET=<name> cargo run -q -p sfab-genesis-codes -- \\
+        issue --label smoke --count <n> --no-ip-limit >> ../smoke-genesis-codes.txt
+
+  It also births once with a code from `GET /world/genesis-code`, when the pool has one.
 - After launch, `--production` births nothing and writes nothing public: it reads every read
   route and makes only private writes, as the fixed smoke identity, whose `<id>.<claim>` is
-  `smoke_claim` in `sfab.config.toml`.
+  `smoke_claim` in the secret `sfab/config`.
 
 It sends one request every 4 seconds, to stay under WAF's 100 per 5 minutes, and solves a
 `Proof` for each write. WAF's plain `403` means this IP is blocked, or the API is stopped:
@@ -25,8 +35,8 @@ import secrets
 import string
 import sys
 import time
-import tomllib
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Callable
 
 import sfab_config
@@ -52,7 +62,17 @@ SMOKE_FRIEND = "smokefriends"
 # An ID nobody is likely to have, for `aboutme`'s 404.
 UNKNOWN_ID = "aaaaaaaaaaaa"
 START = "/v1/openapi.yaml"
+# The owner's `--no-ip-limit` genesis codes for the full run's births, gitignored.
+CODES_FILE = sfab_config.REPO_ROOT / "smoke-genesis-codes.txt"
+TOP_UP = (
+    "the owner tops it up from lambda/ with IDENTITIES_BUCKET=<name> CLAIMS_BUCKET=<name> "
+    "cargo run -q -p sfab-genesis-codes -- issue --label smoke --count <n> --no-ip-limit "
+    ">> ../smoke-genesis-codes.txt"
+)
+# Well-formed, so the gateway's validator passes the proof-less `birth` on to the Lambda.
+DUMMY_GENESIS_CODE = "a" * 16
 _SECRET = re.compile(r"[A-Za-z0-9_-]{43}")
+_GENESIS_CODE = re.compile(r"[a-z2-7]{16}")
 _ID = re.compile(r"[a-z2-7]{12}")
 _TOKEN = re.compile(r"[0-9a-f]{32}")
 # The federation request's domain, under this world's own, so nobody else can ever own it. It
@@ -62,6 +82,39 @@ BLOCKED_MESSAGE = (
     "Blocked: WAF's plain 403, from the rate limit on this IP or because the API is "
     "stopped. Wait at least 5 minutes and rerun. A stop lasts until the owner restarts the API."
 )
+
+
+class Codes:
+    """The `--no-ip-limit` genesis codes the full run births with, one per birth. A code is
+    spent, and dropped, once a birth with it gets past the code check."""
+
+    def __init__(self, codes: list[str]):
+        self.codes = list(codes)
+
+    def next(self) -> str | None:
+        return self.codes[0] if self.codes else None
+
+    def spend(self, code: str) -> None:
+        self.codes.remove(code)
+        self.save()
+
+    def save(self) -> None:
+        pass
+
+
+class CodeFile(Codes):
+    """`smoke-genesis-codes.txt`, one code per line, rewritten as codes are spent."""
+
+    def __init__(self, path: Path):
+        self.path = path
+        try:
+            text = path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            text = ""
+        super().__init__([line.strip() for line in text.splitlines() if line.strip()])
+
+    def save(self) -> None:
+        self.path.write_text("".join(f"{c}\n" for c in self.codes), encoding="utf-8")
 
 
 @dataclass(frozen=True)
@@ -92,6 +145,8 @@ class _Session:
         self.failures: list[str] = []
         # The test agent's recovery code, from its birth.
         self.recovery: str | None = None
+        # A code from `GET /world/genesis-code`, when the pool had one.
+        self.world_code: str | None = None
 
     def learn(self, refusal: dict) -> None:
         """The proof's difficulty and the server's clock, from a refused `birth`."""
@@ -196,7 +251,9 @@ def run(
     clock: Callable[[], float],
     sleep: Callable[[float], None],
     log: Callable[[str], None],
+    codes: Codes,
 ) -> Result:
+    """`codes` are the full run's `--no-ip-limit` genesis codes; `--production` births nothing."""
     s = _Session(transport, target, clock, sleep, log)
     try:
         _public(s)
@@ -205,12 +262,13 @@ def run(
             _profile(s, target.credential, public=False)
             _messages(s, target.credential)
         else:
-            credential = _birth(s)
+            credential = _birth(s, codes)
             if credential:
                 credential = _identity(s, credential, birthed=True)
             if credential:
                 _profile(s, credential, public=True)
                 _messages(s, credential)
+            _world_birth(s)
             _request_federation(s)
         _execute_api(s)
     except Blocked:
@@ -248,7 +306,7 @@ def _public(s: _Session) -> None:
             verify=_points_to_start,
         )
 
-    body = _birth_body()
+    body = _birth_body(DUMMY_GENESIS_CODE)
     response = s.api("POST", "/v1/identity/birth", _headers(None, body=body), body)
 
     def has_bits_and_time(r: Response) -> str | None:
@@ -266,7 +324,7 @@ def _public(s: _Session) -> None:
 def _world(s: _Session) -> None:
     """The world routes, which write nothing. Before the daily job's first run, the census and
     resident list answer `404` with `not-built-yet`, which passes. A page past the last is left
-    to the unit tests, to keep the run near 41 requests."""
+    to the unit tests, to keep the run near 43 requests."""
 
     def constitution(r: Response) -> str | None:
         body = _json_object(r)
@@ -301,6 +359,32 @@ def _world(s: _Session) -> None:
             s.check(f"GET {path}", response, 404, problem="not-built-yet")
         else:
             s.check(f"GET {path}", response, 200, verify=check)
+    _genesis_code(s)
+
+
+def _genesis_code(s: _Session) -> None:
+    """One of today's world codes, kept for the full run's world-code birth. Before the daily
+    job's first pool it's `404 not-built-yet`, and with today's pool empty or not yet built it's
+    `409 try-later` with `retry_after`; both pass, and leave no code to birth with."""
+    path = "/v1/world/genesis-code"
+    response = s.api("GET", path)
+    if response.status == 404:
+        s.check(f"GET {path}", response, 404, problem="not-built-yet")
+        return
+    if response.status == 409:
+
+        def retry_after(r: Response) -> str | None:
+            return None if _json_object(r).get("retry_after") else "no retry_after"
+
+        s.check(f"GET {path}", response, 409, problem="try-later", verify=retry_after)
+        return
+
+    def code(r: Response) -> str | None:
+        found = str(_json_object(r).get("genesis_code", ""))
+        return None if _GENESIS_CODE.fullmatch(found) else f"genesis_code {found!r}"
+
+    if s.check(f"GET {path}", response, 200, verify=code):
+        s.world_code = _json_object(response)["genesis_code"]
 
 
 def _world_domain(s: _Session) -> str:
@@ -347,30 +431,102 @@ def _request_federation(s: _Session) -> None:
     s.check("federation request", response, (200, 202), verify=token)
 
 
-def _birth_body() -> bytes:
-    return f'{{"name":"{SMOKE_NAME}"}}'.encode()
+def _birth_body(genesis_code: str) -> bytes:
+    return f'{{"name":"{SMOKE_NAME}","genesis_code":"{genesis_code}"}}'.encode()
 
 
-def _birth(s: _Session) -> str | None:
-    """A test agent, and a replay of its proof."""
-    body = _birth_body()
-    response, proof, digest = s.write("POST", "/v1/identity/birth", body)
-    born = _json_object(response)
+def _born(digest: bytes):
+    """A check that a `birth` answer holds the ID from the proof's hash and both secrets."""
 
-    def secrets_and_id(r: Response) -> str | None:
+    def check(r: Response) -> str | None:
+        born = _json_object(r)
         if born.get("id") != agent_id(digest):
             return f"id {born.get('id')!r}, not {agent_id(digest)!r} from the proof's hash"
         if not all(_SECRET.fullmatch(str(born.get(k, ""))) for k in ("claim", "recovery")):
             return "claim or recovery isn't 43 characters of base64url"
         return None
 
-    if not s.check("birth", response, 201, verify=secrets_and_id):
+    return check
+
+
+def _birth(s: _Session, codes: Codes) -> str | None:
+    """A test agent, with a `--no-ip-limit` code so reruns from one IP pass, and a replay of
+    its proof, which meets the used code."""
+    code = codes.next()
+    if code is None:
+        s.failures.append(
+            f"birth: no --no-ip-limit genesis code left in {CODES_FILE.name}; {TOP_UP}"
+        )
+        s.log(f"FAIL birth: {CODES_FILE.name} has no codes left")
         return None
+    body = _birth_body(code)
+    response, proof, digest = s.write("POST", "/v1/identity/birth", body)
+    if response.status == 201 or (
+        response.status == 403 and _json_object(response).get("type") == "invalid-genesis-code"
+    ):
+        codes.spend(code)
+    if not s.check("birth", response, 201, verify=_born(digest)):
+        return None
+    born = _json_object(response)
     s.log(f"     born test agent {born['id']}")
     replay = s.api("POST", "/v1/identity/birth", _headers(None, proof, body), body)
-    s.check("birth replay", replay, 409, problem="already-exists")
+    s.check("birth replay", replay, 403, problem="invalid-genesis-code")
     s.recovery = born["recovery"]
     return f"{born['id']}.{born['claim']}"
+
+
+# How many times a world-code retry refetches for a code other than the rejected one.
+_WORLD_CODE_REFETCHES = 3
+
+
+def _world_birth(s: _Session) -> None:
+    """A birth with the world's code. The code is checked before the IP rule, so `201` or
+    `409 too-soon` both prove it was accepted, and a rerun from one IP within the window still
+    passes; only `201` uses up the pool code. The pool is only mostly fresh, so after a `403
+    invalid-genesis-code` it fetches a fresh code and births once more, which must be accepted:
+    a racing birth may use one code, but a world that rejects two is broken. A refetch that
+    finds no code skips the retry, as a first fetch would. The pool picks at random and keeps a
+    code a race used, so a refetch may hand back the same used code: it refetches up to
+    `_WORLD_CODE_REFETCHES` times for a different one, and skips only if every refetch gives
+    the used code."""
+    if s.world_code is None:
+        s.log("skip birth with the world's code: GET /v1/world/genesis-code gave none")
+        return
+    response, _, digest = s.write("POST", "/v1/identity/birth", _birth_body(s.world_code))
+    name = "birth with the world's code"
+    if response.status == 403:
+        if not s.check(name, response, 403, problem="invalid-genesis-code"):
+            return
+        s.log(
+            "note: the world's code was already used, which a racing birth may do, "
+            "since the pool is only mostly fresh; trying a fresh one"
+        )
+        used = s.world_code
+        for _ in range(_WORLD_CODE_REFETCHES):
+            s.world_code = None
+            _genesis_code(s)
+            if s.world_code is None:
+                s.log("skip birth with a fresh world code: GET /v1/world/genesis-code gave none")
+                return
+            if s.world_code != used:
+                break
+        else:
+            s.log(
+                f"skip birth with a fresh world code: GET /v1/world/genesis-code gave the same "
+                f"used code {_WORLD_CODE_REFETCHES} times, which the pool's random pick may do "
+                "while it holds it, and always does when it is the only code left"
+            )
+            return
+        response, _, digest = s.write("POST", "/v1/identity/birth", _birth_body(s.world_code))
+        name = "birth with a fresh world code"
+    if response.status == 409:
+
+        def retry_after(r: Response) -> str | None:
+            return None if _json_object(r).get("retry_after") else "no retry_after"
+
+        s.check(name, response, 409, problem="too-soon", verify=retry_after)
+    else:
+        s.check(name, response, 201, verify=_born(digest))
 
 
 def _identity(s: _Session, credential: str, *, birthed: bool) -> str | None:
@@ -625,17 +781,18 @@ class UsageError(Exception):
     pass
 
 
-def load_target(args: argparse.Namespace, config_path) -> Target:
+def load_target(args: argparse.Namespace) -> Target:
     """The URLs and, for `--production`, the smoke identity, from the arguments and config."""
-    api_url = args.api_url
-    if api_url is None:
+    config = None
+    if args.api_url is None or args.production:
         try:
-            api_url = sfab_config.load(config_path).api_url
+            config = sfab_config.load()
         except sfab_config.ConfigError as e:
             raise UsageError(str(e)) from None
+    api_url = args.api_url if args.api_url is not None else config.api_url
     credential = None
     if args.production:
-        credential = _smoke_claim(config_path)
+        credential = _smoke_claim(config.smoke_claim)
     if not args.execute_api.startswith("https://"):
         raise UsageError(
             "--execute-api must be the stage's https:// URL, the stack's Endpoint output"
@@ -643,20 +800,16 @@ def load_target(args: argparse.Namespace, config_path) -> Target:
     return Target(api_url.rstrip("/"), args.execute_api, credential)
 
 
-def _smoke_claim(config_path) -> str:
-    try:
-        value = tomllib.loads(config_path.read_text(encoding="utf-8")).get("smoke_claim")
-    except (OSError, tomllib.TOMLDecodeError) as e:
-        raise UsageError(f"{config_path}: can't read smoke_claim: {e}") from None
+def _smoke_claim(value: str | None) -> str:
     if value is None or value == "CHANGE_ME":
         raise UsageError(
-            f"--production needs smoke_claim in {config_path}: the fixed smoke identity's "
+            f"--production needs smoke_claim in {sfab_config.SECRET}: the fixed smoke identity's "
             '<id>.<claim>. Birth it once after launch and add it, as spec.md "Local config" says.'
         )
-    agent, _, claim = str(value).partition(".")
+    agent, _, claim = value.partition(".")
     if not (_ID.fullmatch(agent) and _SECRET.fullmatch(claim)):
-        raise UsageError(f"{config_path}: smoke_claim must be <id>.<claim>, as in Authorization")
-    return str(value)
+        raise UsageError("smoke_claim must be <id>.<claim>, as in Authorization")
+    return value
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -676,16 +829,28 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
 
 
 def main(
-    argv: list[str] | None = None, transport: Transport = urllib_transport, config_path=None
+    argv: list[str] | None = None,
+    transport: Transport = urllib_transport,
+    codes_path: Path = CODES_FILE,
 ) -> int:
     args = parse_args(argv)
     try:
-        target = load_target(args, config_path or sfab_config.config_path())
+        target = load_target(args)
     except UsageError as e:
         print(e, file=sys.stderr)
         return 2
+    codes = CodeFile(codes_path)
+    if not args.production and codes.next() is None:
+        print(f"{codes_path} has no --no-ip-limit genesis codes left: {TOP_UP}", file=sys.stderr)
+        return 2
     result = run(
-        transport, target, production=args.production, clock=time.time, sleep=time.sleep, log=print
+        transport,
+        target,
+        production=args.production,
+        clock=time.time,
+        sleep=time.sleep,
+        log=print,
+        codes=codes,
     )
     if result.failures:
         print(f"\n{len(result.failures)} failed:", *result.failures, sep="\n  ")

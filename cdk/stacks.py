@@ -5,6 +5,7 @@ See .stories/2-identity-api/spec.md "Architecture" and "Abuse and cost controls"
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from dataclasses import dataclass
@@ -63,18 +64,39 @@ API_RESERVED_CONCURRENCY = 5
 # CDK's default is 3 seconds; a request makes a few S3 calls. The takedown waits at least this:
 # API_TIMEOUT_SECONDS in lambda/takedown/src/args.rs, which a test ties to this one.
 API_TIMEOUT_SECONDS = 10
+# Story 17 "Two sources" and "The IP rule": the daily job issues this many world genesis codes,
+# and one IP address may birth once every this many hours. Public settings, so they live here.
+GENESIS_CODES_PER_DAY = 100
+GENESIS_IP_WINDOW_HOURS = 4
 # How long messages and knocks wait before the lifecycle rule on `messages/` expires them; the
 # messaging crate's KEEP_DAYS hides them from the same day.
 MESSAGE_DAYS = 30
-# The only prefix where the API Lambda deletes: `DELETE /identity/self/messages/{message_id}`.
-API_DELETE_PREFIXES = ("messages/",)
-# The identities bucket's prefixes the API Lambda reads and writes, and those it only reads.
-API_READ_WRITE_PREFIXES = ("identities/", "messages/", "vitals/", "federation/pending/")
-API_READ_PREFIXES = ("world/",)
+# The `genesis/` keys IAM and lifecycle must name. ADR 0008 gives every `genesis/` key to
+# lambda/world/genesis, so a test ties each one here to that crate's constants.
+GENESIS_CODES_PREFIX = "genesis/codes/"
+GENESIS_IPS_PREFIX = "genesis/ips/"
+GENESIS_POOL_KEY = "genesis/pool.json"
+# Where the API Lambda deletes: `DELETE /identity/self/messages/{message_id}`, and a birth's
+# used genesis code (story 17 "What `birth` does").
+API_DELETE_PREFIXES = ("messages/", GENESIS_CODES_PREFIX)
+# The identities bucket's prefixes the API Lambda reads and writes, the single keys it reads
+# and writes, and the prefixes it only reads. A HEAD needs GetObject.
+API_READ_WRITE_PREFIXES = (
+    "identities/",
+    "messages/",
+    "vitals/",
+    "federation/pending/",
+    GENESIS_IPS_PREFIX,
+)
+API_READ_WRITE_KEYS = (GENESIS_POOL_KEY,)
+API_READ_PREFIXES = ("world/", GENESIS_CODES_PREFIX)
 # Days before S3 deletes a federation request: one waiting for its token, and one waiting for
 # the owner (spec.md "Federation" and "Storage").
 FEDERATION_PENDING_DAYS = 3
 FEDERATION_VERIFIED_DAYS = 30
+# Days before S3 deletes a genesis IP record: story 17 "The IP rule". Only needs to outlast
+# GENESIS_IP_WINDOW_HOURS; the daily job deletes older records itself, sooner.
+GENESIS_IP_RECORD_DAYS = 1
 
 
 STAGE = "v1"
@@ -85,6 +107,21 @@ THROTTLE_BURST = 20
 # Per IP per 5 minutes, across all routes; WAF's lowest is 10 (spec.md "WAF limit").
 WAF_RATE_LIMIT = 100
 WAF_RATE_WINDOW_SECONDS = 300
+
+
+def secret_ref(key: str) -> str:
+    """A CloudFormation dynamic reference to one entry of the secret `sfab/config`, so the
+    template holds a pointer rather than the value. Versionless, so it reads the current
+    version, and an edit to another entry changes no reference (docs/aws-facts.md)."""
+    return f"{{{{resolve:secretsmanager:{sfab_config.SECRET_ID}:SecretString:{key}}}}}"
+
+
+def value_hash(value: str) -> str:
+    """A short sha256 prefix of a secret value, for a free-text field or logical id of the
+    resource holding its reference: CloudFormation resolves an unchanged reference only when
+    something else about that resource changes, so the hash makes a new value an update.
+    The values are at least 20 random letters and digits, so 8 hex digits give nothing away."""
+    return hashlib.sha256(value.encode()).hexdigest()[:8]
 
 
 class SynthError(Exception):
@@ -150,8 +187,9 @@ class BaseStack(cdk.Stack):
         )
 
         # Inboxes can't grow forever: spec.md "Messages". Federation requests expire too:
-        # spec.md "Federation". The API and the daily world job hide or delete anything older
-        # themselves, because S3 removes expired objects some time later (docs/aws-facts.md).
+        # spec.md "Federation", and so do genesis IP records: story 17 "The IP rule". The API
+        # and the daily world job hide or delete anything older themselves, because S3 removes
+        # expired objects some time later (docs/aws-facts.md).
         self.identities_bucket = self._bucket(
             "Identities",
             [
@@ -167,6 +205,11 @@ class BaseStack(cdk.Stack):
                     id="FederationVerified",
                     prefix="federation/verified/",
                     expiration=cdk.Duration.days(FEDERATION_VERIFIED_DAYS),
+                ),
+                s3.LifecycleRule(
+                    id="GenesisIps",
+                    prefix=GENESIS_IPS_PREFIX,
+                    expiration=cdk.Duration.days(GENESIS_IP_RECORD_DAYS),
                 ),
             ],
         )
@@ -308,6 +351,8 @@ class ApiStack(cdk.Stack):
             architecture=lambda_.Architecture.ARM_64,
             handler="bootstrap",
             code=api_code,
+            # Changes with IP_HASH_KEY's value, so a new key updates the function.
+            description=f"The API; IP hash key {value_hash(config.ip_hash_key)}",
             environment={
                 "REQUIRED_BITS": str(REQUIRED_BITS),
                 "IDENTITIES_BUCKET": base.identities_bucket.bucket_name,
@@ -315,6 +360,9 @@ class ApiStack(cdk.Stack):
                 # This world, which GET /federation/world publishes.
                 "DOMAIN_NAME": config.domain_name,
                 "ABUSE_CONTACT": config.abuse_contact,
+                # The IP rule. The key goes only here, never to CloudFront or the API key.
+                "IP_HASH_KEY": secret_ref("ip_hash_key"),
+                "GENESIS_IP_WINDOW_HOURS": str(GENESIS_IP_WINDOW_HOURS),
             },
             reserved_concurrent_executions=API_RESERVED_CONCURRENCY,
             timeout=cdk.Duration.seconds(API_TIMEOUT_SECONDS),
@@ -366,8 +414,15 @@ class ApiStack(cdk.Stack):
         self.rest_api.latest_deployment.add_to_logical_id(definition)
         # The origin key: CloudFront adds it, and every operation in sfab.yaml requires it.
         # It works only through a usage plan; the stage holds the throttles, so the plan has
-        # none. No name, because a changed value replaces the key, and a named key can't be.
-        origin_key = apigw.ApiKey(self, "OriginKey", value=config.origin_key, enabled=True)
+        # none. The value is a dynamic reference, so the template can't show a change: the
+        # value's hash in the logical id replaces the key when origin_key changes, and only
+        # then. No name, because a named key can't be replaced.
+        origin_key = apigw.ApiKey(
+            self,
+            f"OriginKey{value_hash(config.origin_key)}",
+            value=secret_ref("origin_key"),
+            enabled=True,
+        )
         plan = self.rest_api.add_usage_plan(
             "OriginKeyPlan",
             api_stages=[
@@ -392,6 +447,8 @@ class ApiStack(cdk.Stack):
             identities_bucket=base.identities_bucket,
             claims_bucket=base.claims_bucket,
             alerts_topic=base.alerts_topic,
+            genesis_codes_per_day=GENESIS_CODES_PER_DAY,
+            genesis_ip_window_hours=GENESIS_IP_WINDOW_HOURS,
         )
 
         self.kill_switch = KillSwitch(
@@ -429,6 +486,8 @@ class ApiStack(cdk.Stack):
         self.distribution = cloudfront.Distribution(
             self,
             "Distribution",
+            # Changes with origin_key's value, so a new key updates the x-api-key header.
+            comment=f"The API; origin key {value_hash(config.origin_key)}",
             domain_names=[config.api_host],
             certificate=base.certificate,
             web_acl_id=self.web_acl.attr_arn,
@@ -438,13 +497,16 @@ class ApiStack(cdk.Stack):
                     # RestApiOrigin defaults to the stage, but public URLs already hold /v1.
                     # CDK writes "/" as an empty OriginPath (docs/aws-facts.md "CDK").
                     origin_path="/",
-                    custom_headers={"x-api-key": config.origin_key},
+                    custom_headers={"x-api-key": secret_ref("origin_key")},
                 ),
                 # Not a redirect: that would come after the token was already sent.
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
                 cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
-                # Sends Authorization on every method.
+                # Sends Authorization on every method, and CloudFront-Viewer-Address, which
+                # story 17's IP rule reads: AWS documents this managed policy as adding the
+                # viewer location headers (docs/aws-facts.md), and Free lists origin request
+                # rules with managed policies, so no custom policy is needed.
                 origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
                 function_associations=[
                     cloudfront.FunctionAssociation(
@@ -476,6 +538,7 @@ class ApiStack(cdk.Stack):
         Story 4 adds its own prefixes here."""
         identities, claims = base.identities_bucket, base.claims_bucket
         read_write = [identities.arn_for_objects(f"{p}*") for p in API_READ_WRITE_PREFIXES]
+        read_write += [identities.arn_for_objects(k) for k in API_READ_WRITE_KEYS]
         read_write.append(claims.arn_for_objects("*"))
         self.function.add_to_role_policy(
             iam.PolicyStatement(actions=["s3:GetObject", "s3:PutObject"], resources=read_write)

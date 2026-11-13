@@ -10,6 +10,7 @@ use sfab_core::problem::{Problem, Reply};
 use sfab_core::proof::{self, Request};
 use sfab_core::storage::{Bucket, Condition, MemoryStore, Store};
 use sfab_core::takedown::{Action, Phase};
+use sfab_genesis::testing as genesis;
 use sfab_identity::{Identity, takedown};
 
 /// Enough bits that a proof for another request almost never passes by chance.
@@ -26,7 +27,7 @@ struct World {
 fn world() -> World {
     let store = Arc::new(MemoryStore::new());
     World {
-        identity: Identity::new(store.clone(), BITS),
+        identity: Identity::new(store.clone(), BITS, genesis::genesis(&store)),
         store,
     }
 }
@@ -47,6 +48,7 @@ impl Sent {
             authorization: self.authorization.as_deref(),
             proof: self.proof.as_deref(),
             body: &self.body,
+            viewer: None,
         }
     }
 }
@@ -79,12 +81,19 @@ fn bearer(id: &str, secret: &str) -> Option<String> {
     Some(format!("Bearer {id}.{secret}"))
 }
 
-fn birth_call(name: &str, now: i64) -> Sent {
+/// A `birth` with a fresh `--no-ip-limit` genesis code seeded in `w`'s store.
+async fn birth_call(w: &World, name: &str, now: i64) -> Sent {
+    let code = genesis::seed_exempt_code(&*w.store).await;
+    birth_with(name, &code, now)
+}
+
+fn birth_with(name: &str, code: &str, now: i64) -> Sent {
+    let body = serde_json::json!({ "name": name, "genesis_code": code });
     write(
         "POST",
         "/v1/identity/birth",
         None,
-        format!(r#"{{"name":"{name}"}}"#).as_bytes(),
+        &serde_json::to_vec(&body).unwrap(),
         now,
     )
 }
@@ -113,7 +122,7 @@ struct Born {
 async fn born(w: &World, name: &str) -> Born {
     let reply = w
         .identity
-        .birth(&birth_call(name, NOW).call(), NOW)
+        .birth(&birth_call(w, name, NOW).await.call(), NOW)
         .await
         .expect("birth");
     assert_eq!(reply.status, 201);
@@ -148,7 +157,7 @@ fn snapshot(store: &MemoryStore) -> Vec<(String, Vec<u8>)> {
 #[tokio::test]
 async fn birth_creates_the_identity_from_the_proofs_hash_and_stores_only_hashes() {
     let w = world();
-    let sent = birth_call("Wren", NOW);
+    let sent = birth_call(&w, "Wren", NOW).await;
     let reply = w.identity.birth(&sent.call(), NOW).await.unwrap();
     assert_eq!(reply.status, 201);
     let body = &reply.body;
@@ -198,12 +207,82 @@ async fn birth_creates_the_identity_from_the_proofs_hash_and_stores_only_hashes(
 #[tokio::test]
 async fn a_birth_replay_gets_409_and_changes_nothing() {
     let w = world();
-    let sent = birth_call("Wren", NOW);
+    let code = genesis::seed_exempt_code(&*w.store).await;
+    let sent = birth_with("Wren", &code, NOW);
     w.identity.birth(&sent.call(), NOW).await.unwrap();
+    // The used code put back, so the replay reaches the claim's `If-None-Match: *`.
+    genesis::reseed_exempt_code(&*w.store, &code).await;
     let before = snapshot(&w.store);
     let replay = w.identity.birth(&sent.call(), NOW).await.unwrap_err();
     assert_eq!((replay.status, replay.kind), (409, "already-exists"));
     assert_eq!(snapshot(&w.store), before);
+}
+
+#[tokio::test]
+async fn a_plain_birth_replay_meets_its_used_code_and_gets_403() {
+    let w = world();
+    let sent = birth_call(&w, "Wren", NOW).await;
+    w.identity.birth(&sent.call(), NOW).await.unwrap();
+    let before = snapshot(&w.store);
+    let replay = w.identity.birth(&sent.call(), NOW).await.unwrap_err();
+    assert_eq!((replay.status, replay.kind), (403, "invalid-genesis-code"));
+    assert_eq!(snapshot(&w.store), before);
+}
+
+#[tokio::test]
+async fn a_birth_with_a_bad_code_writes_nothing() {
+    let w = world();
+    let before = snapshot(&w.store);
+    let sent = birth_with("Wren", &sfab_genesis::new_code(), NOW);
+    let err = w.identity.birth(&sent.call(), NOW).await.unwrap_err();
+    assert_eq!((err.status, err.kind), (403, "invalid-genesis-code"));
+    assert_eq!(snapshot(&w.store), before);
+}
+
+#[tokio::test]
+async fn a_birth_too_soon_from_one_address_gets_409_and_writes_nothing() {
+    let w = world();
+    let viewer = Some("198.51.100.7:46532");
+    let first = genesis::seed_code(&*w.store).await;
+    let sent = birth_with("Wren", &first, NOW);
+    let call = Call {
+        viewer,
+        ..sent.call()
+    };
+    assert_eq!(w.identity.birth(&call, NOW).await.unwrap().status, 201);
+
+    let second = genesis::seed_code(&*w.store).await;
+    let sent = birth_with("Robin", &second, NOW + 60);
+    let before = snapshot(&w.store);
+    let call = Call {
+        viewer,
+        ..sent.call()
+    };
+    let err = w.identity.birth(&call, NOW + 60).await.unwrap_err();
+    assert_eq!((err.status, err.kind), (409, "too-soon"));
+    assert_eq!(snapshot(&w.store), before);
+}
+
+#[tokio::test]
+async fn an_ordinary_code_without_a_viewer_address_gets_500_and_writes_nothing() {
+    let w = world();
+    let code = genesis::seed_code(&*w.store).await;
+    let before = snapshot(&w.store);
+    let sent = birth_with("Wren", &code, NOW);
+    for viewer in [None, Some("not-an-address")] {
+        let call = Call {
+            viewer,
+            ..sent.call()
+        };
+        assert_eq!(
+            status(&w.identity.birth(&call, NOW).await),
+            500,
+            "{viewer:?}"
+        );
+        assert_eq!(snapshot(&w.store), before);
+    }
+    let exempt = birth_call(&w, "Robin", NOW).await;
+    assert_eq!(status(&w.identity.birth(&exempt.call(), NOW).await), 201);
 }
 
 #[tokio::test]
@@ -341,7 +420,7 @@ async fn every_write_without_a_valid_proof_gets_400_with_nothing_stored() {
 
     let mut cases: Vec<(&str, Sent)> = Vec::new();
     for (name, mut sent) in [
-        ("birth", birth_call("Finch", NOW)),
+        ("birth", birth_call(&w, "Finch", NOW).await),
         ("evolve", evolve_call(&a.id, &a.claim, "x", NOW)),
         ("reclaim", reclaim_call(&a.id, &a.recovery, NOW)),
     ] {
@@ -379,6 +458,7 @@ async fn every_write_without_a_valid_proof_gets_400_with_nothing_stored() {
         },
     ));
 
+    let before_b = snapshot(&w.store);
     for (name, sent) in &cases {
         let result = match *name {
             "birth" => w.identity.birth(&sent.call(), NOW).await,
@@ -460,7 +540,7 @@ async fn malformed_bodies_get_400() {
         assert_eq!(status(&w.identity.birth(&sent.call(), NOW).await), 400);
     }
     let long = "n".repeat(129);
-    let sent = birth_call(&long, NOW);
+    let sent = birth_call(&w, &long, NOW).await;
     assert_eq!(status(&w.identity.birth(&sent.call(), NOW).await), 400);
     let evolve = write(
         "PUT",
@@ -508,7 +588,8 @@ async fn take_down(store: &MemoryStore, id: &AgentId) {
 #[tokio::test]
 async fn the_takedown_list_leaves_only_a_marker_that_keeps_born_at() {
     let w = world();
-    let sent = birth_call("Wren", NOW);
+    let code = genesis::seed_exempt_code(&*w.store).await;
+    let sent = birth_with("Wren", &code, NOW);
     let reply = w.identity.birth(&sent.call(), NOW).await.unwrap();
     let id = AgentId::parse(reply.body["id"].as_str().unwrap()).unwrap();
     let claim = reply.body["claim"].as_str().unwrap();
@@ -534,7 +615,10 @@ async fn the_takedown_list_leaves_only_a_marker_that_keeps_born_at() {
     assert_eq!(phases.last(), Some(&Phase::Last));
 
     take_down(&w.store, &id).await;
-    assert_eq!(w.store.keys(Bucket::Identities), Vec::<String>::new());
+    // Only the genesis code's batch entry stays, which holds nothing of the agent.
+    let left: Vec<String> = w.store.keys(Bucket::Identities);
+    assert_eq!(left.len(), 1, "{left:?}");
+    assert!(left[0].starts_with("genesis/batches/"), "{left:?}");
     assert_eq!(
         w.store.keys(Bucket::Claims),
         vec![format!("claims/{id}/claim.json")]
@@ -572,6 +656,8 @@ async fn the_takedown_list_leaves_only_a_marker_that_keeps_born_at() {
         ),
         401
     );
+    // The used code put back, so the replay reaches the marker.
+    genesis::reseed_exempt_code(&*w.store, &code).await;
     let again = w.identity.birth(&sent.call(), NOW).await.unwrap_err();
     assert_eq!((again.status, again.kind), (409, "already-exists"));
 }
@@ -687,13 +773,11 @@ async fn a_failed_vitals_write_doesnt_fail_the_call() {
 async fn a_failed_claim_write_stores_nothing_else() {
     let w = world();
     w.store.fail_writes_under(Bucket::Claims, "claims/");
-    let err = w
-        .identity
-        .birth(&birth_call("Wren", NOW).call(), NOW)
-        .await
-        .unwrap_err();
+    let sent = birth_call(&w, "Wren", NOW).await;
+    let before = w.store.keys(Bucket::Identities);
+    let err = w.identity.birth(&sent.call(), NOW).await.unwrap_err();
     assert_eq!(err.status, 500);
-    assert!(w.store.keys(Bucket::Identities).is_empty());
+    assert_eq!(w.store.keys(Bucket::Identities), before);
 }
 
 #[tokio::test]

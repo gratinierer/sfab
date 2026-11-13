@@ -69,6 +69,7 @@ async fn ask(store: &Arc<MemoryStore>, domain: &str) -> Value {
         authorization: None,
         proof: Some(&proof),
         body: &body,
+        viewer: None,
     };
     f.request(&call, NOW).await.unwrap().body
 }

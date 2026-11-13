@@ -5,6 +5,9 @@ Each page (`.html`) gets the API's host in place of `{{api_host}}`; every other 
 copied unchanged. The build folder is rebuilt from scratch each run, because the website
 stack's `BucketDeployment` prunes the bucket to match it. See
 .stories/2-identity-api/spec.md "Architecture" (website).
+
+The config is scripts/check's (`sfab_config.load_for_check`): the secret, or the fixture
+with a message, unless `--require-secret`, which scripts/deploy passes through.
 """
 
 from __future__ import annotations
@@ -51,7 +54,8 @@ def generate(source: Path, out: Path, *, api_host: str) -> None:
 
 def main() -> None:
     try:
-        generate(SOURCE, OUTPUT, api_host=sfab_config.load().api_host)
+        config = sfab_config.load_for_check("--require-secret" in sys.argv[1:])
+        generate(SOURCE, OUTPUT, api_host=config.api_host)
     except (sfab_config.ConfigError, GenerateError) as e:
         sys.exit(f"generate_website: {e}")
     print(f"wrote {OUTPUT.relative_to(ROOT)}/")

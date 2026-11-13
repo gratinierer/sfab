@@ -1,6 +1,6 @@
 """CDK assertion tests for the base and API stacks, from spec.md "Testing".
 
-Built from the committed fixture config, never a real sfab.config.toml, and with a
+Built from the committed fixture config, never the real config in `sfab/config`, and with a
 stand-in Lambda asset and website folder, so they need no build. The website stack's
 own tests are in test_website_stack.py.
 """
@@ -8,6 +8,7 @@ own tests are in test_website_stack.py.
 import json
 import re
 import subprocess
+from dataclasses import replace
 from pathlib import Path
 
 import aws_cdk as cdk
@@ -47,6 +48,65 @@ def test_every_stack_targets_the_config_account_in_us_east_1(built, config):
     for stack in (built.base, built.api, built.website):
         assert stack.account == config.account_id
         assert stack.region == "us-east-1"
+
+
+def secret_ref(key: str) -> str:
+    # The current version: no version stage or id, so an edit to another entry of the
+    # secret changes no reference (docs/aws-facts.md "Secrets Manager and the SDK").
+    return "{{resolve:secretsmanager:sfab/config:SecretString:%s}}" % key
+
+
+def test_no_template_holds_the_origin_key_or_the_ip_hash_key(built, config):
+    for stack in (built.base, built.api, built.website):
+        text = json.dumps(Template.from_stack(stack).to_json())
+        assert config.origin_key not in text, stack.stack_name
+        assert config.ip_hash_key not in text, stack.stack_name
+
+
+def test_the_secret_values_reach_cloudformation_as_dynamic_references(api):
+    _, key = only(api, "AWS::ApiGateway::ApiKey")
+    assert key["Value"] == secret_ref("origin_key")
+    _, dist = only(api, "AWS::CloudFront::Distribution")
+    (origin,) = dist["DistributionConfig"]["Origins"]
+    assert origin["OriginCustomHeaders"] == [
+        {"HeaderName": "x-api-key", "HeaderValue": secret_ref("origin_key")}
+    ]
+    _, function = api_function(api)
+    assert function["Properties"]["Environment"]["Variables"]["IP_HASH_KEY"] == secret_ref(
+        "ip_hash_key"
+    )
+
+
+def update_triggers(config, tmp_path_factory) -> tuple[str, str, str]:
+    """What forces CloudFormation to resolve a reference again: the OriginKey logical id,
+    the distribution's comment and the API Lambda's description."""
+    api = Template.from_stack(build_with_stand_ins(cdk.App(), config, tmp_path_factory).api)
+    key_id, _ = only(api, "AWS::ApiGateway::ApiKey")
+    _, dist = only(api, "AWS::CloudFront::Distribution")
+    _, function = api_function(api)
+    return key_id, dist["DistributionConfig"]["Comment"], function["Properties"]["Description"]
+
+
+def test_a_secret_value_s_hash_updates_only_the_resources_holding_its_reference(
+    config, tmp_path_factory
+):
+    key_id, comment, description = update_triggers(config, tmp_path_factory)
+
+    new_origin_key = replace(config, origin_key="NewOriginKey000000000000")
+    new_key_id, new_comment, same_description = update_triggers(new_origin_key, tmp_path_factory)
+    assert new_key_id != key_id
+    assert new_comment != comment
+    assert same_description == description
+
+    new_ip_hash_key = replace(config, ip_hash_key="NewIpHashKey000000000000")
+    assert update_triggers(new_ip_hash_key, tmp_path_factory)[:2] == (key_id, comment)
+    assert update_triggers(new_ip_hash_key, tmp_path_factory)[2] != description
+
+    for other in (
+        replace(config, abuse_contact="other-abuse@example.org"),
+        replace(config, domain_name="other.example.org"),
+    ):
+        assert update_triggers(other, tmp_path_factory) == (key_id, comment, description)
 
 
 # The base stack: buckets
@@ -100,6 +160,14 @@ def test_federation_requests_expire_3_days_pending_and_30_verified(base):
     assert rules["federation/pending/"] == 3
     assert rules["federation/verified/"] == 30
     assert expiry_rules(base, "Claims") == {}, "claims never expire"
+
+
+def test_genesis_ip_records_expire_after_1_day_and_nothing_else_under_genesis_does(base):
+    # Story 17 "The IP rule": the backstop to the daily job's deletion, outlasting the window.
+    rules = expiry_rules(base, "Identities")
+    assert rules["genesis/ips/"] == 1
+    assert [p for p in rules if p.startswith("genesis/")] == ["genesis/ips/"]
+    assert stacks.GENESIS_IP_WINDOW_HOURS < 24
 
 
 # The base stack: topics
@@ -283,7 +351,9 @@ def test_the_api_lambda_runs_the_rust_binary_on_arm64_with_reserved_concurrency(
     assert props["ReservedConcurrentExecutions"] == 5
 
 
-def test_the_api_lambda_gets_required_bits_both_buckets_and_this_world(api, base, config):
+def test_the_api_lambda_gets_required_bits_both_buckets_this_world_and_the_ip_rule(
+    api, base, config
+):
     _, function = api_function(api)
     env = function["Properties"]["Environment"]["Variables"]
     assert set(env) == {
@@ -292,13 +362,30 @@ def test_the_api_lambda_gets_required_bits_both_buckets_and_this_world(api, base
         "CLAIMS_BUCKET",
         "DOMAIN_NAME",
         "ABUSE_CONTACT",
+        "IP_HASH_KEY",
+        "GENESIS_IP_WINDOW_HOURS",
     }
     assert env["REQUIRED_BITS"] == "20"
+    # Story 17 "The IP rule": one birth per IP address every 4 hours, hashed with the key.
+    assert env["GENESIS_IP_WINDOW_HOURS"] == "4"
+    assert env["IP_HASH_KEY"] == secret_ref("ip_hash_key")
     # GET /federation/world publishes both.
     assert env["DOMAIN_NAME"] == config.domain_name
     assert env["ABUSE_CONTACT"] == config.abuse_contact
     assert bucket_export(base, "Identities") in str(env["IDENTITIES_BUCKET"])
     assert bucket_export(base, "Claims") in str(env["CLAIMS_BUCKET"])
+
+
+def test_the_ip_hash_key_goes_only_to_the_api_lambda(built):
+    # Unlike origin_key, it never reaches CloudFront, the API key or another stack.
+    found = [
+        (resource["Type"], logical_id)
+        for stack in (built.base, built.api, built.website)
+        for logical_id, resource in Template.from_stack(stack).to_json()["Resources"].items()
+        if secret_ref("ip_hash_key") in json.dumps(resource)
+    ]
+    assert len(found) == 1, found
+    assert found[0][0] == "AWS::Lambda::Function" and found[0][1].startswith("ApiFunction")
 
 
 def test_the_api_lambda_keeps_logs_for_14_days(api):
@@ -346,12 +433,20 @@ def test_the_api_lambda_may_touch_only_its_own_prefixes(api, base):
         "Identities/messages/*",
         "Identities/vitals/*",
         "Identities/federation/pending/*",
+        # Story 17: the IP rule's records, and the pool a used world code leaves.
+        "Identities/genesis/ips/*",
+        "Identities/genesis/pool.json",
         "Claims/*",
     ]
     expected = {(a, r) for r in read_write for a in ("s3:GetObject", "s3:PutObject")}
     expected |= {("s3:GetObject", "Identities/world/*")}
-    # Only a message or knock is ever deleted by the API (spec.md "Messages").
-    expected |= {("s3:DeleteObject", "Identities/messages/*")}
+    # A birth HEADs its genesis code, which needs GetObject, and deletes it once used.
+    expected |= {("s3:GetObject", "Identities/genesis/codes/*")}
+    # The API deletes only a message or knock (spec.md "Messages") and a used genesis code.
+    expected |= {
+        ("s3:DeleteObject", "Identities/messages/*"),
+        ("s3:DeleteObject", "Identities/genesis/codes/*"),
+    }
     # Without ListBucket, S3 answers a missing key with 403 instead of 404 (docs/aws-facts.md).
     expected |= {("s3:ListBucket", "Identities"), ("s3:ListBucket", "Claims")}
     assert grants(api, base, "ApiFunctionServiceRole") == expected
@@ -395,6 +490,18 @@ def test_the_rest_api_is_built_from_sfab_yaml_with_both_placeholders_filled(api,
     function_id, _ = api_function(api)
     assert '"Fn::GetAtt": ["%s", "Arn"]' % function_id in body
     assert "/identity/birth" in body
+
+
+def test_get_world_genesis_code_reaches_the_api_lambda(api):
+    # Story 17 "Routes": anonymous, so it needs only the origin key, like every operation.
+    apis = api.find_resources("AWS::ApiGateway::RestApi")
+    body = next(iter(apis.values()))["Properties"]["Body"]
+    operation = body["paths"]["/world/genesis-code"]["get"]
+    assert operation["security"] == [{"origin_key": []}]
+    integration = operation["x-amazon-apigateway-integration"]
+    assert integration["type"] == "aws_proxy"
+    function_id, _ = api_function(api)
+    assert '"Fn::GetAtt": ["%s", "Arn"]' % function_id in json.dumps(integration["uri"])
 
 
 def test_a_placeholder_left_in_the_definition_fails_the_synth():
@@ -474,13 +581,13 @@ def test_an_edit_to_sfab_yaml_gives_a_new_deployment(config, tmp_path):
     assert synth(source) != synth(source.replace("Create an identity", "Make an identity"))
 
 
-def test_the_origin_key_is_unnamed_and_in_a_usage_plan_on_v1_without_a_throttle(api, config):
+def test_the_origin_key_is_unnamed_and_in_a_usage_plan_on_v1_without_a_throttle(api):
     keys = api.find_resources("AWS::ApiGateway::ApiKey")
     assert len(keys) == 1
     key_id, key = next(iter(keys.items()))
-    # A named key can't be replaced, and changing Value replaces it.
+    # A named key can't be replaced, and the value's hash in the logical id replaces it.
     assert "Name" not in key["Properties"]
-    assert key["Properties"]["Value"] == config.origin_key
+    assert key["Properties"]["Value"] == secret_ref("origin_key")
     assert key["Properties"]["Enabled"] is True
 
     plans = api.find_resources("AWS::ApiGateway::UsagePlan")
@@ -545,7 +652,21 @@ def test_the_distribution_passes_every_request_uncached_over_https_only(api, con
     ]
 
 
-def test_the_origin_is_the_api_without_a_doubled_stage_and_with_the_origin_key(api, config):
+def test_the_viewer_address_reaches_the_lambda_and_no_function_rewrites_headers(api):
+    # Story 17 "The IP rule" reads CloudFront-Viewer-Address, which AllViewerExceptHostHeader
+    # adds (docs/aws-facts.md). The one viewer function only answers paths outside /v1/, so
+    # it never sets a header a request then carries to the origin.
+    _, props = only(api, "AWS::CloudFront::Distribution")
+    dist = props["DistributionConfig"]
+    assert dist["DefaultCacheBehavior"]["OriginRequestPolicyId"] == ALL_VIEWER_EXCEPT_HOST_HEADER
+    assert "CacheBehaviors" not in dist
+    (origin,) = dist["Origins"]
+    assert [h["HeaderName"] for h in origin["OriginCustomHeaders"]] == ["x-api-key"]
+    _, function = only(api, "AWS::CloudFront::Function")
+    assert "request.headers" not in function["FunctionCode"]
+
+
+def test_the_origin_is_the_api_without_a_doubled_stage_and_with_the_origin_key(api):
     _, props = only(api, "AWS::CloudFront::Distribution")
     (origin,) = props["DistributionConfig"]["Origins"]
     assert "execute-api" in json.dumps(origin["DomainName"])
@@ -553,7 +674,7 @@ def test_the_origin_is_the_api_without_a_doubled_stage_and_with_the_origin_key(a
     assert origin.get("OriginPath", "") == ""
     assert origin["CustomOriginConfig"]["OriginProtocolPolicy"] == "https-only"
     assert origin["OriginCustomHeaders"] == [
-        {"HeaderName": "x-api-key", "HeaderValue": config.origin_key}
+        {"HeaderName": "x-api-key", "HeaderValue": secret_ref("origin_key")}
     ]
 
 
@@ -639,3 +760,23 @@ def test_the_federation_crate_s_lifetimes_match_the_lifecycle_rules():
     ):
         found = re.search(rf"pub const {name}: i64 = (\d+);", lib)
         assert found and int(found[1]) == days, name
+
+
+def test_the_cdk_s_genesis_keys_are_the_genesis_crate_s():
+    # ADR 0008: only lambda/world/genesis knows a `genesis/` key, but IAM and lifecycle must name
+    # some too, so every one the CDK spells must be one of the crate's constants.
+    genesis = sfab_config.REPO_ROOT / "lambda" / "world" / "genesis" / "src"
+    source = (genesis / "lib.rs").read_text() + (genesis / "ip.rs").read_text()
+    crate = set(re.findall(r'const \w+: &str = "(genesis/[^"]*)";', source))
+    cdk_keys = {
+        key
+        for key in (
+            *stacks.API_DELETE_PREFIXES,
+            *stacks.API_READ_WRITE_PREFIXES,
+            *stacks.API_READ_WRITE_KEYS,
+            *stacks.API_READ_PREFIXES,
+        )
+        if key.startswith("genesis/")
+    }
+    assert cdk_keys, "the API's grants name no genesis/ key"
+    assert cdk_keys <= crate, cdk_keys - crate

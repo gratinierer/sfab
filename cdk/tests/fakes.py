@@ -63,6 +63,10 @@ EXECUTE_API = "https://abc123.execute-api.us-east-1.amazonaws.com/v1/"
 START = "Start at https://api.example.invalid/v1/openapi.yaml"
 SMOKE_ID = "smokesmokesm"
 SMOKE_CREDENTIAL = f"{SMOKE_ID}.{'c' * 43}"
+# The deployed world's IP rule: one birth per viewer address in this many seconds, unless the
+# genesis code skips it. Every request to the fake comes from one address.
+IP_WINDOW = 4 * 3600
+NEXT_DAILY_RUN = "2026-11-06T00:05:00Z"
 
 
 PUBLISHABLE = ("name", "whoiam", "friends")
@@ -113,6 +117,25 @@ class FakeApi:
         self.stale_friends: dict[str, str] = {}
         # Federation requests: domain -> token.
         self.federation: dict[str, str] = {}
+        # Unused genesis codes, by kind: "exempt" (`--no-ip-limit`), "world" or "ordinary".
+        self.genesis: dict[str, str] = {}
+        self.issued = 0
+        # Today's world pool; None until the daily job's first run. Like the real pool it may
+        # hold a code a racing birth already used (story 17 "What `birth` does" step 5).
+        self.pool: list[str] | None = self.issue(3, "world")
+        # Pool codes handed out so far: each GET hands out the next, as a random pick may.
+        self.handed = 0
+        # The last birth from the one viewer address, under the IP rule.
+        self.last_birth: int | None = None
+
+    def issue(self, count: int, kind: str = "exempt") -> list[str]:
+        """New genesis codes of this kind, 16 characters of lowercase base32."""
+        codes = []
+        for _ in range(count):
+            self.issued += 1
+            codes.append("".join("abcdefghij"[int(d)] for d in f"{self.issued:016d}"))
+        self.genesis.update(dict.fromkeys(codes, kind))
+        return codes
 
     def __call__(self, request: Request) -> Response:
         self.requests.append(request)
@@ -167,6 +190,14 @@ class FakeApi:
             )
         if path == "/v1/federation/worlds":
             return "federation worlds", ok(200, {"items": [], "next": None})
+        if path == "/v1/world/genesis-code":
+            if self.pool is None:
+                return "genesis code", problem(404, "not-built-yet")
+            if not self.pool:
+                return "genesis code", problem(409, "try-later", retry_after=NEXT_DAILY_RUN)
+            code = self.pool[self.handed % len(self.pool)]
+            self.handed += 1
+            return "genesis code", ok(200, {"genesis_code": code})
         # The gateway's validator, with `additionalProperties: false`.
         if r.method in ("POST", "PUT") and path != "/v1/identity/reclaim" and not contact:
             try:
@@ -174,6 +205,11 @@ class FakeApi:
             except ValueError:
                 return "malformed body", problem(400, detail="Invalid request body")
             allowed = {"name", "whoiam"} if path.endswith("birth") else {"whoiam"}
+            if path.endswith("birth"):
+                allowed.add("genesis_code")
+                code = body.get("genesis_code") if isinstance(body, dict) else None
+                if not isinstance(code, str) or len(code) > 64 or "name" not in body:
+                    return "invalid birth body", problem(400, detail="Invalid request body")
             if send:
                 allowed = {"text"}
             if path.endswith("federation/requests"):
@@ -214,15 +250,29 @@ class FakeApi:
             self.federation[domain] = f"{len(self.federation):032x}"
             return "federation request", ok(202, self._token_reply(domain))
         if path == "/v1/identity/birth":
-            if digest in self.used:
-                return "birth replay", problem(409, "already-exists")
+            # The code first, then the IP rule unless the code skips it (story 17 "What `birth`
+            # does"), so a replay meets its used code.
+            code = json.loads(r.body)["genesis_code"]
+            kind = self.genesis.get(code)
+            if kind is None:
+                label = "birth replay" if digest in self.used else "invalid genesis code"
+                return label, problem(403, "invalid-genesis-code")
+            label = "world birth" if kind == "world" else "birth"
+            if kind != "exempt" and self.last_birth is not None:
+                if now - self.last_birth < IP_WINDOW:
+                    return label, problem(409, "too-soon", retry_after="2026-11-05T04:00:00Z")
             self.used.add(digest)
+            del self.genesis[code]
+            if kind == "world":
+                self.pool.remove(code)
+            if kind != "exempt":
+                self.last_birth = now
             new_id = agent_id(digest)
             claim, recovery = self._secret(), self._secret()
             self.claims[new_id] = (claim, recovery)
             self.identities[new_id] = json.loads(r.body)
             self.public[new_id] = set()
-            return "birth", ok(
+            return label, ok(
                 201,
                 {
                     "id": new_id,

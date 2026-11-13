@@ -1,0 +1,68 @@
+# The `SfabDeployer` stack and the build
+
+Label: ready-for-agent
+Blocked by: 01
+
+`spec.md` "The deployer stack" and "A build".
+
+## Scope
+
+- A fourth stack, `SfabDeployer`, in `cdk/app.py`, in the account from the credentials and us-east-1, holding:
+  - the secret `sfab/config`, created with no value the template controls and retained on stack deletion;
+  - a CodeConnection to GitHub for `gratinierer/sfab`;
+  - the CodeBuild project `sfab-deploy`: this repo through the connection, branch `production`, an Arm small Linux
+    image, `DEPLOY_STACKS=--all`, and a buildspec in the repo that installs the pinned tools and runs
+    `scripts/deploy $DEPLOY_STACKS`;
+  - its role: `secretsmanager:GetSecretValue` on `sfab/config`, `sts:AssumeRole` on the four CDK bootstrap roles, the
+    connection use CodeBuild needs, its own logs and the cache bucket, and nothing else;
+  - an S3 cache bucket for cargo and uv, with a lifecycle rule.
+- In `SfabBase`: an EventBridge rule on `sfab-deploy`'s `FAILED` and `STOPPED` states, publishing to the alerts topic,
+  naming the project by its fixed name.
+- `SfabDeployer`'s account comes from `deploy_account()` (issue 01), not from the config. The synth tests, which run
+  `app.py` in a subprocess (`cdk/tests/test_app.py:10-14`), set `CDK_DEFAULT_ACCOUNT` and pass their configs as fixtures
+  through `SFAB_CONFIG`, a missing file for "no config" and an incomplete one for "incomplete", so no subprocess
+  reaches Secrets Manager or STS. Two existing tests in `cdk/tests/test_app.py` (:17-31) change with this:
+  `test_synth_refuses_a_missing_config`, which expects a non-zero exit and "sfab config error", becomes the
+  no-config test (exit 0, only `SfabDeployer`, the note), and `test_synth_succeeds_with_the_fixture`, which expects
+  exactly three templates, also expects `SfabDeployer`'s.
+- `cdk/app.py` synthesizes only `SfabDeployer`, with a note naming what's missing, while the config fails to load or
+  the Lambda builds or website pages are missing. `app.py` reads the two build paths from `SFAB_LAMBDA_BUILDS` and
+  `SFAB_WEBSITE_BUILD` only when `SFAB_CONFIG` is set, as in tests, and otherwise uses today's `lambda/target/lambda`
+  (`cdk/app.py:13`) and `build/website` (`cdk/stacks.py:42`), so the missing-builds test points them at an empty
+  directory, and a real deploy, where `deploy_plan` refuses `SFAB_CONFIG`, can't be pointed elsewhere. It can't see which stacks the
+  CLI selected, so `scripts/deploy` holds the guard below; a raw `cdk deploy --all` stays unguarded.
+- `scripts/deploy` runs issue 01's `deploy_plan` first (a set `SFAB_CONFIG` refused, then the arguments, the region and the config). `scripts/deploy SfabDeployer` works with no loadable config: it accepts only `SfabDeployer` then, and runs
+  `scripts/check` with its fixture fallback, so the generate step writes the fixture's pages the tests need. It's the one case
+  where `scripts/deploy` lets `scripts/check` fall back (issue 01). `--all` or any other stack
+  name fails with the config's errors.
+- The CDK CLI gets a pinned version in the repo, and `.github/workflows/ci.yml` and the buildspec read every tool
+  version from one file, `tool-versions.env` at the repo root: `ci.yml` loads it instead of its inline `env:` pins
+  (`UV_VERSION`, `CARGO_LAMBDA_VERSION`, `ZIGLANG_VERSION`, `CARGO_AUDIT_VERSION`), with `CDK_CLI_VERSION` added.
+  `ci.yml` loads the file into `$GITHUB_ENV` in a step right after checkout, before the cache step whose key reads
+  `env.CARGO_AUDIT_VERSION` (`ci.yml:39`).
+- Confirm in AWS's documentation and record in `docs/aws-facts.md`: CodeBuild's GitHub source through a
+  CodeConnection (resource type and auth type), the Arm small image's name and price, which CDK bootstrap roles a
+  `cdk deploy` assumes, Secrets Manager's price, and the concurrent-build quota a new account starts with (forum
+  reports say 0; record it as unconfirmed if AWS doesn't document it), and that a build's environment has `AWS_REGION`
+  and `AWS_DEFAULT_REGION` set to the project's region, which issue 01's region check relies on.
+- Also confirm in CDK's and AWS's documentation what a secret created with no value holds: CDK's
+  `secretsmanager.Secret` with neither `secret_string_value` nor `generate_secret_string` may emit
+  `GenerateSecretString: {}` and start with a random password, and whether a raw `CfnSecret` with neither is allowed.
+  Record it in `docs/aws-facts.md`, pick the construct that leaves the value to the owner, and make sure the
+  loader's error for that starting value, "it has no value" or "its value isn't a JSON object", tells the owner to
+  fill the secret.
+
+## Done when
+
+- CDK tests assert `SfabDeployer`'s resources: the secret has no template-controlled value and is retained, the
+  project's source branch, image, `DEPLOY_STACKS` default and buildspec path, and the role's exact grants, so
+  nothing wider sneaks in.
+- A CDK test asserts the EventBridge rule in `SfabBase` and its target.
+- An in-process test of `app.py`'s build-path choice shows `SFAB_LAMBDA_BUILDS` and `SFAB_WEBSITE_BUILD` ignored
+  while `SFAB_CONFIG` is unset, and used while it is set.
+- A test asserts `ci.yml` and the buildspec take every tool version from `tool-versions.env` and pin none inline.
+- Tests cover synth with no config, an incomplete one and missing builds (only `SfabDeployer`, with the note, in the
+  caller's account), and a full config (all four stacks).
+- `deploy_plan` tests cover `SfabDeployer` with no config (allowed, with the fallback and only `SfabDeployer`) and
+  `--all` with no config (refused with the config's errors).
+- The deployed proof (a build from `production` deploys) belongs to `2-identity-api#01`, which waits for this issue.

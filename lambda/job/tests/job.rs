@@ -8,10 +8,17 @@ use sfab_census::Census;
 use sfab_core::id::AgentId;
 use sfab_core::storage::{Bucket, Condition, MemoryStore, Store};
 use sfab_core::takedown::Action;
+use sfab_core::testing::Captured;
 use sfab_federation::{Fetch, Notify};
+use sfab_genesis::{Daily, Genesis, IpRule, Window};
 
 /// 2026-11-07T00:05:00Z.
 const NOW: i64 = 1_794_009_600 + 300;
+
+const GENESIS: Daily = Daily {
+    codes_per_day: 3,
+    ip_window: Window::hours(4),
+};
 
 /// No server answers, and no email is sent: this file tests the census, and `outbound.rs` and
 /// the federation crate test the rest.
@@ -72,7 +79,7 @@ async fn the_job_counts_residents_without_markers_as_of_its_run() {
     claim(&store, "bbbbbbbbbbbb").await;
     marker(&store, "cccccccccccc").await;
 
-    let report = sfab_job::run(&*store, &Offline, &Offline, NOW)
+    let report = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, NOW)
         .await
         .unwrap();
 
@@ -86,4 +93,56 @@ async fn the_job_counts_residents_without_markers_as_of_its_run() {
         census.residents(None).await.unwrap().body,
         json!({"items": ["aaaaaaaaaaaa", "bbbbbbbbbbbb"], "next": null})
     );
+}
+
+#[tokio::test]
+async fn the_job_makes_the_days_genesis_codes() {
+    let store = Arc::new(MemoryStore::new());
+
+    let report = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, NOW)
+        .await
+        .unwrap();
+
+    assert_eq!(report.genesis.issued, 3);
+    let rule = IpRule::new("anykeyanykeyanykeyanykeyanykey12", Window::hours(4));
+    let genesis = Genesis::new(store.clone(), rule);
+    assert!(genesis.pool_code(NOW).await.is_ok());
+}
+
+#[tokio::test]
+async fn a_failed_census_still_makes_the_days_genesis_codes_and_fails_the_run() {
+    // A census fault mustn't leave `GET /world/genesis-code` answering `try-later` all day.
+    let store = Arc::new(MemoryStore::new());
+    claim(&store, "aaaaaaaaaaaa").await;
+    store.fail_writes_under(Bucket::Identities, "world/");
+
+    let run = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, NOW).await;
+
+    assert!(run.is_err(), "the census's failure still fails the run");
+    let rule = IpRule::new("anykeyanykeyanykeyanykeyanykey12", Window::hours(4));
+    let genesis = Genesis::new(store.clone(), rule);
+    assert!(genesis.pool_code(NOW).await.is_ok());
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn when_the_census_and_genesis_both_fail_the_genesis_error_is_logged() {
+    let captured = Captured::default();
+    let subscriber = tracing_subscriber::fmt()
+        .with_writer(captured.clone())
+        .finish();
+    let _guard = tracing::subscriber::set_default(subscriber);
+    let store = Arc::new(MemoryStore::new());
+    claim(&store, "aaaaaaaaaaaa").await;
+    store.fail_writes_under(Bucket::Identities, "world/");
+    store.fail_writes_under(Bucket::Identities, "genesis/");
+
+    let run = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, NOW).await;
+
+    let error = format!("{:?}", run.unwrap_err());
+    assert!(
+        !error.contains("genesis/"),
+        "the run returns the census's error: {error}"
+    );
+    let logs = captured.text();
+    assert!(logs.contains("injected failure on genesis/"), "{logs}");
 }

@@ -31,7 +31,14 @@ def test_synth_refuses_a_missing_config(tmp_path):
     assert "missing.toml" in result.stderr
 
 
-def test_synth_refuses_the_copied_example(tmp_path):
-    result = synth(CDK.parent / "sfab.config.example.toml", tmp_path)
+def test_synth_refuses_an_incomplete_config(tmp_path):
+    incomplete = tmp_path / "incomplete.toml"
+    incomplete.write_text(
+        FIXTURE.read_text()
+        .replace('"sfab-test.invalid"', '"CHANGE_ME"')
+        .replace('"Z00000000000000000000"', '"CHANGE_ME"')
+    )
+    result = synth(incomplete, tmp_path)
     assert result.returncode != 0
-    assert "still CHANGE_ME" in result.stderr
+    assert "domain_name: still CHANGE_ME" in result.stderr
+    assert "hosted_zone_id: still CHANGE_ME" in result.stderr

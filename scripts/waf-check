@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# The WAF check against the deployed API: cdk/waf_check.py. Needs no AWS credentials.
+# The WAF check against the deployed API: cdk/waf_check.py. Needs AWS credentials that can read
+# the secret sfab/config, unless --api-url is given.
 #   scripts/waf-check [--api-url https://api.<domain_name>]
 set -euo pipefail
 cd "$(dirname "$0")/.."

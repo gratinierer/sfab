@@ -19,6 +19,7 @@ FIXTURE = Path(__file__).parent / "fixtures" / "sfab.config.test.toml"
 SPECS = [
     sfab_config.REPO_ROOT / ".stories" / "2-identity-api" / "spec.md",
     sfab_config.REPO_ROOT / ".stories" / "4-life-in-the-world" / "spec.md",
+    sfab_config.REPO_ROOT / ".stories" / "17-genesis-codes" / "spec.md",
 ]
 WRITES = ("POST", "PUT")
 _ROW = re.compile(r"^\| `(GET|POST|PUT|DELETE) (/[^`]+)` \| ([^|]+) \| ([^|]*) \|", re.M)
@@ -26,7 +27,8 @@ _ROW = re.compile(r"^\| `(GET|POST|PUT|DELETE) (/[^`]+)` \| ([^|]+) \| ([^|]*) \
 
 @pytest.fixture(scope="module")
 def config():
-    return sfab_config.load(FIXTURE)
+    # SFAB_CONFIG set for this call alone, so a plain pytest never reads the secret.
+    return sfab_config.load(environ={"SFAB_CONFIG": str(FIXTURE)})
 
 
 @pytest.fixture(scope="module")

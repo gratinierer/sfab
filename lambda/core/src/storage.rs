@@ -52,6 +52,16 @@ pub trait Store: Send + Sync + 'static {
         key: &str,
     ) -> impl Future<Output = Result<Option<Object>, StoreError>> + Send;
 
+    /// An object's metadata without its body, as S3's `HeadObject` gives it: `None` when
+    /// there's no such key. This default reads the whole object; S3 asks for the head only.
+    fn head(
+        &self,
+        bucket: Bucket,
+        key: &str,
+    ) -> impl Future<Output = Result<Option<Metadata>, StoreError>> + Send {
+        async move { Ok(self.get(bucket, key).await?.map(|o| o.metadata)) }
+    }
+
     fn put(
         &self,
         bucket: Bucket,
@@ -120,10 +130,12 @@ pub struct KeyPage {
 pub struct Listed {
     pub key: String,
     pub size: u64,
+    /// When the object was last written, as a Unix time, as S3's `LastModified` gives it.
+    pub last_modified: i64,
 }
 
 /// The in-memory fake every crate tests against. It can be told to fail writes under a prefix,
-/// and counts writes per key.
+/// counts writes per key, and counts every call, so a test can check a route's cost.
 #[derive(Debug, Default)]
 pub struct MemoryStore {
     state: Mutex<State>,
@@ -135,6 +147,23 @@ struct State {
     next_etag: u64,
     failing: HashSet<(Bucket, String)>,
     writes: HashMap<(Bucket, String), usize>,
+    /// When each object was last written, by the fake's clock.
+    modified: HashMap<(Bucket, String), i64>,
+    /// The time the next write records, which a test sets to age an object.
+    clock: i64,
+    calls: Calls,
+}
+
+/// How many calls of each kind the fake has answered, as S3 bills them: GET and HEAD alike,
+/// PUT and LIST alike, DELETE free.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct Calls {
+    /// GETs and HEADs.
+    pub reads: usize,
+    /// PUTs, failed ones included.
+    pub puts: usize,
+    pub lists: usize,
+    pub deletes: usize,
 }
 
 impl MemoryStore {
@@ -154,6 +183,17 @@ impl MemoryStore {
             .get(&(bucket, key.to_owned()))
             .copied()
             .unwrap_or(0)
+    }
+
+    /// From now on, writes record `now`, a Unix time, as their `last_modified`, so a test can
+    /// age an object. Until set, it's 0.
+    pub fn set_time(&self, now: i64) {
+        self.lock().clock = now;
+    }
+
+    /// Every call so far, by kind.
+    pub fn calls(&self) -> Calls {
+        self.lock().calls
     }
 
     pub fn object(&self, bucket: Bucket, key: &str) -> Option<Object> {
@@ -188,7 +228,16 @@ impl State {
 
 impl Store for MemoryStore {
     async fn get(&self, bucket: Bucket, key: &str) -> Result<Option<Object>, StoreError> {
-        Ok(self.object(bucket, key))
+        let mut state = self.lock();
+        state.calls.reads += 1;
+        Ok(state.objects.get(&(bucket, key.to_owned())).cloned())
+    }
+
+    async fn head(&self, bucket: Bucket, key: &str) -> Result<Option<Metadata>, StoreError> {
+        let mut state = self.lock();
+        state.calls.reads += 1;
+        let found = state.objects.get(&(bucket, key.to_owned()));
+        Ok(found.map(|o| o.metadata.clone()))
     }
 
     async fn put(
@@ -200,6 +249,7 @@ impl Store for MemoryStore {
         condition: Condition,
     ) -> Result<(), StoreError> {
         let mut state = self.lock();
+        state.calls.puts += 1;
         *state.writes.entry((bucket, key.to_owned())).or_default() += 1;
         if state.fails(bucket, key) {
             return Err(StoreError::Other(format!("injected failure on {key}")));
@@ -214,6 +264,8 @@ impl Store for MemoryStore {
             _ => {}
         }
         state.next_etag += 1;
+        let clock = state.clock;
+        state.modified.insert((bucket, key.to_owned()), clock);
         let etag = format!("\"{}\"", state.next_etag);
         state.objects.insert(
             (bucket, key.to_owned()),
@@ -228,14 +280,17 @@ impl Store for MemoryStore {
 
     async fn delete(&self, bucket: Bucket, key: &str) -> Result<(), StoreError> {
         let mut state = self.lock();
+        state.calls.deletes += 1;
         if state.fails(bucket, key) {
             return Err(StoreError::Other(format!("injected failure on {key}")));
         }
         state.objects.remove(&(bucket, key.to_owned()));
+        state.modified.remove(&(bucket, key.to_owned()));
         Ok(())
     }
 
     async fn list(&self, bucket: Bucket, prefix: &str) -> Result<Vec<String>, StoreError> {
+        self.lock().calls.lists += 1;
         Ok(self
             .keys(bucket)
             .into_iter()
@@ -244,14 +299,16 @@ impl Store for MemoryStore {
     }
 
     async fn list_sized(&self, bucket: Bucket, prefix: &str) -> Result<Vec<Listed>, StoreError> {
-        let state = self.lock();
+        let mut state = self.lock();
+        state.calls.lists += 1;
         let mut listed: Vec<Listed> = state
             .objects
             .iter()
             .filter(|((b, k), _)| *b == bucket && k.starts_with(prefix))
-            .map(|((_, k), o)| Listed {
+            .map(|((b, k), o)| Listed {
                 key: k.clone(),
                 size: o.body.len() as u64,
+                last_modified: state.modified.get(&(*b, k.clone())).copied().unwrap_or(0),
             })
             .collect();
         listed.sort_by(|a, b| a.key.cmp(&b.key));

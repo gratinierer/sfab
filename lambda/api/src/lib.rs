@@ -17,6 +17,7 @@ use sfab_core::gate::Call;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::Store;
 use sfab_federation::{Federation, Here};
+use sfab_genesis::{Genesis, IpRule};
 use sfab_identity::{Identity, List};
 use sfab_messaging::Messaging;
 
@@ -34,6 +35,7 @@ pub struct AppState<S> {
     messaging: Messaging<S>,
     census: Census<S>,
     federation: Federation<S>,
+    genesis: Arc<Genesis<S>>,
     /// The current Unix time, so tests can fix it.
     now: fn() -> i64,
 }
@@ -56,13 +58,22 @@ pub fn client_path(seen: &str) -> String {
     }
 }
 
-/// The router, answering both path forms. `here` is this world, for the federation directory.
-pub fn app<S: Store>(store: Arc<S>, required_bits: u32, now: fn() -> i64, here: Here) -> Router {
-    let identity = Arc::new(Identity::new(store.clone(), required_bits));
+/// The router, answering both path forms. `ip_rule` is `birth`'s IP rule, and `here` is this
+/// world, for the federation directory.
+pub fn app<S: Store>(
+    store: Arc<S>,
+    required_bits: u32,
+    ip_rule: IpRule,
+    now: fn() -> i64,
+    here: Here,
+) -> Router {
+    let genesis = Arc::new(Genesis::new(store.clone(), ip_rule));
+    let identity = Arc::new(Identity::new(store.clone(), required_bits, genesis.clone()));
     let state = Arc::new(AppState {
         messaging: Messaging::new(store.clone(), identity.clone(), required_bits),
         identity,
         census: Census::new(store.clone()),
+        genesis,
         federation: Federation::new(store, required_bits, here),
         now,
     });
@@ -95,6 +106,7 @@ pub fn app<S: Store>(store: Arc<S>, required_bits: u32, now: fn() -> i64, here: 
         .route("/world/constitution", get(constitution))
         .route("/world/census", get(census::<S>))
         .route("/world/residents", get(residents::<S>))
+        .route("/world/genesis-code", get(genesis_code::<S>))
         .route("/federation/world", get(federation_world::<S>))
         .route("/federation/worlds", get(federation_worlds::<S>))
         .route("/federation/requests", post(request_federation::<S>))
@@ -189,6 +201,8 @@ impl Signed {
             authorization: header(&self.headers, "authorization"),
             proof: header(&self.headers, "proof"),
             body: &self.body,
+            // Only CloudFront sets it, for `birth`'s IP rule; never logged.
+            viewer: header(&self.headers, "cloudfront-viewer-address"),
         }
     }
 }
@@ -230,6 +244,10 @@ async fn census<S: Store>(State(state): State<Arc<AppState<S>>>) -> Response {
 
 async fn residents<S: Store>(State(state): State<Arc<AppState<S>>>, uri: OriginalUri) -> Response {
     respond(state.census.residents(page(&uri).as_deref()).await)
+}
+
+async fn genesis_code<S: Store>(State(state): State<Arc<AppState<S>>>) -> Response {
+    respond(state.genesis.pool_code((state.now)()).await)
 }
 
 async fn read_publication<S: Store>(
