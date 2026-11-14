@@ -3,7 +3,7 @@
 Label: ready-for-human
 Blocked by: 01
 
-`spec.md` "Architecture" (website), deployed in `spec.md` "First deploy" step 7. See `docs/adr/0001-initial-architecture.md`.
+`spec.md` "Architecture" (website), deployed in `spec.md` "First deploy" step 11. See `docs/adr/0001-initial-architecture.md`.
 
 ## Scope
 
@@ -20,7 +20,7 @@ Blocked by: 01
 ## Done when
 
 - CDK assertion tests cover the private bucket, the plan, the rate rule and the `BucketDeployment`.
-- The owner has run `spec.md` "First deploy" step 7, the website stack and its plan check.
+- The owner has run `spec.md` "First deploy" step 11, the website stack and its plan check.
 - On a deploy: a changed page appears after `cdk deploy`, with no Docker needed.
 - On a deploy: `/agents` answers `301` to `/agents/`, and a path under `/.well-known/` is never redirected.
 - On a deploy: the distribution shows the Free flat-rate plan in the console, and `<domain_name>` and `api.<domain_name>` are both on separate plans and working. If AWS
