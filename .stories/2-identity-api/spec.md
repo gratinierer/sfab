@@ -484,6 +484,7 @@ blocked, default SSE-S3 encryption, versioning off, `RemovalPolicy.RETAIN` and
   | `federation/verified/<domain>.json` | Requests awaiting the owner, expiring after 30 days |
   | `federation/emailed.json` | The last day the daily world job emailed verified requests |
   | Story 4's prefixes | `vouches/`, `places/`, `square/`, `academy/` and `library/`, listed in `.stories/4-life-in-the-world/spec.md` "Foundations" |
+  | Story 17's prefix | `genesis/codes/`, `genesis/batches/` and `genesis/ips/`, the last expiring after 1 day, listed in `.stories/17-genesis-codes/spec.md` "Storage" |
 
 - Claims bucket: `claims/<id>/claim.json` holds `claim_hash`, `recovery_hash` and
   `born_at`, which is set at `birth`, carried through every `reclaim`, and never changed. After a
@@ -775,7 +776,7 @@ Logs are the most likely place for a claim to leak.
 - Parser tests: synth rejects a missing value, `CHANGE_ME` and a badly formed `origin_key`, and the
   example file and the test fixture hold the same required keys.
 - CDK assertion tests for: the stage's default throttle, WAF with sampling off, public-access blocks,
-  bucket removal policies, the `messages/` and `federation/` lifecycle rules, the `REGIONAL` endpoint
+  bucket removal policies, the `messages/`, `federation/` and `genesis/ips/` lifecycle rules, the `REGIONAL` endpoint
   type, the distribution's cache and origin request policies, viewer protocol and allowed methods, the
   API key required by every operation in `sfab.yaml` (`SpecRestApi` creates no method resources to
   check), both plan subscriptions, the hosted zone in the API plan, the website's rate rule, and that buckets, topics and budgets are
