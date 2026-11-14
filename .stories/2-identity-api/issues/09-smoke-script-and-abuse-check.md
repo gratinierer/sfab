@@ -47,3 +47,7 @@ covers every route.
   gateway response it raises; with a wrong key it needs `problem+json` with `type: origin-key-replaced`.
 - 2026-11-08: relabelled `ready-for-human` (review finding R183): the scripts are built and code-reviewed;
   what remains is the owner's run against the deployed API.
+- 2026-11-14: since `.stories/18-deploy-from-codebuild/`, the 2026-11-07 note is out of date in two places. Deploys
+  run in CodeBuild, so the API stack's `Endpoint` output is in the build log and the stack's CloudFormation outputs,
+  not printed by a local `cdk deploy`. `sfab.config.example.toml` is gone, and `smoke_claim`'s `<id>.<claim>` form
+  is documented in `spec.md` "The config secret".
