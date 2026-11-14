@@ -1,7 +1,7 @@
 # Prepare the AWS account and buy the domain
 
 Label: ready-for-human
-Blocked by: 18-deploy-from-codebuild#02
+Blocked by: 18-deploy-from-codebuild#02, 18-deploy-from-codebuild#05
 
 The owner's steps before anything but `SfabDeployer` can deploy: `spec.md` "Prerequisites", and steps 1-7 of
 "First deploy". They need the owner's AWS account and card.
