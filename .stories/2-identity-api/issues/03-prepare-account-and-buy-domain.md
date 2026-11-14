@@ -32,6 +32,8 @@ below.
 - The console shows the domain registered, with no verification pending.
 - `sfab/config` holds every entry, `hosted_zone_id` included, and the charge's service name is known.
 - MFA and anomaly detection are on.
+- `SfabDeployer` is deployed, its GitHub connection is approved (`AVAILABLE`), and `production` exists and is
+  protected (`18-deploy-from-codebuild#05`): "First deploy" steps 2-4.
 
 ## Comments
 
