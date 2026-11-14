@@ -59,10 +59,14 @@ class Config:
 FIXTURE_ONLY_KEYS = ("account_id",)
 # The secret's required entries: every `Config` field without a default, so a new key is one field.
 REQUIRED_KEYS = tuple(
-    f.name for f in fields(Config) if f.default is MISSING and f.name not in FIXTURE_ONLY_KEYS
+    f.name
+    for f in fields(Config)
+    if f.default is MISSING and f.default_factory is MISSING and f.name not in FIXTURE_ONLY_KEYS
 )
 # The fields with a default, such as `smoke_claim`, read only by the smoke script, which checks its form.
-OPTIONAL_KEYS = tuple(f.name for f in fields(Config) if f.default is not MISSING)
+OPTIONAL_KEYS = tuple(
+    f.name for f in fields(Config) if f.default is not MISSING or f.default_factory is not MISSING
+)
 
 PLACEHOLDER = "CHANGE_ME"
 _ORIGIN_KEY = re.compile(r"[A-Za-z0-9]{20,128}")
