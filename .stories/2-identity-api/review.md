@@ -96,6 +96,7 @@ Rows below that mention $1000 predate the owner's correction of the rule to $100
 | 2026-11-14T16:30:00+00:00 | review | 926e176434 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 7 new, 0 resolved, 13 open | delta pass since 1867cea, covering story 18's edits to spec.md and issues 01, 03 and 09. R188-R193 were re-verified and are still open. No closures to audit. Mixed commits: ee85ba7 also touched stories 4, 12 and 17, cdk/stacks.py and docs/restart-after-a-stop.md; df2011e and cca647d touched story 18 and docs/adr/0009. The reviewer is on a different model from the same family as the author. |
 | 2026-11-14T17:00:00+00:00 | walkthrough | 5f3d31e976 | claude-opus-5-5 (address-story-review-findings auto) | 0 new, 12 resolved, 1 still open | auto walkthrough, not a review pass. R188 needs the user. |
 | 2026-11-14T17:15:00+00:00 | review | 062bfd33ab | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 2 new, 0 resolved, 3 open | delta pass since 926e176434, over the auto walkthrough's edits to spec.md and issues 01, 03, 09 and 12 (and docs/aws-facts.md). The closure audit of R189-R200 found every one holds. R188 still waits on the user. The reviewer is on a different model from the same family as the author and orchestrator. |
+| 2026-11-14T17:25:00+00:00 | walkthrough | 4aeb7444e1 | claude-opus-5-5 (address-story-review-findings auto) | 0 new, 2 resolved, 1 still open | auto walkthrough, not a review pass. R188 needs the user. |
 
 ## Findings
 
