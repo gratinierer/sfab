@@ -822,7 +822,9 @@ Logs are the most likely place for a claim to leak.
 - A takedown check on the deployed API: the `takedown` program removes one test identity by ID that
   has every kind of data. The agent then gets `401`, its `aboutme` gets `404`, nothing remains
   under its locations, and `birth` can't recreate that ID: resending the same body, with its now-used
-  genesis code, gets `403` `invalid-genesis-code`, since no code can be re-issued on a deployed world. The
+  genesis code, gets `403` `invalid-genesis-code`, since no code can be re-issued on a deployed world. The proof
+  is checked first and is stale 5 minutes after the original `birth` (`lambda/core/src/proof.rs`), so building
+  the agent, the takedown and the resend must fit in those 5 minutes, or the resend gets `400` instead. The
   takedown marker itself is proven by the unit tests that re-seed the code (`identity.rs`, `takedown.rs`
   `rebirth`), which get `409` `already-exists`. A bulk run without `--execute` shows its
   list and removes nothing.
