@@ -194,6 +194,11 @@ This is a stop, not a log line. Do not proceed on the assumption that a
 warning the user may never read counts as consent — but do proceed
 immediately once they say so, including a blanket "proceed anyway".
 
+`/implement-story <n>` implements a whole story in one run: it applies this
+gate first, then works the story's `ready-for-agent` issues one at a time,
+reviews what it merged with `/review-code ... auto` and closes only what that
+review leaves clean.
+
 ## Closing an issue or story
 
 Move the file (or whole directory, for a story) into the sibling `done/`
