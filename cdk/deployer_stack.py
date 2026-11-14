@@ -28,8 +28,9 @@ BUILDSPEC = "buildspec.yml"
 # The Arm small image (docs/aws-facts.md, "CodeBuild").
 IMAGE = "aws/codebuild/amazonlinux-aarch64-standard:3.0"
 DEPLOY_STACKS_DEFAULT = "--all"
-# The roles `cdk bootstrap` creates that the CDK CLI assumes; the CloudFormation execution
-# role is assumed by CloudFormation, not by the build.
+# The roles `cdk bootstrap` creates that the CDK CLI assumes, named
+# `cdk-hnb659fds-<name>-role-<account>-<region>`; the CloudFormation execution role is assumed
+# by CloudFormation, not by the build (docs/aws-facts.md, "CodeBuild and CodeConnections").
 BOOTSTRAP_ROLES = ("deploy", "file-publishing", "image-publishing", "lookup")
 CACHE_DAYS = 30
 LOG_DAYS = logs.RetentionDays.THREE_MONTHS
