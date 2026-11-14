@@ -195,3 +195,8 @@ def test_the_cache_bucket_is_private_and_expires_its_objects(deployer):
         "IgnorePublicAcls": True,
         "RestrictPublicBuckets": True,
     }
+
+
+def test_the_secret_lives_in_the_region_sfab_deploys_to():
+    # sfab_config can't import the CDK code, so it names the secret's region itself.
+    assert sfab_config.SECRET_REGION == deployer_stack.REGION

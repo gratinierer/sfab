@@ -25,7 +25,7 @@ import sfab_config
 
 STACKS = ("SfabBase", "SfabApi", "SfabWebsite", deployer_stack.STACK_NAME)
 ALL = "--all"
-REGION = "us-east-1"
+REGION = deployer_stack.REGION
 REQUIRE_SECRET = "require-secret"
 FALLBACK = "fallback"
 
