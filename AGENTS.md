@@ -108,3 +108,10 @@ across teams or contexts. If so:
 This is a trusted convention, not a CI-enforced gate — there's no automated
 check for "was this architecturally significant", so judge it yourself, and
 err toward filing the issue when in doubt.
+
+### Personal overrides
+
+@AGENTS.local.md
+
+`AGENTS.local.md` is gitignored and optional: each contributor's own rules,
+which override this file where they conflict.

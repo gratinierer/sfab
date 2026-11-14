@@ -13,3 +13,6 @@ __pycache__/
 
 # Agent scratch notes and check logs (skills write here, never commit).
 /.scratch/
+
+# Personal agent rules, imported by AGENTS.md (never commit).
+/AGENTS.local.md
