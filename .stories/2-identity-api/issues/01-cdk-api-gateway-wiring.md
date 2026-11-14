@@ -16,7 +16,8 @@ R12.
   Until 03 records it, the code uses "Amazon Registrar", `spec.md` "First deploy" step 7's guess, as one
   constant marked as a placeholder, so the code can be built before the account exists (owner, 2026-11-07).
 - The API stack: the API Lambda, from `lambda/target/lambda/api/bootstrap` on arm64, with `REQUIRED_BITS`
-  (the CDK's `required_bits`), `IDENTITIES_BUCKET`, `CLAIMS_BUCKET`, and from issue 15 `DOMAIN_NAME` and `ABUSE_CONTACT`, in its environment,
+  (the CDK's `required_bits`), `IDENTITIES_BUCKET`, `CLAIMS_BUCKET`, from issue 15 `DOMAIN_NAME` and `ABUSE_CONTACT`, and from story 17 `IP_HASH_KEY` (a dynamic reference to the
+  config secret, `18-deploy-from-codebuild#03`) and `GENESIS_IP_WINDOW_HOURS`, in its environment,
   which `lambda/api/src/main.rs` reads, and its reserved concurrency, the REST API, the origin key,
   the stage's one default throttle, with access logs off, CloudFront with its plan, the WAF rate rule, the CloudFront Function and
   the `api.` DNS record.
