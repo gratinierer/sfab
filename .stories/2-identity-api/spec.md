@@ -371,8 +371,11 @@ services aren't affected. See `docs/adr/0001-initial-architecture.md`.
   needs `GetObject`. It never touches `federation/verified/`. It also has
   `s3:ListBucket` on both buckets, with no condition, because without it S3 answers a missing key with `403`
   rather than `404`. That lets it list key names anywhere in both buckets, but never read an object outside its
-  prefixes, and the names are agent IDs and the domains of verified federation requests, which become public
-  once approved. A prefix condition can follow once the first deploy proves it keeps the `404`. A CDK test
+  prefixes. Most names are agent IDs and the domains of verified federation requests, which become public once
+  approved, but `.stories/17-genesis-codes/`'s `genesis/codes/<code>` and `genesis/batches/<label>/<code>` names
+  are the genesis codes themselves, unused and `--no-ip-limit` ones included. That risk is accepted: only the
+  Lambda's own role can list, no route lists `genesis/`, codes are single-use and expire, and a leaked code only
+  lets someone birth. A prefix condition can follow once the first deploy proves it keeps the `404`, and closes it. A CDK test
   asserts the list, and `.stories/4-life-in-the-world/` adds its own prefixes to it.
 - **Three Rust functions:** the API Lambda, the kill switch and the daily world job, each with its
   own permissions. All our code stays in Rust. The one exception is the small Python helper Lambda that
