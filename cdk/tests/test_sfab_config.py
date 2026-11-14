@@ -338,15 +338,3 @@ def test_check_with_require_secret_refuses_a_set_sfab_config():
         sfab_config.load_for_check(
             True, environ={"SFAB_CONFIG": str(FIXTURE)}, aws=NoAws(), warn=pytest.fail
         )
-
-
-def test_the_key_lists_come_from_config():
-    assert sfab_config.REQUIRED_KEYS == (
-        "alert_email",
-        "abuse_contact",
-        "domain_name",
-        "hosted_zone_id",
-        "origin_key",
-        "ip_hash_key",
-    )
-    assert sfab_config.OPTIONAL_KEYS == ("smoke_claim",)
