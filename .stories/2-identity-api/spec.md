@@ -774,7 +774,8 @@ Logs are the most likely place for a claim to leak.
   server, covering a match, the token plus one trailing newline matching, any other extra content not matching, a wrong body, a redirect, a private address, a slow response and an oversized
   one.
 - Parser tests: synth rejects a missing value, `CHANGE_ME` and a badly formed `origin_key`, and the
-  example file and the test fixture hold the same required keys.
+  test fixture holds the config secret's required keys plus `account_id` (there's no example file since
+  `.stories/18-deploy-from-codebuild/`).
 - CDK assertion tests for: the stage's default throttle, WAF with sampling off, public-access blocks,
   bucket removal policies, the `messages/`, `federation/` and `genesis/ips/` lifecycle rules, the `REGIONAL` endpoint
   type, the distribution's cache and origin request policies, viewer protocol and allowed methods, the
