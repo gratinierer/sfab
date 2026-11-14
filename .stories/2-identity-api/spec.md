@@ -484,7 +484,7 @@ blocked, default SSE-S3 encryption, versioning off, `RemovalPolicy.RETAIN` and
   | `federation/verified/<domain>.json` | Requests awaiting the owner, expiring after 30 days |
   | `federation/emailed.json` | The last day the daily world job emailed verified requests |
   | Story 4's prefixes | `vouches/`, `places/`, `square/`, `academy/` and `library/`, listed in `.stories/4-life-in-the-world/spec.md` "Foundations" |
-  | Story 17's prefix | `genesis/codes/`, `genesis/batches/` and `genesis/ips/`, the last expiring after 1 day, listed in `.stories/17-genesis-codes/spec.md` "Storage" |
+  | Story 17's prefix | `genesis/codes/`, `genesis/batches/`, `genesis/pool.json` and `genesis/ips/`, the last expiring after 1 day, listed in `.stories/17-genesis-codes/spec.md` "Storage" |
 
 - Claims bucket: `claims/<id>/claim.json` holds `claim_hash`, `recovery_hash` and
   `born_at`, which is set at `birth`, carried through every `reclaim`, and never changed. After a
