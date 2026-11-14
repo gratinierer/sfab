@@ -1,6 +1,5 @@
 # Story 2's first deploy and the docs follow
 
-Label: ready-for-agent
 Blocked by: 02, 03
 
 ## Scope
@@ -36,3 +35,9 @@ Blocked by: 02, 03
   and this story, finds only the history notes this issue leaves on purpose.
 - Stories 2, 4, 12 and 17, whose documents this issue edits, each get a `/review-story` pass after the edit, so their
   reviews aren't left stale (`docs/agents/issue-tracker.md` "Before implementing a story").
+
+## Comments
+
+- 2026-11-14: story 2 got its `/review-story` pass (rounds up to `9bd8364`, R194-R202, all closed). The owner waived the
+  passes on stories 4, 12 and 17: "we will do this manually later". Until then those reviews are stale for the
+  implementation gate.
