@@ -15,13 +15,13 @@ Blocked by: 01
 - A generate step turning `{{api_host}}` in the pages into the real address from the config, writing to a
   build folder, and copying every other file in `website/` unchanged.
 - CDK's `BucketDeployment` in this stack, copying that folder into the bucket and refreshing the
-  distribution, and this stack in the `deploy` script's "all stacks" deploy.
+  distribution, and this stack in the default `--all` deploy that a `production` build runs with `scripts/deploy`.
 
 ## Done when
 
 - CDK assertion tests cover the private bucket, the plan, the rate rule and the `BucketDeployment`.
 - The owner has run `spec.md` "First deploy" step 11, the website stack and its plan check.
-- On a deploy: a changed page appears after `cdk deploy`, with no Docker needed.
+- On a deploy: a changed page appears after a `production` build, with no Docker needed.
 - On a deploy: `/agents` answers `301` to `/agents/`, and a path under `/.well-known/` is never redirected.
 - On a deploy: the distribution shows the Free flat-rate plan in the console, and `<domain_name>` and `api.<domain_name>` are both on separate plans and working. If AWS
   refuses this, stop and bring it to the owner, because the design has to change.
