@@ -21,9 +21,10 @@ covers every route.
 
 ## Done when
 
-- The owner has run both against the deployed API with every route, and they pass. Both read the API's URL
-  from the config secret `sfab/config`, so the owner runs them with `aws login` credentials, or passes
-  `--api-url` without `--production`, which needs the secret's `smoke_claim`. The smoke run births with exempt genesis codes from one IP
+- The owner has run both against the deployed API with every route, and they pass. Without `--api-url`, both
+  build the API's URL from the config secret `sfab/config`'s `domain_name`, so the owner runs them with `aws login`
+  credentials or passes `--api-url`; only the smoke script's `--production` also needs the secret, for its
+  `smoke_claim`. The smoke run births with exempt genesis codes from one IP
   without hitting `409 too-soon` (`17-genesis-codes#06`).
 - On that first run, the response to the `execute-api` request without the key is recorded in the
   `docs/aws-facts.md` row on a missing API key, and if it's the `problem+json` `403` with
