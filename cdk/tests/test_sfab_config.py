@@ -3,6 +3,7 @@
 Secrets Manager and STS are stubbed (`fake_aws.py`), so nothing here reaches AWS.
 """
 
+import dataclasses
 import tomllib
 from pathlib import Path
 
@@ -338,3 +339,14 @@ def test_check_with_require_secret_refuses_a_set_sfab_config():
         sfab_config.load_for_check(
             True, environ={"SFAB_CONFIG": str(FIXTURE)}, aws=NoAws(), warn=pytest.fail
         )
+
+
+def test_a_default_or_a_default_factory_makes_a_field_optional():
+    @dataclasses.dataclass
+    class Fields:
+        required: str
+        by_value: str | None = None
+        by_factory: list[str] = dataclasses.field(default_factory=list)
+
+    by_name = {f.name: sfab_config.has_default(f) for f in dataclasses.fields(Fields)}
+    assert by_name == {"required": False, "by_value": True, "by_factory": True}
