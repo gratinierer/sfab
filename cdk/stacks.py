@@ -39,7 +39,6 @@ from sfab_config import Config
 from website_stack import WebsiteStack
 from world_job import WorldJob
 
-REGION = deployer_stack.REGION
 OPENAPI = sfab_config.REPO_ROOT / "openapi" / "sfab.yaml"
 # What generate_website.py writes, which scripts/check runs first.
 WEBSITE_BUILD = sfab_config.REPO_ROOT / "build" / "website"
@@ -612,7 +611,7 @@ def build(
 ) -> Stacks:
     if openapi_text is None:
         openapi_text = OPENAPI.read_text(encoding="utf-8")
-    env = cdk.Environment(account=config.account_id, region=REGION)
+    env = cdk.Environment(account=config.account_id, region=deployer_stack.REGION)
     base = BaseStack(app, "SfabBase", config=config, env=env)
     api = ApiStack(
         app,

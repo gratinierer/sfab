@@ -18,7 +18,7 @@ from constructs import Construct
 import sfab_config
 
 STACK_NAME = "SfabDeployer"
-# The one region sfab deploys to; stacks.py and deploy_plan.py take it from here.
+# The one region sfab deploys to; stacks.py and deploy_plan.py read it from here.
 REGION = "us-east-1"
 # SfabBase's failure alert names the project by this name, since it can't depend on this stack.
 PROJECT_NAME = "sfab-deploy"

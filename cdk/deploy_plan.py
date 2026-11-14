@@ -25,7 +25,6 @@ import sfab_config
 
 STACKS = ("SfabBase", "SfabApi", "SfabWebsite", deployer_stack.STACK_NAME)
 ALL = "--all"
-REGION = deployer_stack.REGION
 REQUIRE_SECRET = "require-secret"
 FALLBACK = "fallback"
 
@@ -61,12 +60,12 @@ def plan(
         return Plan(errors=errors)
 
     region = aws.region(environ)
-    if region != REGION:
+    if region != deployer_stack.REGION:
         found = region if region else "no region"
         return Plan(
             errors=[
-                f"the deploy runs in {found}, but sfab deploys only to {REGION}. "
-                f"Set AWS_REGION={REGION}."
+                f"the deploy runs in {found}, but sfab deploys only to {deployer_stack.REGION}. "
+                f"Set AWS_REGION={deployer_stack.REGION}."
             ]
         )
 
