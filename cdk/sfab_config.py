@@ -115,16 +115,17 @@ def deploy_account(environ: Mapping[str, str] | None = None, aws: Aws | None = N
     aws = Aws() if aws is None else aws
     if environ.get("CDK_DEFAULT_ACCOUNT"):
         return environ["CDK_DEFAULT_ACCOUNT"]
+    fixture_problem = ""
     if environ.get(ENV_VAR):
         try:
             return _load_fixture(Path(environ[ENV_VAR])).account_id
-        except ConfigError:
-            pass
+        except ConfigError as e:
+            fixture_problem = f" {ENV_VAR}'s fixture didn't give one either: {e}."
     try:
         return aws.client("sts").get_caller_identity()["Account"]
     except Exception as e:  # noqa: BLE001 - any boto3 failure means no account
         raise ConfigError(
-            f"can't find the deploy's account with sts get-caller-identity: {e}. "
+            f"can't find the deploy's account with sts get-caller-identity: {e}.{fixture_problem} "
             "Log in to AWS (aws login), or set SFAB_CONFIG to a fixture."
         ) from None
 

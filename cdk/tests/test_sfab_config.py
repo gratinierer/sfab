@@ -172,6 +172,15 @@ def test_an_unloadable_fixture_falls_through_to_sts(tmp_path):
     assert sfab_config.deploy_account(environ=environ, aws=aws) == ACCOUNT
 
 
+def test_an_unloadable_fixture_is_named_when_sts_fails_too(tmp_path):
+    aws = StubbedAws()  # STS gets no answer.
+    missing = tmp_path / "missing.toml"
+    with pytest.raises(ConfigError) as raised:
+        sfab_config.deploy_account(environ={"SFAB_CONFIG": str(missing)}, aws=aws)
+    assert "SFAB_CONFIG's fixture didn't give one either" in str(raised.value)
+    assert str(missing) in str(raised.value)
+
+
 def test_no_credentials_for_the_account_is_a_config_error():
     aws = StubbedAws()  # STS gets no answer: as with no credentials, the call fails.
     with pytest.raises(ConfigError, match="account"):
