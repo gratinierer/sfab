@@ -22,7 +22,7 @@ import re
 import sys
 import tomllib
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import MISSING, dataclass, fields
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -55,19 +55,14 @@ class Config:
         return f"https://{self.api_host}"
 
 
-# The secret's required entries; add a new one here and to `Config`, and the loader requires it.
-REQUIRED_KEYS = (
-    "alert_email",
-    "abuse_contact",
-    "domain_name",
-    "hosted_zone_id",
-    "origin_key",
-    "ip_hash_key",
-)
 # Only the fixture carries it; a deploy takes it from its credentials.
 FIXTURE_ONLY_KEYS = ("account_id",)
-# Read only by the smoke script, which checks its form.
-OPTIONAL_KEYS = ("smoke_claim",)
+# The secret's required entries: every `Config` field without a default, so a new key is one field.
+REQUIRED_KEYS = tuple(
+    f.name for f in fields(Config) if f.default is MISSING and f.name not in FIXTURE_ONLY_KEYS
+)
+# The fields with a default, such as `smoke_claim`, read only by the smoke script, which checks its form.
+OPTIONAL_KEYS = tuple(f.name for f in fields(Config) if f.default is not MISSING)
 
 PLACEHOLDER = "CHANGE_ME"
 _ORIGIN_KEY = re.compile(r"[A-Za-z0-9]{20,128}")
