@@ -21,7 +21,7 @@ The conventions are in `docs/agents/issue-tracker.md`, sections "Code review fil
   explicit `auto` argument, ask and wait as usual.
 - **`nocommit`**: in either mode, make no commits; leave every change uncommitted and say so at the end. Without it,
   the skill commits per finding (see "Committing").
-- **Inside a review loop**: `/code-review <fixed-point> auto [X]` runs this skill as its address pass, with `auto`.
+- **Inside a review loop**: `/review-code <fixed-point> auto [X]` runs this skill as its address pass, with `auto`.
   Everything below applies, except the in-loop finish in "Finishing".
 
 ## Finding the story
@@ -33,22 +33,38 @@ The conventions are in `docs/agents/issue-tracker.md`, sections "Code review fil
 3. Otherwise, or if more than one story matches, **ask**. Never guess between two stories.
 
 If the story has no `code-review.md`, or it has no `Kind = code-review` journal rows, stop: there is nothing to
-address. Recommend `/code-review` first.
+address. Recommend `/review-code` first.
 
 ## Walking the findings
 
 Take rows with status `open`, in ascending `C<n>` order, one at a time, limited to the named issues if any. Rows that
 are `resolved`, `wontfix` or `superseded` are history: skip them, unless the user names one to reopen it.
 
-For each finding:
+For each finding, re-read what it is about first (it may be days old and
+already dead, and a `Possible` finding is a judgement call, so say so). Read
+only what the finding needs: when `Affects` names `spec.md` or an issue, read
+the section its description cites (heading or quoted line) plus its enclosing
+section, and the whole file only when the finding cites no locatable part. When `Affects` has a `:line`, a window around that line is enough.
+Then write **one plain chat message** in which nothing hides anything else, with
+these blocks in this fixed order:
 
-1. **Present it**: the row, its axis (`standards` or `spec`), and the current code or document it's about. Re-read
-   the file at `Affects` before describing it: the code may have moved since the review, and the finding may already
-   be dead. A `standards` finding that starts with "Possible" is a judgement call, so say so.
-2. **Recommend one outcome** and say why.
-3. **Wait for the user.** Even in autopilot mode, ask and wait.
+1. **Header**: the finding's ID (`C<n>`) and `of <open count>`, the axis (`standards`, `spec` or `security`), and the affected files.
+2. **Finding**: the problem in plain words, with the current state of the file quoted.
+3. **Why it matters**: the cost if ignored.
+4. **Recommendation**: one of the six outcomes, the concrete change that would be made, and why.
+5. **Alternatives**: the other plausible outcomes, one line each.
+6. **Closing question** asking for the decision.
 
-In `auto` mode skip step 3: decide per "Auto mode" and carry on.
+Do not use a form widget (`ask_user`) for the decision: the user answers in
+chat ("fix", "file", "waive", "leave open" or their own words). Show no
+overview table before or between findings; the count in the header is the only
+overview. In an interactive pass, even in autopilot mode, ask and wait. After a decision, make the
+change, commit, report the change in one or two lines plus the commit sha
+(unless `nocommit` is set), and then present the next finding as a separate
+message.
+
+`auto` is unchanged: decide per "Auto mode" and carry on, without this
+message.
 
 ### The six outcomes
 
@@ -77,7 +93,7 @@ This skill **may** edit the code, the tests and the story documents. The guard:
 - **Run the cheapest check that covers the change**, such as one test file, after every finding that changed code.
   If it fails, interactive mode shows the failure and asks; `auto` follows "Auto mode". Never mark a finding
   `resolved` over a failing check.
-- **Run `scripts/check` once at the end** of a standalone walkthrough, before the walkthrough row's commit, and
+- **Run the repo's `scripts/check` once at the end** (output captured: read only the exit code and, on failure, the last ~40 lines) (skip if the repo has none) of a standalone walkthrough, before the walkthrough row's commit, and
   report a failure as needing the user. Inside a review loop the loop runs it before each closing review instead.
 
 ## Committing
@@ -112,11 +128,11 @@ When every open finding has been handled, or the user stops:
 2. Summarise in chat: what was resolved, what was filed as issues, what is still open and why.
 3. **Say what the closing gate still needs.** An issue closes only when no finding against it is open and a
    `code-review` row's range reaches its last commit outside `.stories/` and `docs/`. Fixes made here are new
-   commits, so name the range a fresh `/code-review` must cover, such as `e2b740c..HEAD`.
+   commits, so name the range a fresh `/review-code` must cover, such as `e2b740c..HEAD`.
 4. If findings were filed as new issues, remind the user those issues are themselves unreviewed. If the walkthrough
    edited `spec.md` or `issues/`, say the story's `review.md` is now stale for the implementation gate.
 
-**Inside a review loop**, do step 1 only, then hand back to `/code-review` with: each finding's outcome and why, which
+**Inside a review loop**, do step 1 only, then hand back to `/review-code` with: each finding's outcome and why, which
 findings need the user (rows skipped as still waiting included), which issues were filed, whether `spec.md` or
 `issues/` were edited, and whether the pass made **progress**, meaning it changed a file other than `code-review.md`
 and kept the change. The loop runs the next review and names the range itself, so don't.

@@ -1,6 +1,6 @@
 ---
 name: address-story-review-findings
-description: "Walk through a story's open review findings one at a time, in dialogue with the user (or, with `auto`, without interaction): decide each one, optionally fix it, and record the outcome in the story's `review.md`. Use when asked to go through, work through, or address a story's review findings, or to address them automatically. For producing findings, use `review-story`; for reviewing a diff or PR, use `code-review`, and for its findings `address-code-review-findings`."
+description: "Walk through a story's open review findings one at a time, in dialogue with the user (or, with `auto`, without interaction): decide each one, optionally fix it, and record the outcome in the story's `review.md`. Use when asked to go through, work through, or address a story's review findings, or to address them automatically. For producing findings, use `review-story`; for reviewing a diff or PR, use `review-code`, and for its findings `address-code-review-findings`."
 ---
 
 # Address Story Review Findings
@@ -48,15 +48,31 @@ Take rows with status `open`, in ascending `#` order, one at a time. Rows that
 are `resolved`, `wontfix` or `superseded` are history — skip them, unless the
 user names one explicitly to re-open it.
 
-For each finding:
+For each finding, re-read what it is about first (it may be days old and
+already dead, and a `Possible` finding is a judgement call, so say so). Read
+only what the finding needs: when `Affects` names `spec.md` or an issue, read
+the section its description cites (heading or quoted line) plus its enclosing
+section, and the whole file only when the finding cites no locatable part.
+Then write **one plain chat message** in which nothing hides anything else, with
+these blocks in this fixed order:
 
-1. **Present it**: the row, plus any `## Notes on <Rn>` section, plus the
-   current state of whatever it is about. Re-read the file before describing
-   it — the finding may be days old and already dead.
-2. **Recommend one outcome** and say why.
-3. **Wait for the user.** Even in autopilot mode, ask and wait.
+1. **Header**: the finding's ID (`R<n>`) and `of <open count>`, the axis, and the affected files.
+2. **Finding**: the problem in plain words, with the current state of the file quoted.
+3. **Why it matters**: the cost if ignored.
+4. **Recommendation**: one of the six outcomes, the concrete change that would be made, and why.
+5. **Alternatives**: the other plausible outcomes, one line each.
+6. **Closing question** asking for the decision.
 
-In `auto` mode skip step 3: decide per "Auto mode" and carry on.
+Do not use a form widget (`ask_user`) for the decision: the user answers in
+chat ("fix", "file", "waive", "leave open" or their own words). Show no
+overview table before or between findings; the count in the header is the only
+overview. In an interactive pass, even in autopilot mode, ask and wait. After a decision, make the
+change, commit, report the change in one or two lines plus the commit sha
+(unless `nocommit` is set), and then present the next finding as a separate
+message.
+
+`auto` is unchanged: decide per "Auto mode" and carry on, without this
+message.
 
 ### The six outcomes
 
@@ -89,7 +105,8 @@ The guard:
   finding**. A general "yes, fix things" is not consent for the next eight.
 - Suggest freely; apply only when told. Even in autopilot mode, ask and wait.
 - Keep each change minimal and scoped to the finding in hand.
-- **Run the cheapest relevant check** (lint, test, synth) after any finding
+- **Run the cheapest relevant check** (the repo's `scripts/check` if it
+  exists, otherwise lint, test or synth) after any finding
   that changed code. If it fails, interactive mode shows the failure and asks;
   `auto` follows "Auto mode". Never mark a finding `resolved` over a failing
   check.
