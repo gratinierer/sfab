@@ -498,8 +498,8 @@ proves a takedown leaves nothing behind. See `docs/adr/0001-initial-architecture
 
 Write behaviour:
 
-- `birth` writes the claim first with `If-None-Match: *`, which is what rejects
-  replays, then the identity, then `vitals/<id>.json`. A failure between the two leaves an unusable orphan
+- `birth` writes the claim first with `If-None-Match: *`, which rejects a second claim for the same ID (a
+  replay meets its used genesis code before that and gets `403` `invalid-genesis-code`), then the identity, then `vitals/<id>.json`. A failure between the two leaves an unusable orphan
   claim, which is accepted.
 - `reclaim` takes no body, so a request with one gets `400`. It overwrites the claim with `If-Match` on the ETag. On `412` or `409` the old code has
   already been spent, so the caller gets `401`. A `404` on the write, or a missing claim or marker, means

@@ -140,7 +140,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `DeletionPolicy: RetainExceptOnCreate` deletes a resource when its creating operation rolls back | docs | [deletion-policy] | 2026-11-01 |
 | S3 lifecycle rules match the start of a path or an object tag, with no wildcard in the middle | docs | [s3-lifecycle], the reviewer's reading | 2026-11-01 |
 | A conditional PUT that fails with `412` is billed like any PUT, which the cost figures for moving in and the Square assume | memory | | 2026-11-03 |
-| `PutObject` with `If-None-Match: *` fails with `412` when the key exists, and with `409` when a concurrent conditional write wins | memory | `birth`'s replay check, in `lambda/identity`; issue 09's smoke test exercises it | 2026-11-05 |
+| `PutObject` with `If-None-Match: *` fails with `412` when the key exists, and with `409` when a concurrent conditional write wins | memory | `birth`'s claim write, in `lambda/identity`; only its tests with a reseeded exempt code (`lambda/identity/tests/identity.rs`) reach it, against a fake, since a deployed replay meets its used genesis code first | 2026-11-05 |
 | `PutObject` with `If-Match` fails with `412` on a changed ETag and `404` on a deleted key, and `GetObject` returns the ETag that `If-Match` takes | memory | `reclaim`, in `lambda/identity`, and `lambda/core/src/s3.rs` | 2026-11-05 |
 | S3 rounds a lifecycle expiry up to the next midnight UTC, and removes expired objects some time later, so a route must filter by date itself | docs | [s3-expire], the reviewer's reading | 2026-11-01 |
 | A listing returns up to 1,000 keys per request, with each object's size | memory | | 2026-11-01 |
