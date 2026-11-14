@@ -1,6 +1,5 @@
 # No secret in a template
 
-Label: ready-for-agent
 Blocked by: 01
 
 `spec.md` "The config secret", the dynamic-references bullet.

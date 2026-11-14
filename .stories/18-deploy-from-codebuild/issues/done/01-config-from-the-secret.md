@@ -1,6 +1,5 @@
 # The config loader reads `sfab/config`
 
-Label: ready-for-agent
 
 `spec.md` "The config secret": `cdk/sfab_config.py` reads the Secrets Manager secret instead of `sfab.config.toml`.
 

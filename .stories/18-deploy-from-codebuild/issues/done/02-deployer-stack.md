@@ -1,6 +1,5 @@
 # The `SfabDeployer` stack and the build
 
-Label: ready-for-agent
 Blocked by: 01
 
 `spec.md` "The deployer stack" and "A build".
