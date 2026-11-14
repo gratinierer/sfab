@@ -15,6 +15,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 |---|---|---|---|---|---|
 | 2026-11-14T14:20:00+00:00 | check | @ ee85ba7 | scripts/check | — | green (baseline of the implement-story run, after `chmod go-w ~/.cache/aws`) |
 | 2026-11-14T14:20:00+00:00 | code-review | 01, 02, 03, 04 @ e9ab916..ee85ba7 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 9 new: 8 standards, 1 spec, 0 security | Reviewers are the author's family on a different model, as no other vendor is available. Only the `(#18)` commits are reviewed. The range starts before 9c489ec so that issues 01 and 03, from an earlier unlogged run, are covered. |
+| 2026-11-14T14:50:00+00:00 | walkthrough | 01, 02, 03, 04 | claude-opus-5-5 (address-code-review-findings auto) | 0 new, 4 resolved, 5 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
