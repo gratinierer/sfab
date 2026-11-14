@@ -1,6 +1,6 @@
 # Coding standards
 
-Last reviewed: YYYY-MM-DD
+Last reviewed: 2026-11-14
 
 How code in this repo is written, beyond what tooling and the review's smell baseline already catch. Each rule names
 its source, so a change to the rule starts there. Every API route also follows `docs/api-design.md`, which this file

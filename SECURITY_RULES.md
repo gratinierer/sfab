@@ -1,6 +1,6 @@
 # Security rules
 
-Last reviewed: YYYY-MM-DD
+Last reviewed: 2026-11-14
 
 Rules every change must keep. A finding cites the rule it breaks. In this repo, protecting the bill is part of
 security: ADR 0001's test for every decision is "could this cost about $100 unnoticed?". The sources are
