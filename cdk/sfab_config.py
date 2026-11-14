@@ -22,7 +22,7 @@ import re
 import sys
 import tomllib
 from collections.abc import Callable, Mapping
-from dataclasses import MISSING, dataclass, fields
+from dataclasses import MISSING, Field, dataclass, fields
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -57,16 +57,19 @@ class Config:
 
 # Only the fixture carries it; a deploy takes it from its credentials.
 FIXTURE_ONLY_KEYS = ("account_id",)
+
+
+def has_default(f: Field) -> bool:
+    """Whether a dataclass field has a default, as a value or a factory."""
+    return f.default is not MISSING or f.default_factory is not MISSING
+
+
 # The secret's required entries: every `Config` field without a default, so a new key is one field.
 REQUIRED_KEYS = tuple(
-    f.name
-    for f in fields(Config)
-    if f.default is MISSING and f.default_factory is MISSING and f.name not in FIXTURE_ONLY_KEYS
+    f.name for f in fields(Config) if not has_default(f) and f.name not in FIXTURE_ONLY_KEYS
 )
 # The fields with a default, such as `smoke_claim`, read only by the smoke script, which checks its form.
-OPTIONAL_KEYS = tuple(
-    f.name for f in fields(Config) if f.default is not MISSING or f.default_factory is not MISSING
-)
+OPTIONAL_KEYS = tuple(f.name for f in fields(Config) if has_default(f))
 
 PLACEHOLDER = "CHANGE_ME"
 _ORIGIN_KEY = re.compile(r"[A-Za-z0-9]{20,128}")
