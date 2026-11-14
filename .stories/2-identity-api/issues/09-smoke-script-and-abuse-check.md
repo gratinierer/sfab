@@ -9,7 +9,7 @@ covers every route.
 ## Scope
 
 - The paced smoke script, which solves a `Proof` for each write, with `--production` for after launch: every read
-  route and only private writes, with the fixed smoke identity's optional `smoke_claim` from `sfab.config.toml`, which only this script reads and whose absence stops `--production` with a clear message, as `spec.md` "Testing" says,
+  route and only private writes, with the fixed smoke identity's optional `smoke_claim` from the config secret `sfab/config`, which only this script reads and whose absence stops `--production` with a clear message, as `spec.md` "Testing" says,
   including the gateway validation cases, both `404`s, a direct
   `execute-api` request without the key, one with a wrong key that must get the `problem+json` `403` with
   `type: origin-key-replaced`, a malformed body whose `400` must be valid `problem+json` (code review C31), and treating WAF's plain `403` as "wait and rerun".
@@ -21,8 +21,9 @@ covers every route.
 
 ## Done when
 
-- The owner has run both against the deployed API with every route, and they pass. This container has no AWS
-  credentials, but neither script needs any. The smoke run births with exempt genesis codes from one IP
+- The owner has run both against the deployed API with every route, and they pass. Both read the API's URL
+  from the config secret `sfab/config`, so the owner runs them with `aws login` credentials, or passes
+  `--api-url` without `--production`, which needs the secret's `smoke_claim`. The smoke run births with exempt genesis codes from one IP
   without hitting `409 too-soon` (`17-genesis-codes#06`).
 - On that first run, the response to the `execute-api` request without the key is recorded in the
   `docs/aws-facts.md` row on a missing API key, and if it's the `problem+json` `403` with

@@ -55,7 +55,7 @@ CHECK_BUDGET_NAME = "sfab-check"
 CHECK_BUDGET_PERCENT_OF_1_USD = 1
 
 # PLACEHOLDER, not yet confirmed: the service name domain charges appear under, which the
-# stop budget excludes. "Amazon Registrar" is spec.md "First deploy" step 3's guess from
+# stop budget excludes. "Amazon Registrar" is spec.md "First deploy" step 7's guess from
 # memory. Issue 03 records the real name from the first purchase's bill; put it here then.
 DOMAIN_SERVICE_NAME = "Amazon Registrar"
 

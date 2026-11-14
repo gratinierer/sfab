@@ -66,7 +66,9 @@ One birth per IP address every `genesis_ip_window_hours`, 4 to start, a setting 
   before any write and logs an error naming the missing address, since only a deployment fault or the owner causes
   it. A `--no-ip-limit` code skips the IP rule anyway, so it proceeds. Decided by the owner in the review walkthrough
   (R37).
-- `ip_hash_key` is a new value in `sfab.config.toml`, 32 to 128 letters and digits, handled like `origin_key`.
+- `ip_hash_key` is a new entry in the config secret `sfab/config`, 32 to 128 letters and digits, handled like
+  `origin_key`. It was first a value in the gitignored `sfab.config.toml` (Clarification 16), which
+  `.stories/18-deploy-from-codebuild/` replaced with the secret.
   Replacing it only forgets the last window's births, which is harmless.
 - WAF's rate rules only look back minutes, so they can't do this.
 
@@ -200,7 +202,8 @@ accepted every recommendation unless noted.
 14. **`genesis_codes_per_day`** lives in the CDK code.
 15. **Owner codes** come from `genesis-codes issue`, which generates them; the owner doesn't supply code text.
 16. **The IP hash key** is `ip_hash_key` in `sfab.config.toml`, not Secrets Manager. The owner asked for the question
-    again in simpler words before answering.
+    again in simpler words before answering. Superseded by `.stories/18-deploy-from-codebuild/`, which moves the
+    whole config, this key included, into the secret `sfab/config`.
 17. **`GET /world/genesis-code`** is anonymous, with no proof, under the daily limit and the WAF rate rule.
 18. **Smoke and test births** use `--no-ip-limit` batches, from a gitignored file, `smoke-genesis-codes.txt`.
 19. **`genesis_ip_window_hours`** lives in the CDK code.

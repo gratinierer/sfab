@@ -18,7 +18,9 @@ AWS secret could, which is why the scan comes first.
   design documents describe the defences in detail, such as how few IPs can trip the daily limit, and that's
   accepted: the design is safe because of its limits, not because it's secret, and a stop is a valid outcome.
 - **The author email:** every commit carries the owner's iCloud relay address, which is fine to publish.
-- **Never:** `sfab.config.toml`, which is gitignored and holds `origin_key` and, after launch, `smoke_claim`.
+- **Never:** the owner's private values, `origin_key`, `ip_hash_key` and, after launch, `smoke_claim`. They live in
+  the Secrets Manager secret `sfab/config`, not in the repo (`.stories/18-deploy-from-codebuild/`), and no template
+  holds them. `smoke-genesis-codes.txt` stays gitignored.
 
 ## New files
 

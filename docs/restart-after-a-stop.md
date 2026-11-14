@@ -5,8 +5,8 @@ spend check. Restarting is never automatic. This is the restart list from
 `.stories/2-identity-api/spec.md` "Kill switch" as AWS CLI commands, in order. Every step can safely be
 repeated. Read "After a stop" under "Operations" in the same spec first.
 
-Don't run `cdk deploy` during a stop without running this list afterwards, from step 2, because a
-deploy can reopen part of the API.
+Don't deploy during a stop, by a build of `sfab-deploy` or `scripts/deploy` from a machine, without running this
+list afterwards, from step 2, because a deploy can reopen part of the API.
 
 ## 0. Look up the names
 
@@ -42,7 +42,8 @@ aws budgets describe-budget --account-id "$(aws sts get-caller-identity --query 
 If today's total is over the limit and you want the API up today, raise `DAILY_CALL_LIMIT` in
 `cdk/kill_switch.py` and deploy, or the next check stops it again within 5 minutes. If spend is at or
 above the budget, raise `STOP_BUDGET_USD` in `cdk/stacks.py` and deploy, and lower it the same way
-later. Staying down until an attack ends is a valid choice too.
+later. A deploy is a build: commit the change, move `production` forward to it, and run
+`aws codebuild start-build --project-name sfab-deploy`, then wait for the build to succeed before step 2. Staying down until an attack ends is a valid choice too.
 
 ## 2. The API Lambda's reserved concurrency back to 5
 

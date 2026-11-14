@@ -13,7 +13,7 @@ R12.
   SNS topics with the email subscription and a policy on the alerts topic allowing both Budgets and
   CloudWatch, and all three budgets, as in `spec.md` "Abuse and cost controls",
   using the service name recorded in issue 03. Confirm the filter in the console's budget preview.
-  Until 03 records it, the code uses "Amazon Registrar", `spec.md` "First deploy" step 3's guess, as one
+  Until 03 records it, the code uses "Amazon Registrar", `spec.md` "First deploy" step 7's guess, as one
   constant marked as a placeholder, so the code can be built before the account exists (owner, 2026-11-07).
 - The API stack: the API Lambda, from `lambda/target/lambda/api/bootstrap` on arm64, with `REQUIRED_BITS`
   (the CDK's `required_bits`), `IDENTITIES_BUCKET`, `CLAIMS_BUCKET`, and from issue 15 `DOMAIN_NAME` and `ABUSE_CONTACT`, in its environment,
@@ -26,7 +26,8 @@ R12.
 - The CDK assertion tests in `spec.md` "Testing" for these.
 
 The code is agent work. The deploy needs the owner, because this container has no AWS credentials,
-so the owner runs steps 4 to 6 of `spec.md` "First deploy", which also gives the proofs below.
+so the owner runs steps 8 to 10 of `spec.md` "First deploy", each a build of `production` with `DEPLOY_STACKS`
+naming one stack, which also gives the proofs below.
 The same deploy brings the kill switch (issue 07) and the daily world job (issue 11), so the API has alert
 emails and an automatic stop from the start. Keep its URL unpublished until the public launch.
 
@@ -47,8 +48,9 @@ emails and an automatic stop from the start. Keep its URL unpublished until the 
   associate the key with it. Put `security` on every operation in `sfab.yaml`, because
   root-level `security` is ignored. Leave the key's `Name` unset, because changing `Value`
   replaces the key, and a named key can't be replaced. Filed from review finding R61.
-- **Target account:** every stack sets `env` to the config's `account_id` and `us-east-1`, so credentials for another
-  account fail, as spec.md "Delivery" says, with an assertion test. `cdk/app.py` loads the config but builds no
+- **Target account:** every stack sets `env` to the account of the deploy's credentials and `us-east-1`, as
+  `.stories/18-deploy-from-codebuild/spec.md` "The config secret" says, with an assertion test that follows the
+  fixture's `account_id`, which stands in for the credentials' account so tests never call STS. `cdk/app.py` loads the config but builds no
   environment until there's a stack to use it. Filed from code review C25.
 - **Placeholders:** `sfab.yaml` holds two, `{{api_lambda_arn}}` and `{{api_host}}`, for the unknown-route `404`'s
   `detail`. Fill in both, and fail the synth if any `{{` is left in the document passed to `SpecRestApi`, with an
@@ -61,11 +63,14 @@ emails and an automatic stop from the start. Keep its URL unpublished until the 
 ## Done when
 
 - Every route reaches the API Lambda after a first deploy on a fresh account, and a real `birth` through
-  CloudFront, with a code from `genesis-codes issue` ("First deploy" step 5), succeeds, which proves the Lambda rebuilds the hashed path the client sent.
+  CloudFront, with a code from `genesis-codes issue` ("First deploy" step 9), succeeds, which proves the Lambda rebuilds the hashed path the client sent.
 - CDK assertion tests cover the API Lambda's permissions and its errors alarm.
 - On this deploy, story 17's IP proofs (`17-genesis-codes#03`) are recorded in `docs/aws-facts.md`: a birth's IP
   record matches the caller's real address, and a request carrying its own forwarding header can't change it.
-- An edit to `sfab.yaml` reaches the `v1` stage on the next `cdk deploy`.
+- An edit to `sfab.yaml` reaches the `v1` stage on the next build.
+- The first build from `production` deploys: the base stack's build ("First deploy" step 8) runs `scripts/deploy`
+  from the protected branch and the stack appears in CloudFormation, proving the connection, the build's role and
+  its use of the bootstrap roles.
 - CDK assertion tests cover the invoke permission, access logs off, no CloudWatch role, and all three budgets' alerts and
   filters.
 - On the first deploy through CloudFront, these are proven. AWS's docs support each, but none

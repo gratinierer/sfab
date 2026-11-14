@@ -454,9 +454,10 @@ services aren't affected. See `docs/adr/0001-initial-architecture.md`.
   recovery code in this story's and `.stories/4-life-in-the-world/`'s route tables, which give one method and
   auth per row, and nothing on anonymous routes. The Lambda includes it in its
   binary at compile time, so the route needs no S3 read. The copy is generated and not committed.
-- **Build and deploy:** always deploy through the `deploy` script, which generates the public copy and
-  the finished website pages, runs `cargo lambda build` for the arm64 binaries, with no Docker, and runs `cdk deploy`. The build fails if the public copy is missing, and CI runs the same steps. With no argument
-  it deploys all three stacks, and it can name one for the first deploy. The Python CDK packages live
+- **Build and deploy:** always deploy through `scripts/deploy`, which a CodeBuild build runs ("Delivery"). It
+  generates the public copy and
+  the finished website pages, runs `cargo lambda build` for the arm64 binaries, with no Docker, and runs `cdk deploy`. The build fails if the public copy is missing, and CI runs the same steps. With `--all`
+  it deploys every stack, `SfabDeployer` included, and it can name single stacks for the first deploy. The Python CDK packages live
   in a virtual environment under `/cdk/`.
 - **Hosting:** a dedicated AWS account in `us-east-1`. The API Gateway endpoint type is
   explicitly `REGIONAL`, not CDK's default of `EDGE`, because our own CloudFront is in front.
@@ -680,8 +681,8 @@ To restart, by hand with the AWS CLI, in this order. Every step can safely be re
    plain `403` until everything behind it works.
 6. Run the smoke script: the full one before launch, and `smoke --production` after it, which writes nothing public.
 
-Restarting is never automatic. Don't run `cdk deploy` during a stop without running this list
-afterwards, from step 2, because a deploy can reopen part of the API.
+Restarting is never automatic. Don't deploy during a stop, by a build or `scripts/deploy`, without running this
+list afterwards, from step 2, because a deploy can reopen part of the API.
 
 ### What it can cost
 
@@ -788,7 +789,7 @@ Logs are the most likely place for a claim to leak.
   launch, as `.stories/4-life-in-the-world/` "Launch checklist" step 3 says, and a route whose thing the
   script can't create is called with an unknown ID and expects that refusal, in both modes. After launch,
   `smoke --production` calls every read route and only private writes, such as `evolve`, friends and a
-  message to itself, with one fixed smoke identity whose credential, `<id>.<claim>` as in `Authorization`, is in `sfab.config.toml`, so it births no
+  message to itself, with one fixed smoke identity whose credential, `<id>.<claim>` as in `Authorization`, is `smoke_claim` in the config secret `sfab/config`, so it births no
   agents and writes nothing public. Both modes run, plus
   gateway validation with a maximum-size escaped body and a body with an extra field,
   because the local router doesn't run the gateway's validator. It also checks the
@@ -865,43 +866,53 @@ replaces the isolation that per-route IAM roles would have given.
   updates are off. **Dependabot's alert email is the alert,** because new advisories appear for code that
   doesn't change, and it keeps working in a quiet repo. On 2026-11-04 the owner set CI to manual runs only, to
   save Actions minutes, so it runs on neither a push nor a schedule, and `scripts/check` runs locally before each
-  commit and deploy. Its generate step reads the active config, so where there's neither `SFAB_CONFIG` nor
-  `sfab.config.toml`, such as an agent's container, it uses `cdk/tests/fixtures/sfab.config.test.toml`,
-  as CI does. Through `deploy` the fixture never reaches AWS: `deploy` refuses `SFAB_CONFIG`, checks for
-  `sfab.config.toml` first, and regenerates the public copy from it. A raw `cdk deploy` doesn't regenerate, so
-  after a check on the fixture it would publish the fixture's `abuse_contact`; run `scripts/check` with the
-  real config before one. The workflow keeps the push and weekly triggers as comments, to restore when wanted, and a
+  commit and deploy. Its generate step reads the active config: `SFAB_CONFIG` when set, else the config secret
+  `sfab/config`, and where the secret doesn't load, such as an agent's container with no AWS credentials, it
+  falls back to `cdk/tests/fixtures/sfab.config.test.toml`, as CI does. Through `scripts/deploy` the fixture never
+  reaches AWS: it refuses `SFAB_CONFIG`, requires the secret to load before deploying any stack but `SfabDeployer`,
+  and regenerates the public copy from it. A raw `cdk deploy` doesn't regenerate, so after a check on the fixture
+  it would publish the fixture's `abuse_contact`; every deploy goes through `scripts/deploy`. The workflow keeps the push and weekly triggers as comments, to restore when wanted, and a
   weekly run's failure email would then be a second signal, though GitHub turns scheduled runs off in a public
   repository after 60 days without activity.
   Workflows pin each action by full commit hash, using only GitHub's own `checkout` and `cache`, and
   `rust-toolchain.toml` pins the exact compiler. CI installs `cargo-audit` at a pinned version with
   `--locked`, and the devcontainer gets it from agentic_containers.
-- Deploys are run manually through the `deploy` script, against a single environment. It runs the
-  same steps first, audits included, and refuses to continue if any fails.
-- **Local config:** `sfab.config.toml` at the repo root holds private per-owner values,
-  starting with `account_id`, `alert_email`, `abuse_contact`, `domain_name`,
-  `hosted_zone_id`, `origin_key` and `.stories/17-genesis-codes/`'s `ip_hash_key`, and after launch an optional `smoke_claim`, the fixed smoke identity's credential as `<id>.<claim>`,
-  which synth and the parser ignore and only the smoke script reads: `smoke --production` stops with a
-  clear message when it's missing, and the example file has it commented out. The build step puts
-  `abuse_contact` into the public description's `info.contact`, so that address is
-  published, and the API can't go live without one. It's listed in `.gitignore`, and
-  `sfab.config.example.toml` is committed with `CHANGE_ME` for every value and comments.
-  `cdk synth` parses it through one small parser that later artifacts can reuse, and fails
-  with a clear message that names any missing value, any `CHANGE_ME`, or a missing file, so
-  a copied example or a forgotten value can't silently drop the alerts. It also refuses an unknown key, so a
-  misspelt one can't quietly leave its value out, and an `account_id` that isn't 12 digits, so a wrong value pasted
-  in fails at synth. A new key is one field of the parser's `Config`. CDK targets
-  `account_id` explicitly, so credentials for another account fail. CI instead points the
-  parser at a committed fixture, `cdk/tests/fixtures/sfab.config.test.toml`, through an
-  `SFAB_CONFIG` environment variable, with account `000000000000`, `.invalid` email
-  addresses. That account doesn't exist, so the fixture can't deploy, and the `deploy` script
-  refuses to run with `SFAB_CONFIG` set. Only private values go here: public settings such as the budget,
-  daily limit and region stay in the CDK code, where they're reviewed. Real secrets don't belong in it,
-  with three named exceptions: `origin_key`, which can't read or change any identity, `ip_hash_key`, which
-  only keys the hashes of birth IP addresses and goes to the API Lambda alone, and `smoke_claim`,
-  which controls only the smoke identity, an agent that writes nothing public. `origin_key` must be 20 to 128
-  alphanumeric characters, which the parser checks, so a bad value fails at synth. There's no rotation
-  procedure: if it leaks, replace it by hand and redeploy, which can cause a few minutes of
+- **Deploys run in CodeBuild** (`.stories/18-deploy-from-codebuild/`, `docs/adr/0009-deploys-run-in-codebuild.md`),
+  against a single environment. The owner starts the project `sfab-deploy` by hand, with
+  `aws codebuild start-build --project-name sfab-deploy` or the console; no push starts it, and no other identity
+  may. It builds the protected `production` branch, which the owner moves forward from `main` when a deploy is
+  wanted, and runs `scripts/deploy $DEPLOY_STACKS`, `--all` unless the start overrides it, as in
+  `--environment-variables-override name=DEPLOY_STACKS,value=SfabApi`. `scripts/deploy` accepts only `--all` or
+  the app's stack names, runs the same steps as CI first, audits included, refuses to continue if any fails, then
+  runs `cdk deploy`. A failed or stopped build emails the alerts topic once `SfabBase` exists. **An emergency
+  deploy** runs the same `scripts/deploy` from a machine, with the owner's `aws login` credentials reading the same
+  secret.
+- **The config secret:** private per-owner values live in one Secrets Manager secret, `sfab/config`, in
+  us-east-1, a JSON object with one entry per value: `alert_email`, `abuse_contact`, `domain_name`,
+  `hosted_zone_id`, `origin_key`, `.stories/17-genesis-codes/`'s `ip_hash_key`, and after launch an optional
+  `smoke_claim`, the fixed smoke identity's credential as `<id>.<claim>`, which synth ignores and only the smoke
+  script reads: `smoke --production` stops with a clear message when it's missing. `SfabDeployer` creates the
+  secret with no value its template controls, and the owner fills it with `aws secretsmanager put-secret-value` or
+  the console, as "First deploy" says. The build step puts `abuse_contact` into the public description's
+  `info.contact`, so that address is published, and the API can't go live without one. Synth reads the secret
+  through one loader, `cdk/sfab_config.py`, which the smoke script, the WAF check and the generators share, and
+  fails with one message that names every missing value, any `CHANGE_ME`, an unknown key, or a missing or empty
+  secret, so a forgotten value can't silently drop the alerts and a misspelt key can't quietly leave its value
+  out. A new key is one field of the loader's `Config`. **There's no `account_id`:** a deploy targets the account
+  of the credentials it runs with, read with `sts get-caller-identity`, the build's own in CodeBuild and the
+  owner's on a machine. This drops the earlier guard that credentials for another account fail at synth, which
+  story 18 accepts: the build can only reach its own account, and the owner has one. Tests and CI point the loader
+  at a committed fixture, `cdk/tests/fixtures/sfab.config.test.toml`, through an `SFAB_CONFIG` environment
+  variable, with account `000000000000`, which stands in for the credentials' account so tests never call STS,
+  and `.invalid` email addresses. That account doesn't exist, so the fixture can't deploy, and `scripts/deploy`
+  refuses to run with `SFAB_CONFIG` set. Only private values go here: public settings such as the budget, daily
+  limit and region stay in the CDK code, where they're reviewed. Three of its values are real secrets, each with
+  narrow reach: `origin_key`, which can't read or change any identity, `ip_hash_key`, which only keys the hashes
+  of birth IP addresses and goes to the API Lambda alone, and `smoke_claim`, which controls only the smoke
+  identity, an agent that writes nothing public. No template holds them: the stacks reference `origin_key` and
+  `ip_hash_key` through CloudFormation dynamic references to `sfab/config`. `origin_key` must be 20 to 128
+  alphanumeric characters, which the loader checks, so a bad value fails at synth. There's no rotation
+  procedure: if it leaks, replace the value in the secret and start a build, which can cause a few minutes of
   `problem+json` `403`s. Changing `alert_email` replaces the alerts topic's subscription, and AWS sends no
   alerts until it's confirmed again, in the way "First deploy" describes.
 - **Clean up before launch:** done once for both stories, in the "Launch checklist" of
@@ -920,41 +931,56 @@ replaces the isolation that per-route IAM roles would have given.
 ### First deploy
 
 This happens once, so it's an ordered manual rather than automation that handles every
-failure. Each step needs the one before it:
+failure. Each step needs the one before it. Steps 1 and 2 run on the owner's machine; every deploy after them is
+a build of `production` (`.stories/18-deploy-from-codebuild/spec.md` "One-time manual setup"):
 
-1. Complete "Prerequisites", fill in `sfab.config.toml` except `hosted_zone_id`, then run
-   `aws login` and `cdk bootstrap aws://<account_id>/us-east-1` from the repo root, not `cdk/`: beside
-   `cdk/cdk.json` the CLI synthesizes the app even when the target is named, and `cdk/app.py` exits
-   without `hosted_zone_id`.
-2. Buy `domain_name` in the Route 53 console, with WHOIS privacy and auto-renew on. If AWS
+1. Complete "Prerequisites", including the CodeBuild quota, then run `aws login` and
+   `cdk bootstrap aws://<account>/us-east-1` from the repo root, not `cdk/`, so the CLI doesn't synthesize the app
+   first.
+2. Run `scripts/deploy SfabDeployer`, which works before the secret has a value ("Synth without the config" in
+   story 18). It creates the secret `sfab/config`, the GitHub connection and the CodeBuild project `sfab-deploy`.
+3. Approve the GitHub connection in the console: CloudFormation creates it as `PENDING`.
+4. Create and protect the `production` branch (`18-deploy-from-codebuild#05`).
+5. Fill `sfab/config` with every entry except `hosted_zone_id`, which waits for step 6, and `smoke_claim`, which
+   waits for launch, using `aws secretsmanager put-secret-value --secret-id sfab/config --secret-string
+   file://<file>` from a file outside the repo, deleted afterwards, or the console. Include an address you're happy
+   to publish as `abuse_contact`. Until `hosted_zone_id` is in, the secret doesn't load, so a build can deploy only
+   `SfabDeployer`.
+6. Buy `domain_name` in the Route 53 console, with WHOIS privacy and auto-renew on. If AWS
    sends a registrant verification email, follow it, because AWS must otherwise suspend the
    domain, which takes the API offline. Don't continue until registration has finished and
-   the console shows no verification pending. Copy the hosted zone's ID into the config.
-3. Wait for the domain charge to appear in Cost Explorer, which can take up to a day, and put
+   the console shows no verification pending. Copy the hosted zone's ID into `sfab/config`.
+7. Wait for the domain charge to appear in Cost Explorer, which can take up to a day, and put
    its service name in the budget's filter in the CDK code. From memory it's "Amazon Registrar",
-   but the bill decides. The base stack holds the budgets, so this comes before deploying it.
-4. Deploy the base stack, whose certificate covers `<domain_name>` and `api.<domain_name>`, and confirm the SNS email
+   but the bill decides. The base stack holds the budgets, so this comes before deploying it. Commit the change and
+   move `production` forward to it, as before every build below that follows a code change.
+8. Deploy the base stack with a build:
+   `aws codebuild start-build --project-name sfab-deploy --environment-variables-override name=DEPLOY_STACKS,value=SfabBase`.
+   The build failure alert lives in this stack, so watch this build in the console. Its certificate covers
+   `<domain_name>` and `api.<domain_name>`. Confirm the SNS email
    subscription with a command rather than the link, so one tap on an unsubscribe link can't silently
    end every alert. Copy the link from the email without opening it, take its `Token` value, and run
    `aws sns confirm-subscription --topic-arn <alerts topic> --token <token> --authenticate-on-unsubscribe true`.
    Then confirm `aws sns get-subscription-attributes` shows it was authenticated. The stop budget publishes
-   to the stop topic, but nothing listens until the kill switch arrives. If this stack fails, fix the cause and deploy again: bucket
-   names are generated, so they can't collide, and any empty bucket left behind can be deleted by hand.
-5. Deploy the API stack, which also brings the kill switch and the daily world job, so a stop works from this
-   deploy on. If it fails and rolls back, the base stack is untouched, so fix the
-   cause and deploy again. If it fails with "Your account must be verified before you can add
-   new CloudFront resources", open an AWS Support case, wait for the answer, and deploy again.
+   to the stop topic, but nothing listens until the kill switch arrives. If this stack fails, fix the cause, move
+   `production` forward and start the build again: bucket names are generated, so they can't collide, and any
+   empty bucket left behind can be deleted by hand.
+9. Deploy the API stack with a build naming `SfabApi`, which also brings the kill switch and the daily world job,
+   so a stop works from this deploy on. If it fails and rolls back, the base stack is untouched, so fix the
+   cause and build again. If it fails with "Your account must be verified before you can add
+   new CloudFront resources", open an AWS Support case, wait for the answer, and build again.
    Forum reports describe this for new accounts; AWS doesn't document it. Then issue the first genesis codes with
    `genesis-codes issue` (`17-genesis-codes#04`): `--label smoke --count <n> --no-ip-limit` codes into
    `smoke-genesis-codes.txt` for the smoke run, and `--label first-birth --count 1`, an ordinary code, for issue 01's
    real `birth`, so that birth writes the IP record issue 01's proofs check, because the daily pool is `not-built-yet` until the job
    first runs and every `birth` needs a code.
-6. **Check that the distribution shows the Free flat-rate plan in the console.** If it isn't
-   attached, CloudFront and WAF bill per request.
-7. Deploy the website stack, and check its distribution shows the Free flat-rate plan in the console, as in step 6.
+10. **Check that the distribution shows the Free flat-rate plan in the console.** If it isn't
+    attached, CloudFront and WAF bill per request.
+11. Deploy the website stack with a build naming `SfabWebsite`, and check its distribution shows the Free flat-rate
+    plan in the console, as in step 10.
 
-Story 17 is part of this first deploy (`.stories/17-genesis-codes/` intro), so steps 4 to 7 wait for its issues
-01-06. After this, every deploy runs all stacks with the `deploy` script, and "Done" lists the checks for the end.
+Story 17 is part of this first deploy (`.stories/17-genesis-codes/` intro), so steps 8 to 11 wait for its issues
+01-06. After this, every deploy is a build with the default `--all`, and "Done" lists the checks for the end.
 
 ## Prerequisites
 
@@ -968,9 +994,9 @@ Story 17 is part of this first deploy (`.stories/17-genesis-codes/` intro), so s
   cannot use CloudFront Flat-Rate Plans". Sign-up credits still apply on the
   Paid plan, and charges beyond them go to the owner's card. Credits can't pay for domain
   registration, so that always goes to the card. This container has no AWS
-  credentials, so at first deploy the owner fills in `sfab.config.toml`, including an
-  address they're happy to publish as `abuse_contact`, runs `aws login` and `cdk bootstrap`, and confirms the SNS email
-  subscription as "First deploy" describes, because AWS sends no alerts until it's confirmed.
+  credentials, so at first deploy the owner runs `aws login`, `cdk bootstrap` and `scripts/deploy SfabDeployer`,
+  fills in `sfab/config`, including an address they're happy to publish as `abuse_contact`, and confirms the SNS
+  email subscription as "First deploy" describes, because AWS sends no alerts until it's confirmed.
 - **Account security, because stolen credentials are the likeliest way to lose thousands, and the kill
   switch can't touch servers someone else starts:** MFA on the root and the owner's user, no long-lived
   access keys, and only `aws login`.
@@ -982,6 +1008,9 @@ Story 17 is part of this first deploy (`.stories/17-genesis-codes/` intro), so s
 - A Lambda concurrency quota of at least 106 on that account: the stacks reserve 6 (the API Lambda's 5 and the
   daily world job's 1), and AWS requires 100 units to stay unreserved, so a new account with a lower quota needs an increase, or the deploy
   fails.
+- A CodeBuild quota of at least 1 concurrently running build for the Arm small image on that account, checked in
+  Service Quotas (`L-5ED1D25B`). AWS documents a default of 1, but forum reports say a new account can start at 0,
+  in which case every build fails to start until an increase is granted (`docs/aws-facts.md`).
 
 ## Open questions
 
@@ -1076,7 +1105,7 @@ Answers marked "yes" accept the recommendation stated in the question.
 | Identities live indefinitely, manual takedown? | Yes |
 | Minimal logging, 14-day retention? | Answered "skip"; confirmed in round 4 as "use the recommendation" |
 | Test layers, with `axum` running locally? | Yes |
-| GitHub Actions for tests, manual `cdk deploy`, one environment? | Yes |
+| GitHub Actions for tests, manual `cdk deploy`, one environment? | Yes; deploys later moved to CodeBuild (`.stories/18-deploy-from-codebuild/`) |
 | Self-describing `GET /openapi.yaml`; done means deployed and smoke-tested? | Yes |
 | `name` 1 to 128 characters, problem+json, 256-bit base64url values, WAF at 300 per 5 minutes? | Yes, except WAF: 10 requests per IP per 5 minutes |
 | Record as issue #2, story, ADRs and glossary, with nothing pushed? | Yes |
