@@ -65,8 +65,10 @@ recommend `/review-story`); any finding has status `open`; or
 (the review is stale — `walkthrough` rows do not count, since a walkthrough
 edits the documents without re-examining them). Proceed only on
 the user's explicit go-ahead. Work through open findings with
-`/address-story-review-findings`. See `docs/agents/issue-tracker.md`, sections
-"Review file" and "Before implementing a story".
+`/address-story-review-findings`. `/implement-story <n>` implements a whole
+story in one run and applies this gate itself. See
+`docs/agents/issue-tracker.md`, sections "Review file" and "Before
+implementing a story".
 
 ### Before closing an issue
 
@@ -81,7 +83,8 @@ issue or story".
 
 The skills this repo's workflow uses live in `.claude/skills/`, and win over
 any global skill of the same name. Their sources are in
-`.claude/skills/VENDORED.md`. See `docs/adr/0005-skills-live-in-the-repo.md`.
+`.claude/skills/VENDORED.md`. A skill there calls only skills that are also
+there. See `docs/adr/0005-skills-live-in-the-repo.md`.
 
 ### End-of-task: keep ADRs and issues current
 

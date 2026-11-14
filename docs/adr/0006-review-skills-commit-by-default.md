@@ -1,6 +1,6 @@
 # Review skills commit by default, and can loop unattended
 
-Status: accepted
+Status: accepted, amended by ADR-0010
 
 `/review-story`, `/code-review`, `/address-story-review-findings` and `/address-code-review-findings` commit their
 own work without asking: a review commits its record file once it is written, and an address pass commits once per

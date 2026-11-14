@@ -114,3 +114,8 @@ The open questions this story first recorded are answered here.
 ## Out of scope
 
 Changing `/implement-spec` upstream.
+
+## Outcome
+
+Closed on 2026-11-14 without implementing issues 01-03 as written: the owner added `/implement-story`, `tdd`, the
+`review-code` caller mode and the general commit-policy exception (ADR 0010) directly. See `.claude/skills/VENDORED.md`.

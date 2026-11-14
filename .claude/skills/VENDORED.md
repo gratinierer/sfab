@@ -21,6 +21,10 @@ skills from agentic_containers are the owner's.
 | `research` | mattpocock/skills, `skills/engineering/research/` | `4ae2317` | `5d85b64eccee` |
 | `to-tickets` | mattpocock/skills, `skills/engineering/to-tickets/` | `4ae2317` | `5f871bdc46a9` |
 | `wayfinder` | mattpocock/skills, `skills/engineering/wayfinder/` | `4ae2317` | `22338d9356ef` |
+| `implement-story` | mattpocock/skills, `skills/engineering/implement-spec/` | | |
+| `tdd` | mattpocock/skills, `skills/engineering/tdd/` | | |
+| `to-spec` | mattpocock/skills, `skills/engineering/to-spec/` | | |
+| `decision-form` | the owner's | | |
 
 Matt Pocock's nine were identical to mattpocock/skills at `4ae2317` (2026-10-31) when copied; the hash is the first 12
 characters of each one's `computedHash` in the devcontainer's `skills-lock.json`.
@@ -30,7 +34,16 @@ characters of each one's `computedHash` in the devcontainer's `skills-lock.json`
 - `to-tickets` and `wayfinder`: "run `/setup-matt-pocock-skills`" points to `docs/agents/issue-tracker.md`
   instead, and `to-tickets` to `docs/agents/triage-labels.md` too.
 - `address-story-review-findings`: "the repo's commit policy" names `docs/agents/commit-policy.md`.
+- `implement-story`, `tdd`, `to-spec`, `decision-form`, and the review and address skills, were updated on
+  2026-11-14 and use this repo's conventions: story numbers, the `(#<n>)` commit suffix, `Issue NN of story <n>`
+  body lines, the `<n>-` branch prefix, `docs/agents/commit-policy.md` and `docs/agents/issue-tracker.md`, and
+  `gh issue close` to close a story's issue.
+- `to-spec`: "run the setup skill" points to `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md`.
+- `implement-story`: the Spec reviewer's seam check also accepts the Scope and Done when headings of older issues.
 `address-code-review-findings` and `review-code` aren't vendored: they were written in this repo, after
 `address-story-review-findings`.
+
+A skill here calls only skills that are also here, so a dependency is vendored with the skill that needs it
+(`tdd` with `implement-story`, `decision-form` with the address skills and `github-pr-review`).
 
 Later changes made in this repo are recorded in git history.
