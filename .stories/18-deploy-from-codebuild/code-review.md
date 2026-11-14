@@ -18,6 +18,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-14T14:50:00+00:00 | walkthrough | 01, 02, 03, 04 | claude-opus-5-5 (address-code-review-findings auto) | 0 new, 4 resolved, 5 still open | auto walkthrough, not a review pass |
 | 2026-11-14T15:05:00+00:00 | check | @ 99a7a0c | scripts/check | — | green (loop check after the round 1 address pass, 337 passed) |
 | 2026-11-14T15:05:00+00:00 | code-review | 01, 02, 03, 04 @ ee85ba7..99a7a0c | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 3 new: 3 standards, 0 spec, 0 security | Round 2 covers the fix commits only. The reviewers are on a different model from the same family as the author and orchestrator. |
+| 2026-11-14T15:20:00+00:00 | walkthrough | 01, 02, 03, 04 | claude-opus-5-5 (address-code-review-findings auto) | 0 new, 3 resolved, 5 still open | auto walkthrough, not a review pass. C5-C9 were skipped as still waiting on the user. |
 
 ## Findings
 
