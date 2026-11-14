@@ -1,0 +1,119 @@
+# A repo skill, `/implement-story`, implements a whole story
+
+Label: ready-for-agent
+Blocked by: 02, 03
+
+`spec.md` "Decisions": copy the global `/implement-spec` to `.claude/skills/implement-story/` and change it so a run
+keeps this repo's rules.
+
+## Scope
+
+- `.claude/skills/implement-story/SKILL.md` starts as a verbatim copy of
+  `~/.claude/skills/implement-spec/SKILL.md` (mattpocock/skills, `skills/engineering/implement-spec/`), with `name:
+  implement-story`, a description naming `.stories/` stories, and `disable-model-invocation: true` kept. Its
+  `agents/openai.yaml` is copied too, with the display name changed.
+- Its argument is the story: a number, directory name or path, resolving to exactly one `.stories/` directory, or
+  it asks. The issue tracker is `docs/agents/issue-tracker.md`, replacing "run `/setup-matt-pocock-skills`", as in
+  the other vendored skills.
+- **Start gate**: before anything else it applies `AGENTS.md` "Before implementing a story" to the story's
+  `review.md`, and stops and asks in any of its three cases. In the same go, before any sub-agent runs, it settles
+  everything `code-review`'s auto mode asks "up front, then unattended": the reviewers' model (other than the
+  orchestrator's and the implementers'; none available stops the run here), the branch ruling, uncommitted story
+  documents (offered as one commit), and the baseline `scripts/check` (a failure is fixed first, or the owner
+  waives check gating). It hands these answers to `code-review` at the end through issue 03's caller mode, which
+  then asks nothing. It also lists the story's open issues not labelled `ready-for-agent` (`ready-for-human`,
+  `needs-info`, `needs-triage`): those aren't implemented, and issues they block wait.
+- **Branch**: replaces "Create the integration branch". It runs on the current branch when that is the story's
+  `<n>-<slug>` branch, or one the owner has ruled the story onto (`docs/agents/commit-policy.md` "Which number a
+  commit carries"), and otherwise stops and asks. It never creates the integration branch.
+- **Run log**: each run appends `- <ISO date> run started at <sha>` to `.stories/<story>/implementation.md`,
+  creating it with a one-line heading if missing, where `<sha>` is `HEAD` before that commit, and commits the file
+  alone as `Start implementing story <n> (#<n>)`. The file is only appended to. A resumed run treats issues in
+  `issues/done/`, or whose ticket branch a run already merged (a merge commit since the run log's first line whose
+  body names the issue and carries the merger's `Merged by /implement-story` line), as finished; commits and merges
+  made by hand don't make an issue finished.
+- **Review base**: the fixed point is the commit on the run log's first line. The covered ranges go to issue 03's
+  commit filter: each `code-review` journal row's `<issues> @ <a>..<b>` in the story's `code-review.md`. A commit
+  naming an issue is covered when a row naming that issue has it in its range; one naming no issue (an `Address
+  C<n>` fix, which names only its finding) when any row has it in its range. Rows can cover one issue, start late
+  (`04 @ 7124f67..d8ac678` in story 2) or end behind an older row, so no single row's `HEAD` serves as a base. A
+  row that doesn't parse covers nothing (issue 03 says how rows are read). So a
+  resumed run reviews only what no review covered, and no finding is filed twice.
+- **One implementer at a time**: the frontier is worked sequentially, the reason (each worktree builds cold in its
+  own `lambda/target/` and `scripts/check` takes minutes, so parallel tickets contend for CPU and disk) stated in
+  the skill. Each ticket still gets a fresh sub-agent in its own
+  worktree on a branch off the story branch, using `/tdd`, and a merger sub-agent merges it back. The ticket's
+  branch passes `scripts/check` after merging the story branch's tip into it, before the merger takes it; a failure
+  goes back to the implementer, and a second one stops that ticket, which stays open (see "When the frontier
+  empties").
+- **Seams**: the implementer brief says the issue file stands in for `/tdd`'s confirmation of the seams under test:
+  the implementer takes the seams the issue's Scope and "Done when" imply and names them in its commit body ("Seams:
+  …"), and the review's Spec reviewer checks them against the issue. When the issue doesn't make them clear, the
+  implementer stops without guessing, and the ticket is reported as needing the owner. A ticket branch with no
+  commit in `<story tip>..<ticket branch>` carrying a `Seams:` line goes back to the implementer, as a failed check does, before the merger takes it.
+  An issue whose Scope changes nothing with a public boundary to test (docs, skill files) gets `Seams: none` with
+  the reason, which the Spec reviewer checks against the issue too. `tdd` itself stays unchanged.
+- When the owner waived a failing
+  baseline, only failures the baseline didn't show count.
+- **Commits**: the implementer **and merger** briefs say every commit follows `docs/agents/commit-policy.md`:
+  subject ending `(#<n>)`, body naming "Issue NN of story N", and the policy's trailers including `Co-Authored-By:`
+  with the model. The merger merges with `--no-ff`, since the ticket branch already holds the story tip and would otherwise
+  fast-forward with no merge commit, and writes its merge commit's message that way, with a `Merged by
+  /implement-story` line in the body, in its own paragraph above the trailer paragraph so the trailers still parse, never git's default `Merge branch …`. The implementer's merge of the story
+  tip into its ticket branch follows the same message rule, without the `Merged by /implement-story` line, which only
+  the merger writes, and a ticket branch with a commit in `<story tip>..<ticket branch>` whose subject doesn't end
+  `(#<n>)` goes back to the implementer before the merger takes it, as a failed check does, since issue 03's filter
+  would leave that commit out of the review. The implementer fixes it by squashing: `git reset --soft <story tip>`, then one commit
+  that follows the policy and keeps the `Seams:` line (the story tip is already merged in, so nothing is lost).
+  Implementers don't move issue files to `done/`. The commits and per-ticket branches rest on issue 02's rule.
+- **Exploration notes** go in the session's scratchpad directory, passed to each implementer as a path.
+- **When the frontier empties**: the run moves on to the review once no further ticket can start, whether every
+  ticket merged or some stay open (blocked by another story's open issue, not `ready-for-agent`, or stopped after a
+  second failed check). It reviews and closes what was merged, and reports what stays open and why.
+- **Review**: replaces upstream's step 7. After the last merge it reads `.claude/skills/code-review/SKILL.md` by
+  path and follows it inline, with `<run log's first commit> auto 3` and issue 03's caller mode: the story, every open issue
+  of it whose ticket branch a run merged since the run log's first line (this run or an earlier one, whether or
+  not its commits fall in the range; an issue only committed to by hand isn't named, so it isn't closed), the start gate's answers, the filter to the story's own `(#<n>)` commits less the covered ranges and less commits naming an issue it
+  doesn't name (hand-committed or closed issues; the report lists them as left for a manual `/code-review`), and the Spec brief line: "for each commit
+  whose body has a `Seams:` line, check those seams, or a `Seams: none` reason, against its issue; a commit without one (run log, merge,
+  closing, review fixes) is not a finding". Later rounds' ranges hold only fix commits, so it finds nothing there.
+  It doesn't call it by name through the Skill tool, since Claude Code ships a built-in `code-review` too. The
+  skill says this is the repo
+  skill in `.claude/skills/code-review/`, whose arguments are a fixed point and `auto`, not Claude Code's built-in
+  `/code-review`. The "fix all issues in one sub-agent" step goes; the auto loop's address passes do that.
+- **Closing**: only when the auto review stops clean, it moves the reviewed issue files to `issues/done/`,
+  deleting their `Label:` line, per `issue-tracker.md` "Closing an issue or story", in one commit. On any other stop
+  (limit, no progress, failing check) it leaves them open. Issues it didn't implement (not `ready-for-agent`, or
+  blocked by one) are reported as keeping the story open. When that closes the story's last open issue, it offers
+  to move the story to `.stories/done/` and to run `gh issue close <n>`, and does neither without the owner's yes.
+- **End**: no draft pull request. It reports the branch, the commits as short shas with subjects, the review's stop
+  reason and what needs the user, and opens a pull request only when asked. It cleans up the worktrees and their
+  branches, except those of tickets that stopped unmerged (second failed check, unclear seams): it keeps them and
+  names them in the report, so their work isn't lost. It relabels each such issue `ready-for-human` and appends a
+  line under a `## Comments` heading at the bottom of the file (`issue-tracker.md`) saying why it stopped and naming the kept branch, so a later run doesn't start it again
+  until the owner relabels it; a later run's End never removes an earlier run's kept worktrees. It commits these
+  issue files alone, as `Stop issues <NN, …> of story <n> (#<n>)`, so no run ends with uncommitted story documents.
+  That edit postdates the newest review row, so the next run's start gate finds `review.md` stale and asks, which
+  is where the owner, having relabelled the issue, chooses a re-review or the go-ahead.
+- **`tdd` is vendored** to `.claude/skills/tdd/` unchanged (`SKILL.md`, `mocking.md`, `tests.md`,
+  `agents/openai.yaml`), since `implement-story` calls it.
+- `.claude/skills/VENDORED.md`: rows for `implement-story` (mattpocock/skills, `skills/engineering/implement-spec/`,
+  commit `4ae2317`, hash `0ccc13c6766b`) and `tdd` (mattpocock/skills, its upstream path, hash `daf55026f456`, its
+  commit checked the same way), and a "Changes from upstream" entry listing the `implement-story` changes above. Its
+  intro (":3", "copied in once on 2026-11-04") and the "Matt Pocock's ten were identical" line (":26") are updated
+  to say which skills came later. It also states the rule: a skill here calls only skills that are also here, and
+  a skill vendored later brings its dependencies with it. `AGENTS.md` "Skills" states the same rule in one
+  sentence. ADR 0005 itself stays unchanged.
+- `AGENTS.md` "Before implementing a story" and `docs/agents/issue-tracker.md` "Before implementing a story" each
+  gain one sentence: `/implement-story <n>` implements a whole story in one run, gates included.
+- `docs/agents/issue-tracker.md` gains a short "Implementation log" section beside "Review file" and "Code review
+  file": what `.stories/<story>/implementation.md` holds, that it is only appended to, and that its first line's
+  commit is where a story's implementation began.
+
+## Done when
+
+- The skill file says all of the above, and a reader of it alone could run a story without breaking
+  `docs/agents/commit-policy.md` or `docs/agents/issue-tracker.md`.
+- `VENDORED.md`, `AGENTS.md` and `issue-tracker.md` carry their additions, and every skill named by a skill in
+  `.claude/skills/` exists there.
+- `code-review` and `address-code-review-findings` are unchanged in name.

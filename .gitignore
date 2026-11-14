@@ -10,3 +10,6 @@ __pycache__/
 
 # Claude Code agent worktrees (local checkouts, never commit).
 /.claude/worktrees/
+
+# Agent scratch notes and check logs (skills write here, never commit).
+/.scratch/
