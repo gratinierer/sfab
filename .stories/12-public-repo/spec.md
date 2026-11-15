@@ -41,6 +41,9 @@ AWS secret could, which is why the scan comes first.
 2. **Turn on** private vulnerability reporting, secret scanning and push protection. Push protection blocks a
    later push that contains a known secret format, so no new CI tool is needed.
 3. **Switch the visibility** to public.
+4. **Protect `production`** with a branch ruleset that restricts deletions and blocks force pushes
+   (`.stories/done/18-deploy-from-codebuild/`). GitHub Free offers rulesets only on public repos, so the branch
+   has been unprotected since the first deploy (`2-identity-api#03`).
 
 ## Clarifications
 
