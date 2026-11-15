@@ -40,3 +40,7 @@ below.
 - 2026-11-04: the owner registered `botrefugium.com` in the Route 53 console. Still open from "Done when": no
   registrant verification pending, the hosted zone's ID kept until issue 04, the charge's service name once it
   appears in Cost Explorer, and MFA and anomaly detection.
+- 2026-11-15: `production` is pushed to `gratinierer/sfab` (47da5df) but **unprotected**: the repo is private and
+  GitHub Free refuses rulesets on private repos (HTTP 403). It gets its ruleset when the repo goes public,
+  `12-public-repo#02`. The owner is the only collaborator, so the gap is an accidental force-push or deletion,
+  which is recoverable.
