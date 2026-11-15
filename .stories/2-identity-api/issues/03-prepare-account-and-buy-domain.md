@@ -44,3 +44,22 @@ below.
   GitHub Free refuses rulesets on private repos (HTTP 403). It gets its ruleset when the repo goes public,
   `12-public-repo#02`. The owner is the only collaborator, so the gap is an accidental force-push or deletion,
   which is recoverable.
+- 2026-11-15, walkthrough with the owner:
+  - **Account:** dedicated, `us-east-1`, Paid plan. MFA on root and on the owner's IAM user, which has
+    `AdministratorAccess`; no access keys on either; the CLI uses `aws login` as that user.
+  - **Quotas, still open:** Lambda concurrent executions is 10 and CodeBuild ARM/Small is 0, and every Lambda call
+    returns `AccessDeniedException`, even for root, which looks like a new account AWS hasn't fully unrestricted.
+    Service Quotas refuses both requests (Lambda only accepts values above the 1000 default; CodeBuild says "contact
+    AWS Support"), so the owner opened an Account and billing case asking for Lambda 300 and CodeBuild 5. This
+    issue stays open until both are raised and Lambda answers.
+  - **Anomaly detection:** AWS's default monitor and daily subscription, emailing the owner's phone address; the
+    threshold lowered from "≥ $100 and ≥ 40%" to an impact of ≥ $10.
+  - **Deploys:** `cdk bootstrap` and `scripts/deploy SfabDeployer` succeeded; `sfab-github` is `AVAILABLE`.
+  - **Domain:** registrant verification `DONE`, auto-renew and privacy on all four contacts.
+  - **`sfab/config`:** every required entry, `hosted_zone_id` included; `smoke_claim` waits for launch. The
+    abuse contact is a separate address from the alert address, because it gets published.
+  - **Service name:** the domain charge appears as **"Amazon Registrar"**, so `DOMAIN_SERVICE_NAME` stays and
+    loses its placeholder mark. Its VAT appears separately under "Tax", which the stop budget still counts; the
+    owner accepts that.
+  - **`aws login` and boto3:** boto3 needs the `crt` extra to use `aws login` credentials, so
+    `cdk/requirements.in` now pins `boto3[crt]` (`docs/aws-facts.md`).

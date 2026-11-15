@@ -1,5 +1,5 @@
 aws-cdk-lib==2.275.0
-boto3==1.43.126
+boto3[crt]==1.43.126
 constructs==10.8.1
 pytest==9.2.0
 pyyaml==6.0.3

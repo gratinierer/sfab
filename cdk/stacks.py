@@ -53,9 +53,8 @@ CHECK_BUDGET_NAME = "sfab-check"
 # The check budget's one alert, at $0.01, written as a percentage of a $1 limit.
 CHECK_BUDGET_PERCENT_OF_1_USD = 1
 
-# PLACEHOLDER, not yet confirmed: the service name domain charges appear under, which the
-# stop budget excludes. "Amazon Registrar" is spec.md "First deploy" step 7's guess from
-# memory. Issue 03 records the real name from the first purchase's bill; put it here then.
+# The service name domain charges appear under, which the stop budget excludes. Confirmed on
+# the first purchase's bill, 2026-11-15 (story 2, issue 03).
 DOMAIN_SERVICE_NAME = "Amazon Registrar"
 
 # The proof of work's difficulty, which the API Lambda reads (spec.md "Proof of work").
