@@ -114,3 +114,17 @@ emails and an automatic stop from the start. Keep its URL unpublished until the 
 ## Comments
 
 - 2026-11-08: relabelled `ready-for-human` (review finding R183): the CDK code (`cdk/stacks.py`, `cdk/app.py`) and its assertion tests are built and code-reviewed (`code-review.md`, 2026-11-08); what remains is the owner's first deploy and the proofs above.
+- 2026-11-16: the import proofs ran early, before the deploy, on a throwaway REST API imported from the filled
+  `sfab.yaml` with a Lambda ARN that doesn't exist, plus a `v1` stage, an API key and a usage plan. All deleted
+  afterwards. Results in `docs/aws-facts.md`, the "API Gateway" rows dated 2026-11-16:
+  - Proven: the import accepts the file (only `default` responses and `/openapi.yaml`'s string schema are
+    ignored), `$default` is a request content type, `messageString` arrives JSON-quoted, and `validationErrorString`
+    with `$util.escapeJavaScript` gives valid JSON. A missing key gets the `INVALID_API_KEY` `403`, an unknown
+    route or method gets the `MISSING_AUTHENTICATION_TOKEN` `404`, a malformed body the `400`, and a missing Lambda
+    the `DEFAULT_5XX` `500`, each with our body.
+  - **Disproved:** the `403` (`INVALID_API_KEY`) and the `404` (`MISSING_AUTHENTICATION_TOKEN`) answered
+    `Content-Type: application/json`, not `application/problem+json`, despite the header parameter. Keying their
+    templates `application/problem+json` instead of `application/json` fixed both. Until `sfab.yaml` changes, an agent
+    would read the `403` as a block (`spec.md` "API"), and the `404` doesn't match the description. Fix pending.
+  - Not tested: whether the import resolves a `$ref` inside `x-amazon-apigateway-integration`. The YAML anchor
+    makes it moot.
