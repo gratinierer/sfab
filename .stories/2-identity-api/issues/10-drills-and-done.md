@@ -18,7 +18,8 @@ described in "Testing".
 - The budget check: a $0.01 email has arrived for spend beyond the domain's own charge, the stop budget
   stops the API with its limit temporarily lowered and the stop email names the budget alert, and its figure
   matches the first real bill.
-- The WAF check.
+- The WAF check, and that the requests WAF blocked added no API Gateway or CloudFront charge, which issue 02's
+  test, run before the deploy, couldn't check.
 - The billing test in issue 02, with its result acted on.
 - The takedown check, for an agent with every kind of data.
 - The website check, and that both distributions show the Free flat-rate plan.
