@@ -128,3 +128,7 @@ emails and an automatic stop from the start. Keep its URL unpublished until the 
     would read the `403` as a block (`spec.md` "API"), and the `404` doesn't match the description. Fix pending.
   - Not tested: whether the import resolves a `$ref` inside `x-amazon-apigateway-integration`. The YAML anchor
     makes it moot.
+- 2026-11-16: `sfab.yaml` now keys all six gateway response templates `application/problem+json`, and
+  `BAD_REQUEST_BODY`'s detail is the escaped `validationErrorString`, so a malformed body says what's wrong.
+  A second throwaway import of the fixed file confirmed it: no key, a wrong key, an unknown route, a malformed
+  body, a schema-invalid one and a missing Lambda all answered `application/problem+json` with valid JSON.

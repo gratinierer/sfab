@@ -200,12 +200,17 @@ def test_every_operation_is_in_a_route_table_with_matching_auth(source, security
 # --- gateway responses ---------------------------------------------------------------
 
 
+VALIDATION_MESSAGE = """object instance has properties which are not allowed by the schema: ["it's"]"""
+
+
 def render(template: str) -> dict:
     """Fills the $context variables the way API Gateway would, and parses the JSON."""
     filled = template.replace("$context.error.messageString", json.dumps('a "quoted" message'))
-    # From memory, AWS's validation messages hold double quotes, so a quoted substitution is unsafe.
+    # Inside quotes, $util.escapeJavaScript escapes AWS's validation message, which holds double
+    # quotes and may hold an apostrophe (docs/aws-facts.md).
     filled = filled.replace(
-        "$context.error.validationErrorString", 'object has missing required properties (["name"])'
+        "$util.escapeJavaScript($context.error.validationErrorString)",
+        json.dumps(VALIDATION_MESSAGE)[1:-1],
     )
     filled = filled.replace("{{api_host}}", "api.example.invalid")
     return json.loads(filled)
@@ -222,7 +227,10 @@ def test_gateway_responses_are_problem_json(source):
         params = response["responseParameters"]
         assert params["gatewayresponse.header.Content-Type"] == "'application/problem+json'", name
         assert params["gatewayresponse.header.Cache-Control"] == "'no-store'", name
-        body = render(response["responseTemplates"]["application/json"])
+        # Keyed problem+json, not application/json: API Gateway takes some responses' Content-Type
+        # from the key, not the parameter (docs/aws-facts.md).
+        assert set(response["responseTemplates"]) == {"application/problem+json"}, name
+        body = render(response["responseTemplates"]["application/problem+json"])
         assert body["type"] and body["title"], name
         if "statusCode" in response:
             assert body["status"] == response["statusCode"], name
@@ -231,7 +239,7 @@ def test_gateway_responses_are_problem_json(source):
 def test_a_wrong_origin_key_gets_a_retryable_403(source):
     response = source["x-amazon-apigateway-gateway-responses"]["INVALID_API_KEY"]
     assert response["statusCode"] == 403
-    body = render(response["responseTemplates"]["application/json"])
+    body = render(response["responseTemplates"]["application/problem+json"])
     assert body["type"] == "origin-key-replaced"
     assert body["status"] == 403
 
@@ -239,8 +247,14 @@ def test_a_wrong_origin_key_gets_a_retryable_403(source):
 def test_an_unknown_route_gets_a_404_pointing_to_the_description(source):
     response = source["x-amazon-apigateway-gateway-responses"]["MISSING_AUTHENTICATION_TOKEN"]
     assert response["statusCode"] == 404
-    body = render(response["responseTemplates"]["application/json"])
+    body = render(response["responseTemplates"]["application/problem+json"])
     assert body["detail"].endswith("https://api.example.invalid/v1/openapi.yaml")
+
+
+def test_a_malformed_body_says_what_is_wrong(source):
+    response = source["x-amazon-apigateway-gateway-responses"]["BAD_REQUEST_BODY"]
+    body = render(response["responseTemplates"]["application/problem+json"])
+    assert body["detail"] == VALIDATION_MESSAGE
 
 
 # --- the public copy -----------------------------------------------------------------

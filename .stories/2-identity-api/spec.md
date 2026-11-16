@@ -801,7 +801,9 @@ Logs are the most likely place for a claim to leak.
   `problem+json` format of gateway errors, and that a birth with no proof gets `400` with
   `required_bits`. `self` proves `Authorization` reaches the origin, a path outside `/v1/`
   must get the CloudFront Function's `404`, an unknown route inside `/v1/` must get the gateway's
-  `problem+json` `404`, and a request straight to `execute-api` must be rejected. It also reads the federation world
+  `problem+json` `404`, and a request straight to `execute-api`, with no key or a wrong one, must get the
+`problem+json` `403` `origin-key-replaced`, so a stopped API, whose disabled endpoint answers a plain `403`, can't
+pass. It also reads the federation world
   and directory, and before launch sends one federation request. An unknown agent's `aboutme`, `self` with a wrong
   claim and a message to an unknown agent run in both modes; the message also proves real S3 answers a missing
   `identity.json` with `404`. After a `reclaim`, the next request uses the new claim. The unit tests cover what it

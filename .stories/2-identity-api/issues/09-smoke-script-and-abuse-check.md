@@ -51,3 +51,8 @@ covers every route.
   run in CodeBuild, so the API stack's `Endpoint` output is in the build log and the stack's CloudFormation outputs,
   not printed by a local `cdk deploy`. `sfab.config.example.toml` is gone, and `smoke_claim`'s `<id>.<claim>` form
   is documented in `spec.md` "The config secret".
+- 2026-11-16: the C95 item is done in code ahead of the first run. On a throwaway API imported from `sfab.yaml`
+  (issue 01's comment of today), a request without the key got `INVALID_API_KEY`'s `403` `origin-key-replaced`,
+  but as `application/json` until its template was keyed `application/problem+json`, which `sfab.yaml` now does.
+  The smoke check now requires that `problem+json` `403` without the key too, so a stopped API can't pass it. The
+  first run against the deploy still confirms it and records it in the `docs/aws-facts.md` row.

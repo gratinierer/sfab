@@ -758,9 +758,16 @@ def _lists(agent: str):
 
 
 def _execute_api(s: _Session) -> None:
-    """Straight to API Gateway, past CloudFront: without the origin key, and with a wrong one."""
+    """Straight to API Gateway, past CloudFront: without the origin key, and with a wrong one.
+    Both must get the problem+json `403` `origin-key-replaced` (code review C95). A plain `403`
+    means the endpoint is disabled, as during a stop, so it fails."""
     url = s.target.execute_api_url.rstrip("/") + "/openapi.yaml"
-    s.check("execute-api without the origin key is rejected", s.send("GET", url), 403, api=False)
+    s.check(
+        "execute-api without the origin key is rejected",
+        s.send("GET", url),
+        403,
+        problem="origin-key-replaced",
+    )
     s.check(
         "execute-api with a wrong origin key",
         s.send("GET", url, {"x-api-key": _wrong_key()}),

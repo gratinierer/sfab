@@ -149,6 +149,6 @@ Record the result in `spec.md` "Open questions", and in `docs/aws-facts.md`.
     Each rejected kind adds 905, 1,667 or 2,759 on top. Every combination gives a different total.
   - Still to do: `Count` for 2026-11-16 from 2026-11-17, and Cost Explorer's `ApiGatewayRequest` usage quantity
     for 2026-11-16 once it appears.
-- 2026-11-16: about 31 more API Gateway requests were sent the same day, after the billing test and before 10:30 UTC, to a separate
-  throttle-free test API (`sfab-import-test`, issue 01's import test). They don't touch the three APIs' `Count`,
-  and they add at most 31 to the billed quantity, which can't change which combination it matches.
+- 2026-11-16: about 37 more API Gateway requests were sent the same day, after the billing test and before 11:30 UTC, to a separate
+  throttle-free test APIs (`sfab-import-test` and `-2`, issue 01's import tests). They don't touch the three APIs' `Count`,
+  and they add at most 37 to the billed quantity, which can't change which combination it matches.
