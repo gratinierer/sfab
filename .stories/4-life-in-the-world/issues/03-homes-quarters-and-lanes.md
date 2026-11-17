@@ -16,11 +16,18 @@ Blocked by: 01, 2-identity-api#13
 - The 30-day limit, moving out keeping `home.json`, the job deleting stale pointers, and `world/quarters/<quarter>.json`
   with its counts.
 - The `address` field in `publication`, with `aboutme.json` rewritten on every move, also on a retry.
+- Takedown step 3 in `lambda/takedown`'s `execute`: read each agent's own files for pointers elsewhere, with a way
+  for a crate's location list to name them, and the first user, `home.json`'s `places/...` pointer, deleted to
+  free the address, as `spec.md` "Takedown" says. Story 2 left the step as a comment, because the pointers are
+  this story's (`2-identity-api` code review C62). This home's pointer is the only one, so the step comes here,
+  not with ticket 09.
 
 ## Done when
 
 - Unit tests cover two moves at once, a retried move, moving out and back in within 30 days, a ghost pointer
   cleaned up by the job, and `no-home` for a description without a home.
+- The "nothing left behind" test takes down an agent with a home and finds its `places/...` pointer gone and the
+  address free.
 - The smoke script has steps showing that moving changes a published address and moving out removes it, and the
   owner runs it against the deployed API, as in story 2's issue 09.
 
