@@ -609,6 +609,7 @@ async fn take_down(store: &MemoryStore, id: &AgentId) {
                     .await
                     .unwrap();
             }
+            Action::Note(_) | Action::RemoveId => panic!("identity's list uses neither"),
         }
     }
 }

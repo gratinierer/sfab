@@ -475,6 +475,12 @@ def test_the_api_lambda_may_touch_only_its_own_prefixes(api, base):
         # Story 17: the IP rule's records, and the pool a used world code leaves.
         "Identities/genesis/ips/*",
         "Identities/genesis/pool.json",
+        # Story 4's institutions (story 2 "Architecture", story 4 "Changes to story 2's parts").
+        "Identities/vouches/*",
+        "Identities/places/*",
+        "Identities/square/*",
+        "Identities/academy/*",
+        "Identities/library/*",
         "Claims/*",
     ]
     expected = {(a, r) for r in read_write for a in ("s3:GetObject", "s3:PutObject")}
@@ -819,3 +825,17 @@ def test_the_cdk_s_genesis_keys_are_the_genesis_crate_s():
     }
     assert cdk_keys, "the API's grants name no genesis/ key"
     assert cdk_keys <= crate, cdk_keys - crate
+
+
+def test_story_4_s_prefixes_are_each_owned_by_one_world_crate():
+    # CODING_STANDARDS "Where code goes": a prefix is spelt in its crate, and CDK's IAM names it
+    # too, so each story 4 prefix the API may use must be exactly one crate's `PREFIX`.
+    world = sfab_config.REPO_ROOT / "lambda" / "world"
+    owners: dict[str, list[str]] = {}
+    for lib in sorted(world.glob("*/src/lib.rs")):
+        for prefix in re.findall(r'pub const PREFIX: &str = "([^"]*)";', lib.read_text()):
+            owners.setdefault(prefix, []).append(lib.parent.parent.name)
+    for prefix in stacks.STORY_4_PREFIXES:
+        assert prefix in stacks.API_READ_WRITE_PREFIXES, prefix
+        assert len(owners.get(prefix, [])) == 1, (prefix, owners.get(prefix))
+    assert set(stacks.STORY_4_PREFIXES) == {"vouches/", "places/", "square/", "academy/", "library/"}

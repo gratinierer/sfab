@@ -10,7 +10,7 @@ pub use args::{Args, USAGE, parse_args};
 
 use sfab_core::id::AgentId;
 use sfab_core::storage::{Bucket, Condition, Store, StoreError};
-use sfab_core::takedown::{Action, Location, Phase};
+use sfab_core::takedown::{Action, Location, Phase, remove_id};
 use sfab_identity::Born;
 
 /// Which agents to take down.
@@ -68,25 +68,50 @@ async fn existing_keys<S: Store>(
     store: &S,
     id: &AgentId,
 ) -> Result<Vec<(Bucket, String)>, StoreError> {
-    let mut found = Vec::new();
+    let mut all = Vec::new();
     for l in locations(id) {
-        match l.action {
-            Action::DeletePrefix => {
-                for key in store.list(l.bucket, &l.key).await? {
-                    found.push((l.bucket, key));
-                }
+        all.extend(found(store, id, &l).await?);
+    }
+    // A key can sit in two locations, such as `aboutme.json` under `identities/<id>/`.
+    all.sort();
+    all.dedup();
+    Ok(all)
+}
+
+/// The keys of one location that its action would still change: every key under a prefix to
+/// delete, a key to delete, mark or note that exists and isn't yet a note, and the keys under a
+/// prefix that name the agent.
+pub async fn found<S: Store>(
+    store: &S,
+    id: &AgentId,
+    l: &Location,
+) -> Result<Vec<(Bucket, String)>, StoreError> {
+    let mut keys = Vec::new();
+    match l.action {
+        Action::DeletePrefix => keys = store.list(l.bucket, &l.key).await?,
+        Action::Delete | Action::Marker(_) => {
+            if store.get(l.bucket, &l.key).await?.is_some() {
+                keys.push(l.key.clone());
             }
-            Action::Delete | Action::Marker(_) => {
-                if store.get(l.bucket, &l.key).await?.is_some() {
-                    found.push((l.bucket, l.key));
+        }
+        Action::Note(note_of) => {
+            if let Some(current) = store.get(l.bucket, &l.key).await?
+                && note_of(&current.body).is_some()
+            {
+                keys.push(l.key.clone());
+            }
+        }
+        Action::RemoveId => {
+            for key in store.list(l.bucket, &l.key).await? {
+                if let Some(current) = store.get(l.bucket, &key).await?
+                    && remove_id(&current.body, id).is_some()
+                {
+                    keys.push(key);
                 }
             }
         }
     }
-    // A key can sit in two locations, such as `aboutme.json` under `identities/<id>/`.
-    found.sort();
-    found.dedup();
-    Ok(found)
+    Ok(keys.into_iter().map(|k| (l.bucket, k)).collect())
 }
 
 /// Takes the targets down in the spec's order, calling `wait` once for the whole batch, which
@@ -98,8 +123,11 @@ pub async fn execute<S: Store, W: Future<Output = ()>>(
     targets: &[Target],
     wait: W,
 ) -> Result<(), StoreError> {
-    let all: Vec<Vec<Location>> = targets.iter().map(|t| locations(&t.born.id)).collect();
-    let in_phase = |phase: Phase| all.iter().flatten().filter(move |l| l.phase == phase);
+    let all: Vec<(&AgentId, Location)> = targets
+        .iter()
+        .flat_map(|t| locations(&t.born.id).into_iter().map(|l| (&t.born.id, l)))
+        .collect();
+    let in_phase = |phase: Phase| all.iter().filter(move |(_, l)| l.phase == phase);
     // (1) End private access and public reading at once.
     apply_each(store, in_phase(Phase::First)).await?;
     // (2) Once per batch.
@@ -112,7 +140,7 @@ pub async fn execute<S: Store, W: Future<Output = ()>>(
     apply_each(store, in_phase(Phase::Last)).await?;
     apply_each(
         store,
-        in_phase(Phase::First).filter(|l| matches!(l.action, Action::Delete)),
+        in_phase(Phase::First).filter(|(_, l)| matches!(l.action, Action::Delete)),
     )
     .await?;
     Ok(())
@@ -120,15 +148,17 @@ pub async fn execute<S: Store, W: Future<Output = ()>>(
 
 async fn apply_each<'a, S: Store>(
     store: &S,
-    locations: impl Iterator<Item = &'a Location>,
+    locations: impl Iterator<Item = &'a (&'a AgentId, Location)>,
 ) -> Result<(), StoreError> {
-    for l in locations {
-        apply(store, l).await?;
+    for (id, l) in locations {
+        apply(store, id, l).await?;
     }
     Ok(())
 }
 
-async fn apply<S: Store>(store: &S, l: &Location) -> Result<(), StoreError> {
+/// Applies one location's action for the agent `id`. Each is safe to repeat: what's already
+/// deleted, marked, noted or rewritten counts as done.
+pub async fn apply<S: Store>(store: &S, id: &AgentId, l: &Location) -> Result<(), StoreError> {
     match l.action {
         Action::Delete => store.delete(l.bucket, &l.key).await,
         Action::DeletePrefix => {
@@ -138,6 +168,45 @@ async fn apply<S: Store>(store: &S, l: &Location) -> Result<(), StoreError> {
             Ok(())
         }
         Action::Marker(metadata_of) => mark(store, l, metadata_of).await,
+        Action::Note(note_of) => rewrite(store, l.bucket, &l.key, note_of).await,
+        Action::RemoveId => {
+            for key in store.list(l.bucket, &l.key).await? {
+                rewrite(store, l.bucket, &key, |body| remove_id(body, id)).await?;
+            }
+            Ok(())
+        }
+    }
+}
+
+/// Replaces the object's body with what `change` makes of it, with `If-Match`, so a write
+/// racing the takedown, such as the daily job's, can't be lost or undo it: on a lost race it
+/// reads again. `None` from `change`, or no object, means nothing to do.
+async fn rewrite<S: Store>(
+    store: &S,
+    bucket: Bucket,
+    key: &str,
+    change: impl Fn(&[u8]) -> Option<Vec<u8>>,
+) -> Result<(), StoreError> {
+    loop {
+        let Some(current) = store.get(bucket, key).await? else {
+            return Ok(());
+        };
+        let Some(body) = change(&current.body) else {
+            return Ok(());
+        };
+        let write = store
+            .put(
+                bucket,
+                key,
+                body,
+                current.metadata,
+                Condition::IfMatch(current.etag),
+            )
+            .await;
+        match write {
+            Err(StoreError::ConditionFailed | StoreError::Missing) => continue,
+            other => return other,
+        }
     }
 }
 

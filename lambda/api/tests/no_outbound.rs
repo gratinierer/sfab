@@ -39,6 +39,12 @@ fn the_api_and_its_route_crates_bring_no_outbound_client() {
         "../world/census/Cargo.toml",
         "../world/constitution/Cargo.toml",
         "../world/federation/Cargo.toml",
+        "../world/academy/Cargo.toml",
+        "../world/chronicle/Cargo.toml",
+        "../world/homes/Cargo.toml",
+        "../world/library/Cargo.toml",
+        "../world/square/Cargo.toml",
+        "../world/vouches/Cargo.toml",
     ] {
         let deps = dependencies(manifest);
         assert!(!deps.is_empty(), "{manifest} has dependencies");

@@ -3,7 +3,8 @@
 # included, and stops if any fails.
 #   scripts/deploy --all | <stack>...
 # cdk/deploy_plan.py makes every decision: it refuses a set SFAB_CONFIG, any argument but
-# --all or the app's stack names, a region other than us-east-1, and a config that doesn't
+# --all or the app's stack names, a world/founders.yaml that's missing or holds the fixture's
+# made-up founders, a region other than us-east-1, and a config that doesn't
 # load from the secret sfab/config, except for `scripts/deploy SfabDeployer` alone, which
 # creates the secret: then scripts/check falls back to the fixture, and cdk/app.py synthesizes
 # only SfabDeployer. See .stories/18-deploy-from-codebuild/spec.md "A build" and "Synth without
