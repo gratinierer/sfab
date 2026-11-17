@@ -11,6 +11,7 @@ use sfab_core::storage::{
     Bucket, Condition, Listed, MemoryStore, Metadata, Object, Store, StoreError,
 };
 use sfab_genesis::testing as genesis;
+use sfab_homes::Homes;
 use sfab_identity::{Identity, List};
 use sfab_messaging::Messaging;
 use sfab_takedown::{Mode, execute, plan};
@@ -27,17 +28,49 @@ struct World {
     identity: Arc<Identity<MemoryStore>>,
     messaging: Messaging<MemoryStore>,
     vouches: Vouches<MemoryStore>,
+    homes: Homes<MemoryStore>,
 }
 
 fn world() -> World {
     let store = Arc::new(MemoryStore::new());
     let identity = Arc::new(Identity::new(store.clone(), BITS, genesis::genesis(&store)));
+    let map = sfab_homes::quarters();
     World {
         messaging: Messaging::new(store.clone(), identity.clone(), BITS),
         vouches: Vouches::new(store.clone(), identity.clone(), BITS),
+        homes: Homes::new(store.clone(), identity.clone(), BITS).with(map, first),
         identity,
         store,
     }
+}
+
+/// The first free home every time.
+fn first(_: usize) -> usize {
+    0
+}
+
+/// The agent moves into the first quarter whose first home is free, and gets that home.
+async fn move_in(w: &World, id: &AgentId, claim: &str, now: i64) -> String {
+    let taken = w.store.list(Bucket::Identities, "places/").await.unwrap();
+    let quarter = sfab_homes::quarters()
+        .iter()
+        .find(|q| !taken.contains(&format!("places/{}/{}/1.json", q.name, q.lanes[0])))
+        .expect("a free quarter");
+    let auth = bearer(id, claim);
+    let path = "/v1/identity/self/home";
+    let body = serde_json::json!({ "quarter": quarter.name }).to_string();
+    let proof = solve("PUT", path, Some(&auth), body.as_bytes(), now);
+    let call = Call {
+        method: "PUT",
+        path,
+        authorization: Some(&auth),
+        proof: Some(&proof),
+        body: body.as_bytes(),
+        viewer: None,
+    };
+    let moved = w.homes.move_home(&call, now).await.expect("a move");
+    assert_eq!(moved.status, 201);
+    moved.body["address"].as_str().unwrap().to_owned()
 }
 
 /// `from` vouches for `to`, an ID that needn't exist.
@@ -60,6 +93,8 @@ async fn vouch(w: &World, from: &AgentId, claim: &str, to: &str, now: i64) {
 
 struct Agent {
     id: AgentId,
+    /// Its home, such as `harbour/lantern-lane/1`.
+    address: String,
     name: String,
     /// The `--no-ip-limit` code its birth used up.
     genesis_code: String,
@@ -235,7 +270,12 @@ async fn full_agent(w: &World, name: &str, now: i64) -> Agent {
     vouch(w, &id, &claim, "friendfriend", now).await;
     let given = format!("vouches/{id}.json");
     assert!(w.store.object(Bucket::Identities, &given).is_some());
+    // A home: `identities/<id>/home.json` and a `places/...` pointer, whose key doesn't name it.
+    let address = move_in(w, &id, &claim, now).await;
+    let home = format!("identities/{id}/home.json");
+    assert!(w.store.object(Bucket::Identities, &home).is_some());
     Agent {
+        address,
         id,
         name: name.to_owned(),
         genesis_code,
@@ -349,6 +389,11 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
     assert_eq!(waits.load(Ordering::SeqCst), 1);
     assert_taken_down(&w, &agent, "2026-11-05T12:00:00Z").await;
     assert_eq!(keys_of(&w.store, &bystander.id), bystander_keys);
+    // Its `places/...` pointer is gone, and its address free for the next agent.
+    let places = w.store.list(Bucket::Identities, "places/").await.unwrap();
+    assert_eq!(places, vec![format!("places/{}.json", bystander.address)]);
+    let newcomer = full_agent(&w, "Kite", NOW).await;
+    assert_eq!(newcomer.address, agent.address);
 }
 
 #[tokio::test]
@@ -441,7 +486,10 @@ async fn a_dry_run_shows_the_window_and_writes_nothing() {
     assert_eq!(t.born.born_at.as_deref(), Some("2026-11-05T12:00:00Z"));
     assert!(!t.born.taken_down);
     let found: Vec<_> = t.found.iter().map(|(_, k)| k.clone()).collect();
-    assert_eq!(sorted(found), sorted(keys_of(&w.store, &first.id)));
+    // Every key that names it, and its home's pointer, whose key doesn't.
+    let mut expected = keys_of(&w.store, &first.id);
+    expected.push(format!("places/{}.json", first.address));
+    assert_eq!(sorted(found), sorted(expected));
 }
 
 #[tokio::test]

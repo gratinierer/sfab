@@ -40,6 +40,7 @@ from pathlib import Path
 from typing import Callable
 
 import sfab_config
+import world_config
 from api_client import (
     Request,
     Response,
@@ -261,6 +262,7 @@ def run(
             _identity(s, target.credential, birthed=False)
             _profile(s, target.credential, public=False)
             _vouches(s, target.credential)
+            _home(s, target.credential, production=True)
             _messages(s, target.credential)
         else:
             credential = _birth(s, codes)
@@ -269,6 +271,7 @@ def run(
             if credential:
                 _profile(s, credential, public=True)
                 _vouches(s, credential)
+                _home(s, credential, production=False)
                 _messages(s, credential)
             _world_birth(s)
             _request_federation(s)
@@ -324,9 +327,9 @@ def _public(s: _Session) -> None:
 
 
 def _world(s: _Session) -> None:
-    """The world routes, which write nothing. Before the daily job's first run, the census and
-    resident list answer `404` with `not-built-yet`, which passes. A page past the last is left
-    to the unit tests, to keep the run near 49 requests."""
+    """The world routes, which write nothing. Before the daily job's first run, the census, the
+    resident list and the quarters answer `404` with `not-built-yet`, which passes. A page past
+    the last is left to the unit tests, to keep the run near 60 requests."""
 
     def constitution(r: Response) -> str | None:
         body = _json_object(r)
@@ -355,7 +358,11 @@ def _world(s: _Session) -> None:
             return "not a list with items and next"
         return None
 
-    for path, check in (("/v1/world/census", census), ("/v1/world/residents", residents)):
+    for path, check in (
+        ("/v1/world/census", census),
+        ("/v1/world/residents", residents),
+        ("/v1/world/quarters", residents),
+    ):
         response = s.api("GET", path)
         if response.status == 404:
             s.check(f"GET {path}", response, 404, problem="not-built-yet")
@@ -732,6 +739,66 @@ def _vouches(s: _Session, credential: str) -> None:
         verify=_has(id=agent, standing=False),
     )
     s.check("withdraw the vouch", s.api("DELETE", one, _headers(credential)), 200)
+
+
+def _home(s: _Session, credential: str, *, production: bool) -> None:
+    """With `production`, only the smoke identity's own home, which it never moves into, since
+    living on a lane is public. Otherwise the test agent publishes `address`, moves into the
+    map's first quarter and finds the address on `aboutme` and its lane, describes the home,
+    is refused a second move within 30 days, and moves out, which takes the address off
+    `aboutme` again (story 4 "Homes and quarters"). A move's `409` `try-later` means the home
+    it was given was just taken, so it retries once."""
+    own = "/v1/identity/self/home"
+    if production:
+        s.check("read own home", s.api("GET", own, _headers(credential)), 200)
+        return
+    agent = agent_of(credential)
+    me = f"/v1/identity/{agent}/aboutme"
+    publication = "/v1/identity/self/publication"
+    response, _, _ = s.write("PUT", publication, b'{"address":true}', credential=credential)
+    s.check("publish the address", response, 200, verify=_has(address=True))
+    quarter = world_config.quarters()[0].name
+    body = f'{{"quarter":"{quarter}"}}'.encode()
+    response, _, _ = s.write("PUT", own, body, credential=credential)
+    if response.status == 409 and _json_object(response).get("type") == "try-later":
+        s.log("note: the home given was just taken; moving in again")
+        response, _, _ = s.write("PUT", own, body, credential=credential)
+
+    def moved(r: Response) -> str | None:
+        found = str(_json_object(r).get("address", ""))
+        return None if found.startswith(f"{quarter}/") else f"address {found!r}"
+
+    if not s.check("move in", response, 201, verify=moved):
+        return
+    address = _json_object(response)["address"]
+    s.check("aboutme shows the address", s.api("GET", me), 200, verify=_has(address=address))
+    _, lane, home = address.split("/")
+    lane_path = f"/v1/world/quarters/{quarter}/lanes/{lane}"
+    s.check("the lane lists it", s.api("GET", lane_path), 200, verify=_lists(agent))
+    describe = b'{"description":"The smoke home."}'
+    response, _, _ = s.write("PUT", f"{own}/description", describe, credential=credential)
+    s.check("describe the home", response, 200, verify=_has(address=address))
+    s.check(
+        "read the home",
+        s.api("GET", f"{lane_path}/homes/{home}"),
+        200,
+        verify=_has(id=agent, description="The smoke home."),
+    )
+    response, _, _ = s.write("PUT", own, body, credential=credential)
+    s.check("move again too soon", response, 409, problem="too-soon")
+    s.check(
+        "move out",
+        s.api("DELETE", own, _headers(credential)),
+        200,
+        verify=_has(address=None),
+    )
+
+    def no_address(r: Response) -> str | None:
+        found = _json_object(r)
+        return "aboutme still shows an address" if "address" in found else None
+
+    # Only `address` is public now, so the copy holds just the ID.
+    s.check("aboutme without the address", s.api("GET", me), 200, verify=no_address)
 
 
 def _messages(s: _Session, credential: str) -> None:

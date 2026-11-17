@@ -10,6 +10,9 @@ use crate::storage::{Bucket, Metadata};
 pub enum Phase {
     /// Step 1: end private access and public reading at once.
     First,
+    /// Step 3: read the agent's own files for what they point to elsewhere, such as a home's
+    /// pointer on its lane, while they still exist.
+    Pointers,
     /// Step 4: every other location.
     Other,
     /// Step 5: the agent's own files, which point elsewhere, so a rerun can still find them.
@@ -32,6 +35,11 @@ pub enum Action {
     /// Replace the agent's ID with [`REMOVED`] in every object under a prefix that names it,
     /// such as the Chronicle's daily entries, which name agents by ID only.
     RemoveId,
+    /// Read the agent's own file at the key, and delete each key this function finds in its
+    /// body, in the same bucket, that still names the agent, such as the `places/...` pointer in
+    /// `home.json`, which frees the address. A key naming someone else stays, because the file
+    /// was out of date.
+    Pointers(fn(&[u8]) -> Vec<String>),
 }
 
 /// What [`Action::RemoveId`] writes in place of the ID.

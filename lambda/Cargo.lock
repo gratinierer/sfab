@@ -2338,8 +2338,16 @@ dependencies = [
 name = "sfab-homes"
 version = "0.1.0"
 dependencies = [
+ "futures-util",
  "saphyr",
+ "serde",
+ "serde_json",
  "sfab-core",
+ "sfab-genesis",
+ "sfab-identity",
+ "sfab-vouches",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -2442,6 +2450,7 @@ dependencies = [
  "serde_json",
  "sfab-core",
  "sfab-genesis",
+ "sfab-homes",
  "sfab-identity",
  "sfab-messaging",
  "sfab-vouches",

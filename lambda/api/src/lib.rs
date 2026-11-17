@@ -18,6 +18,7 @@ use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::Store;
 use sfab_federation::{Federation, Here};
 use sfab_genesis::{Genesis, IpRule};
+use sfab_homes::Homes;
 use sfab_identity::{Identity, List};
 use sfab_messaging::Messaging;
 use sfab_vouches::Vouches;
@@ -35,6 +36,7 @@ pub struct AppState<S> {
     identity: Arc<Identity<S>>,
     messaging: Messaging<S>,
     vouches: Vouches<S>,
+    homes: Homes<S>,
     census: Census<S>,
     federation: Federation<S>,
     genesis: Arc<Genesis<S>>,
@@ -74,6 +76,7 @@ pub fn app<S: Store>(
     let state = Arc::new(AppState {
         messaging: Messaging::new(store.clone(), identity.clone(), required_bits),
         vouches: Vouches::new(store.clone(), identity.clone(), required_bits),
+        homes: Homes::new(store.clone(), identity.clone(), required_bits),
         identity,
         census: Census::new(store.clone()),
         genesis,
@@ -114,6 +117,24 @@ pub fn app<S: Store>(
         .route("/identity/self/vouched-by", get(read_own_vouched_by::<S>))
         .route("/identity/{id}/vouched-by", get(read_vouched_by::<S>))
         .route("/identity/{id}/standing", get(read_standing::<S>))
+        .route(
+            "/identity/self/home",
+            get(read_own_home::<S>)
+                .put(move_home::<S>)
+                .delete(move_out::<S>),
+        )
+        .route("/identity/self/home/description", put(describe_home::<S>))
+        .route("/world/quarters", get(read_quarters::<S>))
+        .route("/world/quarters/{quarter}", get(read_quarter::<S>))
+        .route("/world/quarters/{quarter}/lanes", get(read_lanes::<S>))
+        .route(
+            "/world/quarters/{quarter}/lanes/{lane}",
+            get(read_lane::<S>),
+        )
+        .route(
+            "/world/quarters/{quarter}/lanes/{lane}/homes/{home}",
+            get(read_home::<S>),
+        )
         .route("/world/constitution", get(constitution))
         .route("/world/census", get(census::<S>))
         .route("/world/residents", get(residents::<S>))
@@ -518,6 +539,74 @@ async fn read_standing<S: Store>(
     Path(id): Path<String>,
 ) -> Response {
     respond(state.vouches.standing(&id).await)
+}
+
+async fn read_own_home<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    headers: HeaderMap,
+) -> Response {
+    let authorization = header(&headers, "authorization");
+    let now = (state.now)();
+    respond(state.homes.own_home(authorization, now).await)
+}
+
+async fn move_home<S: Store>(State(state): State<Arc<AppState<S>>>, signed: Signed) -> Response {
+    let now = (state.now)();
+    respond(state.homes.move_home(&signed.call(), now).await)
+}
+
+async fn move_out<S: Store>(State(state): State<Arc<AppState<S>>>, headers: HeaderMap) -> Response {
+    let authorization = header(&headers, "authorization");
+    let now = (state.now)();
+    respond(state.homes.move_out(authorization, now).await)
+}
+
+async fn describe_home<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    respond(state.homes.describe(&signed.call(), now).await)
+}
+
+async fn read_quarters<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    uri: OriginalUri,
+) -> Response {
+    let token = page(&uri);
+    respond(state.homes.quarters(token.as_deref()).await)
+}
+
+async fn read_quarter<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(quarter): Path<String>,
+) -> Response {
+    respond(state.homes.quarter_counts(&quarter).await)
+}
+
+async fn read_lanes<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(quarter): Path<String>,
+    uri: OriginalUri,
+) -> Response {
+    let token = page(&uri);
+    respond(state.homes.lanes(&quarter, token.as_deref()).await)
+}
+
+async fn read_lane<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path((quarter, lane)): Path<(String, String)>,
+    uri: OriginalUri,
+) -> Response {
+    let token = page(&uri);
+    respond(state.homes.lane(&quarter, &lane, token.as_deref()).await)
+}
+
+async fn read_home<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path((quarter, lane, home)): Path<(String, String, String)>,
+) -> Response {
+    respond(state.homes.home(&quarter, &lane, &home).await)
 }
 
 async fn openapi() -> Response {

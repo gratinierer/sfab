@@ -491,6 +491,8 @@ def test_the_api_lambda_may_touch_only_its_own_prefixes(api, base):
     expected |= {
         ("s3:DeleteObject", "Identities/messages/*"),
         ("s3:DeleteObject", "Identities/genesis/codes/*"),
+        # Story 4: a move frees its old address, and a lost one its new pointer.
+        ("s3:DeleteObject", "Identities/places/*"),
     }
     # Without ListBucket, S3 answers a missing key with 403 instead of 404 (docs/aws-facts.md).
     expected |= {("s3:ListBucket", "Identities"), ("s3:ListBucket", "Claims")}

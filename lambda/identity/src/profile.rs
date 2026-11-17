@@ -17,7 +17,9 @@ use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 
 use crate::contacts::Contacts;
-use crate::{Identity, IdentityRecord, Secret, aboutme_key, identity_key, malformed, to_json};
+use crate::{
+    Identity, IdentityRecord, Secret, aboutme_key, home_key, identity_key, malformed, to_json,
+};
 
 /// Every field an agent can publish: the one list. `.stories/4-life-in-the-world/` adds
 /// `vouches` here, and its homes ticket `address`, each with its part of the copy in
@@ -31,10 +33,20 @@ pub enum Field {
     /// The vouches the agent received that count, served by `GET /identity/{id}/vouched-by`,
     /// to which the copy links, because the list can grow (story 4 "Vouches").
     Vouches,
+    /// Where the agent lives, from `home.json`, such as `harbour/lantern-lane/7`, and nothing
+    /// when it has no home. Only the copy hides it: living on a lane is public (story 4
+    /// "Homes and quarters").
+    Address,
 }
 
 impl Field {
-    pub const ALL: [Field; 4] = [Field::Name, Field::Whoiam, Field::Friends, Field::Vouches];
+    pub const ALL: [Field; 5] = [
+        Field::Name,
+        Field::Whoiam,
+        Field::Friends,
+        Field::Vouches,
+        Field::Address,
+    ];
 
     pub fn as_str(self) -> &'static str {
         match self {
@@ -42,6 +54,7 @@ impl Field {
             Field::Whoiam => "whoiam",
             Field::Friends => "friends",
             Field::Vouches => "vouches",
+            Field::Address => "address",
         }
     }
 
@@ -57,6 +70,11 @@ impl Field {
     /// Adds this field's public value to the copy.
     fn copy_into(self, copy: &mut Map<String, Value>, id: &AgentId, sources: &Sources) {
         match self {
+            Field::Address => {
+                if let Some(address) = &sources.address {
+                    copy.insert("address".into(), json!(address));
+                }
+            }
             Field::Vouches => {
                 let link = format!("/v1/identity/{id}/vouched-by");
                 copy.insert("vouched_by".into(), json!(link));
@@ -89,6 +107,8 @@ pub(crate) type Published = BTreeSet<Field>;
 pub(crate) struct Sources<'a> {
     pub identity: &'a IdentityRecord,
     pub contacts: &'a Contacts,
+    /// The address, when `address` is public and the agent has a home.
+    pub address: Option<String>,
 }
 
 /// `{"name": false, ...}`, every publishable field with true or false.
@@ -241,7 +261,8 @@ impl<S: Store> Identity<S> {
         Ok(identity)
     }
 
-    /// Writes the copy of `identity`'s public fields, reading `contacts.json` if one needs it.
+    /// Writes the copy of `identity`'s public fields, reading `contacts.json` and `home.json` if
+    /// one needs them.
     pub(crate) async fn write_copy(
         &self,
         id: &AgentId,
@@ -255,14 +276,78 @@ impl<S: Store> Identity<S> {
         self.write_copy_with(id, identity, &contacts).await
     }
 
-    /// Writes the copy from sources already read.
+    /// For the homes crate, after or before a move: rewrites the copy with `address`, the
+    /// address as it now is or is about to be, if the agent publishes `address`, and otherwise
+    /// writes nothing. One read of `identity.json`, and of `contacts.json` if a public field
+    /// needs it, then one write.
+    pub async fn refresh_address(
+        &self,
+        id: &AgentId,
+        address: Option<&str>,
+    ) -> Result<(), Problem> {
+        let (identity, _) = self.read_identity_tagged(id).await?;
+        if !identity.public.contains(&Field::Address) {
+            return Ok(());
+        }
+        let contacts = if identity.public.iter().any(|f| f.needs_contacts()) {
+            self.read_contacts(id).await?.0
+        } else {
+            Contacts::default()
+        };
+        let address = address.map(str::to_owned);
+        self.write_copy_from(id, &identity, &contacts, address)
+            .await
+    }
+
+    /// Writes the copy from sources already read, reading `home.json` if `address` is public.
     pub(crate) async fn write_copy_with(
         &self,
         id: &AgentId,
         identity: &IdentityRecord,
         contacts: &Contacts,
     ) -> Result<(), Problem> {
-        let sources = Sources { identity, contacts };
+        let address = if identity.public.contains(&Field::Address) {
+            self.read_address(id).await?
+        } else {
+            None
+        };
+        self.write_copy_from(id, identity, contacts, address).await
+    }
+
+    /// The address in `home.json`, which the homes crate writes: `None` without a home.
+    async fn read_address(&self, id: &AgentId) -> Result<Option<String>, Problem> {
+        #[derive(Deserialize)]
+        struct Home {
+            #[serde(default)]
+            address: Option<String>,
+        }
+        let object = self
+            .store
+            .get(Bucket::Identities, &home_key(id))
+            .await
+            .map_err(|e| Problem::storage("reading a home", &e))?;
+        let Some(object) = object else {
+            return Ok(None);
+        };
+        let home: Home = serde_json::from_slice(&object.body).map_err(|_| {
+            tracing::error!("a home in storage doesn't parse");
+            Problem::internal()
+        })?;
+        Ok(home.address)
+    }
+
+    async fn write_copy_from(
+        &self,
+        id: &AgentId,
+        identity: &IdentityRecord,
+        contacts: &Contacts,
+        address: Option<String>,
+    ) -> Result<(), Problem> {
+        let sources = Sources {
+            identity,
+            contacts,
+            address,
+        };
         let body = copy_body(id, &identity.public, &sources);
         self.put_plain(&aboutme_key(id), body)
             .await

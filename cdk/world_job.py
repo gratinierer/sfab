@@ -40,6 +40,11 @@ GENESIS_PREFIX = "genesis/"
 VOUCHES_PREFIX = "vouches/"
 VITALS_PREFIX = "vitals/"
 READ_PREFIXES = (VOUCHES_PREFIX, VITALS_PREFIX)
+# Story 4's homes: the lane pointers, owned by lambda/world/homes, which the job reads and
+# deletes when `home.json` disagrees, and each resident's `home.json`, which it only reads,
+# after listing it by its full key, so it never asks for a missing one.
+PLACES_PREFIX = "places/"
+HOME_KEYS = "identities/*/home.json"
 
 
 class WorldJob(Construct):
@@ -116,16 +121,17 @@ class WorldJob(Construct):
     def _grant(self, identities: s3.IBucket, claims: s3.IBucket) -> None:
         """spec.md "Daily world job" ("Permissions"): list the claims bucket, without ever
         reading a claim, and read, write and delete in `world/` and `federation/`, and story 17's
-        `genesis/`, and list and read story 4's `vouches/` and `vitals/`, listing only those.
+        `genesis/`, list and read story 4's `vouches/` and `vitals/`, read and delete its
+        `places/` pointers, and list and read each `home.json` by its key, listing only those.
         The outbound check needs no permission: the function isn't in a VPC."""
         prefixes = (WORLD_PREFIX, FEDERATION_PREFIX, GENESIS_PREFIX)
-        listed = (*prefixes, *READ_PREFIXES)
+        listed = [f"{p}*" for p in (*prefixes, *READ_PREFIXES, PLACES_PREFIX)] + [HOME_KEYS]
         statements = [
             iam.PolicyStatement(actions=["s3:ListBucket"], resources=[claims.bucket_arn]),
             iam.PolicyStatement(
                 actions=["s3:ListBucket"],
                 resources=[identities.bucket_arn],
-                conditions={"StringLike": {"s3:prefix": [f"{p}*" for p in listed]}},
+                conditions={"StringLike": {"s3:prefix": listed}},
             ),
             iam.PolicyStatement(
                 actions=["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
@@ -133,7 +139,12 @@ class WorldJob(Construct):
             ),
             iam.PolicyStatement(
                 actions=["s3:GetObject"],
-                resources=[identities.arn_for_objects(f"{p}*") for p in READ_PREFIXES],
+                resources=[identities.arn_for_objects(f"{p}*") for p in READ_PREFIXES]
+                + [identities.arn_for_objects(HOME_KEYS)],
+            ),
+            iam.PolicyStatement(
+                actions=["s3:GetObject", "s3:DeleteObject"],
+                resources=[identities.arn_for_objects(f"{PLACES_PREFIX}*")],
             ),
         ]
         for statement in statements:

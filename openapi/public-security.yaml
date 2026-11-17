@@ -32,3 +32,7 @@ bearer:
   - PUT /identity/self/vouches/{id}
   - DELETE /identity/self/vouches/{id}
   - GET /identity/self/vouched-by
+  - GET /identity/self/home
+  - PUT /identity/self/home
+  - DELETE /identity/self/home
+  - PUT /identity/self/home/description

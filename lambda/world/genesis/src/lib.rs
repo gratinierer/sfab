@@ -381,15 +381,9 @@ impl<S: Store> Genesis<S> {
             )
             .with("retry_after", rfc3339(next_daily_run(now))));
         }
-        let pick = random_below(pool.codes.len());
+        let pick = sfab_core::random::below(pool.codes.len());
         Ok(Reply::ok(json!({ "genesis_code": pool.codes[pick] })))
     }
-}
-
-/// A random index below `n`; `n` is never 0.
-fn random_below(n: usize) -> usize {
-    let r = getrandom::u64().expect("the system's random source");
-    (r % n as u64) as usize
 }
 
 /// Helpers for other crates' tests, which birth through a seeded code.

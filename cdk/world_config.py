@@ -75,6 +75,11 @@ def load(files: Files = REAL_FILES) -> World:
     )
 
 
+def quarters(path: Path = QUARTERS) -> tuple[Quarter, ...]:
+    """The map alone, for the smoke script, which needs a quarter to move into."""
+    return _quarters(path)
+
+
 def founders_problems(files: Files = REAL_FILES) -> list[str]:
     """Why these founders mustn't deploy: the file is missing or broken, or it holds a fixture
     ID. Empty when it may."""

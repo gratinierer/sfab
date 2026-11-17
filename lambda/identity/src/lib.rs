@@ -56,6 +56,14 @@ fn contacts_key(id: &AgentId) -> String {
     format!("identities/{id}/contacts.json")
 }
 
+/// An agent's home, `identities/<id>/home.json`, inside this crate's `identities/` folder so a
+/// takedown's delete of it covers the home. Its rules and format belong to the homes crate
+/// (`lambda/world/homes`), which reaches it through this key; this crate reads only its
+/// `address`, for the public copy.
+pub fn home_key(id: &AgentId) -> String {
+    format!("identities/{id}/home.json")
+}
+
 fn vitals_key(id: &AgentId) -> String {
     format!("vitals/{id}.json")
 }

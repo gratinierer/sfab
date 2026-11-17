@@ -9,6 +9,7 @@ pub mod id;
 pub mod paging;
 pub mod problem;
 pub mod proof;
+pub mod random;
 #[cfg(feature = "s3")]
 pub mod s3;
 pub mod storage;

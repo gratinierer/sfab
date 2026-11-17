@@ -41,6 +41,7 @@ pub fn locations(id: &AgentId) -> Vec<Location> {
     let mut all = sfab_identity::takedown(id);
     all.extend(sfab_messaging::takedown(id));
     all.extend(sfab_vouches::takedown(id));
+    all.extend(sfab_homes::takedown(id));
     all
 }
 
@@ -111,6 +112,7 @@ pub async fn found<S: Store>(
                 }
             }
         }
+        Action::Pointers(pointers_of) => keys = pointed(store, id, l, pointers_of).await?,
     }
     Ok(keys.into_iter().map(|k| (l.bucket, k)).collect())
 }
@@ -133,8 +135,9 @@ pub async fn execute<S: Store, W: Future<Output = ()>>(
     apply_each(store, in_phase(Phase::First)).await?;
     // (2) Once per batch.
     wait.await;
-    // (3) Reading the agent's files for pointers elsewhere arrives with story 4, whose pointers
-    // they are. (4) Every other location.
+    // (3) Read the agent's own files for pointers elsewhere, while they exist, and delete those.
+    apply_each(store, in_phase(Phase::Pointers)).await?;
+    // (4) Every other location.
     apply_each(store, in_phase(Phase::Other)).await?;
     // (5) The agent's own files last, then the first deletes again, in case a write in flight
     // recreated one.
@@ -176,7 +179,35 @@ pub async fn apply<S: Store>(store: &S, id: &AgentId, l: &Location) -> Result<()
             }
             Ok(())
         }
+        Action::Pointers(pointers_of) => {
+            for key in pointed(store, id, l, pointers_of).await? {
+                store.delete(l.bucket, &key).await?;
+            }
+            Ok(())
+        }
     }
+}
+
+/// The keys the agent's file at `l.key` points to that exist and still name the agent, so a
+/// file that's out of date can't delete someone else's pointer.
+async fn pointed<S: Store>(
+    store: &S,
+    id: &AgentId,
+    l: &Location,
+    pointers_of: fn(&[u8]) -> Vec<String>,
+) -> Result<Vec<String>, StoreError> {
+    let Some(file) = store.get(l.bucket, &l.key).await? else {
+        return Ok(Vec::new());
+    };
+    let mut keys = Vec::new();
+    for key in pointers_of(&file.body) {
+        if let Some(current) = store.get(l.bucket, &key).await?
+            && remove_id(&current.body, id).is_some()
+        {
+            keys.push(key);
+        }
+    }
+    Ok(keys)
 }
 
 /// Replaces the object's body with what `change` makes of it, with `If-Match`, so a write

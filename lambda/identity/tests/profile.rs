@@ -140,14 +140,14 @@ async fn every_field_starts_private_and_publishing_shows_only_the_public_ones() 
     let settings = w.identity.read_publication(a.auth().as_deref(), NOW).await;
     assert_eq!(
         settings.unwrap().body,
-        json!({"name": false, "whoiam": false, "friends": false, "vouches": false})
+        json!({"name": false, "whoiam": false, "friends": false, "vouches": false, "address": false})
     );
     assert_eq!(aboutme(&w, &a.id).await, Err(404));
 
     let reply = publish(&w, &a, json!({"name": true})).await.unwrap();
     assert_eq!(
         reply.body,
-        json!({"name": true, "whoiam": false, "friends": false, "vouches": false}),
+        json!({"name": true, "whoiam": false, "friends": false, "vouches": false, "address": false}),
         "a field left out is private"
     );
     assert_eq!(
