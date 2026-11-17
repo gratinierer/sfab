@@ -104,6 +104,7 @@ Rows below that mention $1000 predate the owner's correction of the rule to $100
 | 2026-11-17T10:40:00+00:00 | review | 1d89b6b0e2 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 2 new, 0 resolved, 2 open | delta pass since 540b2b9407, over the auto walkthrough's edits to spec.md and issues 01, 03 and 10. The closure audit found R203 and R204 hold. The reviewer is on a different model from the same family as the author and orchestrator. |
 | 2026-11-17T10:50:00+00:00 | walkthrough | 06daa08b89 | claude-opus-5-5 (address-story-review-findings auto) | 0 new, 1 resolved, 1 still open | auto walkthrough, not a review pass. R206 needs the user. |
 | 2026-11-17T11:00:00+00:00 | review | 8342c10fba | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 0 new, 0 resolved, 1 open | delta pass since 1d89b6b; no story file changed but review.md, so the pass audited closures only. R205 holds (its fix is a comment on `18-deploy-from-codebuild#05`). R206 is still true and waits on the user. The loop stopped with no progress possible. The reviewer is on a different model from the same family as the author and orchestrator. |
+| 2026-11-17T11:30:00+00:00 | walkthrough | 32c4e39961 | claude-opus-5-5 with the owner | 0 new, 1 resolved, 0 still open | walkthrough, not a review pass. The owner chose to fix R206 by accepting the risk in spec.md. |
 
 ## Findings
 
