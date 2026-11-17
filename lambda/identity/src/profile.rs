@@ -20,24 +20,28 @@ use crate::contacts::Contacts;
 use crate::{Identity, IdentityRecord, Secret, aboutme_key, identity_key, malformed, to_json};
 
 /// Every field an agent can publish: the one list. `.stories/4-life-in-the-world/` adds
-/// `vouches` and `address` here, with their part of the copy in [`Field::copy_into`], and
-/// the routes need no change.
+/// `vouches` here, and its homes ticket `address`, each with its part of the copy in
+/// [`Field::copy_into`], and the routes need no change.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Field {
     Name,
     Whoiam,
     Friends,
+    /// The vouches the agent received that count, served by `GET /identity/{id}/vouched-by`,
+    /// to which the copy links, because the list can grow (story 4 "Vouches").
+    Vouches,
 }
 
 impl Field {
-    pub const ALL: [Field; 3] = [Field::Name, Field::Whoiam, Field::Friends];
+    pub const ALL: [Field; 4] = [Field::Name, Field::Whoiam, Field::Friends, Field::Vouches];
 
     pub fn as_str(self) -> &'static str {
         match self {
             Field::Name => "name",
             Field::Whoiam => "whoiam",
             Field::Friends => "friends",
+            Field::Vouches => "vouches",
         }
     }
 
@@ -51,8 +55,12 @@ impl Field {
     }
 
     /// Adds this field's public value to the copy.
-    fn copy_into(self, copy: &mut Map<String, Value>, sources: &Sources) {
+    fn copy_into(self, copy: &mut Map<String, Value>, id: &AgentId, sources: &Sources) {
         match self {
+            Field::Vouches => {
+                let link = format!("/v1/identity/{id}/vouched-by");
+                copy.insert("vouched_by".into(), json!(link));
+            }
             Field::Name => {
                 copy.insert("name".into(), json!(sources.identity.name));
             }
@@ -102,7 +110,7 @@ fn copy_body(id: &AgentId, published: &Published, sources: &Sources) -> Vec<u8> 
     let mut copy = Map::new();
     copy.insert("id".into(), json!(id.as_str()));
     for field in published {
-        field.copy_into(&mut copy, sources);
+        field.copy_into(&mut copy, id, sources);
     }
     to_json(&Value::Object(copy))
 }
@@ -156,6 +164,25 @@ impl<S: Store> Identity<S> {
             .await?;
         let identity = self.rebuild_copy(id).await?;
         Ok(Reply::ok(settings_body(&identity.public)))
+    }
+
+    /// Whether `id` publishes `field`, from one read of `identity.json`, for another
+    /// institution's public route, such as `GET /identity/{id}/vouched-by`. An unknown or
+    /// taken-down ID publishes nothing.
+    pub async fn publishes(&self, id: &AgentId, field: Field) -> Result<bool, Problem> {
+        let object = self
+            .store
+            .get(Bucket::Identities, &identity_key(id))
+            .await
+            .map_err(|e| Problem::storage("reading an identity", &e))?;
+        let Some(object) = object else {
+            return Ok(false);
+        };
+        let identity: IdentityRecord = serde_json::from_slice(&object.body).map_err(|_| {
+            tracing::error!("an identity in storage doesn't parse");
+            Problem::internal()
+        })?;
+        Ok(identity.public.contains(&field))
     }
 
     /// `GET /identity/{id}/aboutme`: an unpublished, unknown or taken-down agent gets the same

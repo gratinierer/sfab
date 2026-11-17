@@ -15,6 +15,9 @@ use sfab_genesis::{Daily, Genesis, IpRule, Window};
 /// 2026-11-07T00:05:00Z.
 const NOW: i64 = 1_794_009_600 + 300;
 
+/// `cdk/stacks.py`'s placeholder, so no one needs age yet.
+const AGE_RULE_STARTS: &str = "2099-12-31T00:00:00Z";
+
 const GENESIS: Daily = Daily {
     codes_per_day: 3,
     ip_window: Window::hours(4),
@@ -79,7 +82,7 @@ async fn the_job_counts_residents_without_markers_as_of_its_run() {
     claim(&store, "bbbbbbbbbbbb").await;
     marker(&store, "cccccccccccc").await;
 
-    let report = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, NOW)
+    let report = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, AGE_RULE_STARTS, NOW)
         .await
         .unwrap();
 
@@ -96,10 +99,35 @@ async fn the_job_counts_residents_without_markers_as_of_its_run() {
 }
 
 #[tokio::test]
+async fn the_job_gives_the_compiled_in_founders_standing_unless_taken_down() {
+    // The fixture founders: `world/founders.fixture.yaml`.
+    let store = Arc::new(MemoryStore::new());
+    claim(&store, "foundera2222").await;
+    claim(&store, "founderb2222").await;
+    marker(&store, "founderc2222").await;
+
+    let report = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, AGE_RULE_STARTS, NOW)
+        .await
+        .unwrap();
+
+    assert_eq!(report.standing.standing, 2);
+    let rule = IpRule::new("anykeyanykeyanykeyanykeyanykey12", Window::hours(4));
+    let genesis = Arc::new(Genesis::new(store.clone(), rule));
+    let identity = Arc::new(sfab_identity::Identity::new(store.clone(), 8, genesis));
+    let vouches = sfab_vouches::Vouches::new(store.clone(), identity, 8);
+    for (id, standing) in [("foundera2222", true), ("founderc2222", false)] {
+        assert_eq!(
+            vouches.standing(id).await.unwrap().body,
+            json!({"id": id, "standing": standing, "as_of": "2026-11-07T00:05:00Z"})
+        );
+    }
+}
+
+#[tokio::test]
 async fn the_job_makes_the_days_genesis_codes() {
     let store = Arc::new(MemoryStore::new());
 
-    let report = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, NOW)
+    let report = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, AGE_RULE_STARTS, NOW)
         .await
         .unwrap();
 
@@ -116,7 +144,7 @@ async fn a_failed_census_still_makes_the_days_genesis_codes_and_fails_the_run() 
     claim(&store, "aaaaaaaaaaaa").await;
     store.fail_writes_under(Bucket::Identities, "world/");
 
-    let run = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, NOW).await;
+    let run = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, AGE_RULE_STARTS, NOW).await;
 
     assert!(run.is_err(), "the census's failure still fails the run");
     let rule = IpRule::new("anykeyanykeyanykeyanykeyanykey12", Window::hours(4));
@@ -136,7 +164,7 @@ async fn when_the_census_and_genesis_both_fail_the_genesis_error_is_logged() {
     store.fail_writes_under(Bucket::Identities, "world/");
     store.fail_writes_under(Bucket::Identities, "genesis/");
 
-    let run = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, NOW).await;
+    let run = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, AGE_RULE_STARTS, NOW).await;
 
     let error = format!("{:?}", run.unwrap_err());
     assert!(

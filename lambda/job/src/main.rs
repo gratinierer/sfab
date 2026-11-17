@@ -67,14 +67,23 @@ async fn main() -> Result<(), lambda_runtime::Error> {
         codes_per_day: number("GENESIS_CODES_PER_DAY"),
         ip_window: number("GENESIS_IP_WINDOW_HOURS"),
     };
+    // Story 4 "Vouches": residents born before it need no age for standing.
+    let age_rule_starts = env("AGE_RULE_STARTS");
+    assert!(
+        sfab_core::daily::is_rfc3339_second(&age_rule_starts),
+        "AGE_RULE_STARTS must be RFC 3339 in UTC to the second"
+    );
     let outbound = Outbound::production();
     let (store, alerts, outbound, genesis) = (&store, &alerts, &outbound, &genesis);
+    let age_rule_starts = age_rule_starts.as_str();
     lambda_runtime::run(service_fn(
         move |_: LambdaEvent<serde_json::Value>| async move {
-            match sfab_job::run(store, outbound, alerts, genesis, now()).await {
+            match sfab_job::run(store, outbound, alerts, genesis, age_rule_starts, now()).await {
                 Ok(report) => {
                     let (census, federation) = (report.census, report.federation);
                     tracing::info!(
+                        standing = report.standing.standing,
+                        vouched = report.standing.vouched,
                         residents = census.residents,
                         pages = census.pages,
                         written = census.written,
