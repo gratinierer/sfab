@@ -40,6 +40,7 @@ pub struct Target {
 pub fn locations(id: &AgentId) -> Vec<Location> {
     let mut all = sfab_identity::takedown(id);
     all.extend(sfab_messaging::takedown(id));
+    all.extend(sfab_vouches::takedown(id));
     all
 }
 

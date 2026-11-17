@@ -14,6 +14,7 @@ use sfab_genesis::testing as genesis;
 use sfab_identity::{Identity, List};
 use sfab_messaging::Messaging;
 use sfab_takedown::{Mode, execute, plan};
+use sfab_vouches::Vouches;
 
 const BITS: u32 = 8;
 /// 2026-11-05T12:00:00Z.
@@ -25,6 +26,7 @@ struct World {
     store: Arc<MemoryStore>,
     identity: Arc<Identity<MemoryStore>>,
     messaging: Messaging<MemoryStore>,
+    vouches: Vouches<MemoryStore>,
 }
 
 fn world() -> World {
@@ -32,9 +34,28 @@ fn world() -> World {
     let identity = Arc::new(Identity::new(store.clone(), BITS, genesis::genesis(&store)));
     World {
         messaging: Messaging::new(store.clone(), identity.clone(), BITS),
+        vouches: Vouches::new(store.clone(), identity.clone(), BITS),
         identity,
         store,
     }
+}
+
+/// `from` vouches for `to`, an ID that needn't exist.
+async fn vouch(w: &World, from: &AgentId, claim: &str, to: &str, now: i64) {
+    let auth = bearer(from, claim);
+    let path = format!("/v1/identity/self/vouches/{to}");
+    let body = br#"{"reason":"trusted"}"#;
+    let proof = solve("PUT", &path, Some(&auth), body, now);
+    let call = Call {
+        method: "PUT",
+        path: &path,
+        authorization: Some(&auth),
+        proof: Some(&proof),
+        body,
+        viewer: None,
+    };
+    let given = w.vouches.give(&call, to, now).await.expect("a vouch");
+    assert_eq!(given.status, 201);
 }
 
 struct Agent {
@@ -210,6 +231,10 @@ async fn full_agent(w: &World, name: &str, now: i64) -> Agent {
         let found = w.store.list(Bucket::Identities, &inbox).await.unwrap();
         assert_eq!(found.len(), 1, "{folder}");
     }
+    // A vouch it gave: `vouches/<id>.json`.
+    vouch(w, &id, &claim, "friendfriend", now).await;
+    let given = format!("vouches/{id}.json");
+    assert!(w.store.object(Bucket::Identities, &given).is_some());
     Agent {
         id,
         name: name.to_owned(),
@@ -297,6 +322,22 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
     let w = world();
     let agent = full_agent(&w, "Wren", NOW).await;
     let bystander = full_agent(&w, "Moss", NOW).await;
+    // Standing and a counted vouch, which the daily job writes under `world/`: both founders,
+    // vouching for each other.
+    vouch(&w, &bystander.id, &bystander.claim, agent.id.as_str(), NOW).await;
+    vouch(&w, &agent.id, &agent.claim, bystander.id.as_str(), NOW).await;
+    let founders = [agent.id.clone(), bystander.id.clone()];
+    let residents = sfab_identity::residents(&*w.store).await.unwrap();
+    let starts = "2099-12-31T00:00:00Z";
+    sfab_vouches::daily(&*w.store, &founders, &residents, starts, NOW)
+        .await
+        .unwrap();
+    for key in [
+        format!("world/standing/{}.json", agent.id),
+        format!("world/vouches/{}.json", agent.id),
+    ] {
+        assert!(w.store.object(Bucket::Identities, &key).is_some(), "{key}");
+    }
     let bystander_keys = keys_of(&w.store, &bystander.id);
 
     let targets = plan(&*w.store, &Mode::One(agent.id.clone())).await.unwrap();

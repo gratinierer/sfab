@@ -33,6 +33,13 @@ WORLD_PREFIX = "world/"
 FEDERATION_PREFIX = "federation/"
 # Story 17: the day's world codes, the pool, the summary, and old codes and IP records.
 GENESIS_PREFIX = "genesis/"
+# Prefixes the job only lists and reads, for story 4's standing: the vouches agents gave, owned
+# by lambda/world/vouches, and `vitals/<id>.json` for `born_at`, owned by lambda/identity, so
+# the job never opens a claim. It reads only keys it listed, since a GetObject on a missing key
+# is a 403 under a prefix-conditioned ListBucket (docs/aws-facts.md).
+VOUCHES_PREFIX = "vouches/"
+VITALS_PREFIX = "vitals/"
+READ_PREFIXES = (VOUCHES_PREFIX, VITALS_PREFIX)
 
 
 class WorldJob(Construct):
@@ -47,6 +54,7 @@ class WorldJob(Construct):
         alerts_topic: sns.ITopic,
         genesis_codes_per_day: int,
         genesis_ip_window_hours: int,
+        age_rule_starts: str,
     ) -> None:
         super().__init__(scope, id)
 
@@ -68,6 +76,8 @@ class WorldJob(Construct):
                 # older than the window. The settings live in stacks.py.
                 "GENESIS_CODES_PER_DAY": str(genesis_codes_per_day),
                 "GENESIS_IP_WINDOW_HOURS": str(genesis_ip_window_hours),
+                # Story 4 "Vouches": residents born before it need no age for standing.
+                "AGE_RULE_STARTS": age_rule_starts,
             },
             log_group=logs.LogGroup(
                 self,
@@ -106,19 +116,24 @@ class WorldJob(Construct):
     def _grant(self, identities: s3.IBucket, claims: s3.IBucket) -> None:
         """spec.md "Daily world job" ("Permissions"): list the claims bucket, without ever
         reading a claim, and read, write and delete in `world/` and `federation/`, and story 17's
-        `genesis/`, listing only those. The outbound check needs no permission: the function
-        isn't in a VPC."""
+        `genesis/`, and list and read story 4's `vouches/` and `vitals/`, listing only those.
+        The outbound check needs no permission: the function isn't in a VPC."""
         prefixes = (WORLD_PREFIX, FEDERATION_PREFIX, GENESIS_PREFIX)
+        listed = (*prefixes, *READ_PREFIXES)
         statements = [
             iam.PolicyStatement(actions=["s3:ListBucket"], resources=[claims.bucket_arn]),
             iam.PolicyStatement(
                 actions=["s3:ListBucket"],
                 resources=[identities.bucket_arn],
-                conditions={"StringLike": {"s3:prefix": [f"{p}*" for p in prefixes]}},
+                conditions={"StringLike": {"s3:prefix": [f"{p}*" for p in listed]}},
             ),
             iam.PolicyStatement(
                 actions=["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
                 resources=[identities.arn_for_objects(f"{p}*") for p in prefixes],
+            ),
+            iam.PolicyStatement(
+                actions=["s3:GetObject"],
+                resources=[identities.arn_for_objects(f"{p}*") for p in READ_PREFIXES],
             ),
         ]
         for statement in statements:

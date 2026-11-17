@@ -486,6 +486,7 @@ class ApiStack(cdk.Stack):
             alerts_topic=base.alerts_topic,
             genesis_codes_per_day=GENESIS_CODES_PER_DAY,
             genesis_ip_window_hours=GENESIS_IP_WINDOW_HOURS,
+            age_rule_starts=AGE_RULE_STARTS,
         )
 
         self.kill_switch = KillSwitch(

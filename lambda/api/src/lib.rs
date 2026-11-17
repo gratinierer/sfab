@@ -20,6 +20,7 @@ use sfab_federation::{Federation, Here};
 use sfab_genesis::{Genesis, IpRule};
 use sfab_identity::{Identity, List};
 use sfab_messaging::Messaging;
+use sfab_vouches::Vouches;
 
 /// The public API description, generated before the build, so a missing copy fails it.
 pub const OPENAPI: &str = include_str!(concat!(
@@ -33,6 +34,7 @@ const STAGE: &str = "/v1";
 pub struct AppState<S> {
     identity: Arc<Identity<S>>,
     messaging: Messaging<S>,
+    vouches: Vouches<S>,
     census: Census<S>,
     federation: Federation<S>,
     genesis: Arc<Genesis<S>>,
@@ -71,6 +73,7 @@ pub fn app<S: Store>(
     let identity = Arc::new(Identity::new(store.clone(), required_bits, genesis.clone()));
     let state = Arc::new(AppState {
         messaging: Messaging::new(store.clone(), identity.clone(), required_bits),
+        vouches: Vouches::new(store.clone(), identity.clone(), required_bits),
         identity,
         census: Census::new(store.clone()),
         genesis,
@@ -103,6 +106,14 @@ pub fn app<S: Store>(
             "/identity/self/messages/{message_id}",
             delete(remove_message::<S>),
         )
+        .route("/identity/self/vouches", get(read_given_vouches::<S>))
+        .route(
+            "/identity/self/vouches/{id}",
+            put(give_vouch::<S>).delete(withdraw_vouch::<S>),
+        )
+        .route("/identity/self/vouched-by", get(read_own_vouched_by::<S>))
+        .route("/identity/{id}/vouched-by", get(read_vouched_by::<S>))
+        .route("/identity/{id}/standing", get(read_standing::<S>))
         .route("/world/constitution", get(constitution))
         .route("/world/census", get(census::<S>))
         .route("/world/residents", get(residents::<S>))
@@ -440,6 +451,73 @@ async fn remove_message<S: Store>(
             .remove(authorization, &message_id, now)
             .await,
     )
+}
+
+async fn give_vouch<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    respond(state.vouches.give(&signed.call(), &id, now).await)
+}
+
+async fn withdraw_vouch<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let authorization = header(&headers, "authorization");
+    let now = (state.now)();
+    respond(state.vouches.withdraw(authorization, &id, now).await)
+}
+
+async fn read_given_vouches<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    uri: OriginalUri,
+    headers: HeaderMap,
+) -> Response {
+    let authorization = header(&headers, "authorization");
+    let token = page(&uri);
+    let now = (state.now)();
+    respond(
+        state
+            .vouches
+            .given(authorization, token.as_deref(), now)
+            .await,
+    )
+}
+
+async fn read_own_vouched_by<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    uri: OriginalUri,
+    headers: HeaderMap,
+) -> Response {
+    let authorization = header(&headers, "authorization");
+    let token = page(&uri);
+    let now = (state.now)();
+    respond(
+        state
+            .vouches
+            .received(authorization, token.as_deref(), now)
+            .await,
+    )
+}
+
+async fn read_vouched_by<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+    uri: OriginalUri,
+) -> Response {
+    let token = page(&uri);
+    respond(state.vouches.vouched_by(&id, token.as_deref()).await)
+}
+
+async fn read_standing<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+) -> Response {
+    respond(state.vouches.standing(&id).await)
 }
 
 async fn openapi() -> Response {

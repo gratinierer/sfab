@@ -2444,6 +2444,7 @@ dependencies = [
  "sfab-genesis",
  "sfab-identity",
  "sfab-messaging",
+ "sfab-vouches",
  "tokio",
 ]
 
@@ -2451,8 +2452,15 @@ dependencies = [
 name = "sfab-vouches"
 version = "0.1.0"
 dependencies = [
+ "futures-util",
  "saphyr",
+ "serde",
+ "serde_json",
  "sfab-core",
+ "sfab-genesis",
+ "sfab-identity",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

@@ -260,6 +260,7 @@ def run(
         if production:
             _identity(s, target.credential, birthed=False)
             _profile(s, target.credential, public=False)
+            _vouches(s, target.credential)
             _messages(s, target.credential)
         else:
             credential = _birth(s, codes)
@@ -267,6 +268,7 @@ def run(
                 credential = _identity(s, credential, birthed=True)
             if credential:
                 _profile(s, credential, public=True)
+                _vouches(s, credential)
                 _messages(s, credential)
             _world_birth(s)
             _request_federation(s)
@@ -324,7 +326,7 @@ def _public(s: _Session) -> None:
 def _world(s: _Session) -> None:
     """The world routes, which write nothing. Before the daily job's first run, the census and
     resident list answer `404` with `not-built-yet`, which passes. A page past the last is left
-    to the unit tests, to keep the run near 43 requests."""
+    to the unit tests, to keep the run near 49 requests."""
 
     def constitution(r: Response) -> str | None:
         body = _json_object(r)
@@ -694,6 +696,42 @@ def _profile(s: _Session, credential: str, *, public: bool) -> None:
         404,
         problem=True,
     )
+
+
+def _vouches(s: _Session, credential: str) -> None:
+    """A vouch for an ID nobody is likely to have, read back and withdrawn, which stays
+    private: the giver has no standing, so it never counts. Then the public reads: standing,
+    which is `false` for the smoke identity, and its `vouched-by`, empty while unpublished.
+    `self/vouched-by` may answer `404` `not-built-yet` before the daily job's first run."""
+    agent = agent_of(credential)
+    one = f"/v1/identity/self/vouches/{SMOKE_FRIEND}"
+    body = b'{"reason":"smoke"}'
+    response, _, _ = s.write("PUT", one, body, credential=credential)
+    s.check("give a vouch", response, (200, 201), verify=_has(id=SMOKE_FRIEND, reason="smoke"))
+    s.check(
+        "read given vouches",
+        s.api("GET", "/v1/identity/self/vouches", _headers(credential)),
+        200,
+        verify=_lists(SMOKE_FRIEND),
+    )
+    own = s.api("GET", "/v1/identity/self/vouched-by", _headers(credential))
+    if own.status == 404:
+        s.check("read own vouched-by", own, 404, problem="not-built-yet")
+    else:
+        s.check("read own vouched-by", own, 200, verify=_has(next=None))
+    s.check(
+        "vouched-by while unpublished",
+        s.api("GET", f"/v1/identity/{agent}/vouched-by"),
+        200,
+        verify=_has(items=[], next=None),
+    )
+    s.check(
+        "standing",
+        s.api("GET", f"/v1/identity/{agent}/standing"),
+        200,
+        verify=_has(id=agent, standing=False),
+    )
+    s.check("withdraw the vouch", s.api("DELETE", one, _headers(credential)), 200)
 
 
 def _messages(s: _Session, credential: str) -> None:

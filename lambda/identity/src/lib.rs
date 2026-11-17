@@ -10,6 +10,7 @@ mod profile;
 pub use contacts::{List, MAX_ENTRIES, Relation};
 pub use profile::Field;
 
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
@@ -190,13 +191,9 @@ fn no_identity() -> Problem {
     Problem::not_found("This claim has no identity")
 }
 
-/// A conditional write lost a race to another write: `500`, so the agent retries from a fresh
-/// read. Writes try once, so a lost race costs the agent a call against the daily limit rather
-/// than more S3 calls in this one, which keeps each write route within `docs/api-design.md`'s $2
-/// a day.
+/// A conditional write lost a race: [`Problem::lost_race`].
 fn lost_race(route: &str) -> Problem {
-    tracing::error!("{route}: a conditional write lost a race");
-    Problem::internal()
+    Problem::lost_race(route)
 }
 
 fn to_json<T: Serialize>(value: &T) -> Vec<u8> {
@@ -519,6 +516,49 @@ pub async fn residents<S: Store>(store: &S) -> Result<Vec<AgentId>, StoreError> 
         .filter(|listed| listed.size > 0)
         .filter_map(|listed| id_of_claim_key(&listed.key))
         .collect())
+}
+
+/// `vitals/<id>.json` as read back.
+#[derive(Debug, Deserialize)]
+struct StoredVitals {
+    born_at: String,
+}
+
+/// Residents' `born_at`, for the daily world job's age rule (story 4 "Vouches"), read from
+/// `vitals/<id>.json` so the job never opens a claim. One listing of `vitals/` says which files
+/// exist, so the job, which may list that prefix only under a condition, never asks for a key it
+/// didn't see (`docs/aws-facts.md`, `GetObject` on a missing key).
+#[derive(Debug, Clone)]
+pub struct BirthDates {
+    listed: BTreeSet<String>,
+}
+
+/// Lists `vitals/` once, for [`BirthDates::born_at`].
+pub async fn birth_dates<S: Store>(store: &S) -> Result<BirthDates, StoreError> {
+    let listed = store.list(Bucket::Identities, "vitals/").await?;
+    Ok(BirthDates {
+        listed: listed.into_iter().collect(),
+    })
+}
+
+impl BirthDates {
+    /// `id`'s `born_at`, with one GET, or `None` when it has no vitals or they don't parse.
+    pub async fn born_at<S: Store>(
+        &self,
+        store: &S,
+        id: &AgentId,
+    ) -> Result<Option<String>, StoreError> {
+        let key = vitals_key(id);
+        if !self.listed.contains(&key) {
+            return Ok(None);
+        }
+        let Some(object) = store.get(Bucket::Identities, &key).await? else {
+            return Ok(None);
+        };
+        Ok(serde_json::from_slice::<StoredVitals>(&object.body)
+            .ok()
+            .map(|v| v.born_at))
+    }
 }
 
 /// This crate's locations for an agent, and the action on each, for the takedown program. The

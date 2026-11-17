@@ -6,8 +6,12 @@ Built once, from the committed fixture config with stand-in Lambda assets, in co
 """
 
 import json
+import re
 
 import pytest
+import sfab_config
+import stacks
+import world_job as job_module
 from aws_cdk.assertions import Template
 
 from test_kill_switch import actions, kill_switch
@@ -91,10 +95,14 @@ def test_the_job_gets_both_buckets_the_alerts_topic_and_the_genesis_settings(api
         "ALERTS_TOPIC_ARN",
         "GENESIS_CODES_PER_DAY",
         "GENESIS_IP_WINDOW_HOURS",
+        "AGE_RULE_STARTS",
     }
     # Story 17: 100 world codes a day, and IP records older than the 4-hour window go.
     assert env["GENESIS_CODES_PER_DAY"] == "100"
     assert env["GENESIS_IP_WINDOW_HOURS"] == "4"
+    # Story 4 "Vouches": the placeholder until launch checklist step 6 sets it.
+    assert env["AGE_RULE_STARTS"] == stacks.AGE_RULE_STARTS
+    assert re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", env["AGE_RULE_STARTS"])
     # The federation email goes to the owner's alerts topic, never the stop topic.
     assert topic_id(base, "Alerts") in json.dumps(env["ALERTS_TOPIC_ARN"])
 
@@ -116,6 +124,9 @@ def test_the_job_may_list_claims_and_write_only_world_federation_and_genesis(api
         ("s3:GetObject", "Identities/genesis/*"),
         ("s3:PutObject", "Identities/genesis/*"),
         ("s3:DeleteObject", "Identities/genesis/*"),
+        # Story 4: read the vouches agents gave, and `born_at` for the age rule, never a claim.
+        ("s3:GetObject", "Identities/vouches/*"),
+        ("s3:GetObject", "Identities/vitals/*"),
     }
     assert len(publish) == 1
     assert topic_id(base, "Alerts") in next(iter(publish))[1]
@@ -132,8 +143,23 @@ def test_the_job_lists_only_world_federation_and_genesis_in_the_identities_bucke
             ):
                 conditions.append(statement["Condition"])
     assert conditions == [
-        {"StringLike": {"s3:prefix": ["world/*", "federation/*", "genesis/*"]}}
+        {
+            "StringLike": {
+                "s3:prefix": ["world/*", "federation/*", "genesis/*", "vouches/*", "vitals/*"]
+            }
+        }
     ]
+
+
+def test_the_job_s_read_prefixes_are_the_crates_own():
+    # CODING_STANDARDS "Where code goes": the vouches crate's `PREFIX`, and the identity crate's
+    # `vitals/` key, which `BirthDates` lists.
+    lambda_dir = sfab_config.REPO_ROOT / "lambda"
+    vouches = (lambda_dir / "world" / "vouches" / "src" / "lib.rs").read_text()
+    assert f'pub const PREFIX: &str = "{job_module.VOUCHES_PREFIX}";' in vouches
+    identity = (lambda_dir / "identity" / "src" / "lib.rs").read_text()
+    assert f'format!("{job_module.VITALS_PREFIX}{{id}}.json")' in identity
+    assert f'.list(Bucket::Identities, "{job_module.VITALS_PREFIX}")' in identity
 
 
 def test_only_the_job_may_touch_verified_federation_requests(api, base):

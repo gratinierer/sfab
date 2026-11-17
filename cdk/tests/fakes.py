@@ -69,8 +69,11 @@ IP_WINDOW = 4 * 3600
 NEXT_DAILY_RUN = "2026-11-06T00:05:00Z"
 
 
-PUBLISHABLE = ("name", "whoiam", "friends")
+PUBLISHABLE = ("name", "whoiam", "friends", "vouches")
 _CONTACT = re.compile(r"/v1/identity/self/(?P<list>friends|blocked)/(?P<id>[a-z2-7]{12})")
+_VOUCH = re.compile(r"/v1/identity/self/vouches/(?P<id>[a-z2-7]{12})")
+_VOUCHED_BY = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/vouched-by")
+_STANDING = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/standing")
 _ABOUTME = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/aboutme")
 _SEND = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/messages")
 _MESSAGE = re.compile(r"/v1/identity/self/messages/(?P<message_id>k-[a-z2-7]{12}|m-[0-9a-z-]+)")
@@ -115,6 +118,9 @@ class FakeApi:
         self.keep_blocked_friends_public = False
         self.ignore_unpublish = False
         self.stale_friends: dict[str, str] = {}
+        # The vouches each agent gave: recipient -> reason. Nobody has standing, and the daily
+        # job hasn't run, so nothing counts.
+        self.vouches: dict[str, dict[str, str]] = {}
         # Federation requests: domain -> token.
         self.federation: dict[str, str] = {}
         # Unused genesis codes, by kind: "exempt" (`--no-ip-limit`), "world" or "ordinary".
@@ -163,6 +169,14 @@ class FakeApi:
         about = _ABOUTME.fullmatch(path)
         send = _SEND.fullmatch(path)
         message = _MESSAGE.fullmatch(path)
+        vouch = _VOUCH.fullmatch(path)
+        vouched_by = _VOUCHED_BY.fullmatch(path)
+        standing = _STANDING.fullmatch(path)
+        if standing:
+            reply = {"id": standing["id"], "standing": False, "as_of": None}
+            return "standing", ok(200, reply)
+        if vouched_by:
+            return "vouched-by", ok(200, {"items": [], "next": None})
         if path == "/v1/openapi.yaml":
             return "openapi", Response(
                 200,
@@ -212,6 +226,8 @@ class FakeApi:
                     return "invalid birth body", problem(400, detail="Invalid request body")
             if send:
                 allowed = {"text"}
+            if vouch:
+                allowed = {"reason"}
             if path.endswith("federation/requests"):
                 allowed = {"domain"}
             if path.endswith("publication"):
@@ -323,6 +339,24 @@ class FakeApi:
         if message:
             self.knocks.get(agent, {}).pop(message["message_id"].removeprefix("k-"), None)
             return "remove message", ok(200, {"message_id": message["message_id"]})
+        given = self.vouches.setdefault(agent, {})
+        if vouch:
+            other = vouch["id"]
+            if r.method == "DELETE":
+                given.pop(other, None)
+                return "withdraw vouch", ok(200, {"id": other})
+            status = 200 if other in given else 201
+            given[other] = json.loads(r.body)["reason"]
+            reply = {"id": other, "reason": given[other], "given_at": "2026-11-05T00:00:00Z"}
+            return "give vouch", ok(status, reply)
+        if path == "/v1/identity/self/vouches":
+            items = [
+                {"id": i, "reason": reason, "given_at": "2026-11-05T00:00:00Z"}
+                for i, reason in given.items()
+            ]
+            return "read given vouches", ok(200, {"items": items, "next": None})
+        if path == "/v1/identity/self/vouched-by":
+            return "read own vouched-by", problem(404, "not-built-yet")
         lists = self.contacts.setdefault(agent, {"friends": [], "blocked": []})
         if contact:
             kind, other = contact["list"], contact["id"]

@@ -28,3 +28,7 @@ bearer:
   - POST /identity/{id}/messages
   - GET /identity/self/messages
   - DELETE /identity/self/messages/{message_id}
+  - GET /identity/self/vouches
+  - PUT /identity/self/vouches/{id}
+  - DELETE /identity/self/vouches/{id}
+  - GET /identity/self/vouched-by

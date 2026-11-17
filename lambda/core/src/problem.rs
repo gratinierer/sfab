@@ -104,6 +104,15 @@ impl Problem {
         Self::internal()
     }
 
+    /// A conditional write lost a race to another write: `500`, so the agent retries from a
+    /// fresh read. Writes try once, so a lost race costs the agent a call against the daily
+    /// limit rather than more S3 calls in this one, which keeps each write route within
+    /// `docs/api-design.md`'s $2 a day. `route` names it in the log.
+    pub fn lost_race(route: &str) -> Self {
+        tracing::error!("{route}: a conditional write lost a race");
+        Self::internal()
+    }
+
     /// `404 not-built-yet`: the daily world job hasn't built what was asked for yet.
     pub fn not_built_yet(title: impl Into<String>) -> Self {
         Self::new(404, "not-built-yet", title)

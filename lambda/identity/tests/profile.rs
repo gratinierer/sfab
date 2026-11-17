@@ -6,13 +6,14 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use serde_json::{Value, json};
 use sfab_core::gate::Call;
+use sfab_core::id::AgentId;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::proof::{self, Request};
 use sfab_core::storage::{
     Bucket, Condition, Listed, MemoryStore, Metadata, Object, Store, StoreError,
 };
 use sfab_genesis::testing as genesis;
-use sfab_identity::{Identity, List};
+use sfab_identity::{Field, Identity, List};
 
 const BITS: u32 = 8;
 /// 2026-11-05T12:00:00Z.
@@ -139,14 +140,14 @@ async fn every_field_starts_private_and_publishing_shows_only_the_public_ones() 
     let settings = w.identity.read_publication(a.auth().as_deref(), NOW).await;
     assert_eq!(
         settings.unwrap().body,
-        json!({"name": false, "whoiam": false, "friends": false})
+        json!({"name": false, "whoiam": false, "friends": false, "vouches": false})
     );
     assert_eq!(aboutme(&w, &a.id).await, Err(404));
 
     let reply = publish(&w, &a, json!({"name": true})).await.unwrap();
     assert_eq!(
         reply.body,
-        json!({"name": true, "whoiam": false, "friends": false}),
+        json!({"name": true, "whoiam": false, "friends": false, "vouches": false}),
         "a field left out is private"
     );
     assert_eq!(
@@ -646,4 +647,32 @@ async fn a_contacts_write_without_a_valid_proof_gets_400_with_nothing_stored() {
     let result = w.identity.publish(&sent.call(), NOW).await;
     assert_eq!(result.unwrap_err().extra["required_bits"], BITS);
     assert_eq!(w.store.keys(Bucket::Identities), before);
+}
+
+#[tokio::test]
+async fn publishing_vouches_links_aboutme_to_the_vouched_by_list() {
+    // `.stories/4-life-in-the-world/spec.md` "Vouches": the list can grow, so `aboutme` links
+    // to it rather than embedding it.
+    let w = world();
+    let a = born(&w, "Wren").await;
+    let id = AgentId::parse(&a.id).unwrap();
+    assert!(!w.identity.publishes(&id, Field::Vouches).await.unwrap());
+
+    publish(&w, &a, json!({"vouches": true})).await.unwrap();
+
+    let link = format!("/v1/identity/{}/vouched-by", a.id);
+    assert_eq!(
+        aboutme(&w, &a.id).await,
+        Ok(json!({"id": a.id, "vouched_by": link}))
+    );
+    assert!(w.identity.publishes(&id, Field::Vouches).await.unwrap());
+    assert!(!w.identity.publishes(&id, Field::Name).await.unwrap());
+    // An unknown ID publishes nothing.
+    let unknown = AgentId::parse("unknownagent").unwrap();
+    assert!(
+        !w.identity
+            .publishes(&unknown, Field::Vouches)
+            .await
+            .unwrap()
+    );
 }

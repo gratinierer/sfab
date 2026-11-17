@@ -622,6 +622,125 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
     let (status, refused) = h.send(message(gid, auth.clone(), Proof::Valid)).await;
     assert_eq!((status, refused["type"].clone()), (403, json!("blocked")));
 
+    // Vouches: Finch vouches; Gull blocks it, so its vouch for Gull is refused.
+    let vouch = |to: &str, auth, proof| Case {
+        operation: "giveVouch",
+        method: "PUT",
+        path: format!("/v1/identity/self/vouches/{to}"),
+        authorization: auth,
+        proof,
+        body: br#"{"reason":"a steady hand"}"#.to_vec(),
+        viewer: None,
+    };
+    // giveVouch: 201, 200 for the same proof, 400, 401, 403, 409.
+    let (status, given) = h.send(vouch(nobody, auth.clone(), Proof::Valid)).await;
+    assert_eq!((status, given["id"].clone()), (201, json!(nobody)));
+    assert_eq!(
+        h.send(vouch(nobody, auth.clone(), Proof::Valid)).await.0,
+        200
+    );
+    assert_eq!(
+        h.send(vouch(nobody, auth.clone(), Proof::None)).await.0,
+        400
+    );
+    assert_eq!(h.send(vouch(fid, auth.clone(), Proof::Valid)).await.0, 400);
+    assert_eq!(h.send(vouch(nobody, None, Proof::Valid)).await.0, 401);
+    let (status, refused) = h.send(vouch(gid, auth.clone(), Proof::Valid)).await;
+    assert_eq!((status, refused["type"].clone()), (403, json!("blocked")));
+    for c in b'b'..=b'j' {
+        let other = format!("aaaaaaaaaaa{}", c as char);
+        assert_eq!(
+            h.send(vouch(&other, auth.clone(), Proof::Valid)).await.0,
+            201
+        );
+    }
+    let (status, full) = h
+        .send(vouch("aaaaaaaaaaak", auth.clone(), Proof::Valid))
+        .await;
+    assert_eq!((status, full["type"].clone()), (409, json!("list-full")));
+    let schemas = &h.spec["components"]["schemas"];
+    assert_eq!(
+        schemas["VouchReason"]["maxLength"],
+        json!(sfab_vouches::MAX_REASON_CHARS)
+    );
+
+    // readGivenVouches: 200, 400, 401.
+    let given_path = "/v1/identity/self/vouches";
+    let (status, page) = h
+        .send(get("readGivenVouches", given_path, auth.clone()))
+        .await;
+    assert_eq!(
+        (status, page["items"][0]["id"].clone()),
+        (200, json!(nobody))
+    );
+    let made_up = format!("{given_path}?page=x");
+    assert_eq!(
+        h.send(get("readGivenVouches", &made_up, auth.clone()))
+            .await
+            .0,
+        400
+    );
+    assert_eq!(
+        h.send(get("readGivenVouches", given_path, None)).await.0,
+        401
+    );
+
+    // withdrawVouch: 200, 400, 401.
+    let withdraw = |to: &str, auth| Case {
+        operation: "withdrawVouch",
+        method: "DELETE",
+        path: format!("/v1/identity/self/vouches/{to}"),
+        authorization: auth,
+        proof: Proof::None,
+        body: Vec::new(),
+        viewer: None,
+    };
+    assert_eq!(h.send(withdraw(nobody, auth.clone())).await.0, 200);
+    assert_eq!(h.send(withdraw("Nope", auth.clone())).await.0, 400);
+    assert_eq!(h.send(withdraw(nobody, None)).await.0, 401);
+
+    // readStanding and readOwnVouchedBy before the daily job's first run, then after it.
+    let standing = format!("/v1/identity/{fid}/standing");
+    let (status, before) = h.send(get("readStanding", &standing, None)).await;
+    assert_eq!((status, before["as_of"].clone()), (200, Value::Null));
+    assert_eq!(
+        h.send(get("readStanding", "/v1/identity/Nope/standing", None))
+            .await
+            .0,
+        400
+    );
+    let own = "/v1/identity/self/vouched-by";
+    let (status, early) = h.send(get("readOwnVouchedBy", own, auth.clone())).await;
+    assert_eq!(
+        (status, early["type"].clone()),
+        (404, json!("not-built-yet"))
+    );
+    assert_eq!(h.send(get("readOwnVouchedBy", own, None)).await.0, 401);
+    let residents = sfab_identity::residents(&*h.store).await.unwrap();
+    let starts = "2099-12-31T00:00:00Z";
+    let founders = [sfab_core::id::AgentId::parse(fid).unwrap()];
+    sfab_vouches::daily(&*h.store, &founders, &residents, starts, NOW)
+        .await
+        .unwrap();
+    let (status, after) = h.send(get("readStanding", &standing, None)).await;
+    assert_eq!((status, after["standing"].clone()), (200, json!(true)));
+    let (status, mine) = h.send(get("readOwnVouchedBy", own, auth.clone())).await;
+    assert_eq!((status, mine["items"].clone()), (200, json!([])));
+    let made_up = format!("{own}?page=x");
+    assert_eq!(
+        h.send(get("readOwnVouchedBy", &made_up, auth.clone()))
+            .await
+            .0,
+        400
+    );
+
+    // readVouchedBy: 200, an empty page while unpublished, and 400.
+    let public = format!("/v1/identity/{fid}/vouched-by");
+    let (status, page) = h.send(get("readVouchedBy", &public, None)).await;
+    assert_eq!((status, page["items"].clone()), (200, json!([])));
+    let bad = "/v1/identity/Nope/vouched-by";
+    assert_eq!(h.send(get("readVouchedBy", bad, None)).await.0, 400);
+
     // aboutme: the same 404 for anyone unpublished or unknown.
     let unknown = "/v1/identity/aaaaaaaaaaaa/aboutme";
     assert_eq!(h.send(get("aboutme", unknown, None)).await.0, 404);

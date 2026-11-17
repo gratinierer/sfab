@@ -73,6 +73,12 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "block",
         "read blocked",
         "unblock",
+        "give vouch",
+        "read given vouches",
+        "read own vouched-by",
+        "vouched-by",
+        "standing",
+        "withdraw vouch",
         "send message",
         "message to an unknown agent",
         "read knocks",
@@ -80,8 +86,9 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "execute-api no key",
         "execute-api wrong key",
     }
-    # About 43 (spec.md "Testing"); the 4-second pace keeps any length under WAF's 100 per 5 minutes.
-    assert len(api.requests) <= 43
+    # About 43 (spec.md "Testing"), plus story 4's 6 vouch requests; the 4-second pace keeps
+    # any length under WAF's 100 per 5 minutes.
+    assert len(api.requests) <= 49
 
 
 def test_births_with_exempt_codes_from_one_ip_and_rerun_without_too_soon():
@@ -124,8 +131,8 @@ def test_a_world_code_a_racing_birth_used_is_retried_once_with_a_fresh_one():
     assert api.labels.count("genesis code") == 2
     assert "world birth" in api.labels, "the fresh code was accepted"
     assert len(api.pool) == 2
-    # The retry's GET and birth on top of the run's 43.
-    assert len(api.requests) <= 45
+    # The retry's GET and birth on top of the run's 49.
+    assert len(api.requests) <= 51
 
 
 def test_a_world_rejecting_both_world_codes_fails():
@@ -169,8 +176,8 @@ def test_the_same_used_world_code_again_is_refetched_until_a_fresh_one():
     assert api.labels.count("genesis code") == 3
     assert api.labels.count("invalid genesis code") == 1, "the same code isn't sent twice"
     assert "world birth" in api.labels, "the fresh code was accepted"
-    # Two refetches and a birth on top of the run's 43; at most three refetches, so 47.
-    assert len(api.requests) <= 47
+    # Two refetches and a birth on top of the run's 49; at most three refetches, so 53.
+    assert len(api.requests) <= 53
 
 
 def test_a_one_code_pool_holding_the_used_code_passes_and_skips_the_retry():
@@ -186,7 +193,7 @@ def test_a_one_code_pool_holding_the_used_code_passes_and_skips_the_retry():
     assert api.labels.count("genesis code") == 4, "the first fetch and three refetches"
     assert api.labels.count("invalid genesis code") == 1, "the same code isn't sent twice"
     assert any("skip" in line and "same" in line for line in lines), lines
-    assert len(api.requests) <= 47
+    assert len(api.requests) <= 53
 
 
 @pytest.mark.parametrize(
@@ -430,8 +437,9 @@ def test_production_births_nothing_and_writes_only_privately():
     result = smoke(api, clock, target=PRODUCTION, production=True)
 
     assert result.failures == []
-    # The production run is held to its 31 requests (spec.md "Testing" says about 31).
-    assert len(api.requests) <= 31
+    # The production run is held to its 31 requests (spec.md "Testing" says about 31), plus
+    # story 4's 6 vouch requests.
+    assert len(api.requests) <= 37
     assert "birth" not in api.labels
     assert "world birth" not in api.labels
     assert "reclaim" not in api.labels
@@ -442,12 +450,15 @@ def test_production_births_nothing_and_writes_only_privately():
         ("PUT", f"{API_HOST}/v1/identity/evolve"),
         ("PUT", f"{API_HOST}/v1/identity/self/friends/{SMOKE_FRIEND}"),
         ("PUT", f"{API_HOST}/v1/identity/self/blocked/{SMOKE_FRIEND}"),
+        # Private: the smoke identity has no standing, so its vouch never counts.
+        ("PUT", f"{API_HOST}/v1/identity/self/vouches/{SMOKE_FRIEND}"),
         ("POST", f"{API_HOST}/v1/identity/{SMOKE_ID}/messages"),
         ("POST", f"{API_HOST}/v1/identity/{UNKNOWN_ID}/messages"),  # refused, nothing stored
     }
     assert api.public[SMOKE_ID] == set(), "nothing published"
     assert api.contacts[SMOKE_ID] == {"friends": [], "blocked": []}, "contacts cleaned up"
     assert api.knocks[SMOKE_ID] == {}, "its knock removed"
+    assert api.vouches[SMOKE_ID] == {}, "its vouch withdrawn"
     assert {
         "openapi",
         "constitution",
@@ -473,6 +484,12 @@ def test_production_births_nothing_and_writes_only_privately():
         "block",
         "read blocked",
         "unblock",
+        "give vouch",
+        "read given vouches",
+        "read own vouched-by",
+        "vouched-by",
+        "standing",
+        "withdraw vouch",
         "send message",
         "message to an unknown agent",
         "read knocks",
