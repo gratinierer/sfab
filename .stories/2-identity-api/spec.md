@@ -897,7 +897,10 @@ replaces the isolation that per-route IAM roles would have given.
   the app's stack names, runs the same steps as CI first, audits included, refuses to continue if any fails, then
   runs `cdk deploy`. A failed or stopped build emails the alerts topic once `SfabBase` exists. **An emergency
   deploy** runs the same `scripts/deploy` from a machine, with the owner's `aws login` credentials reading the same
-  secret.
+  secret. **Until `12-public-repo#02`, `production` is unprotected**, because GitHub Free refuses rulesets on private
+  repos, so ADR 0009's "only the protected `production` branch reaches" the build doesn't hold yet. The limit until
+  then is that only the owner can push to the private repo and only the owner starts the build; a ruleset would add
+  only a block on force-pushes and deletion. That risk is accepted, and `12-public-repo#02` closes it.
 - **The config secret:** private per-owner values live in one Secrets Manager secret, `sfab/config`, in
   us-east-1, a JSON object with one entry per value: `alert_email`, `abuse_contact`, `domain_name`,
   `hosted_zone_id`, `origin_key`, `.stories/17-genesis-codes/`'s `ip_hash_key`, and after launch an optional
