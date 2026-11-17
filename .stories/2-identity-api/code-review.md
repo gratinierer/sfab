@@ -54,6 +54,8 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-17T12:10:00+00:00 | code-review | 01, 09 @ b2a4823..829a6ff | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 3 new: 1 standards, 1 spec, 1 security | round 1 of `/review-code 2 da06380 auto 3`; the range's only code commit is da06380. Reviewers on a different model from the same family as the author and orchestrator. |
 | 2026-11-17T12:10:00+00:00 | check | @ 829a6ff | scripts/check | — | green |
 | 2026-11-17T12:30:00+00:00 | walkthrough | 01, 09 | claude-opus-5-5, auto | 0 new, 2 resolved, 1 still open | auto walkthrough, not a review pass; address pass 1 of `/review-code 2 da06380 auto 3`. C166 needs the user. |
+| 2026-11-17T12:45:00+00:00 | code-review | 01, 09 @ 829a6ff..39b0d45 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, which also orchestrates) | 0 new: 0 standards, 0 spec, 0 security | round 2 of `/review-code 2 da06380 auto 3`, over the fixes for C167 and C168. The loop stopped with no progress possible: C166 waits on the user. Reviewers on a different model from the same family as the author and orchestrator. |
+| 2026-11-17T12:45:00+00:00 | check | @ 39b0d45 | scripts/check | — | green, the loop's check of the fixes |
 
 ## Findings
 
