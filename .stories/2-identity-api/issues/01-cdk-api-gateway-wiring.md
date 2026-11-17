@@ -70,7 +70,7 @@ emails and an automatic stop from the start. Keep its URL unpublished until the 
   record matches the caller's real address, and a request carrying its own forwarding header can't change it.
 - An edit to `sfab.yaml` reaches the `v1` stage on the next build.
 - The first build from `production` deploys: the base stack's build ("First deploy" step 8) runs `scripts/deploy`
-  from the protected branch and the stack appears in CloudFormation, proving the connection, the build's role and
+  from the `production` branch and the stack appears in CloudFormation, proving the connection, the build's role and
   its use of the bootstrap roles.
 - CDK assertion tests cover the invoke permission, access logs off, no CloudWatch role, and all three budgets' alerts and
   filters.

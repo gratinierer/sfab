@@ -891,7 +891,7 @@ replaces the isolation that per-route IAM roles would have given.
 - **Deploys run in CodeBuild** (`.stories/18-deploy-from-codebuild/`, `docs/adr/0009-deploys-run-in-codebuild.md`),
   against a single environment. The owner starts the project `sfab-deploy` by hand, with
   `aws codebuild start-build --project-name sfab-deploy` or the console; no push starts it, and no other identity
-  may. It builds the protected `production` branch, which the owner moves forward from `main` when a deploy is
+  may. It builds the `production` branch, protected once the repo is public (`12-public-repo#02`), which the owner moves forward from `main` when a deploy is
   wanted, and runs `scripts/deploy $DEPLOY_STACKS`, `--all` unless the start overrides it, as in
   `--environment-variables-override name=DEPLOY_STACKS,value=SfabApi`. `scripts/deploy` accepts only `--all` or
   the app's stack names, runs the same steps as CI first, audits included, refuses to continue if any fails, then
@@ -951,7 +951,8 @@ a build of `production` (`.stories/18-deploy-from-codebuild/spec.md` "One-time m
 2. Run `scripts/deploy SfabDeployer`, which works before the secret has a value ("Synth without the config" in
    story 18). It creates the secret `sfab/config`, the GitHub connection and the CodeBuild project `sfab-deploy`.
 3. Approve the GitHub connection in the console: CloudFormation creates it as `PENDING`.
-4. Create and protect the `production` branch (`18-deploy-from-codebuild#05`).
+4. Create the `production` branch (`18-deploy-from-codebuild#05`). Protect it once the repo is public
+   (`12-public-repo#02`): GitHub Free refuses rulesets on private repos.
 5. Fill `sfab/config` with every entry except `hosted_zone_id`, which waits for step 6, and `smoke_claim`, which
    waits for launch, using `aws secretsmanager put-secret-value --secret-id sfab/config --secret-string
    file://<file>` from a file outside the repo, deleted afterwards, or the console. Include an address you're happy

@@ -16,7 +16,8 @@ The owner's steps before anything but `SfabDeployer` can deploy: `spec.md` "Prer
 - Switch on AWS Cost Anomaly Detection, emailing an address you read on your phone.
 - Run `aws login` and `cdk bootstrap aws://<account>/us-east-1` from the repo root, not `cdk/`,
   as `spec.md` "First deploy" step 1 explains, then `scripts/deploy SfabDeployer`, approve the GitHub connection
-  and create the protected `production` branch (`18-deploy-from-codebuild#05`), steps 2-4.
+  and create the `production` branch (`18-deploy-from-codebuild#05`), steps 2-4. Its protection waits for the
+  repo to go public (`12-public-repo#02`), because GitHub Free refuses rulesets on private repos.
 - Buy the domain in the Route 53 console, with WHOIS privacy and auto-renew on, and follow any
   registrant verification email.
 - Once the charge appears in Cost Explorer, read its service name.
@@ -32,8 +33,9 @@ below.
 - The console shows the domain registered, with no verification pending.
 - `sfab/config` holds every entry, `hosted_zone_id` included, and the charge's service name is known.
 - MFA and anomaly detection are on.
-- `SfabDeployer` is deployed, its GitHub connection is approved (`AVAILABLE`), and `production` exists and is
-  protected (`18-deploy-from-codebuild#05`): "First deploy" steps 2-4.
+- `SfabDeployer` is deployed, its GitHub connection is approved (`AVAILABLE`), and `production` exists
+  (`18-deploy-from-codebuild#05`): "First deploy" steps 2-4. Protecting it isn't part of this issue: that comes
+  with `12-public-repo#02`.
 
 ## Comments
 
