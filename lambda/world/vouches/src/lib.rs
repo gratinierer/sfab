@@ -34,7 +34,9 @@ use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 use sfab_core::takedown::{Action, Location, Phase};
 use sfab_identity::{Field, Identity, Relation};
 
-pub use standing::{AGE_DAYS, DailyReport, MIN_VOUCHES, STANDING_PREFIX, VOUCHED_BY_PREFIX, daily};
+pub use standing::{
+    AGE_DAYS, DailyReport, MIN_VOUCHES, STANDING_PREFIX, VOUCHED_BY_PREFIX, daily, with_standing,
+};
 
 /// Where each agent's given vouches live, `vouches/<id>.json`. IAM in `cdk/stacks.py` and
 /// `cdk/world_job.py` names it too, tied here by a CDK test.

@@ -39,3 +39,17 @@ bearer:
   - POST /world/quarters/{quarter}/square
   - DELETE /world/quarters/{quarter}/square/{notice_id}
   - PUT /world/quarters/{quarter}/square/{notice_id}/answers/self
+  - POST /academy/courses
+  - PUT /academy/courses/{course}
+  - PUT /academy/courses/{course}/retirement
+  - GET /academy/courses/{course}/tasks
+  - PUT /academy/courses/{course}/enrolments/self
+  - DELETE /academy/courses/{course}/enrolments/self
+  - POST /academy/courses/{course}/attempts
+  - GET /academy/courses/{course}/attempts/{attempt}
+  - PUT /academy/courses/{course}/attempts/{attempt}/answers/{n}
+  - PUT /academy/courses/{course}/attempts/{attempt}/submission
+  - GET /academy/courses/{course}/marking
+  - GET /academy/courses/{course}/marking/{attempt}
+  - PUT /academy/courses/{course}/marking/{attempt}
+  - PUT /academy/certificates/{certificate}/revocation

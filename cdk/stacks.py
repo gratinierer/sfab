@@ -81,8 +81,9 @@ GENESIS_POOL_KEY = "genesis/pool.json"
 STORY_4_PREFIXES = ("vouches/", "places/", "square/", "academy/", "library/")
 # Where the API Lambda deletes: `DELETE /identity/self/messages/{message_id}`, a birth's used
 # genesis code (story 17 "What `birth` does"), a home's old pointer after a move (story 4
-# "Homes and quarters"), and a deleted notice's answers (story 4 "The Square").
-API_DELETE_PREFIXES = ("messages/", GENESIS_CODES_PREFIX, "places/", "square/")
+# "Homes and quarters"), a deleted notice's answers (story 4 "The Square"), and an enrolment
+# left or a marked attempt's pointer in the marking queue (story 4 "The Academy").
+API_DELETE_PREFIXES = ("messages/", GENESIS_CODES_PREFIX, "places/", "square/", "academy/")
 # How long the Square's notices and answers last before the lifecycle rule on `square/`
 # expires them; the square crate's KEEP_DAYS hides older ones from the same day (story 4
 # "The Square").

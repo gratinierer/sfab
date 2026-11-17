@@ -71,6 +71,10 @@ async fn three_vouches_from_founders_give_standing_and_two_do_not() {
     for f in [&f1, &f2, &f3] {
         assert!(has_standing(&w, f).await, "founders need no vouches or age");
     }
+    // The set another institution's daily step reads, such as the Academy's.
+    let all = sfab_vouches::with_standing(&*w.store).await.unwrap();
+    let expected: BTreeSet<AgentId> = [&f1, &f2, &f3, &three].map(|a| a.id.clone()).into();
+    assert_eq!(all, expected);
 }
 
 #[tokio::test]

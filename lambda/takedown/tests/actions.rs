@@ -189,3 +189,60 @@ async fn a_search_deletes_only_the_keys_under_the_prefix_it_says_are_the_agent_s
     );
     assert!(found(&store, &wren(), &l).await.unwrap().is_empty());
 }
+
+#[tokio::test]
+async fn folders_delete_all_beside_a_file_the_agent_s_file_names_while_it_names_the_agent() {
+    let store = MemoryStore::new();
+    put(
+        &store,
+        "identities/wrenwrenwren/academy.json",
+        "academy/courses/aaaa/course.json\nacademy/courses/bbbb/course.json",
+    )
+    .await;
+    let mine = r#"{"teacher":"wrenwrenwren"}"#;
+    put(&store, "academy/courses/aaaa/course.json", mine).await;
+    put(
+        &store,
+        "academy/courses/aaaa/enrolled/mossmossmoss.json",
+        "{}",
+    )
+    .await;
+    // Someone else's course, so the file was out of date.
+    let theirs = r#"{"teacher":"mossmossmoss"}"#;
+    put(&store, "academy/courses/bbbb/course.json", theirs).await;
+    put(
+        &store,
+        "academy/courses/bbbb/enrolled/kitekitekite.json",
+        "{}",
+    )
+    .await;
+    let l = location(
+        "identities/wrenwrenwren/academy.json",
+        Action::Folders(lines),
+    );
+
+    let keys: Vec<String> = found(&store, &wren(), &l)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|(_, k)| k)
+        .collect();
+    assert_eq!(
+        keys,
+        vec![
+            "academy/courses/aaaa/enrolled/mossmossmoss.json",
+            "academy/courses/aaaa/course.json",
+        ]
+    );
+    apply(&store, &wren(), &l).await.unwrap();
+
+    assert_eq!(
+        store.keys(B),
+        vec![
+            "academy/courses/bbbb/course.json",
+            "academy/courses/bbbb/enrolled/kitekitekite.json",
+            "identities/wrenwrenwren/academy.json",
+        ]
+    );
+    assert!(found(&store, &wren(), &l).await.unwrap().is_empty());
+}

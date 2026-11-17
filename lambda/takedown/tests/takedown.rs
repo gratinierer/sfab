@@ -4,6 +4,7 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
+use sfab_academy::Academy;
 use sfab_core::gate::Call;
 use sfab_core::id::AgentId;
 use sfab_core::proof::{self, Request};
@@ -31,6 +32,7 @@ struct World {
     vouches: Vouches<MemoryStore>,
     homes: Homes<MemoryStore>,
     square: Square<MemoryStore>,
+    academy: Academy<MemoryStore>,
 }
 
 fn world() -> World {
@@ -42,6 +44,7 @@ fn world() -> World {
         vouches: Vouches::new(store.clone(), identity.clone(), BITS),
         homes: Homes::new(store.clone(), identity.clone(), BITS).with(map, first),
         square: Square::new(store.clone(), identity.clone(), BITS),
+        academy: Academy::new(store.clone(), identity.clone(), BITS),
         identity,
         store,
     }
@@ -306,6 +309,7 @@ async fn full_agent(w: &World, name: &str, now: i64) -> Agent {
     assert_eq!(answered.expect("an answer").status, 201);
     let found = w.store.list(Bucket::Identities, "square/").await.unwrap();
     assert_eq!(found.iter().filter(|k| k.contains(id.as_str())).count(), 2);
+    academy_data(w, &auth, now).await;
     Agent {
         address,
         id,
@@ -316,6 +320,71 @@ async fn full_agent(w: &World, name: &str, now: i64) -> Agent {
         claim,
         recovery,
     }
+}
+
+/// A call with a fresh, correct proof, for an institution crate's write.
+fn signed<'a>(
+    method: &'a str,
+    path: &'a str,
+    auth: &'a str,
+    body: &'a [u8],
+    proof: &'a str,
+) -> Call<'a> {
+    Call {
+        method,
+        path,
+        authorization: Some(auth),
+        proof: Some(proof),
+        body,
+        viewer: None,
+    }
+}
+
+/// The agent's Academy data: a course of its own, in its counter, an enrolment in it, a
+/// submitted attempt and the certificate its pass made. Returns the course.
+async fn academy_data(w: &World, auth: &str, now: i64) -> String {
+    let path = "/v1/academy/courses";
+    let body = br#"{"title":"Knots","pass":100,"tasks":[{"kind":"check","text":"Tie it","answer":"done"}]}"#;
+    let proof = solve("POST", path, Some(auth), body, now);
+    let published = w
+        .academy
+        .publish(&signed("POST", path, auth, body, &proof), now)
+        .await;
+    let course = published.expect("a course").body["course"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let path = format!("/v1/academy/courses/{course}/enrolments/self");
+    let proof = solve("PUT", &path, Some(auth), b"", now);
+    let enrolled = w
+        .academy
+        .enrol(&signed("PUT", &path, auth, b"", &proof), &course, now)
+        .await;
+    assert_eq!(enrolled.expect("an enrolment").status, 201);
+    let path = format!("/v1/academy/courses/{course}/attempts");
+    let proof = solve("POST", &path, Some(auth), b"", now);
+    let started = w
+        .academy
+        .start(&signed("POST", &path, auth, b"", &proof), &course, now)
+        .await;
+    let attempt = started.expect("an attempt").body["attempt"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let path = format!("/v1/academy/courses/{course}/attempts/{attempt}/answers/1");
+    let body = br#"{"answer":"done"}"#;
+    let proof = solve("PUT", &path, Some(auth), body, now);
+    let call = signed("PUT", &path, auth, body, &proof);
+    w.academy
+        .answer(&call, &course, &attempt, "1", now)
+        .await
+        .expect("an answer");
+    let path = format!("/v1/academy/courses/{course}/attempts/{attempt}/submission");
+    let proof = solve("PUT", &path, Some(auth), b"", now);
+    let call = signed("PUT", &path, auth, b"", &proof);
+    let submitted = w.academy.submit(&call, &course, &attempt, now).await;
+    assert_eq!(submitted.expect("a submission").body["status"], "passed");
+    course
 }
 
 fn birth_body(name: &str, genesis_code: &str) -> String {
@@ -404,12 +473,25 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
     sfab_vouches::daily(&*w.store, &founders, &residents, starts, NOW)
         .await
         .unwrap();
+    let standing = sfab_vouches::with_standing(&*w.store).await.unwrap();
+    sfab_academy::daily(&*w.store, &residents, &standing, NOW)
+        .await
+        .unwrap();
     for key in [
         format!("world/standing/{}.json", agent.id),
         format!("world/vouches/{}.json", agent.id),
+        format!("world/agents/{}/enrolments/1.json", agent.id),
+        format!("world/agents/{}/certificates/1.json", agent.id),
+        format!("world/academy/teachers/{}.json", agent.id),
     ] {
         assert!(w.store.object(Bucket::Identities, &key).is_some(), "{key}");
     }
+    let counter = format!("identities/{}/academy.json", agent.id);
+    let counter = w.store.object(Bucket::Identities, &counter).unwrap().body;
+    let course = serde_json::from_slice::<serde_json::Value>(&counter).unwrap()["courses"][0]
+        .as_str()
+        .unwrap()
+        .to_owned();
     let bystander_keys = keys_of(&w.store, &bystander.id);
 
     let targets = plan(&*w.store, &Mode::One(agent.id.clone())).await.unwrap();
@@ -426,6 +508,80 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
     assert_eq!(places, vec![format!("places/{}.json", bystander.address)]);
     let newcomer = full_agent(&w, "Kite", NOW).await;
     assert_eq!(newcomer.address, agent.address);
+    // Its course went whole, though no key in it names the agent.
+    let folder = format!("academy/courses/{course}/");
+    assert_eq!(
+        w.store.list(Bucket::Identities, &folder).await.unwrap(),
+        Vec::<String>::new()
+    );
+}
+
+#[tokio::test]
+async fn a_taken_down_teacher_s_graduates_keep_certificates_that_show_it_removed() {
+    let w = world();
+    let teacher = full_agent(&w, "Wren", NOW).await;
+    let student = full_agent(&w, "Moss", NOW).await;
+    let auth = bearer(&teacher.id, &teacher.claim);
+    let course = academy_data(&w, &auth, NOW + 1).await;
+    // Moss sits Wren's course, which the counter says is Wren's second.
+    let auth = bearer(&student.id, &student.claim);
+    for (method, path, body) in [
+        (
+            "PUT",
+            format!("/v1/academy/courses/{course}/enrolments/self"),
+            &b""[..],
+        ),
+        (
+            "POST",
+            format!("/v1/academy/courses/{course}/attempts"),
+            &b""[..],
+        ),
+    ] {
+        let proof = solve(method, &path, Some(&auth), body, NOW);
+        let call = signed(method, &path, &auth, body, &proof);
+        let done = match method {
+            "PUT" => w.academy.enrol(&call, &course, NOW).await,
+            _ => w.academy.start(&call, &course, NOW).await,
+        };
+        assert_eq!(done.expect("enrolled and started").status, 201);
+    }
+    let attempt = format!("{}-2026-11-05", student.id);
+    let path = format!("/v1/academy/courses/{course}/attempts/{attempt}/answers/1");
+    let body = br#"{"answer":"done"}"#;
+    let proof = solve("PUT", &path, Some(&auth), body, NOW);
+    let call = signed("PUT", &path, &auth, body, &proof);
+    w.academy
+        .answer(&call, &course, &attempt, "1", NOW)
+        .await
+        .unwrap();
+    let path = format!("/v1/academy/courses/{course}/attempts/{attempt}/submission");
+    let proof = solve("PUT", &path, Some(&auth), b"", NOW);
+    let call = signed("PUT", &path, &auth, b"", &proof);
+    w.academy
+        .submit(&call, &course, &attempt, NOW)
+        .await
+        .unwrap();
+    let certificate = format!("exam-{course}-{}", student.id);
+
+    let targets = plan(&*w.store, &Mode::One(teacher.id.clone()))
+        .await
+        .unwrap();
+    execute(&*w.store, &targets, async {}).await.unwrap();
+
+    assert_taken_down(&w, &teacher, "2026-11-05T12:00:00Z").await;
+    let shown = w.academy.certificate(&certificate).await.unwrap().body;
+    assert_eq!(
+        shown["teacher"],
+        serde_json::json!({"id": teacher.id.as_str(), "removed": true})
+    );
+    let folder = format!("academy/courses/{course}/");
+    assert!(
+        w.store
+            .list(Bucket::Identities, &folder)
+            .await
+            .unwrap()
+            .is_empty()
+    );
 }
 
 #[tokio::test]
@@ -518,9 +674,15 @@ async fn a_dry_run_shows_the_window_and_writes_nothing() {
     assert_eq!(t.born.born_at.as_deref(), Some("2026-11-05T12:00:00Z"));
     assert!(!t.born.taken_down);
     let found: Vec<_> = t.found.iter().map(|(_, k)| k.clone()).collect();
-    // Every key that names it, and its home's pointer, whose key doesn't.
+    // Every key that names it, its home's pointer and its course, whose keys don't.
     let mut expected = keys_of(&w.store, &first.id);
     expected.push(format!("places/{}.json", first.address));
+    let course = expected
+        .iter()
+        .find_map(|k| k.strip_prefix("academy/courses/")?.split_once("/attempts/"))
+        .map(|(c, _)| format!("academy/courses/{c}/course.json"))
+        .unwrap();
+    expected.push(course);
     assert_eq!(sorted(found), sorted(expected));
 }
 

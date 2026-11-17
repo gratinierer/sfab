@@ -64,6 +64,13 @@ pub fn home_key(id: &AgentId) -> String {
     format!("identities/{id}/home.json")
 }
 
+/// An agent's Academy counter, `identities/<id>/academy.json`, inside this crate's
+/// `identities/` folder so a takedown's delete of it covers the counter. Its rules and format
+/// belong to the academy crate (`lambda/world/academy`), which reaches it through this key.
+pub fn academy_key(id: &AgentId) -> String {
+    format!("identities/{id}/academy.json")
+}
+
 fn vitals_key(id: &AgentId) -> String {
     format!("vitals/{id}.json")
 }

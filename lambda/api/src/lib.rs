@@ -12,6 +12,7 @@ use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, post, put};
 
+use sfab_academy::Academy;
 use sfab_census::Census;
 use sfab_core::gate::Call;
 use sfab_core::problem::{Problem, Reply};
@@ -39,6 +40,7 @@ pub struct AppState<S> {
     vouches: Vouches<S>,
     homes: Homes<S>,
     square: Square<S>,
+    academy: Academy<S>,
     census: Census<S>,
     federation: Federation<S>,
     genesis: Arc<Genesis<S>>,
@@ -80,6 +82,7 @@ pub fn app<S: Store>(
         vouches: Vouches::new(store.clone(), identity.clone(), required_bits),
         homes: Homes::new(store.clone(), identity.clone(), required_bits),
         square: Square::new(store.clone(), identity.clone(), required_bits),
+        academy: Academy::new(store.clone(), identity.clone(), required_bits),
         identity,
         census: Census::new(store.clone()),
         genesis,
@@ -150,6 +153,67 @@ pub fn app<S: Store>(
             "/world/quarters/{quarter}/square/{notice_id}/answers/self",
             put(answer_notice::<S>),
         )
+        .route(
+            "/academy/courses",
+            get(read_catalogue::<S>).post(publish_course::<S>),
+        )
+        .route(
+            "/academy/courses/{course}",
+            get(read_course::<S>).put(edit_course::<S>),
+        )
+        .route(
+            "/academy/courses/{course}/retirement",
+            put(retire_course::<S>),
+        )
+        .route("/academy/courses/{course}/tasks", get(read_tasks::<S>))
+        .route(
+            "/academy/courses/{course}/enrolled",
+            get(read_enrolled::<S>),
+        )
+        .route(
+            "/academy/courses/{course}/graduates",
+            get(read_graduates::<S>),
+        )
+        .route(
+            "/academy/courses/{course}/enrolments/self",
+            put(enrol::<S>).delete(leave_course::<S>),
+        )
+        .route(
+            "/academy/courses/{course}/attempts",
+            post(start_attempt::<S>),
+        )
+        .route(
+            "/academy/courses/{course}/attempts/{attempt}",
+            get(read_attempt::<S>),
+        )
+        .route(
+            "/academy/courses/{course}/attempts/{attempt}/answers/{n}",
+            put(hand_in::<S>),
+        )
+        .route(
+            "/academy/courses/{course}/attempts/{attempt}/submission",
+            put(submit_attempt::<S>),
+        )
+        .route("/academy/courses/{course}/marking", get(read_queue::<S>))
+        .route(
+            "/academy/courses/{course}/marking/{attempt}",
+            get(read_marking::<S>).put(mark_attempt::<S>),
+        )
+        .route(
+            "/academy/certificates/{certificate}",
+            get(read_certificate::<S>),
+        )
+        .route(
+            "/academy/certificates/{certificate}/revocation",
+            put(revoke_certificate::<S>),
+        )
+        .route("/academy/teachers/{id}", get(read_teacher::<S>))
+        .route(
+            "/academy/teachers/{id}/graduates",
+            get(read_teacher_graduates::<S>),
+        )
+        .route("/identity/{id}/enrolments", get(read_enrolments::<S>))
+        .route("/identity/{id}/certificates", get(read_certificates::<S>))
         .route("/world/constitution", get(constitution))
         .route("/world/census", get(census::<S>))
         .route("/world/residents", get(residents::<S>))
@@ -677,6 +741,235 @@ async fn answer_notice<S: Store>(
     let now = (state.now)();
     let call = signed.call();
     respond(state.square.answer(&call, &quarter, &notice_id, now).await)
+}
+
+async fn read_catalogue<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    uri: OriginalUri,
+) -> Response {
+    let token = page(&uri);
+    respond(state.academy.catalogue(token.as_deref()).await)
+}
+
+async fn publish_course<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    respond(state.academy.publish(&signed.call(), now).await)
+}
+
+async fn read_course<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(course): Path<String>,
+) -> Response {
+    respond(state.academy.course(&course).await)
+}
+
+async fn edit_course<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(course): Path<String>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    respond(state.academy.edit(&signed.call(), &course, now).await)
+}
+
+async fn retire_course<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(course): Path<String>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    respond(state.academy.retire(&signed.call(), &course, now).await)
+}
+
+async fn read_tasks<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(course): Path<String>,
+    headers: HeaderMap,
+    uri: OriginalUri,
+) -> Response {
+    let authorization = header(&headers, "authorization");
+    let token = page(&uri);
+    let now = (state.now)();
+    let read = state
+        .academy
+        .tasks(authorization, &course, token.as_deref(), now);
+    respond(read.await)
+}
+
+async fn read_enrolled<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(course): Path<String>,
+    uri: OriginalUri,
+) -> Response {
+    let token = page(&uri);
+    respond(state.academy.enrolled(&course, token.as_deref()).await)
+}
+
+async fn read_graduates<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(course): Path<String>,
+    uri: OriginalUri,
+) -> Response {
+    let token = page(&uri);
+    respond(state.academy.graduates(&course, token.as_deref()).await)
+}
+
+async fn enrol<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(course): Path<String>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    respond(state.academy.enrol(&signed.call(), &course, now).await)
+}
+
+async fn leave_course<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(course): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let authorization = header(&headers, "authorization");
+    let now = (state.now)();
+    respond(state.academy.leave(authorization, &course, now).await)
+}
+
+async fn start_attempt<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(course): Path<String>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    respond(state.academy.start(&signed.call(), &course, now).await)
+}
+
+async fn read_attempt<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path((course, attempt)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let authorization = header(&headers, "authorization");
+    let now = (state.now)();
+    let read = state.academy.attempt(authorization, &course, &attempt, now);
+    respond(read.await)
+}
+
+async fn hand_in<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path((course, attempt, n)): Path<(String, String, String)>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    let call = signed.call();
+    respond(
+        state
+            .academy
+            .answer(&call, &course, &attempt, &n, now)
+            .await,
+    )
+}
+
+async fn submit_attempt<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path((course, attempt)): Path<(String, String)>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    let call = signed.call();
+    respond(state.academy.submit(&call, &course, &attempt, now).await)
+}
+
+async fn read_queue<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(course): Path<String>,
+    headers: HeaderMap,
+    uri: OriginalUri,
+) -> Response {
+    let authorization = header(&headers, "authorization");
+    let token = page(&uri);
+    let now = (state.now)();
+    let read = state
+        .academy
+        .queue(authorization, &course, token.as_deref(), now);
+    respond(read.await)
+}
+
+async fn read_marking<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path((course, attempt)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let authorization = header(&headers, "authorization");
+    let now = (state.now)();
+    let read = state.academy.marking(authorization, &course, &attempt, now);
+    respond(read.await)
+}
+
+async fn mark_attempt<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path((course, attempt)): Path<(String, String)>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    let call = signed.call();
+    respond(state.academy.mark(&call, &course, &attempt, now).await)
+}
+
+async fn read_certificate<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(certificate): Path<String>,
+) -> Response {
+    respond(state.academy.certificate(&certificate).await)
+}
+
+async fn revoke_certificate<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(certificate): Path<String>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    respond(
+        state
+            .academy
+            .revoke(&signed.call(), &certificate, now)
+            .await,
+    )
+}
+
+async fn read_teacher<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+) -> Response {
+    respond(state.academy.teacher(&id).await)
+}
+
+async fn read_teacher_graduates<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+    uri: OriginalUri,
+) -> Response {
+    let token = page(&uri);
+    respond(state.academy.teacher_graduates(&id, token.as_deref()).await)
+}
+
+async fn read_enrolments<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+    uri: OriginalUri,
+) -> Response {
+    let token = page(&uri);
+    respond(state.academy.enrolments(&id, token.as_deref()).await)
+}
+
+async fn read_certificates<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+    uri: OriginalUri,
+) -> Response {
+    let token = page(&uri);
+    respond(state.academy.certificates(&id, token.as_deref()).await)
 }
 
 async fn openapi() -> Response {

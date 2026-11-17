@@ -2213,7 +2213,14 @@ dependencies = [
 name = "sfab-academy"
 version = "0.1.0"
 dependencies = [
+ "futures-util",
+ "serde",
+ "serde_json",
  "sfab-core",
+ "sfab-genesis",
+ "sfab-identity",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -2455,6 +2462,7 @@ dependencies = [
  "aws-config",
  "aws-sdk-s3",
  "serde_json",
+ "sfab-academy",
  "sfab-core",
  "sfab-genesis",
  "sfab-homes",

@@ -84,6 +84,12 @@ _ANSWER = re.compile(
     r"/v1/world/quarters/(?P<quarter>[a-z0-9-]+)/square/(?P<notice_id>[^/]+)/answers/self"
 )
 _ABOUTME = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/aboutme")
+_ACADEMY = re.compile(r"/v1/academy/.*|/v1/identity/[a-z2-7]{12}/(enrolments|certificates)")
+# The Academy's writes that take no body, which the gateway doesn't validate.
+_BODILESS = re.compile(
+    r"/v1/academy/courses/[^/]+/(retirement|enrolments/self|attempts|attempts/[^/]+/submission)"
+    r"|/v1/academy/certificates/[^/]+/revocation"
+)
 _SEND = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/messages")
 _MESSAGE = re.compile(r"/v1/identity/self/messages/(?P<message_id>k-[a-z2-7]{12}|m-[0-9a-z-]+)")
 
@@ -135,6 +141,11 @@ class FakeApi:
         self.addresses: dict[str, str] = {}
         # A broken behaviour: moving out leaves the address on `aboutme`.
         self.keep_address_after_move_out = False
+        # The Academy: courses by ID, attempts by `<course>/<attempt>`, and certificates by
+        # ID. The daily job hasn't run, so its routes are `not-built-yet`.
+        self.courses: dict[str, dict] = {}
+        self.attempts: dict[str, dict] = {}
+        self.certificates: dict[str, dict] = {}
         # The Square's notices: notice_id -> quarter, author, text and answers by answerer.
         self.notices: dict[str, dict] = {}
         # Federation requests: domain -> token.
@@ -274,7 +285,13 @@ class FakeApi:
             self.handed += 1
             return "genesis code", ok(200, {"genesis_code": code})
         # The gateway's validator, with `additionalProperties: false`.
-        if r.method in ("POST", "PUT") and path != "/v1/identity/reclaim" and not contact:
+        bodiless = _BODILESS.fullmatch(path)
+        if (
+            r.method in ("POST", "PUT")
+            and path != "/v1/identity/reclaim"
+            and not contact
+            and not bodiless
+        ):
             try:
                 body = json.loads(r.body)
             except ValueError:
@@ -295,6 +312,12 @@ class FakeApi:
                 allowed = {"description"}
             if square or _ANSWER.fullmatch(path):
                 allowed = {"text"}
+            if re.fullmatch(r"/v1/academy/courses(/[^/]+)?", path):
+                allowed = {"title", "preparation", "pass", "set_size", "tasks"}
+            if "/answers/" in path and path.startswith("/v1/academy/"):
+                allowed = {"answer"}
+            if "/marking/" in path:
+                allowed = {"accepted", "comment"}
             if path.endswith("federation/requests"):
                 allowed = {"domain"}
             if path.endswith("publication"):
@@ -326,6 +349,8 @@ class FakeApi:
                 )
         if about:
             return self._aboutme(about["id"])
+        if _ACADEMY.fullmatch(path) and r.method == "GET" and "authorization" not in headers:
+            return self._academy_public(path)
         if path == "/v1/federation/requests":
             domain = json.loads(r.body)["domain"]
             if domain in self.federation:
@@ -428,6 +453,8 @@ class FakeApi:
             return self._home(agent, r, now)
         if square or notice or _ANSWER.fullmatch(path):
             return self._square(agent, r, path)
+        if _ACADEMY.fullmatch(path):
+            return self._academy(agent, r, path)
         lists = self.contacts.setdefault(agent, {"friends": [], "blocked": []})
         if contact:
             kind, other = contact["list"], contact["id"]
@@ -529,6 +556,129 @@ class FakeApi:
         notice_id = f"2026-11-05-{agent}-{len(mine) + 1}"
         self.notices[notice_id] = {"quarter": quarter, "author": agent, "text": text, "answers": {}}
         return "post notice", ok(201, self._notice(notice_id))
+
+    def _course(self, course_id: str) -> dict:
+        c = self.courses[course_id]
+        return {
+            "course": course_id,
+            "teacher": c["teacher"],
+            "title": c["title"],
+            "preparation": "",
+            "pass": c["pass"],
+            "set_size": len(c["tasks"]),
+            "published_at": "2026-11-05T00:00:00Z",
+            "edited_at": None,
+            "retired": c["retired"],
+            "retired_at": "2026-11-05T00:00:00Z" if c["retired"] else None,
+        }
+
+    def _attempt(self, key: str) -> dict:
+        a = self.attempts[key]
+        course, attempt = key.split("/")
+        tasks = [
+            {"n": i + 1, "kind": "check", "text": t["text"], "answered": i in a["answers"],
+             "answer": None}
+            for i, t in enumerate(self.courses[course]["tasks"])
+        ]
+        return {
+            "attempt": attempt, "course": course, "student": a["student"],
+            "started_at": "2026-11-05T00:00:00Z", "status": a["status"], "pass": 100,
+            "tasks": tasks, "submitted_at": None, "score": None, "passed": None, "mark": None,
+        }
+
+    def _academy_public(self, path: str):
+        """The anonymous reads: the daily job's routes aren't built yet."""
+        parts = path.split("/")[2:]
+        if parts[:2] == ["academy", "courses"] and len(parts) == 3:
+            if parts[2] not in self.courses:
+                return "course", problem(404)
+            return "course", ok(200, {**self._course(parts[2]), "enrolled": None,
+                                      "graduates": None, "lineage": None, "as_of": None})
+        if parts[:2] == ["academy", "certificates"]:
+            found = self.certificates.get(parts[2])
+            if found is None:
+                return "certificate", problem(404)
+            return "certificate", ok(200, {"certificate": parts[2], **found})
+        return "academy not built", problem(404, "not-built-yet")
+
+    def _academy(self, agent: str, r: Request, path: str):
+        """The Academy's private routes, for one answer-check course, as the real API."""
+        parts = path.split("/")[2:]
+        if parts[1] == "certificates":
+            found = self.certificates.get(parts[2])
+            if found is None:
+                return "revoke certificate", problem(404)
+            if found["teacher"]["id"] != agent:
+                return "revoke certificate", problem(403, "not-the-author")
+            found["revoked"] = True
+            reply = {"certificate": parts[2], "revoked": True, "revoked_at": "2026-11-05T00:00:00Z"}
+            return "revoke certificate", ok(200, reply)
+        if parts == ["academy", "courses"]:
+            body = json.loads(r.body)
+            course_id = agent_id(hashlib.sha256(r.body + agent.encode()).digest())
+            self.courses[course_id] = {
+                "teacher": agent, "title": body["title"], "pass": body["pass"],
+                "tasks": body["tasks"], "retired": False, "enrolled": set(),
+            }
+            return "publish course", ok(201, self._course(course_id))
+        course_id, rest = parts[2], parts[3:]
+        c = self.courses.get(course_id)
+        if c is None:
+            return "unknown course", problem(404)
+        mine = c["teacher"] == agent
+        if not rest:
+            if not mine:
+                return "edit course", problem(403, "not-the-author")
+            c["title"] = json.loads(r.body)["title"]
+            return "edit course", ok(200, self._course(course_id))
+        if rest == ["retirement"]:
+            c["retired"] = True
+            return "retire course", ok(200, self._course(course_id))
+        if rest == ["tasks"]:
+            items = [{"n": i + 1, "kind": t["kind"], "text": t["text"], "answer_hash": "0" * 64}
+                     for i, t in enumerate(c["tasks"])]
+            return "tasks", ok(200, {"items": items, "next": None})
+        if rest == ["enrolments", "self"]:
+            if r.method == "DELETE":
+                c["enrolled"].discard(agent)
+                return "leave course", ok(200, {"course": course_id, "id": agent})
+            if c["retired"]:
+                return "enrol", problem(409, "retired")
+            status = 200 if agent in c["enrolled"] else 201
+            c["enrolled"].add(agent)
+            reply = {"course": course_id, "id": agent, "enrolled_at": "2026-11-05T00:00:00Z"}
+            return "enrol", ok(status, reply)
+        if rest == ["attempts"]:
+            if agent not in c["enrolled"]:
+                return "start attempt", problem(403, "not-enrolled")
+            key = f"{course_id}/{agent}-2026-11-05"
+            self.attempts[key] = {"student": agent, "status": "open", "answers": {}}
+            return "start attempt", ok(201, self._attempt(key))
+        if rest[0] == "marking":
+            if len(rest) == 1:
+                return "marking queue", ok(200, {"items": [], "next": None})
+            return "mark attempt", problem(403, "not-a-graduate")
+        key = f"{course_id}/{rest[1]}"
+        a = self.attempts.get(key)
+        if a is None:
+            return "attempt", problem(404)
+        if len(rest) == 2:
+            return "attempt", ok(200, self._attempt(key))
+        if rest[2] == "answers":
+            a["answers"][int(rest[3]) - 1] = json.loads(r.body)["answer"]
+            reply = {"attempt": rest[1], "n": int(rest[3]), "kind": "check",
+                     "answered_at": "2026-11-05T00:00:00Z"}
+            return "hand in", ok(200, reply)
+        right = all(a["answers"].get(i) == t["answer"] for i, t in enumerate(c["tasks"]))
+        a["status"] = "passed" if right else "failed"
+        if right:
+            self.certificates[f"exam-{course_id}-{agent}"] = {
+                "kind": "exam", "holder": agent, "course": course_id,
+                "teacher": {"id": c["teacher"], "removed": False}, "marker": None,
+                "issued_at": "2026-11-05T00:00:00Z", "revoked": False, "revoked_at": None,
+                "counts": False, "as_of": None,
+            }
+        return "submit", ok(200, self._attempt(key))
 
     def _token_reply(self, domain: str) -> dict:
         token = self.federation[domain]

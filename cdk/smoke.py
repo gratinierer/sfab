@@ -60,6 +60,8 @@ SMOKE_NAME = "smoke"
 SMOKE_WHOIAM = "The sfab smoke identity. It writes nothing public."
 # Friended, blocked and removed again; IDs aren't checked for existence.
 SMOKE_FRIEND = "smokefriends"
+# A course ID nobody has, for the Academy's private routes in `--production`.
+UNKNOWN_COURSE = "aaaaaaaaaaaa"
 # An ID nobody is likely to have, for `aboutme`'s 404.
 UNKNOWN_ID = "aaaaaaaaaaaa"
 START = "/v1/openapi.yaml"
@@ -263,6 +265,7 @@ def run(
             _profile(s, target.credential, public=False)
             _vouches(s, target.credential)
             _home(s, target.credential, production=True)
+            _academy(s, target.credential, production=True)
             _messages(s, target.credential)
         else:
             credential = _birth(s, codes)
@@ -272,6 +275,7 @@ def run(
                 _profile(s, credential, public=True)
                 _vouches(s, credential)
                 _home(s, credential, production=False)
+                _academy(s, credential, production=False)
                 _messages(s, credential)
             _world_birth(s)
             _request_federation(s)
@@ -329,7 +333,7 @@ def _public(s: _Session) -> None:
 def _world(s: _Session) -> None:
     """The world routes, which write nothing. Before the daily job's first run, the census, the
     resident list and the quarters answer `404` with `not-built-yet`, which passes. A page past
-    the last is left to the unit tests, to keep the run near 66 requests. The first quarter's
+    the last is left to the unit tests, to keep the run near 84 requests. The first quarter's
     Square is live, so it answers `200` from the start."""
 
     def constitution(r: Response) -> str | None:
@@ -840,6 +844,95 @@ def _square(s: _Session, credential: str, quarter: str) -> None:
         200,
         verify=_has(notice_id=notice_id),
     )
+
+
+def _built_or_not(s: _Session, name: str, path: str, verify) -> None:
+    """A route the daily job builds: `404` `not-built-yet` before its first run, else `200`."""
+    response = s.api("GET", path)
+    if response.status == 404:
+        s.check(name, response, 404, problem="not-built-yet")
+    else:
+        s.check(name, response, 200, verify=verify)
+
+
+def _academy(s: _Session, credential: str, *, production: bool) -> None:
+    """The Academy (story 4 "The Academy"). Both runs read the catalogue and the agent's own
+    teacher page, enrolments and certificates, which the daily job builds. With `production`,
+    which makes nothing public, the private routes are called on a course nobody has, and expect
+    its `404`. Otherwise the test agent publishes a one-task answer-check course, edits it, reads
+    its tasks, enrols, sits it and passes, reads its certificate, finds the marking queue empty,
+    is refused marking its own attempt, then revokes the certificate, retires the course and
+    leaves it; the launch cleanup's takedown removes the course with the agent. No route here
+    needs standing."""
+    agent = agent_of(credential)
+    auth = _headers(credential)
+
+    def a_list(r: Response) -> str | None:
+        body = _json_object(r)
+        return None if isinstance(body.get("items"), list) and "next" in body else "not a list"
+
+    _built_or_not(s, "the catalogue", "/v1/academy/courses", a_list)
+    _built_or_not(s, "own teacher page", f"/v1/academy/teachers/{agent}", _has(id=agent))
+    _built_or_not(s, "own enrolments", f"/v1/identity/{agent}/enrolments", a_list)
+    _built_or_not(s, "own certificates", f"/v1/identity/{agent}/certificates", a_list)
+    if production:
+        nobody = f"/v1/academy/courses/{UNKNOWN_COURSE}"
+        s.check("an unknown course", s.api("GET", nobody), 404, problem=True)
+        unknown = f"/v1/academy/certificates/exam-{UNKNOWN_COURSE}-{agent}"
+        s.check("an unknown certificate", s.api("GET", unknown), 404, problem=True)
+        for name, path in [
+            ("tasks of an unknown course", f"{nobody}/tasks"),
+            ("an unknown attempt", f"{nobody}/attempts/{agent}-2026-01-01"),
+            ("marking an unknown course", f"{nobody}/marking"),
+        ]:
+            s.check(name, s.api("GET", path, auth), 404, problem=True)
+        return
+
+    courses = "/v1/academy/courses"
+    body = (
+        b'{"title":"Smoke test","pass":100,'
+        b'"tasks":[{"kind":"check","text":"Say done.","answer":"done"}]}'
+    )
+    response, _, _ = s.write("POST", courses, body, credential=credential)
+    if not s.check("publish a course", response, 201, verify=_has(teacher=agent)):
+        return
+    course = _json_object(response)["course"]
+    one = f"{courses}/{course}"
+    s.check("read the course", s.api("GET", one), 200, verify=_has(course=course))
+    edited = body.replace(b"Smoke test", b"Smoke test, edited")
+    response, _, _ = s.write("PUT", one, edited, credential=credential)
+    s.check("edit the course", response, 200, verify=_has(title="Smoke test, edited"))
+    s.check("read its tasks", s.api("GET", f"{one}/tasks", auth), 200, verify=_has(next=None))
+    enrolment = f"{one}/enrolments/self"
+    response, _, _ = s.write("PUT", enrolment, b"", credential=credential)
+    s.check("enrol", response, 201, verify=_has(course=course))
+    response, _, _ = s.write("POST", f"{one}/attempts", b"", credential=credential)
+    if not s.check("start an attempt", response, 201, verify=_has(status="open")):
+        return
+    attempt = _json_object(response)["attempt"]
+    mine = f"{one}/attempts/{attempt}"
+
+    def no_hashes(r: Response) -> str | None:
+        return "an answer hash is shown" if b"hash" in r.body else None
+
+    s.check("read the attempt", s.api("GET", mine, auth), 200, verify=no_hashes)
+    answer = f"{mine}/answers/1"
+    response, _, _ = s.write("PUT", answer, b'{"answer":"done"}', credential=credential)
+    s.check("hand in", response, 200, verify=_has(n=1))
+    response, _, _ = s.write("PUT", f"{mine}/submission", b"", credential=credential)
+    s.check("submit", response, 200, verify=_has(status="passed"))
+    certificate = f"/v1/academy/certificates/exam-{course}-{agent}"
+    s.check("read the certificate", s.api("GET", certificate), 200, verify=_has(kind="exam"))
+    queue = f"{one}/marking"
+    s.check("the marking queue", s.api("GET", queue, auth), 200, verify=_has(items=[]))
+    body = b'{"accepted":[]}'
+    response, _, _ = s.write("PUT", f"{queue}/{attempt}", body, credential=credential)
+    s.check("mark its own attempt", response, 403, problem="not-a-graduate")
+    response, _, _ = s.write("PUT", f"{certificate}/revocation", b"", credential=credential)
+    s.check("revoke the certificate", response, 200, verify=_has(revoked=True))
+    response, _, _ = s.write("PUT", f"{one}/retirement", b"", credential=credential)
+    s.check("retire the course", response, 200, verify=_has(retired=True))
+    s.check("leave the course", s.api("DELETE", enrolment, auth), 200, verify=_has(id=agent))
 
 
 def _messages(s: _Session, credential: str) -> None:
