@@ -132,3 +132,6 @@ emails and an automatic stop from the start. Keep its URL unpublished until the 
   `BAD_REQUEST_BODY`'s detail is the escaped `validationErrorString`, so a malformed body says what's wrong.
   A second throwaway import of the fixed file confirmed it: no key, a wrong key, an unknown route, a malformed
   body, a schema-invalid one and a missing Lambda all answered `application/problem+json` with valid JSON.
+- 2026-11-17: code review C166: `BAD_REQUEST_BODY`'s detail is back to `messageString`. `validationErrorString`
+  quotes the input that failed a pattern, which may be a malformed claim or recovery code, and `SECURITY_RULES.md`
+  rule 2 keeps secrets out of a problem `detail`. The schema in `/v1/openapi.yaml` says what a body needs.

@@ -200,19 +200,12 @@ def test_every_operation_is_in_a_route_table_with_matching_auth(source, security
 # --- gateway responses ---------------------------------------------------------------
 
 
-VALIDATION_MESSAGE = """object instance has properties which are not allowed by the schema: ["it's"]"""
+MESSAGE = 'a "quoted" message'
 
 
 def render(template: str) -> dict:
     """Fills the $context variables the way API Gateway would, and parses the JSON."""
-    filled = template.replace("$context.error.messageString", json.dumps('a "quoted" message'))
-    # Inside quotes, $util.escapeJavaScript escapes AWS's validation message, which holds double
-    # quotes and may hold an apostrophe (docs/aws-facts.md).
-    # json.dumps escapes the same way; [1:-1] drops the quotes it adds, which the template has.
-    filled = filled.replace(
-        "$util.escapeJavaScript($context.error.validationErrorString)",
-        json.dumps(VALIDATION_MESSAGE)[1:-1],
-    )
+    filled = template.replace("$context.error.messageString", json.dumps(MESSAGE))
     filled = filled.replace("{{api_host}}", "api.example.invalid")
     return json.loads(filled)
 
@@ -256,9 +249,14 @@ def test_an_unknown_route_gets_a_404_pointing_to_the_description(source):
     assert body["detail"].endswith("https://api.example.invalid/v1/openapi.yaml")
 
 
-def test_a_malformed_body_says_what_is_wrong(source):
+def test_no_gateway_response_echoes_the_request(source):
+    """validationErrorString quotes the input that failed a pattern, which may be a malformed secret
+    (SECURITY_RULES.md rule 2), so a malformed body gets the generic message."""
+    for name, response in source["x-amazon-apigateway-gateway-responses"].items():
+        for template in response["responseTemplates"].values():
+            assert "validationErrorString" not in template, name
     _, body = gateway_response(source, "BAD_REQUEST_BODY")
-    assert body["detail"] == VALIDATION_MESSAGE
+    assert body["detail"] == MESSAGE
 
 
 # --- the public copy -----------------------------------------------------------------

@@ -211,8 +211,9 @@ x-amazon-apigateway-gateway-responses:
       gatewayresponse.header.Content-Type: "'application/problem+json'"
       gatewayresponse.header.Cache-Control: "'no-store'"
     responseTemplates:
-      # validationErrorString says what's wrong; escaped, it's valid JSON inside quotes (docs/aws-facts.md).
-      application/problem+json: '{"type": "about:blank", "title": "Malformed request body", "status": 400, "detail": "$util.escapeJavaScript($context.error.validationErrorString)"}'
+      # messageString, not validationErrorString: a pattern failure quotes the offending input, which may be a
+      # malformed claim or recovery code, and no secret may reach a problem detail (SECURITY_RULES.md rule 2).
+      application/problem+json: '{"type": "about:blank", "title": "Malformed request body", "status": 400, "detail": $context.error.messageString}'
   INVALID_API_KEY:
     statusCode: 403
     responseParameters:
