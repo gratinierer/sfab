@@ -42,6 +42,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-04T14:53:44+00:00 | review | 2fd24a4 | claude-fable-5-1 (dispatched; stories authored by claude-opus-5-5) | 0 new, 0 resolved, 0 still open | full pass over b49f618..2fd24a4, stories 2, 4 and 10 together; no closures to audit; nothing new |
 | 2026-11-08T21:49:33+00:00 | review | 1867cea | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5) | 3 new, 0 resolved, 3 still open | full pass over 2fd24a4..1867cea after story 17 issue 06 edited issues 10 and 11, and C62 added takedown step 3 to 09; no closures to audit; 17#04, the `genesis-codes issue` flags and the 4-hour IP window check out; docs/restart-after-a-stop.md section 6 ignores the step 4-7 smoke skip, noted only |
 | 2026-11-17T20:00:00+00:00 | review | 1c2225353a | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 0 new, 0 resolved, 3 open | delta pass since 1867cea, over ee85ba7's `sfab.config.toml` to `sfab/config` edits in spec.md and ticket 10. R94-R96 re-verified, still true. Mixed commit: ee85ba7 also touched stories 2, 12 and 17, cdk/stacks.py and docs/restart-after-a-stop.md. The reviewer is on a different model from the same family as the author and orchestrator. |
+| 2026-11-17T20:10:00+00:00 | walkthrough | b5f058140f | claude-opus-5-5 (address-story-review-findings auto) | 0 new, 2 resolved, 1 still open | auto walkthrough, not a review pass. R94 needs the user. |
 
 ## Findings
 
