@@ -208,12 +208,19 @@ def render(template: str) -> dict:
     filled = template.replace("$context.error.messageString", json.dumps('a "quoted" message'))
     # Inside quotes, $util.escapeJavaScript escapes AWS's validation message, which holds double
     # quotes and may hold an apostrophe (docs/aws-facts.md).
+    # json.dumps escapes the same way; [1:-1] drops the quotes it adds, which the template has.
     filled = filled.replace(
         "$util.escapeJavaScript($context.error.validationErrorString)",
         json.dumps(VALIDATION_MESSAGE)[1:-1],
     )
     filled = filled.replace("{{api_host}}", "api.example.invalid")
     return json.loads(filled)
+
+
+def gateway_response(source, name: str) -> tuple[dict, dict]:
+    """The gateway response called name, and its rendered problem+json body."""
+    response = source["x-amazon-apigateway-gateway-responses"][name]
+    return response, render(response["responseTemplates"]["application/problem+json"])
 
 
 def test_gateway_responses_are_problem_json(source):
@@ -237,23 +244,20 @@ def test_gateway_responses_are_problem_json(source):
 
 
 def test_a_wrong_origin_key_gets_a_retryable_403(source):
-    response = source["x-amazon-apigateway-gateway-responses"]["INVALID_API_KEY"]
+    response, body = gateway_response(source, "INVALID_API_KEY")
     assert response["statusCode"] == 403
-    body = render(response["responseTemplates"]["application/problem+json"])
     assert body["type"] == "origin-key-replaced"
     assert body["status"] == 403
 
 
 def test_an_unknown_route_gets_a_404_pointing_to_the_description(source):
-    response = source["x-amazon-apigateway-gateway-responses"]["MISSING_AUTHENTICATION_TOKEN"]
+    response, body = gateway_response(source, "MISSING_AUTHENTICATION_TOKEN")
     assert response["statusCode"] == 404
-    body = render(response["responseTemplates"]["application/problem+json"])
     assert body["detail"].endswith("https://api.example.invalid/v1/openapi.yaml")
 
 
 def test_a_malformed_body_says_what_is_wrong(source):
-    response = source["x-amazon-apigateway-gateway-responses"]["BAD_REQUEST_BODY"]
-    body = render(response["responseTemplates"]["application/problem+json"])
+    _, body = gateway_response(source, "BAD_REQUEST_BODY")
     assert body["detail"] == VALIDATION_MESSAGE
 
 
