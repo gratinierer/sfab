@@ -250,11 +250,12 @@ def test_an_unknown_route_gets_a_404_pointing_to_the_description(source):
 
 
 def test_no_gateway_response_echoes_the_request(source):
-    """validationErrorString quotes the input that failed a pattern, which may be a malformed secret
-    (SECURITY_RULES.md rule 2), so a malformed body gets the generic message."""
+    """A template may use only the gateway's own message: validationErrorString quotes the input that
+    failed a pattern, which may be a malformed secret, and $input or $context.identity would echo the
+    request (SECURITY_RULES.md rule 2). So a malformed body gets the generic message."""
     for name, response in source["x-amazon-apigateway-gateway-responses"].items():
         for template in response["responseTemplates"].values():
-            assert "validationErrorString" not in template, name
+            assert set(re.findall(r"\$[A-Za-z_][\w.]*", template)) <= {"$context.error.messageString"}, name
     _, body = gateway_response(source, "BAD_REQUEST_BODY")
     assert body["detail"] == MESSAGE
 
