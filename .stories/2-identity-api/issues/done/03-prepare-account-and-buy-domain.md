@@ -1,6 +1,5 @@
 # Prepare the AWS account and buy the domain
 
-Label: ready-for-human
 Blocked by: 18-deploy-from-codebuild#02, 18-deploy-from-codebuild#05
 
 The owner's steps before anything but `SfabDeployer` can deploy: `spec.md` "Prerequisites", and steps 1-7 of
@@ -65,3 +64,6 @@ below.
     owner accepts that.
   - **`aws login` and boto3:** boto3 needs the `crt` extra to use `aws login` credentials, so
     `cdk/requirements.in` now pins `boto3[crt]` (`docs/aws-facts.md`).
+- 2026-11-17: closed by the owner. Every "Done when" item is met, and code review covers the issue's code
+  (`3488ace` and its fixes). The quotas left open above aren't in "Done when": they move to issue 01, whose first
+  build ("First deploy" step 1, "Prerequisites") needs them. The support case is still open.

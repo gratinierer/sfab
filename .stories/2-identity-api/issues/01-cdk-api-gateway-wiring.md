@@ -134,3 +134,7 @@ emails and an automatic stop from the start. Keep its URL unpublished until the 
 - 2026-11-17: code review C166: `BAD_REQUEST_BODY`'s detail is back to `messageString`. `validationErrorString`
   quotes the input that failed a pattern, which may be a malformed claim or recovery code, and `SECURITY_RULES.md`
   rule 2 keeps secrets out of a problem `detail`. The schema in `/v1/openapi.yaml` says what a body needs.
+- 2026-11-17: issue 03 closed with the account's quotas still open, so they block this issue now: the first build
+  needs CodeBuild ARM/Small at 1 or more (it's 0), and the API stack needs Lambda concurrency at 106 or more (it's 10)
+  and Lambda calls that don't answer `AccessDeniedException`. The owner's AWS support case asks for all three.
+
