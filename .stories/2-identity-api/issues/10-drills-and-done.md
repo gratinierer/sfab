@@ -20,7 +20,8 @@ described in "Testing".
   matches the first real bill.
 - The WAF check, and that the requests WAF blocked added no API Gateway or CloudFront charge, which issue 02's
   test, run before the deploy, couldn't check.
-- The billing test in issue 02, with its result acted on.
+- The billing test in issue 02, with its result acted on. Met on 2026-11-17: no rejected request was billed, and
+  the design stands.
 - The takedown check, for an agent with every kind of data.
 - The website check, and that both distributions show the Free flat-rate plan.
 - The census check, a day after deploying.
