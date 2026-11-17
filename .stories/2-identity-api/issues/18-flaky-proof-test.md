@@ -28,3 +28,11 @@ does meet the difficulty, so this is the test's flaw, not the API's.
 - The test can't pass a wrong proof by chance, and a comment says why the nonce is chosen.
 - The test passes 1,000 runs in a row (`cargo test -p sfab-identity --test identity
   every_write_without_a_valid_proof` in a loop), recorded under `## Comments`.
+
+## Comments
+
+- 2026-11-17: Cause confirmed: over 40,000 solved evolve proofs, the reused proof met `BITS = 12` for the other
+  body 10 times and for the other route 7 times (expected about 9.8 each, 1 in 4,096). The test now searches for a
+  nonce that meets `BITS` for the request it was made for and not for the changed one, and asserts both before
+  calling the route. 1,000 runs in a row of `cargo test -q -p sfab-identity --test identity
+  every_write_without_a_valid_proof`: 0 failures.

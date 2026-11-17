@@ -424,7 +424,7 @@ async fn every_write_without_a_valid_proof_gets_400_with_nothing_stored() {
         ("evolve", evolve_call(&a.id, &a.claim, "x", NOW)),
         ("reclaim", reclaim_call(&a.id, &a.recovery, NOW)),
     ] {
-        let good_proof = sent.proof.clone();
+        let made_for = clone(&sent);
         sent.proof = None;
         cases.push((
             name,
@@ -435,13 +435,13 @@ async fn every_write_without_a_valid_proof_gets_400_with_nothing_stored() {
         ));
         // Made for another body.
         let mut other_body = clone(&sent);
-        other_body.proof = good_proof.clone();
         other_body.body.extend_from_slice(b" ");
+        other_body.proof = Some(proof_only_for(&made_for, &other_body));
         cases.push((name, other_body));
         // Made for another route.
         let mut other_path = clone(&sent);
-        other_path.proof = good_proof.clone();
         other_path.path = "/v1/identity/other";
+        other_path.proof = Some(proof_only_for(&made_for, &other_path));
         cases.push((name, other_path));
         // A stale one.
         let mut stale = clone(&sent);
@@ -450,13 +450,12 @@ async fn every_write_without_a_valid_proof_gets_400_with_nothing_stored() {
     }
     // Made for another caller: b's proof under a's credentials, with the same body.
     let for_b = evolve_call(&b.id, &b.claim, "x", NOW);
-    cases.push((
-        "evolve",
-        Sent {
-            authorization: claim_auth.clone(),
-            ..clone(&for_b)
-        },
-    ));
+    let mut for_a = Sent {
+        authorization: claim_auth.clone(),
+        ..clone(&for_b)
+    };
+    for_a.proof = Some(proof_only_for(&for_b, &for_a));
+    cases.push(("evolve", for_a));
 
     let before_b = snapshot(&w.store);
     for (name, sent) in &cases {
@@ -471,6 +470,35 @@ async fn every_write_without_a_valid_proof_gets_400_with_nothing_stored() {
         assert_eq!(problem.extra["server_time"], NOW, "{name}");
         assert_eq!(snapshot(&w.store), before_b, "{name} stored something");
     }
+}
+
+/// A `Proof` header, solved at `NOW`, that meets `BITS` for `made_for` but not for `sent`.
+///
+/// The nonce is searched for rather than reused from `made_for`'s own proof: a proof for one
+/// request meets the difficulty for any other by chance 1 time in 2^`BITS` (1 in 4,096), and the
+/// server is right to accept it then. Skipping such nonces makes a "made for another …" case
+/// certain to be refused, so the test can't fail by luck.
+fn proof_only_for(made_for: &Sent, sent: &Sent) -> String {
+    let header = (0u64..)
+        .map(|n| format!("{NOW}:{n}"))
+        .find(|h| meets_bits(made_for, h) && !meets_bits(sent, h))
+        .expect("some nonce works");
+    assert!(meets_bits(made_for, &header) && !meets_bits(sent, &header));
+    header
+}
+
+/// Whether `header` meets `BITS` for `sent`'s method, path, caller and body.
+fn meets_bits(sent: &Sent, header: &str) -> bool {
+    let caller = sfab_core::credentials::caller_of(sent.authorization.as_deref())
+        .expect("a well-formed header");
+    let request = Request {
+        method: sent.method,
+        path: sent.path,
+        caller: &caller,
+        body: &sent.body,
+    };
+    let proof = proof::Proof::parse(header).expect("a well-formed proof");
+    proof::check_hash(&request, &proof, BITS).is_ok()
 }
 
 fn clone(s: &Sent) -> Sent {
