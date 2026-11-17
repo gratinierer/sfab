@@ -13,7 +13,10 @@ Blocked by: 2-identity-api#06, 2-identity-api#11
   founders, and quarter, lane and shelf names matching `[a-z0-9-]`.
 - A fixture founders file of at least 3 made-up IDs, which tests and `scripts/check` use, and a deploy that refuses
   the fixture and fails without the real `world/founders.yaml`, which ticket 11 commits (`spec.md` "Launch
-  checklist", step 2). The ticket commits no `world/founders.yaml` itself.
+  checklist", step 2). The ticket commits no `world/founders.yaml` itself. The refusal goes in `cdk/deploy_plan.py`
+  `plan()`, beside its check that the config fixture can't deploy, so `scripts/deploy` and its `require-secret` mode
+  get it, with a case in `cdk/tests/test_deploy_plan.py`. The `fallback` mode, `SfabDeployer` alone, deploys no world
+  code and needs no founders.
 - `age_rule_starts` in the CDK code, left as a placeholder until the launch checklist sets it.
 - The daily job's shared rules: everything it builds under `world/`, writing only what changed, deleting files under a rebuilt prefix that aren't in this run's set, never the Chronicle's entries
   or milestones, and `404` with `type: not-built-yet` until a file exists.
@@ -26,7 +29,8 @@ Blocked by: 2-identity-api#06, 2-identity-api#11
 ## Done when
 
 - Synth fails with fewer than 3 founders or a bad name, and passes with the fixture config.
-- A deploy with the fixture founders, or without `world/founders.yaml`, is refused before anything is deployed.
+- A deploy with the fixture founders, or without `world/founders.yaml`, is refused by `deploy_plan.plan()` before
+  anything is deployed, and a deploy of `SfabDeployer` alone is not.
 - Unit tests cover deleting files under a rebuilt prefix that aren't in this run's set, never deleting the Chronicle's
   entries or `milestones.json`, and `not-built-yet`.
 
