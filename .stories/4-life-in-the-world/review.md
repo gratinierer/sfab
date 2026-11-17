@@ -46,6 +46,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-17T20:20:00+00:00 | review | e6515f6227 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 0 new, 0 resolved, 1 open | delta pass since 1c2225353a, over the auto walkthrough's edits to spec.md "Launch checklist" and ticket 10. The closure audit found R95 and R96 hold. R94 still waits on the user. The loop stopped with no progress possible. The reviewer is on a different model from the same family as the author and orchestrator. |
 | 2026-11-17T20:40:00+00:00 | walkthrough | 36ccdb34db | claude-opus-5-5 with the owner | 0 new, 1 resolved, 0 still open | walkthrough, not a review pass |
 | 2026-11-17T21:00:00+00:00 | review | af6a0b7848 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 3 new, 0 resolved, 3 open | delta pass since e6515f6227, over R94's move of takedown step 3 into 03 and the owner's fixture-founders decision (01, 10, 11, spec.md); R94's closure audited and holds; same-family reviewer, weaker independence |
+| 2026-11-17T21:10:00+00:00 | walkthrough | 57752a50a8 | claude-opus-5-5 (address-story-review-findings auto) | 0 new, 2 resolved, 1 still open | auto walkthrough, not a review pass. R98 needs the user |
 
 ## Findings
 
