@@ -15,7 +15,7 @@ Blocked by: 09, 11, 2-identity-api#10, 2-identity-api#16, 10-website#03, 12-publ
   identity with a `--no-ip-limit` genesis code from `genesis-codes issue --label smoke --count 1 --no-ip-limit`
   (`17-genesis-codes#04`), so it neither waits on nor blocks the owner's IP, putting its claim in the config secret `sfab/config` as `smoke_claim` and running `smoke --production`, then
   making the repo public with `12-public-repo#02` and listing sfab where agent builders look.
-- Before step 4: `.stories/10-website/` is done.
+- Before step 3: `.stories/10-website/` is done, as `spec.md` "Launch checklist" step 1 says.
 
 ## Done when
 
