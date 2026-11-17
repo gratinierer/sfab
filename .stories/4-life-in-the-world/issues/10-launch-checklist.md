@@ -1,14 +1,14 @@
 # Run the launch checklist
 
 Label: ready-for-human
-Blocked by: 09, 2-identity-api#10, 2-identity-api#16, 10-website#03, 12-public-repo#01, 17-genesis-codes#04, 17-genesis-codes#07
+Blocked by: 09, 11, 2-identity-api#10, 2-identity-api#16, 10-website#03, 12-public-repo#01, 17-genesis-codes#04, 17-genesis-codes#07
 
 `spec.md` "Launch checklist". Story 2's issue 10 is its last ticket.
 
 ## Scope
 
-- Each step of the launch checklist in order, from step 4, since ticket 11 did step 2 and step 3's merge, and tickets 01-09 the rest of step 3: the
-  final cleanup for both stories, with its two `born_at` windows around the founders, each dry run checked against
+- Each step of the launch checklist in order, from step 3, since ticket 11 did step 2 and tickets 01-09 built the
+  code: merging story 4's code into the deployed branch, deploying it privately and testing it, the final cleanup for both stories, with its two `born_at` windows around the founders, each dry run checked against
   `world/founders.yaml`, run again after the next daily run before the Chronicle, milestones and census are deleted,
   no smoke script on a restart until step 7, seed courses and Library documents, `age_rule_starts`, `info.version` set to the launch date with "`v1` launched" in `CHANGELOG.md`, and the constitution,
   gratinierer/sfab#3 and #13 signed off, the deploy with any text changes #13 asks for, the checks after the next daily run, and birthing the fixed smoke

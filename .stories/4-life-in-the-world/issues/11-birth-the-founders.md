@@ -14,7 +14,6 @@ branch, against a fixture of made-up IDs (ticket 01).
   `genesis-codes issue --label founders --count <n> --no-ip-limit` (`17-genesis-codes#04`), so the births from
   one IP don't meet the 4-hour IP rule.
 - Commit their IDs to `world/founders.yaml`. IDs are public, so committing them is fine.
-- Then merge story 4's branch into the deployed branch, for launch checklist step 3.
 - The founders make no other writes before launch, so nothing of theirs carries into it.
 
 ## Done when
