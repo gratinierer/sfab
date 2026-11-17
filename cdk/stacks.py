@@ -80,9 +80,13 @@ GENESIS_POOL_KEY = "genesis/pool.json"
 # ties here (.stories/4-life-in-the-world/spec.md "Changes to story 2's parts").
 STORY_4_PREFIXES = ("vouches/", "places/", "square/", "academy/", "library/")
 # Where the API Lambda deletes: `DELETE /identity/self/messages/{message_id}`, a birth's used
-# genesis code (story 17 "What `birth` does"), and a home's old pointer after a move (story 4
-# "Homes and quarters").
-API_DELETE_PREFIXES = ("messages/", GENESIS_CODES_PREFIX, "places/")
+# genesis code (story 17 "What `birth` does"), a home's old pointer after a move (story 4
+# "Homes and quarters"), and a deleted notice's answers (story 4 "The Square").
+API_DELETE_PREFIXES = ("messages/", GENESIS_CODES_PREFIX, "places/", "square/")
+# How long the Square's notices and answers last before the lifecycle rule on `square/`
+# expires them; the square crate's KEEP_DAYS hides older ones from the same day (story 4
+# "The Square").
+SQUARE_DAYS = 7
 # The identities bucket's prefixes the API Lambda reads and writes, the single keys it reads
 # and writes, and the prefixes it only reads. A HEAD needs GetObject.
 API_READ_WRITE_PREFIXES = (
@@ -197,7 +201,8 @@ class BaseStack(cdk.Stack):
         )
 
         # Inboxes can't grow forever: spec.md "Messages". Federation requests expire too:
-        # spec.md "Federation", and so do genesis IP records: story 17 "The IP rule". The API
+        # spec.md "Federation", genesis IP records: story 17 "The IP rule", and everything on the
+        # Square, one rule for every quarter: story 4 "The Square". The API
         # and the daily world job hide or delete anything older themselves, because S3 removes
         # expired objects some time later (docs/aws-facts.md).
         self.identities_bucket = self._bucket(
@@ -215,6 +220,9 @@ class BaseStack(cdk.Stack):
                     id="FederationVerified",
                     prefix="federation/verified/",
                     expiration=cdk.Duration.days(FEDERATION_VERIFIED_DAYS),
+                ),
+                s3.LifecycleRule(
+                    id="Square", prefix="square/", expiration=cdk.Duration.days(SQUARE_DAYS)
                 ),
                 s3.LifecycleRule(
                     id="GenesisIps",

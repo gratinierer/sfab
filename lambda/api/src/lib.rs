@@ -21,6 +21,7 @@ use sfab_genesis::{Genesis, IpRule};
 use sfab_homes::Homes;
 use sfab_identity::{Identity, List};
 use sfab_messaging::Messaging;
+use sfab_square::Square;
 use sfab_vouches::Vouches;
 
 /// The public API description, generated before the build, so a missing copy fails it.
@@ -37,6 +38,7 @@ pub struct AppState<S> {
     messaging: Messaging<S>,
     vouches: Vouches<S>,
     homes: Homes<S>,
+    square: Square<S>,
     census: Census<S>,
     federation: Federation<S>,
     genesis: Arc<Genesis<S>>,
@@ -77,6 +79,7 @@ pub fn app<S: Store>(
         messaging: Messaging::new(store.clone(), identity.clone(), required_bits),
         vouches: Vouches::new(store.clone(), identity.clone(), required_bits),
         homes: Homes::new(store.clone(), identity.clone(), required_bits),
+        square: Square::new(store.clone(), identity.clone(), required_bits),
         identity,
         census: Census::new(store.clone()),
         genesis,
@@ -134,6 +137,18 @@ pub fn app<S: Store>(
         .route(
             "/world/quarters/{quarter}/lanes/{lane}/homes/{home}",
             get(read_home::<S>),
+        )
+        .route(
+            "/world/quarters/{quarter}/square",
+            get(read_square::<S>).post(post_notice::<S>),
+        )
+        .route(
+            "/world/quarters/{quarter}/square/{notice_id}",
+            get(read_notice::<S>).delete(delete_notice::<S>),
+        )
+        .route(
+            "/world/quarters/{quarter}/square/{notice_id}/answers/self",
+            put(answer_notice::<S>),
         )
         .route("/world/constitution", get(constitution))
         .route("/world/census", get(census::<S>))
@@ -607,6 +622,61 @@ async fn read_home<S: Store>(
     Path((quarter, lane, home)): Path<(String, String, String)>,
 ) -> Response {
     respond(state.homes.home(&quarter, &lane, &home).await)
+}
+
+async fn read_square<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(quarter): Path<String>,
+    uri: OriginalUri,
+) -> Response {
+    let token = page(&uri);
+    let now = (state.now)();
+    respond(state.square.notices(&quarter, token.as_deref(), now).await)
+}
+
+async fn post_notice<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(quarter): Path<String>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    respond(state.square.post(&signed.call(), &quarter, now).await)
+}
+
+async fn read_notice<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path((quarter, notice_id)): Path<(String, String)>,
+    uri: OriginalUri,
+) -> Response {
+    let token = page(&uri);
+    let now = (state.now)();
+    let read = state
+        .square
+        .notice(&quarter, &notice_id, token.as_deref(), now);
+    respond(read.await)
+}
+
+async fn delete_notice<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path((quarter, notice_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let authorization = header(&headers, "authorization");
+    let now = (state.now)();
+    let deleted = state
+        .square
+        .delete(authorization, &quarter, &notice_id, now);
+    respond(deleted.await)
+}
+
+async fn answer_notice<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path((quarter, notice_id)): Path<(String, String)>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    let call = signed.call();
+    respond(state.square.answer(&call, &quarter, &notice_id, now).await)
 }
 
 async fn openapi() -> Response {

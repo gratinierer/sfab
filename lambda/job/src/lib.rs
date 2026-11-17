@@ -14,6 +14,7 @@ use sfab_core::storage::{Store, StoreError};
 use sfab_federation::{DailyReport, Fetch, Notify};
 use sfab_genesis::{Daily, DailyReport as GenesisReport};
 use sfab_homes::DailyReport as HomesReport;
+use sfab_square::DailyReport as SquareReport;
 use sfab_vouches::DailyReport as StandingReport;
 
 /// What one run did, for the job's log.
@@ -23,13 +24,14 @@ pub struct Report {
     pub genesis: GenesisReport,
     pub standing: StandingReport,
     pub homes: HomesReport,
+    pub square: SquareReport,
     pub federation: DailyReport,
 }
 
 /// One run at `now`, a Unix time, fetching tokens through `fetch` and emailing through `notify`,
 /// making genesis codes as `genesis` says, and working out standing with the age rule from
 /// `age_rule_starts`, RFC 3339 to the second, which `cdk/stacks.py` sets, then cleaning the
-/// lanes' pointers and counting each quarter's homes.
+/// lanes' pointers and counting each quarter's homes, and indexing each quarter's Square.
 pub async fn run<S: Store, F: Fetch, N: Notify>(
     store: &S,
     fetch: &F,
@@ -58,12 +60,14 @@ pub async fn run<S: Store, F: Fetch, N: Notify>(
     let founders = sfab_vouches::founders();
     let standing = sfab_vouches::daily(store, founders, &residents, age_rule_starts, now).await?;
     let homes = sfab_homes::daily(store, sfab_homes::quarters(), now).await?;
+    let square = sfab_square::daily(store, sfab_homes::quarters(), now).await?;
     let federation = sfab_federation::daily(store, fetch, notify, now).await?;
     Ok(Report {
         census,
         genesis,
         standing,
         homes,
+        square,
         federation,
     })
 }

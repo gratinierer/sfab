@@ -850,6 +850,120 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
     }
     let unknown = "/v1/world/quarters/atlantis";
     assert_eq!(h.send(get("readQuarter", unknown, None)).await.0, 404);
+    // The Square: Finch lives in harbour, so it posts, answers and deletes there.
+    let square = "/v1/world/quarters/harbour/square";
+    let text = |t: &str| serde_json::to_vec(&json!({ "text": t })).unwrap();
+    let post_notice = |path: &str, auth, proof, body| Case {
+        operation: "postNotice",
+        method: "POST",
+        path: path.into(),
+        authorization: auth,
+        proof,
+        body,
+        viewer: None,
+    };
+    // postNotice: 201, 200 for the same proof, 400, 401, 404, 409.
+    let (status, notice) = h
+        .send(post_notice(
+            square,
+            auth.clone(),
+            Proof::Valid,
+            text("hello"),
+        ))
+        .await;
+    assert_eq!(status, 201);
+    let notice_id = notice["notice_id"].as_str().unwrap().to_owned();
+    let again = post_notice(square, auth.clone(), Proof::Valid, text("hello"));
+    assert_eq!(h.send(again).await, (200, notice.clone()));
+    let none = post_notice(square, auth.clone(), Proof::None, text("x"));
+    assert_eq!(h.send(none).await.0, 400);
+    let long = post_notice(square, auth.clone(), Proof::Valid, text(&"x".repeat(81)));
+    assert_eq!(h.send(long).await.0, 400);
+    let nobody = post_notice(square, None, Proof::Valid, text("x"));
+    assert_eq!(h.send(nobody).await.0, 401);
+    let nowhere = "/v1/world/quarters/atlantis/square";
+    let unknown = post_notice(nowhere, auth.clone(), Proof::Valid, text("x"));
+    assert_eq!(h.send(unknown).await.0, 404);
+    for n in ["two", "three"] {
+        let more = post_notice(square, auth.clone(), Proof::Valid, text(n));
+        assert_eq!(h.send(more).await.0, 201);
+    }
+    let fourth = post_notice(square, auth.clone(), Proof::Valid, text("four"));
+    let (status, refused) = h.send(fourth).await;
+    assert_eq!((status, refused["type"].clone()), (409, json!("too-soon")));
+    assert!(refused["retry_after"].is_string());
+    let schemas = &h.spec["components"]["schemas"];
+    assert_eq!(
+        schemas["NoticeText"]["maxLength"],
+        json!(sfab_square::MAX_TEXT_CHARS)
+    );
+    // answerNotice: 201, 200, 400, 401, 404.
+    let one = format!("{square}/{notice_id}");
+    let answer = |path: &str, auth, proof, body| Case {
+        operation: "answerNotice",
+        method: "PUT",
+        path: format!("{path}/answers/self"),
+        authorization: auth,
+        proof,
+        body,
+        viewer: None,
+    };
+    let (status, answered) = h
+        .send(answer(&one, auth.clone(), Proof::Valid, text("hi")))
+        .await;
+    assert_eq!((status, answered["id"].clone()), (201, json!(fid)));
+    let replaced = answer(&one, auth.clone(), Proof::Valid, text("hi again"));
+    assert_eq!(h.send(replaced).await.0, 200);
+    let bad = answer(&one, auth.clone(), Proof::None, text("x"));
+    assert_eq!(h.send(bad).await.0, 400);
+    assert_eq!(
+        h.send(answer(&one, None, Proof::Valid, text("x"))).await.0,
+        401
+    );
+    let missing = format!("{square}/2026-11-05-aaaaaaaaaaaa-1");
+    let absent = answer(&missing, auth.clone(), Proof::Valid, text("x"));
+    assert_eq!(h.send(absent).await.0, 404);
+    // readSquare and readNotice: 200, 400, 404.
+    let (status, page) = h.send(get("readSquare", square, None)).await;
+    assert_eq!((status, page["items"].as_array().unwrap().len()), (200, 3));
+    let made_up = format!("{square}?page=x");
+    assert_eq!(h.send(get("readSquare", &made_up, None)).await.0, 400);
+    assert_eq!(h.send(get("readSquare", nowhere, None)).await.0, 404);
+    let (status, read) = h.send(get("readNotice", &one, None)).await;
+    assert_eq!(
+        (
+            status,
+            read["notice"]["answers"].clone(),
+            read["items"][0]["text"].clone()
+        ),
+        (200, json!(1), json!("hi again"))
+    );
+    let made_up = format!("{square}/nope");
+    assert_eq!(h.send(get("readNotice", &made_up, None)).await.0, 400);
+    assert_eq!(h.send(get("readNotice", &missing, None)).await.0, 404);
+    // deleteNotice: 200, 400, 401, 403, 404.
+    let delete = |path: &str, auth| Case {
+        operation: "deleteNotice",
+        method: "DELETE",
+        path: path.into(),
+        authorization: auth,
+        proof: Proof::None,
+        body: Vec::new(),
+        viewer: None,
+    };
+    let (status, gone) = h.send(delete(&one, auth.clone())).await;
+    assert_eq!((status, gone["notice_id"].clone()), (200, json!(notice_id)));
+    assert_eq!(h.send(get("readNotice", &one, None)).await.0, 404);
+    assert_eq!(h.send(delete(&made_up, auth.clone())).await.0, 400);
+    assert_eq!(h.send(delete(&one, None)).await.0, 401);
+    let (status, theirs) = h.send(delete(&missing, auth.clone())).await;
+    assert_eq!(
+        (status, theirs["type"].clone()),
+        (403, json!("not-the-author"))
+    );
+    let mine_missing = format!("{square}/2026-11-04-{fid}-1");
+    assert_eq!(h.send(delete(&mine_missing, auth.clone())).await.0, 404);
+
     // moveOut: 200, 401.
     let out = |auth| Case {
         operation: "moveOut",
@@ -863,6 +977,15 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
     let (status, gone) = h.send(out(auth.clone())).await;
     assert_eq!((status, gone["address"].clone()), (200, Value::Null));
     assert_eq!(h.send(out(None)).await.0, 401);
+    // postNotice and answerNotice: 403 once Finch no longer lives in harbour.
+    let homeless = post_notice(square, auth.clone(), Proof::Valid, text("still here?"));
+    let (status, refused) = h.send(homeless).await;
+    assert_eq!(
+        (status, refused["type"].clone()),
+        (403, json!("not-a-resident"))
+    );
+    let homeless = answer(&missing, auth.clone(), Proof::Valid, text("x"));
+    assert_eq!(h.send(homeless).await.0, 403);
 
     // aboutme: the same 404 for anyone unpublished or unknown.
     let unknown = "/v1/identity/aaaaaaaaaaaa/aboutme";

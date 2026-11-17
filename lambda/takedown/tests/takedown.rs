@@ -14,6 +14,7 @@ use sfab_genesis::testing as genesis;
 use sfab_homes::Homes;
 use sfab_identity::{Identity, List};
 use sfab_messaging::Messaging;
+use sfab_square::Square;
 use sfab_takedown::{Mode, execute, plan};
 use sfab_vouches::Vouches;
 
@@ -29,6 +30,7 @@ struct World {
     messaging: Messaging<MemoryStore>,
     vouches: Vouches<MemoryStore>,
     homes: Homes<MemoryStore>,
+    square: Square<MemoryStore>,
 }
 
 fn world() -> World {
@@ -39,6 +41,7 @@ fn world() -> World {
         messaging: Messaging::new(store.clone(), identity.clone(), BITS),
         vouches: Vouches::new(store.clone(), identity.clone(), BITS),
         homes: Homes::new(store.clone(), identity.clone(), BITS).with(map, first),
+        square: Square::new(store.clone(), identity.clone(), BITS),
         identity,
         store,
     }
@@ -274,6 +277,35 @@ async fn full_agent(w: &World, name: &str, now: i64) -> Agent {
     let address = move_in(w, &id, &claim, now).await;
     let home = format!("identities/{id}/home.json");
     assert!(w.store.object(Bucket::Identities, &home).is_some());
+    // A notice on its quarter's Square, answered by itself: two `square/...` keys naming it.
+    let quarter = address.split('/').next().unwrap();
+    let square = format!("/v1/world/quarters/{quarter}/square");
+    let body = br#"{"text":"hello"}"#;
+    let proof = solve("POST", &square, Some(&auth), body, now);
+    let call = Call {
+        method: "POST",
+        path: &square,
+        authorization: Some(&auth),
+        proof: Some(&proof),
+        body,
+        viewer: None,
+    };
+    let posted = w.square.post(&call, quarter, now).await.expect("a notice");
+    let notice_id = posted.body["notice_id"].as_str().unwrap().to_owned();
+    let path = format!("{square}/{notice_id}/answers/self");
+    let proof = solve("PUT", &path, Some(&auth), body, now);
+    let call = Call {
+        method: "PUT",
+        path: &path,
+        authorization: Some(&auth),
+        proof: Some(&proof),
+        body,
+        viewer: None,
+    };
+    let answered = w.square.answer(&call, quarter, &notice_id, now).await;
+    assert_eq!(answered.expect("an answer").status, 201);
+    let found = w.store.list(Bucket::Identities, "square/").await.unwrap();
+    assert_eq!(found.iter().filter(|k| k.contains(id.as_str())).count(), 2);
     Agent {
         address,
         id,

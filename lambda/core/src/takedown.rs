@@ -40,6 +40,9 @@ pub enum Action {
     /// `home.json`, which frees the address. A key naming someone else stays, because the file
     /// was out of date.
     Pointers(fn(&[u8]) -> Vec<String>),
+    /// Delete every key under a prefix that this function says belongs to the agent, from the
+    /// key alone, such as the Square's notices and answers, whose keys name their authors.
+    Search(fn(&str, &AgentId) -> bool),
 }
 
 /// What [`Action::RemoveId`] writes in place of the ID.

@@ -86,6 +86,7 @@ async fn main() -> Result<(), lambda_runtime::Error> {
                         vouched = report.standing.vouched,
                         homes = report.homes.residents,
                         ghost_pointers = report.homes.ghosts,
+                        square_notices = report.square.notices,
                         residents = census.residents,
                         pages = census.pages,
                         written = census.written,

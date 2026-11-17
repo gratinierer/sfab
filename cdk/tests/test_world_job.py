@@ -156,6 +156,7 @@ def test_the_job_lists_only_world_federation_and_genesis_in_the_identities_bucke
                     "vouches/*",
                     "vitals/*",
                     "places/*",
+                    "square/*",
                     "identities/*/home.json",
                 ]
             }
@@ -177,6 +178,9 @@ def test_the_job_s_read_prefixes_are_the_crates_own():
     assert f'pub const PREFIX: &str = "{job_module.PLACES_PREFIX}";' in homes
     home = job_module.HOME_KEYS.replace("*", "{id}")
     assert f'format!("{home}")' in identity
+    # The square crate's `PREFIX`.
+    square = (lambda_dir / "world" / "square" / "src" / "lib.rs").read_text()
+    assert f'pub const PREFIX: &str = "{job_module.SQUARE_PREFIX}";' in square
 
 
 def test_only_the_job_may_touch_verified_federation_requests(api, base):
@@ -206,11 +210,17 @@ def test_only_the_job_may_write_or_delete_world(api, base):
     for role in ("ApiFunctionServiceRole", "KillSwitchFunctionServiceRole"):
         found = grants(api, base, role)
         assert ("s3:PutObject", "Identities/world/*") not in found, role
-        # The API deletes only in `messages/` (issue 14), a used genesis code (story 17) and a
-        # home's pointer (story 4); nothing but the job deletes in `world/`.
+        # The API deletes only in `messages/` (issue 14), a used genesis code (story 17), a
+        # home's pointer and a deleted notice's answers (story 4); nothing but the job deletes
+        # in `world/`.
         assert ("s3:DeleteObject", "Identities/world/*") not in found, role
         deletes = {resource for action, resource in found if action == "s3:DeleteObject"}
-        allowed = {"Identities/messages/*", "Identities/genesis/codes/*", "Identities/places/*"}
+        allowed = {
+            "Identities/messages/*",
+            "Identities/genesis/codes/*",
+            "Identities/places/*",
+            "Identities/square/*",
+        }
         assert deletes <= allowed, role
 
 

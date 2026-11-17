@@ -78,6 +78,11 @@ _LANE = re.compile(r"/v1/world/quarters/(?P<quarter>[a-z0-9-]+)/lanes/(?P<lane>[
 _HOME = re.compile(
     r"/v1/world/quarters/(?P<quarter>[a-z0-9-]+)/lanes/(?P<lane>[a-z0-9-]+)/homes/(?P<home>[0-9]+)"
 )
+_SQUARE = re.compile(r"/v1/world/quarters/(?P<quarter>[a-z0-9-]+)/square")
+_NOTICE = re.compile(r"/v1/world/quarters/(?P<quarter>[a-z0-9-]+)/square/(?P<notice_id>[^/]+)")
+_ANSWER = re.compile(
+    r"/v1/world/quarters/(?P<quarter>[a-z0-9-]+)/square/(?P<notice_id>[^/]+)/answers/self"
+)
 _ABOUTME = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/aboutme")
 _SEND = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/messages")
 _MESSAGE = re.compile(r"/v1/identity/self/messages/(?P<message_id>k-[a-z2-7]{12}|m-[0-9a-z-]+)")
@@ -130,6 +135,8 @@ class FakeApi:
         self.addresses: dict[str, str] = {}
         # A broken behaviour: moving out leaves the address on `aboutme`.
         self.keep_address_after_move_out = False
+        # The Square's notices: notice_id -> quarter, author, text and answers by answerer.
+        self.notices: dict[str, dict] = {}
         # Federation requests: domain -> token.
         self.federation: dict[str, str] = {}
         # Unused genesis codes, by kind: "exempt" (`--no-ip-limit`), "world" or "ordinary".
@@ -188,6 +195,24 @@ class FakeApi:
             return "vouched-by", ok(200, {"items": [], "next": None})
         if path == "/v1/world/quarters":
             return "quarters", problem(404, "not-built-yet")
+        square, notice = _SQUARE.fullmatch(path), _NOTICE.fullmatch(path)
+        if r.method == "GET" and square:
+            items = [
+                self._notice(i)
+                for i, n in reversed(self.notices.items())
+                if n["quarter"] == square["quarter"]
+            ]
+            return "square", ok(200, {"items": items, "next": None})
+        if r.method == "GET" and notice:
+            if notice["notice_id"] not in self.notices:
+                return "notice", problem(404)
+            found = self.notices[notice["notice_id"]]
+            answers = [
+                {"id": i, "text": t, "answered_at": "2026-11-05T00:00:00Z"}
+                for i, t in found["answers"].items()
+            ]
+            reply = {"notice": self._notice(notice["notice_id"]), "items": answers, "next": None}
+            return "notice", ok(200, reply)
         home = _HOME.fullmatch(path)
         if home:
             address = f"{home['quarter']}/{home['lane']}/{home['home']}"
@@ -268,6 +293,8 @@ class FakeApi:
                 allowed = {"quarter"}
             if path == "/v1/identity/self/home/description":
                 allowed = {"description"}
+            if square or _ANSWER.fullmatch(path):
+                allowed = {"text"}
             if path.endswith("federation/requests"):
                 allowed = {"domain"}
             if path.endswith("publication"):
@@ -399,6 +426,8 @@ class FakeApi:
             return "read own vouched-by", problem(404, "not-built-yet")
         if path.startswith("/v1/identity/self/home"):
             return self._home(agent, r, now)
+        if square or notice or _ANSWER.fullmatch(path):
+            return self._square(agent, r, path)
         lists = self.contacts.setdefault(agent, {"friends": [], "blocked": []})
         if contact:
             kind, other = contact["list"], contact["id"]
@@ -459,6 +488,47 @@ class FakeApi:
         home = {"address": address, "moved_at": "2026-11-05T00:00:00Z", "description": None}
         self.homes[agent] = home
         return "move in", ok(201, home)
+
+    def _notice(self, notice_id: str) -> dict:
+        n = self.notices[notice_id]
+        return {
+            "notice_id": notice_id,
+            "quarter": n["quarter"],
+            "author": n["author"],
+            "text": n["text"],
+            "posted_at": "2026-11-05T00:00:00Z",
+            "answers": len(n["answers"]),
+        }
+
+    def _square(self, agent: str, r: Request, path: str):
+        answer, notice = _ANSWER.fullmatch(path), _NOTICE.fullmatch(path)
+        quarter = (answer or notice or _SQUARE.fullmatch(path))["quarter"]
+        if r.method == "DELETE":
+            found = self.notices.get(notice["notice_id"])
+            if found is None:
+                return "delete notice", problem(404)
+            if found["author"] != agent:
+                return "delete notice", problem(403, "not-the-author")
+            del self.notices[notice["notice_id"]]
+            return "delete notice", ok(200, {"notice_id": notice["notice_id"]})
+        address = self.homes.get(agent, {}).get("address") or ""
+        if not address.startswith(f"{quarter}/"):
+            return "not a resident", problem(403, "not-a-resident")
+        text = json.loads(r.body)["text"]
+        if answer:
+            found = self.notices.get(answer["notice_id"])
+            if found is None:
+                return "answer notice", problem(404)
+            status = 200 if agent in found["answers"] else 201
+            found["answers"][agent] = text
+            reply = {"id": agent, "text": text, "answered_at": "2026-11-05T00:00:00Z"}
+            return "answer notice", ok(status, reply)
+        mine = [i for i, n in self.notices.items() if n["author"] == agent]
+        if len(mine) >= 3:
+            return "post notice", problem(409, "too-soon", retry_after="2026-11-06T00:00:00Z")
+        notice_id = f"2026-11-05-{agent}-{len(mine) + 1}"
+        self.notices[notice_id] = {"quarter": quarter, "author": agent, "text": text, "answers": {}}
+        return "post notice", ok(201, self._notice(notice_id))
 
     def _token_reply(self, domain: str) -> dict:
         token = self.federation[domain]

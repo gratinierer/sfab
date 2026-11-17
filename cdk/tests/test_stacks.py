@@ -493,6 +493,8 @@ def test_the_api_lambda_may_touch_only_its_own_prefixes(api, base):
         ("s3:DeleteObject", "Identities/genesis/codes/*"),
         # Story 4: a move frees its old address, and a lost one its new pointer.
         ("s3:DeleteObject", "Identities/places/*"),
+        # Story 4: a deleted notice's answers.
+        ("s3:DeleteObject", "Identities/square/*"),
     }
     # Without ListBucket, S3 answers a missing key with 403 instead of 404 (docs/aws-facts.md).
     expected |= {("s3:ListBucket", "Identities"), ("s3:ListBucket", "Claims")}
@@ -796,6 +798,17 @@ def test_the_takedown_program_waits_at_least_the_api_lambda_s_timeout():
     args = (sfab_config.REPO_ROOT / "lambda" / "takedown" / "src" / "args.rs").read_text()
     found = re.search(r"const API_TIMEOUT_SECONDS: u64 = (\d+);", args)
     assert found and int(found[1]) == stacks.API_TIMEOUT_SECONDS
+
+
+def test_the_square_expires_after_7_days_as_its_crate_hides_it(base):
+    # One rule on `square/`, the square crate's own prefix, covers every quarter, new ones too
+    # (story 4 "The Square"), and the crate hides notices past the same number of days.
+    rules = expiry_rules(base, "Identities")
+    assert rules["square/"] == stacks.SQUARE_DAYS == 7
+    lib = (sfab_config.REPO_ROOT / "lambda" / "world" / "square" / "src" / "lib.rs").read_text()
+    assert 'pub const PREFIX: &str = "square/";' in lib
+    found = re.search(r"pub const KEEP_DAYS: i64 = (\d+);", lib)
+    assert found and int(found[1]) == stacks.SQUARE_DAYS
 
 
 def test_the_federation_crate_s_lifetimes_match_the_lifecycle_rules():
