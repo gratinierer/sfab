@@ -62,6 +62,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-17T13:50:00+00:00 | walkthrough | 01 | claude-opus-5-5, auto | 0 new, 3 resolved, 0 still open | auto walkthrough, not a review pass; `scripts/check` green at 4b22b7d. |
 | 2026-11-17T14:05:00+00:00 | code-review | 01, 09 @ 1409cec..1edbd48 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, which also orchestrates) | 1 new: 0 standards, 1 spec, 0 security | round 1 of `/review-code 1409cec auto 3`, over the fixes for C169-C171; the Standards and Spec reviewers found the same gap, recorded once. Reviewers on a different model from the same family as the author and orchestrator. |
 | 2026-11-17T14:05:00+00:00 | check | @ 1edbd48 | scripts/check | — | green |
+| 2026-11-17T14:15:00+00:00 | walkthrough | 01, 09 | claude-opus-5-5, auto | 0 new, 1 resolved, 0 still open | auto walkthrough, not a review pass; address pass 1 of `/review-code 1409cec auto 3`. |
 
 ## Findings
 
