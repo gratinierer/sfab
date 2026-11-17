@@ -42,6 +42,35 @@ pub fn rfc3339(now: i64) -> String {
     )
 }
 
+/// The Unix time of a [`rfc3339`] text, or `None` for any other form, so a stored time such as
+/// a home's `moved_at` can be added to.
+pub fn parse_rfc3339(text: &str) -> Option<i64> {
+    if !is_rfc3339_second(text) {
+        return None;
+    }
+    let n = |from: usize, to: usize| text[from..to].parse::<i64>().ok();
+    let (year, month, day) = (n(0, 4)?, n(5, 7)?, n(8, 10)?);
+    let (hour, minute, second) = (n(11, 13)?, n(14, 16)?, n(17, 19)?);
+    if !(1..=12).contains(&month)
+        || !(1..=31).contains(&day)
+        || hour > 23
+        || minute > 59
+        || second > 59
+    {
+        return None;
+    }
+    // A civil date to days: Howard Hinnant's `days_from_civil`.
+    let y = if month <= 2 { year - 1 } else { year };
+    let era = y.div_euclid(400);
+    let yoe = y - era * 400;
+    let mp = if month > 2 { month - 3 } else { month + 9 };
+    let doy = (153 * mp + 2) / 5 + day - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    let days = era * 146_097 + doe - 719_468;
+    let at = days * DAY + hour * 3600 + minute * 60 + second;
+    (rfc3339(at) == text).then_some(at)
+}
+
 /// The UTC date of a Unix time, such as `2026-11-05`.
 pub fn utc_date(now: i64) -> String {
     let mut text = rfc3339(now);
@@ -110,6 +139,24 @@ mod tests {
         assert_eq!(rfc3339(1_793_836_800), "2026-11-05T00:00:00Z");
         assert_eq!(rfc3339(951_782_400 + 3_661), "2000-02-29T01:01:01Z");
         assert_eq!(rfc3339(4_102_444_799), "2099-12-31T23:59:59Z");
+    }
+
+    #[test]
+    fn reads_back_the_times_it_writes() {
+        assert_eq!(parse_rfc3339("2026-11-05T00:00:00Z"), Some(1_793_836_800));
+        assert_eq!(
+            parse_rfc3339("2000-02-29T01:01:01Z"),
+            Some(951_782_400 + 3_661)
+        );
+        assert_eq!(parse_rfc3339("1970-01-01T00:00:00Z"), Some(0));
+        for bad in [
+            "2026-02-30T00:00:00Z",
+            "2026-13-01T00:00:00Z",
+            "2026-11-05",
+            "x",
+        ] {
+            assert_eq!(parse_rfc3339(bad), None, "{bad}");
+        }
     }
 
     #[test]

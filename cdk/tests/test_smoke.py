@@ -79,6 +79,13 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "vouched-by",
         "standing",
         "withdraw vouch",
+        "quarters",
+        "move in",
+        "lane",
+        "describe home",
+        "home",
+        "move too soon",
+        "move out",
         "send message",
         "message to an unknown agent",
         "read knocks",
@@ -86,9 +93,13 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "execute-api no key",
         "execute-api wrong key",
     }
-    # About 43 (spec.md "Testing"), plus story 4's 6 vouch requests; the 4-second pace keeps
-    # any length under WAF's 100 per 5 minutes.
-    assert len(api.requests) <= 49
+    # About 43 (spec.md "Testing"), plus story 4's 6 vouch requests and 11 home ones; the
+    # 4-second pace keeps any length under WAF's 100 per 5 minutes.
+    assert len(api.requests) <= 60
+    # Moving showed the address on aboutme, and moving out took it off again.
+    agent = next(a for a in api.homes)
+    assert api.homes[agent]["address"] is None
+    assert api.addresses == {}
 
 
 def test_births_with_exempt_codes_from_one_ip_and_rerun_without_too_soon():
@@ -131,8 +142,8 @@ def test_a_world_code_a_racing_birth_used_is_retried_once_with_a_fresh_one():
     assert api.labels.count("genesis code") == 2
     assert "world birth" in api.labels, "the fresh code was accepted"
     assert len(api.pool) == 2
-    # The retry's GET and birth on top of the run's 49.
-    assert len(api.requests) <= 51
+    # The retry's GET and birth on top of the run's 60.
+    assert len(api.requests) <= 62
 
 
 def test_a_world_rejecting_both_world_codes_fails():
@@ -176,8 +187,8 @@ def test_the_same_used_world_code_again_is_refetched_until_a_fresh_one():
     assert api.labels.count("genesis code") == 3
     assert api.labels.count("invalid genesis code") == 1, "the same code isn't sent twice"
     assert "world birth" in api.labels, "the fresh code was accepted"
-    # Two refetches and a birth on top of the run's 49; at most three refetches, so 53.
-    assert len(api.requests) <= 53
+    # Two refetches and a birth on top of the run's 60; at most three refetches, so 64.
+    assert len(api.requests) <= 64
 
 
 def test_a_one_code_pool_holding_the_used_code_passes_and_skips_the_retry():
@@ -193,7 +204,7 @@ def test_a_one_code_pool_holding_the_used_code_passes_and_skips_the_retry():
     assert api.labels.count("genesis code") == 4, "the first fetch and three refetches"
     assert api.labels.count("invalid genesis code") == 1, "the same code isn't sent twice"
     assert any("skip" in line and "same" in line for line in lines), lines
-    assert len(api.requests) <= 53
+    assert len(api.requests) <= 64
 
 
 @pytest.mark.parametrize(
@@ -334,6 +345,13 @@ JSON = {"content-type": "application/json", "cache-control": "no-store"}
             "GET /v1/federation/world",
         ),
         ("federation worlds", ok(200, {"items": []}), "GET /v1/federation/worlds"),
+        ("quarters", problem(404, "about:blank"), "GET /v1/world/quarters"),
+        ("move in", ok(201, {"address": "elsewhere/x/1"}), "move in"),
+        ("move too soon", ok(200, {}), "move again too soon"),
+        ("lane", problem(404), "the lane lists it"),
+        ("home", problem(404), "read the home"),
+        ("describe home", problem(403, "no-home"), "describe the home"),
+        ("move out", ok(200, {"address": "harbour/first-lane/1"}), "move out"),
         ("federation request", ok(202, {"token": "short"}), "federation request"),
         ("federation request", problem(503, retry_after="x"), "federation request"),
         (
@@ -438,8 +456,8 @@ def test_production_births_nothing_and_writes_only_privately():
 
     assert result.failures == []
     # The production run is held to its 31 requests (spec.md "Testing" says about 31), plus
-    # story 4's 6 vouch requests.
-    assert len(api.requests) <= 37
+    # story 4's 6 vouch requests and 2 home reads.
+    assert len(api.requests) <= 39
     assert "birth" not in api.labels
     assert "world birth" not in api.labels
     assert "reclaim" not in api.labels
@@ -459,6 +477,7 @@ def test_production_births_nothing_and_writes_only_privately():
     assert api.contacts[SMOKE_ID] == {"friends": [], "blocked": []}, "contacts cleaned up"
     assert api.knocks[SMOKE_ID] == {}, "its knock removed"
     assert api.vouches[SMOKE_ID] == {}, "its vouch withdrawn"
+    assert SMOKE_ID not in api.homes, "it never moves in: living on a lane is public"
     assert {
         "openapi",
         "constitution",
@@ -490,6 +509,8 @@ def test_production_births_nothing_and_writes_only_privately():
         "vouched-by",
         "standing",
         "withdraw vouch",
+        "quarters",
+        "read own home",
         "send message",
         "message to an unknown agent",
         "read knocks",
@@ -543,3 +564,31 @@ def test_an_unpublish_that_leaves_the_copy_fails():
     api.ignore_unpublish = True
 
     assert "aboutme after unpublishing" in failing_checks(api, clock)
+
+
+def test_moving_out_must_take_the_address_off_aboutme():
+    clock = Clock()
+    api = FakeApi(clock)
+    api.keep_address_after_move_out = True
+
+    assert "aboutme without the address" in failing_checks(api, clock)
+
+
+def test_a_home_just_taken_is_retried_once():
+    clock = Clock()
+    api = FakeApi(clock)
+    taken = [problem(409, "try-later", retry_after="2026-11-06T00:05:00Z")]
+    real = api._home
+
+    def first_taken(agent, r, now):
+        if r.method == "PUT" and r.url.endswith("/home") and taken:
+            return "move taken", taken.pop()
+        return real(agent, r, now)
+
+    api._home = first_taken
+
+    result = smoke(api, clock)
+
+    assert result.failures == []
+    assert api.labels.count("move taken") == 1
+    assert "move in" in api.labels

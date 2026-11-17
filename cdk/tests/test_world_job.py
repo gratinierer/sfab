@@ -127,6 +127,10 @@ def test_the_job_may_list_claims_and_write_only_world_federation_and_genesis(api
         # Story 4: read the vouches agents gave, and `born_at` for the age rule, never a claim.
         ("s3:GetObject", "Identities/vouches/*"),
         ("s3:GetObject", "Identities/vitals/*"),
+        # Story 4's homes: delete pointers `home.json` disagrees with, reading each home.
+        ("s3:GetObject", "Identities/places/*"),
+        ("s3:DeleteObject", "Identities/places/*"),
+        ("s3:GetObject", "Identities/identities/*/home.json"),
     }
     assert len(publish) == 1
     assert topic_id(base, "Alerts") in next(iter(publish))[1]
@@ -145,7 +149,15 @@ def test_the_job_lists_only_world_federation_and_genesis_in_the_identities_bucke
     assert conditions == [
         {
             "StringLike": {
-                "s3:prefix": ["world/*", "federation/*", "genesis/*", "vouches/*", "vitals/*"]
+                "s3:prefix": [
+                    "world/*",
+                    "federation/*",
+                    "genesis/*",
+                    "vouches/*",
+                    "vitals/*",
+                    "places/*",
+                    "identities/*/home.json",
+                ]
             }
         }
     ]
@@ -160,6 +172,11 @@ def test_the_job_s_read_prefixes_are_the_crates_own():
     identity = (lambda_dir / "identity" / "src" / "lib.rs").read_text()
     assert f'format!("{job_module.VITALS_PREFIX}{{id}}.json")' in identity
     assert f'.list(Bucket::Identities, "{job_module.VITALS_PREFIX}")' in identity
+    # The homes crate's `PREFIX`, and the identity crate's `home.json` key.
+    homes = (lambda_dir / "world" / "homes" / "src" / "lib.rs").read_text()
+    assert f'pub const PREFIX: &str = "{job_module.PLACES_PREFIX}";' in homes
+    home = job_module.HOME_KEYS.replace("*", "{id}")
+    assert f'format!("{home}")' in identity
 
 
 def test_only_the_job_may_touch_verified_federation_requests(api, base):
@@ -189,11 +206,12 @@ def test_only_the_job_may_write_or_delete_world(api, base):
     for role in ("ApiFunctionServiceRole", "KillSwitchFunctionServiceRole"):
         found = grants(api, base, role)
         assert ("s3:PutObject", "Identities/world/*") not in found, role
-        # The API deletes only in `messages/` (issue 14) and a used genesis code (story 17);
-        # nothing but the job deletes in `world/`.
+        # The API deletes only in `messages/` (issue 14), a used genesis code (story 17) and a
+        # home's pointer (story 4); nothing but the job deletes in `world/`.
         assert ("s3:DeleteObject", "Identities/world/*") not in found, role
         deletes = {resource for action, resource in found if action == "s3:DeleteObject"}
-        assert deletes <= {"Identities/messages/*", "Identities/genesis/codes/*"}, role
+        allowed = {"Identities/messages/*", "Identities/genesis/codes/*", "Identities/places/*"}
+        assert deletes <= allowed, role
 
 
 # The kill switch's fourth stop step

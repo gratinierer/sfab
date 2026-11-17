@@ -1,5 +1,5 @@
 //! The actions a crate's takedown function can name for a location, as the program finds and
-//! applies them: delete, leave a note, and replace the ID with "[removed]"
+//! applies them: delete, leave a note, replace the ID with "[removed]", and follow pointers
 //! (`.stories/4-life-in-the-world/spec.md` "Takedown").
 
 use sfab_core::id::AgentId;
@@ -111,5 +111,43 @@ async fn removing_the_id_rewrites_only_the_files_under_the_prefix_that_name_it()
     );
     assert_eq!(store.writes_to(B, other), 1);
     assert_eq!(body(&store, "world/census.json"), r#"{"x":"wrenwrenwren"}"#);
+    assert!(found(&store, &wren(), &l).await.unwrap().is_empty());
+}
+
+/// A crate's file that points elsewhere: here, every line of the body is a key.
+fn lines(body: &[u8]) -> Vec<String> {
+    String::from_utf8_lossy(body)
+        .lines()
+        .map(str::to_owned)
+        .collect()
+}
+
+#[tokio::test]
+async fn pointers_delete_what_the_agent_s_file_names_only_while_it_still_names_the_agent() {
+    let store = MemoryStore::new();
+    put(
+        &store,
+        "identities/wrenwrenwren/home.json",
+        "places/a/1.json\nplaces/a/2.json\nplaces/a/3.json",
+    )
+    .await;
+    put(&store, "places/a/1.json", r#"{"id":"wrenwrenwren"}"#).await;
+    // Since taken by someone else, so the file was out of date.
+    put(&store, "places/a/2.json", r#"{"id":"mossmossmoss"}"#).await;
+    let l = location("identities/wrenwrenwren/home.json", Action::Pointers(lines));
+
+    let keys: Vec<String> = found(&store, &wren(), &l)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|(_, k)| k)
+        .collect();
+    assert_eq!(keys, vec!["places/a/1.json"]);
+    apply(&store, &wren(), &l).await.unwrap();
+
+    assert_eq!(
+        store.keys(B),
+        vec!["identities/wrenwrenwren/home.json", "places/a/2.json"]
+    );
     assert!(found(&store, &wren(), &l).await.unwrap().is_empty());
 }

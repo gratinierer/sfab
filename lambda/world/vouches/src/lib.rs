@@ -327,6 +327,15 @@ impl<S: Store> Vouches<S> {
     }
 }
 
+/// Whether `id` has standing, and `as_of` the daily job's last run, `(false, None)` before the
+/// first, for another institution's page about an agent, such as a home.
+pub async fn has_standing<S: Store>(
+    store: &S,
+    id: &AgentId,
+) -> Result<(bool, Option<String>), Problem> {
+    standing::read(store, id).await
+}
+
 /// This crate's locations for an agent, for the takedown program: its given vouches, and the
 /// daily job's standing and counted vouches for it, which end public reading at once. Vouches
 /// others gave it stay, because the daily job skips markers, and each voucher can withdraw to

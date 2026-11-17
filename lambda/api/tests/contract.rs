@@ -741,6 +741,129 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
     let bad = "/v1/identity/Nope/vouched-by";
     assert_eq!(h.send(get("readVouchedBy", bad, None)).await.0, 400);
 
+    // Homes: Finch moves into harbour, by whatever free home the world gives it.
+    let own = "/v1/identity/self/home";
+    let (status, none) = h.send(get("readOwnHome", own, auth.clone())).await;
+    assert_eq!((status, none["address"].clone()), (200, Value::Null));
+    assert_eq!(h.send(get("readOwnHome", own, None)).await.0, 401);
+    let describe = |auth, proof| Case {
+        operation: "describeHome",
+        method: "PUT",
+        path: "/v1/identity/self/home/description".into(),
+        authorization: auth,
+        proof,
+        body: br#"{"description":"a quiet room"}"#.to_vec(),
+        viewer: None,
+    };
+    let (status, refused) = h.send(describe(auth.clone(), Proof::Valid)).await;
+    assert_eq!((status, refused["type"].clone()), (403, json!("no-home")));
+    let move_to = |quarter: &str, auth, proof| Case {
+        operation: "moveHome",
+        method: "PUT",
+        path: own.into(),
+        authorization: auth,
+        proof,
+        body: serde_json::to_vec(&json!({ "quarter": quarter })).unwrap(),
+        viewer: None,
+    };
+    // moveHome: 201, 200 for the same proof, 400, 401, 409.
+    let (status, moved) = h.send(move_to("harbour", auth.clone(), Proof::Valid)).await;
+    assert_eq!(status, 201);
+    let address = moved["address"].as_str().unwrap().to_owned();
+    assert!(address.starts_with("harbour/lantern-lane/"), "{address}");
+    let again = h.send(move_to("harbour", auth.clone(), Proof::Valid)).await;
+    assert_eq!(again, (200, moved.clone()));
+    let no_proof = move_to("harbour", auth.clone(), Proof::None);
+    assert_eq!(h.send(no_proof).await.0, 400);
+    let unknown_quarter = move_to("atlantis", auth.clone(), Proof::Valid);
+    assert_eq!(h.send(unknown_quarter).await.0, 400);
+    assert_eq!(h.send(move_to("harbour", None, Proof::Valid)).await.0, 401);
+    let (status, early) = h.send(move_to("gardens", auth.clone(), Proof::Valid)).await;
+    assert_eq!((status, early["type"].clone()), (409, json!("too-soon")));
+    assert!(early["retry_after"].is_string());
+    // describeHome: 200, 400, 401.
+    let (status, described) = h.send(describe(auth.clone(), Proof::Valid)).await;
+    assert_eq!(
+        (status, described["description"].clone()),
+        (200, json!("a quiet room"))
+    );
+    assert_eq!(h.send(describe(auth.clone(), Proof::None)).await.0, 400);
+    assert_eq!(h.send(describe(None, Proof::Valid)).await.0, 401);
+    let schemas = &h.spec["components"]["schemas"];
+    assert_eq!(
+        schemas["HomeDescription"]["maxLength"],
+        json!(sfab_homes::MAX_DESCRIPTION_BYTES)
+    );
+    // readLane and readHome: 200, 400, 404.
+    let lane = "/v1/world/quarters/harbour/lanes/lantern-lane";
+    let (status, residents) = h.send(get("readLane", lane, None)).await;
+    assert_eq!(
+        (status, residents["items"][0]["id"].clone()),
+        (200, json!(fid))
+    );
+    let made_up = format!("{lane}?page=x");
+    assert_eq!(h.send(get("readLane", &made_up, None)).await.0, 400);
+    let empty = "/v1/world/quarters/harbour/lanes/rope-walk";
+    assert_eq!(h.send(get("readLane", empty, None)).await.0, 404);
+    let number = address.rsplit('/').next().unwrap();
+    let home = format!("{lane}/homes/{number}");
+    let (status, found) = h.send(get("readHome", &home, None)).await;
+    assert_eq!((status, found["id"].clone()), (200, json!(fid)));
+    let nobody = format!("{lane}/homes/{}", if number == "1" { "2" } else { "1" });
+    assert_eq!(h.send(get("readHome", &nobody, None)).await.0, 404);
+    // The quarter routes, before the daily job's first run and after it: 200, 400, 404.
+    let quarters = "/v1/world/quarters";
+    let quarter = "/v1/world/quarters/harbour";
+    let lanes = "/v1/world/quarters/harbour/lanes";
+    for (op, path) in [
+        ("readQuarters", quarters),
+        ("readQuarter", quarter),
+        ("readLanes", lanes),
+    ] {
+        let (status, early) = h.send(get(op, path, None)).await;
+        assert_eq!(
+            (status, early["type"].clone()),
+            (404, json!("not-built-yet")),
+            "{op}"
+        );
+    }
+    sfab_homes::daily(&*h.store, sfab_homes::quarters(), NOW)
+        .await
+        .unwrap();
+    let (status, all) = h.send(get("readQuarters", quarters, None)).await;
+    assert_eq!(
+        (status, all["items"][0]["residents"].clone()),
+        (200, json!(1))
+    );
+    let (status, counts) = h.send(get("readQuarter", quarter, None)).await;
+    assert_eq!((status, counts["free"].clone()), (200, json!(99)));
+    let (status, opened) = h.send(get("readLanes", lanes, None)).await;
+    assert_eq!(
+        (status, opened["items"][0]["lane"].clone()),
+        (200, json!("lantern-lane"))
+    );
+    for (op, path) in [
+        ("readQuarters", "/v1/world/quarters?page=x"),
+        ("readLanes", "/v1/world/quarters/harbour/lanes?page=x"),
+    ] {
+        assert_eq!(h.send(get(op, path, None)).await.0, 400, "{op}");
+    }
+    let unknown = "/v1/world/quarters/atlantis";
+    assert_eq!(h.send(get("readQuarter", unknown, None)).await.0, 404);
+    // moveOut: 200, 401.
+    let out = |auth| Case {
+        operation: "moveOut",
+        method: "DELETE",
+        path: own.into(),
+        authorization: auth,
+        proof: Proof::None,
+        body: Vec::new(),
+        viewer: None,
+    };
+    let (status, gone) = h.send(out(auth.clone())).await;
+    assert_eq!((status, gone["address"].clone()), (200, Value::Null));
+    assert_eq!(h.send(out(None)).await.0, 401);
+
     // aboutme: the same 404 for anyone unpublished or unknown.
     let unknown = "/v1/identity/aaaaaaaaaaaa/aboutme";
     assert_eq!(h.send(get("aboutme", unknown, None)).await.0, 404);

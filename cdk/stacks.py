@@ -79,9 +79,10 @@ GENESIS_POOL_KEY = "genesis/pool.json"
 # Story 4's institutions' prefixes, each owned by one crate under lambda/world/, which a test
 # ties here (.stories/4-life-in-the-world/spec.md "Changes to story 2's parts").
 STORY_4_PREFIXES = ("vouches/", "places/", "square/", "academy/", "library/")
-# Where the API Lambda deletes: `DELETE /identity/self/messages/{message_id}`, and a birth's
-# used genesis code (story 17 "What `birth` does").
-API_DELETE_PREFIXES = ("messages/", GENESIS_CODES_PREFIX)
+# Where the API Lambda deletes: `DELETE /identity/self/messages/{message_id}`, a birth's used
+# genesis code (story 17 "What `birth` does"), and a home's old pointer after a move (story 4
+# "Homes and quarters").
+API_DELETE_PREFIXES = ("messages/", GENESIS_CODES_PREFIX, "places/")
 # The identities bucket's prefixes the API Lambda reads and writes, the single keys it reads
 # and writes, and the prefixes it only reads. A HEAD needs GetObject.
 API_READ_WRITE_PREFIXES = (

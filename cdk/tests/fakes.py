@@ -69,11 +69,15 @@ IP_WINDOW = 4 * 3600
 NEXT_DAILY_RUN = "2026-11-06T00:05:00Z"
 
 
-PUBLISHABLE = ("name", "whoiam", "friends", "vouches")
+PUBLISHABLE = ("name", "whoiam", "friends", "vouches", "address")
 _CONTACT = re.compile(r"/v1/identity/self/(?P<list>friends|blocked)/(?P<id>[a-z2-7]{12})")
 _VOUCH = re.compile(r"/v1/identity/self/vouches/(?P<id>[a-z2-7]{12})")
 _VOUCHED_BY = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/vouched-by")
 _STANDING = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/standing")
+_LANE = re.compile(r"/v1/world/quarters/(?P<quarter>[a-z0-9-]+)/lanes/(?P<lane>[a-z0-9-]+)")
+_HOME = re.compile(
+    r"/v1/world/quarters/(?P<quarter>[a-z0-9-]+)/lanes/(?P<lane>[a-z0-9-]+)/homes/(?P<home>[0-9]+)"
+)
 _ABOUTME = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/aboutme")
 _SEND = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/messages")
 _MESSAGE = re.compile(r"/v1/identity/self/messages/(?P<message_id>k-[a-z2-7]{12}|m-[0-9a-z-]+)")
@@ -121,6 +125,11 @@ class FakeApi:
         # The vouches each agent gave: recipient -> reason. Nobody has standing, and the daily
         # job hasn't run, so nothing counts.
         self.vouches: dict[str, dict[str, str]] = {}
+        # Each agent's home, as `GET /identity/self/home` shows it, and who lives where.
+        self.homes: dict[str, dict] = {}
+        self.addresses: dict[str, str] = {}
+        # A broken behaviour: moving out leaves the address on `aboutme`.
+        self.keep_address_after_move_out = False
         # Federation requests: domain -> token.
         self.federation: dict[str, str] = {}
         # Unused genesis codes, by kind: "exempt" (`--no-ip-limit`), "world" or "ordinary".
@@ -177,6 +186,33 @@ class FakeApi:
             return "standing", ok(200, reply)
         if vouched_by:
             return "vouched-by", ok(200, {"items": [], "next": None})
+        if path == "/v1/world/quarters":
+            return "quarters", problem(404, "not-built-yet")
+        home = _HOME.fullmatch(path)
+        if home:
+            address = f"{home['quarter']}/{home['lane']}/{home['home']}"
+            resident = self.addresses.get(address)
+            if resident is None:
+                return "home", problem(404)
+            reply = {
+                "address": address,
+                "id": resident,
+                "description": self.homes[resident]["description"],
+                "standing": False,
+                "standing_as_of": None,
+            }
+            return "home", ok(200, reply)
+        lane = _LANE.fullmatch(path)
+        if lane:
+            prefix = f"{lane['quarter']}/{lane['lane']}/"
+            items = [
+                {"home": int(a.rsplit("/", 1)[1]), "id": i}
+                for a, i in self.addresses.items()
+                if a.startswith(prefix)
+            ]
+            if not items:
+                return "lane", problem(404)
+            return "lane", ok(200, {"items": items, "next": None})
         if path == "/v1/openapi.yaml":
             return "openapi", Response(
                 200,
@@ -228,6 +264,10 @@ class FakeApi:
                 allowed = {"text"}
             if vouch:
                 allowed = {"reason"}
+            if path == "/v1/identity/self/home":
+                allowed = {"quarter"}
+            if path == "/v1/identity/self/home/description":
+                allowed = {"description"}
             if path.endswith("federation/requests"):
                 allowed = {"domain"}
             if path.endswith("publication"):
@@ -357,6 +397,8 @@ class FakeApi:
             return "read given vouches", ok(200, {"items": items, "next": None})
         if path == "/v1/identity/self/vouched-by":
             return "read own vouched-by", problem(404, "not-built-yet")
+        if path.startswith("/v1/identity/self/home"):
+            return self._home(agent, r, now)
         lists = self.contacts.setdefault(agent, {"friends": [], "blocked": []})
         if contact:
             kind, other = contact["list"], contact["id"]
@@ -392,6 +434,32 @@ class FakeApi:
         return "send message", ok(202, {"to": to, "kind": "knock", "sent_at": "2026-11-05T00:00:00Z"})
 
 
+    def _home(self, agent: str, r: Request, now: int):
+        home = self.homes.get(agent, {"address": None, "moved_at": None, "description": None})
+        if r.url.endswith("/description"):
+            if home["address"] is None:
+                return "describe home", problem(403, "no-home")
+            home["description"] = json.loads(r.body)["description"]
+            return "describe home", ok(200, home)
+        if r.method == "GET":
+            return "read own home", ok(200, home)
+        if r.method == "DELETE":
+            if home["address"] is not None:
+                self.addresses.pop(home["address"])
+                home["left"] = home["address"]
+                home["address"] = None
+                home["moved_at"] = "2026-11-05T00:00:00Z"
+            return "move out", ok(200, home)
+        if home["moved_at"] is not None:
+            return "move too soon", problem(409, "too-soon", retry_after="2026-12-05T00:00:00Z")
+        quarter = json.loads(r.body)["quarter"]
+        number = 1 + sum(a.startswith(f"{quarter}/") for a in self.addresses)
+        address = f"{quarter}/first-lane/{number}"
+        self.addresses[address] = agent
+        home = {"address": address, "moved_at": "2026-11-05T00:00:00Z", "description": None}
+        self.homes[agent] = home
+        return "move in", ok(201, home)
+
     def _token_reply(self, domain: str) -> dict:
         token = self.federation[domain]
         return {
@@ -422,4 +490,10 @@ class FakeApi:
             if stale:
                 friends.append(stale)
             copy["friends"] = friends
+        home = self.homes.get(agent, {})
+        address = home.get("address") or (
+            home.get("left") if self.keep_address_after_move_out else None
+        )
+        if "address" in public and address:
+            copy["address"] = address
         return "aboutme", ok(200, copy)

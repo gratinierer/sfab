@@ -84,6 +84,8 @@ async fn main() -> Result<(), lambda_runtime::Error> {
                     tracing::info!(
                         standing = report.standing.standing,
                         vouched = report.standing.vouched,
+                        homes = report.homes.residents,
+                        ghost_pointers = report.homes.ghosts,
                         residents = census.residents,
                         pages = census.pages,
                         written = census.written,

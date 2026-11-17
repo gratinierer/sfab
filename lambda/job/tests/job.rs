@@ -124,6 +124,39 @@ async fn the_job_gives_the_compiled_in_founders_standing_unless_taken_down() {
 }
 
 #[tokio::test]
+async fn the_job_deletes_a_ghost_pointer_and_counts_every_quarter_s_homes() {
+    let store = Arc::new(MemoryStore::new());
+    // A pointer naming an agent with no home, as a takedown or a skipped delete leaves it.
+    let ghost = "places/harbour/lantern-lane/1.json";
+    store
+        .put(
+            Bucket::Identities,
+            ghost,
+            br#"{"id":"aaaaaaaaaaaa"}"#.to_vec(),
+            Default::default(),
+            Condition::Always,
+        )
+        .await
+        .unwrap();
+
+    let report = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, AGE_RULE_STARTS, NOW)
+        .await
+        .unwrap();
+
+    assert_eq!((report.homes.residents, report.homes.ghosts), (0, 1));
+    assert!(store.object(Bucket::Identities, ghost).is_none());
+    let rule = IpRule::new("anykeyanykeyanykeyanykeyanykey12", Window::hours(4));
+    let genesis = Arc::new(Genesis::new(store.clone(), rule));
+    let identity = Arc::new(sfab_identity::Identity::new(store.clone(), 8, genesis));
+    let homes = sfab_homes::Homes::new(store.clone(), identity, 8);
+    let quarter = homes.quarter_counts("harbour").await.unwrap().body;
+    assert_eq!(
+        quarter,
+        json!({"quarter": "harbour", "residents": 0, "free": 100, "as_of": "2026-11-07T00:05:00Z"})
+    );
+}
+
+#[tokio::test]
 async fn the_job_makes_the_days_genesis_codes() {
     let store = Arc::new(MemoryStore::new());
 
