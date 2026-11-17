@@ -1,7 +1,7 @@
 # Set up the world crates, config files and the daily job's rules
 
 Label: ready-for-agent
-Blocked by: 11, 2-identity-api#06, 2-identity-api#11
+Blocked by: 2-identity-api#06, 2-identity-api#11
 
 `spec.md` "Foundations".
 
@@ -11,6 +11,9 @@ Blocked by: 11, 2-identity-api#06, 2-identity-api#11
   API and the daily job.
 - `world/founders.yaml`, `world/quarters.yaml` and `world/shelves.yaml`, compiled in, with synth checks: at least 3
   founders, and quarter, lane and shelf names matching `[a-z0-9-]`.
+- A fixture founders file of at least 3 made-up IDs, which tests and `scripts/check` use, and a deploy that refuses
+  the fixture and fails without the real `world/founders.yaml`, which ticket 11 commits (`spec.md` "Launch
+  checklist", step 2). The ticket commits no `world/founders.yaml` itself.
 - `age_rule_starts` in the CDK code, left as a placeholder until the launch checklist sets it.
 - The daily job's shared rules: everything it builds under `world/`, writing only what changed, deleting files under a rebuilt prefix that aren't in this run's set, never the Chronicle's entries
   or milestones, and `404` with `type: not-built-yet` until a file exists.
@@ -23,6 +26,7 @@ Blocked by: 11, 2-identity-api#06, 2-identity-api#11
 ## Done when
 
 - Synth fails with fewer than 3 founders or a bad name, and passes with the fixture config.
+- A deploy with the fixture founders, or without `world/founders.yaml`, is refused before anything is deployed.
 - Unit tests cover deleting files under a rebuilt prefix that aren't in this run's set, never deleting the Chronicle's
   entries or `milestones.json`, and `not-built-yet`.
 

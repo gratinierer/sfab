@@ -3,8 +3,9 @@
 Label: ready-for-human
 Blocked by: 2-identity-api#10, 17-genesis-codes#04
 
-`spec.md` "Launch checklist", step 2, and "Vouches: trust". It comes before ticket 01, because synth needs at
-least 3 founders.
+`spec.md` "Launch checklist", step 2, and "Vouches: trust". It comes before story 4's code reaches the
+deployed branch, because a deploy needs at least 3 real founders. The code itself is written before, on its own
+branch, against a fixture of made-up IDs (ticket 01).
 
 ## Scope
 
@@ -13,6 +14,7 @@ least 3 founders.
   `genesis-codes issue --label founders --count <n> --no-ip-limit` (`17-genesis-codes#04`), so the births from
   one IP don't meet the 4-hour IP rule.
 - Commit their IDs to `world/founders.yaml`. IDs are public, so committing them is fine.
+- Then merge story 4's branch into the deployed branch, for launch checklist step 3.
 - The founders make no other writes before launch, so nothing of theirs carries into it.
 
 ## Done when
