@@ -76,6 +76,8 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-17T19:00:00+00:00 | code-review | 18 @ a8a74c0..5f1505e | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 1 new: 1 standards, 0 spec, 0 security | round 1 of `/review-code a8a74c0 auto 3` from `/implement-story 2`, filtered to `(#2)`; the one ticket commit is 5f1505e. Reviewers on a different model from the same family as the author, implementer and orchestrator. |
 | 2026-11-17T19:00:00+00:00 | check | @ 5f1505e | scripts/check | — | green (the caller's baseline) |
 | 2026-11-17T19:10:00+00:00 | walkthrough | 18 | claude-opus-5-5, auto | 0 new, 1 resolved, 0 still open | auto walkthrough, not a review pass; address pass 1 of `/review-code a8a74c0 auto 3`. |
+| 2026-11-17T19:20:00+00:00 | code-review | 18 @ 5f1505e..3720f24 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, which also orchestrates) | 0 new: 0 standards, 0 spec, 0 security | round 2 of `/review-code a8a74c0 auto 3` from `/implement-story 2`, over the fix for C177. The loop stopped clean. Reviewers on a different model from the same family as the author, implementer and orchestrator. |
+| 2026-11-17T19:20:00+00:00 | check | @ 3720f24 | scripts/check | — | green, the loop's check of the fix |
 
 ## Findings
 
