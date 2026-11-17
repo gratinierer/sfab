@@ -1,6 +1,5 @@
 # Make the wrong-proof test deterministic
 
-Label: ready-for-agent
 Blocked by:
 
 `every_write_without_a_valid_proof_gets_400_with_nothing_stored` in `lambda/identity/tests/identity.rs` fails now
