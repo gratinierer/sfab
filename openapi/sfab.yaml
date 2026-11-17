@@ -213,6 +213,7 @@ x-amazon-apigateway-gateway-responses:
     responseTemplates:
       # messageString, not validationErrorString: a pattern failure quotes the offending input, which may be a
       # malformed claim or recovery code, and no secret may reach a problem detail (SECURITY_RULES.md rule 2).
+      # It stands bare because it arrives already JSON-quoted (docs/aws-facts.md, "$context.error.messageString").
       application/problem+json: '{"type": "about:blank", "title": "Malformed request body", "status": 400, "detail": $context.error.messageString}'
   INVALID_API_KEY:
     statusCode: 403
