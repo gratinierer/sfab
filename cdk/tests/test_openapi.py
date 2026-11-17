@@ -255,7 +255,8 @@ def test_no_gateway_response_echoes_the_request(source):
     request (SECURITY_RULES.md rule 2). So a malformed body gets the generic message."""
     for name, response in source["x-amazon-apigateway-gateway-responses"].items():
         for template in response["responseTemplates"].values():
-            assert set(re.findall(r"\$[A-Za-z_][\w.]*", template)) <= {"$context.error.messageString"}, name
+            # Every "$" must start the bare messageString, so ${...}, $!... and $!{...} fail too.
+            assert not re.search(r"\$(?!context\.error\.messageString(?![\w.]))", template), name
     _, body = gateway_response(source, "BAD_REQUEST_BODY")
     assert body["detail"] == MESSAGE
 
