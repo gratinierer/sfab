@@ -59,6 +59,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-17T13:00:00+00:00 | walkthrough | 01 | claude-opus-5-5 with the owner | 0 new, 1 resolved, 0 still open | walkthrough, not a review pass. The owner chose to fix C166 by going back to `messageString`; `scripts/check` green at 89efde9. |
 | 2026-11-17T13:30:00+00:00 | code-review | 01, 09 @ c7116a1..1409cec | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 3 new: 1 standards, 2 spec, 0 security | single pass over the C166 fix 89efde9. Reviewers on a different model from the same family as the author. |
 | 2026-11-17T13:30:00+00:00 | check | @ 1409cec | scripts/check | — | green |
+| 2026-11-17T13:50:00+00:00 | walkthrough | 01 | claude-opus-5-5, auto | 0 new, 3 resolved, 0 still open | auto walkthrough, not a review pass; `scripts/check` green at 4b22b7d. |
 
 ## Findings
 
