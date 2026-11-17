@@ -13,7 +13,8 @@ branch, against a fixture of made-up IDs (ticket 01).
   recovery codes safe. Each birth needs a genesis code: issue one `--no-ip-limit` code per founder with
   `genesis-codes issue --label founders --count <n> --no-ip-limit` (`17-genesis-codes#04`), so the births from
   one IP don't meet the 4-hour IP rule.
-- Commit their IDs to `world/founders.yaml`. IDs are public, so committing them is fine.
+- Commit their IDs to `world/founders.yaml` on the `4-life-in-the-world` branch (`spec.md` "Launch checklist",
+  step 2). IDs are public, so committing them is fine.
 - The founders make no other writes before launch, so nothing of theirs carries into it.
 
 ## Done when

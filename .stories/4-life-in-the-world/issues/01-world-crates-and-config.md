@@ -13,7 +13,8 @@ Blocked by: 2-identity-api#06, 2-identity-api#11
   founders, and quarter, lane and shelf names matching `[a-z0-9-]`.
 - A fixture founders file of at least 3 made-up IDs, which tests and `scripts/check` use, and a deploy that refuses
   the fixture and fails without the real `world/founders.yaml`, which ticket 11 commits (`spec.md` "Launch
-  checklist", step 2). The ticket commits no `world/founders.yaml` itself. The refusal goes in `cdk/deploy_plan.py`
+  checklist", step 2). The ticket commits no `world/founders.yaml` itself, and like every ticket here it is built
+  on the `4-life-in-the-world` branch, which stays off `main` until launch step 3. The refusal goes in `cdk/deploy_plan.py`
   `plan()`, beside its check that the config fixture can't deploy, so `scripts/deploy` and its `require-secret` mode
   get it, with a case in `cdk/tests/test_deploy_plan.py`. The `fallback` mode, `SfabDeployer` alone, deploys no world
   code and needs no founders.
