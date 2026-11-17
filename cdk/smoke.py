@@ -329,7 +329,8 @@ def _public(s: _Session) -> None:
 def _world(s: _Session) -> None:
     """The world routes, which write nothing. Before the daily job's first run, the census, the
     resident list and the quarters answer `404` with `not-built-yet`, which passes. A page past
-    the last is left to the unit tests, to keep the run near 60 requests."""
+    the last is left to the unit tests, to keep the run near 66 requests. The first quarter's
+    Square is live, so it answers `200` from the start."""
 
     def constitution(r: Response) -> str | None:
         body = _json_object(r)
@@ -368,6 +369,9 @@ def _world(s: _Session) -> None:
             s.check(f"GET {path}", response, 404, problem="not-built-yet")
         else:
             s.check(f"GET {path}", response, 200, verify=check)
+    # The Square is live, so it answers before the daily job's first run too.
+    square = f"/v1/world/quarters/{world_config.quarters()[0].name}/square"
+    s.check(f"GET {square}", s.api("GET", square), 200, verify=residents)
     _genesis_code(s)
 
 
@@ -784,6 +788,7 @@ def _home(s: _Session, credential: str, *, production: bool) -> None:
         200,
         verify=_has(id=agent, description="The smoke home."),
     )
+    _square(s, credential, quarter)
     response, _, _ = s.write("PUT", own, body, credential=credential)
     s.check("move again too soon", response, 409, problem="too-soon")
     s.check(
@@ -799,6 +804,42 @@ def _home(s: _Session, credential: str, *, production: bool) -> None:
 
     # Only `address` is public now, so the copy holds just the ID.
     s.check("aboutme without the address", s.api("GET", me), 200, verify=no_address)
+
+
+def _square(s: _Session, credential: str, quarter: str) -> None:
+    """The test agent, a resident of `quarter`, posts a notice, finds it on the Square, answers
+    it, reads the answer back and deletes it, which takes its answer with it (story 4 "The
+    Square"). Only the full run: a notice is public."""
+    agent = agent_of(credential)
+    square = f"/v1/world/quarters/{quarter}/square"
+    response, _, _ = s.write("POST", square, b'{"text":"Smoke test."}', credential=credential)
+    if not s.check("post a notice", response, 201, verify=_has(author=agent)):
+        return
+    notice_id = _json_object(response)["notice_id"]
+
+    def lists_notice(r: Response) -> str | None:
+        found = _json_object(r).get("items", [])
+        ids = [n.get("notice_id") for n in found if isinstance(n, dict)]
+        return None if notice_id in ids else f"{notice_id} not in {ids!r}"
+
+    s.check("the Square lists it", s.api("GET", square), 200, verify=lists_notice)
+    one = f"{square}/{notice_id}"
+    answer = f"{one}/answers/self"
+    response, _, _ = s.write("PUT", answer, b'{"text":"Seen."}', credential=credential)
+    s.check("answer the notice", response, 201, verify=_has(id=agent))
+
+    def answered(r: Response) -> str | None:
+        found = _json_object(r)
+        count = found.get("notice", {}).get("answers")
+        return None if count == 1 and len(found.get("items", [])) == 1 else f"answers {count!r}"
+
+    s.check("read the notice", s.api("GET", one), 200, verify=answered)
+    s.check(
+        "delete the notice",
+        s.api("DELETE", one, _headers(credential)),
+        200,
+        verify=_has(notice_id=notice_id),
+    )
 
 
 def _messages(s: _Session, credential: str) -> None:

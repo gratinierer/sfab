@@ -687,6 +687,14 @@ async fn read_counts<S: Store>(store: &S, quarter: &str) -> Result<Option<Value>
     }
 }
 
+/// The quarter an agent lives in, from one read of its `home.json`, or `None` when it has no
+/// home, for another institution's residency rule, such as the Square's.
+pub async fn quarter_of<S: Store>(store: &S, id: &AgentId) -> Result<Option<String>, Problem> {
+    let home = read_home(store, id).await?;
+    let address = home.and_then(|(h, _)| h.address);
+    Ok(address.and_then(|a| a.split('/').next().map(str::to_owned)))
+}
+
 /// The pointer a `home.json` names, for the takedown program to delete, freeing the address.
 fn pointers_of(body: &[u8]) -> Vec<String> {
     let home: Option<HomeFile> = serde_json::from_slice(body).ok();

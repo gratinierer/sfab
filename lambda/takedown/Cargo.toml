@@ -17,6 +17,7 @@ sfab-core = { path = "../core", features = ["s3"] }
 sfab-homes = { path = "../world/homes" }
 sfab-identity = { path = "../identity" }
 sfab-messaging = { path = "../messaging" }
+sfab-square = { path = "../world/square" }
 sfab-vouches = { path = "../world/vouches" }
 tokio = { version = "1.52.3", features = ["macros", "rt", "time"] }
 

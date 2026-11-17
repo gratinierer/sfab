@@ -157,6 +157,38 @@ async fn the_job_deletes_a_ghost_pointer_and_counts_every_quarter_s_homes() {
 }
 
 #[tokio::test]
+async fn the_job_indexes_every_quarter_s_square_skipping_markers() {
+    let store = Arc::new(MemoryStore::new());
+    // Yesterday's notice in harbour, and a deleted one, a zero-byte marker.
+    for (n, body) in [(1, b"{}".to_vec()), (2, Vec::new())] {
+        let key = format!("square/harbour/2026-11-06/notices/aaaaaaaaaaaa-{n}.json");
+        store
+            .put(
+                Bucket::Identities,
+                &key,
+                body,
+                Default::default(),
+                Condition::Always,
+            )
+            .await
+            .unwrap();
+    }
+
+    let report = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, AGE_RULE_STARTS, NOW)
+        .await
+        .unwrap();
+
+    assert_eq!(report.square.notices, 1);
+    for quarter in sfab_homes::quarters() {
+        let index = format!("world/square/{}.json", quarter.name);
+        assert!(
+            store.object(Bucket::Identities, &index).is_some(),
+            "{index}"
+        );
+    }
+}
+
+#[tokio::test]
 async fn the_job_makes_the_days_genesis_codes() {
     let store = Arc::new(MemoryStore::new());
 

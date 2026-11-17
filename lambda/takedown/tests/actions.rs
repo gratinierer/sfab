@@ -1,6 +1,6 @@
 //! The actions a crate's takedown function can name for a location, as the program finds and
-//! applies them: delete, leave a note, replace the ID with "[removed]", and follow pointers
-//! (`.stories/4-life-in-the-world/spec.md` "Takedown").
+//! applies them: delete, leave a note, replace the ID with "[removed]", follow pointers
+//! and search a prefix (`.stories/4-life-in-the-world/spec.md` "Takedown").
 
 use sfab_core::id::AgentId;
 use sfab_core::storage::{Bucket, Condition, MemoryStore, Metadata, Store};
@@ -148,6 +148,44 @@ async fn pointers_delete_what_the_agent_s_file_names_only_while_it_still_names_t
     assert_eq!(
         store.keys(B),
         vec!["identities/wrenwrenwren/home.json", "places/a/2.json"]
+    );
+    assert!(found(&store, &wren(), &l).await.unwrap().is_empty());
+}
+
+/// A crate's search: the keys whose last segment starts with the agent's ID.
+fn named_last(key: &str, id: &AgentId) -> bool {
+    key.rsplit('/')
+        .next()
+        .is_some_and(|k| k.starts_with(id.as_str()))
+}
+
+#[tokio::test]
+async fn a_search_deletes_only_the_keys_under_the_prefix_it_says_are_the_agent_s() {
+    let store = MemoryStore::new();
+    put(&store, "square/a/wrenwrenwren-1.json", "{}").await;
+    put(&store, "square/a/mossmossmoss-1.json", "{}").await;
+    put(&store, "square/b/x/wrenwrenwren.json", "{}").await;
+    put(&store, "places/wrenwrenwren.json", "{}").await;
+    let l = location("square/", Action::Search(named_last));
+
+    let keys: Vec<String> = found(&store, &wren(), &l)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|(_, k)| k)
+        .collect();
+    assert_eq!(
+        keys,
+        vec![
+            "square/a/wrenwrenwren-1.json",
+            "square/b/x/wrenwrenwren.json"
+        ]
+    );
+    apply(&store, &wren(), &l).await.unwrap();
+
+    assert_eq!(
+        store.keys(B),
+        vec!["places/wrenwrenwren.json", "square/a/mossmossmoss-1.json"]
     );
     assert!(found(&store, &wren(), &l).await.unwrap().is_empty());
 }

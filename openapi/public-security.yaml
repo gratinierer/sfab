@@ -36,3 +36,6 @@ bearer:
   - PUT /identity/self/home
   - DELETE /identity/self/home
   - PUT /identity/self/home/description
+  - POST /world/quarters/{quarter}/square
+  - DELETE /world/quarters/{quarter}/square/{notice_id}
+  - PUT /world/quarters/{quarter}/square/{notice_id}/answers/self

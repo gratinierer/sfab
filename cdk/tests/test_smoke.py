@@ -86,6 +86,11 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "home",
         "move too soon",
         "move out",
+        "square",
+        "post notice",
+        "answer notice",
+        "notice",
+        "delete notice",
         "send message",
         "message to an unknown agent",
         "read knocks",
@@ -93,9 +98,11 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "execute-api no key",
         "execute-api wrong key",
     }
-    # About 43 (spec.md "Testing"), plus story 4's 6 vouch requests and 11 home ones; the
-    # 4-second pace keeps any length under WAF's 100 per 5 minutes.
-    assert len(api.requests) <= 60
+    # About 43 (spec.md "Testing"), plus story 4's 6 vouch requests, 11 home ones and 6 on the
+    # Square; the 4-second pace keeps any length under WAF's 100 per 5 minutes.
+    assert len(api.requests) <= 66
+    # The notice was posted, answered and deleted.
+    assert api.notices == {}
     # Moving showed the address on aboutme, and moving out took it off again.
     agent = next(a for a in api.homes)
     assert api.homes[agent]["address"] is None
@@ -142,8 +149,8 @@ def test_a_world_code_a_racing_birth_used_is_retried_once_with_a_fresh_one():
     assert api.labels.count("genesis code") == 2
     assert "world birth" in api.labels, "the fresh code was accepted"
     assert len(api.pool) == 2
-    # The retry's GET and birth on top of the run's 60.
-    assert len(api.requests) <= 62
+    # The retry's GET and birth on top of the run's 66.
+    assert len(api.requests) <= 68
 
 
 def test_a_world_rejecting_both_world_codes_fails():
@@ -187,8 +194,8 @@ def test_the_same_used_world_code_again_is_refetched_until_a_fresh_one():
     assert api.labels.count("genesis code") == 3
     assert api.labels.count("invalid genesis code") == 1, "the same code isn't sent twice"
     assert "world birth" in api.labels, "the fresh code was accepted"
-    # Two refetches and a birth on top of the run's 60; at most three refetches, so 64.
-    assert len(api.requests) <= 64
+    # Two refetches and a birth on top of the run's 66; at most three refetches, so 70.
+    assert len(api.requests) <= 70
 
 
 def test_a_one_code_pool_holding_the_used_code_passes_and_skips_the_retry():
@@ -204,7 +211,7 @@ def test_a_one_code_pool_holding_the_used_code_passes_and_skips_the_retry():
     assert api.labels.count("genesis code") == 4, "the first fetch and three refetches"
     assert api.labels.count("invalid genesis code") == 1, "the same code isn't sent twice"
     assert any("skip" in line and "same" in line for line in lines), lines
-    assert len(api.requests) <= 64
+    assert len(api.requests) <= 70
 
 
 @pytest.mark.parametrize(
@@ -352,6 +359,12 @@ JSON = {"content-type": "application/json", "cache-control": "no-store"}
         ("home", problem(404), "read the home"),
         ("describe home", problem(403, "no-home"), "describe the home"),
         ("move out", ok(200, {"address": "harbour/first-lane/1"}), "move out"),
+        ("square", problem(404), "GET /v1/world/quarters/harbour/square"),
+        ("post notice", problem(403, "not-a-resident"), "post a notice"),
+        ("square", ok(200, {"items": [], "next": None}), "the Square lists it"),
+        ("answer notice", ok(200, {}), "answer the notice"),
+        ("notice", ok(200, {"notice": {"answers": 0}, "items": []}), "read the notice"),
+        ("delete notice", problem(403, "not-the-author"), "delete the notice"),
         ("federation request", ok(202, {"token": "short"}), "federation request"),
         ("federation request", problem(503, retry_after="x"), "federation request"),
         (
@@ -456,8 +469,10 @@ def test_production_births_nothing_and_writes_only_privately():
 
     assert result.failures == []
     # The production run is held to its 31 requests (spec.md "Testing" says about 31), plus
-    # story 4's 6 vouch requests and 2 home reads.
-    assert len(api.requests) <= 39
+    # story 4's 6 vouch requests, 2 home reads and a read of the Square, which it never
+    # writes on, since a notice is public.
+    assert len(api.requests) <= 40
+    assert api.notices == {}
     assert "birth" not in api.labels
     assert "world birth" not in api.labels
     assert "reclaim" not in api.labels
@@ -511,6 +526,7 @@ def test_production_births_nothing_and_writes_only_privately():
         "withdraw vouch",
         "quarters",
         "read own home",
+        "square",
         "send message",
         "message to an unknown agent",
         "read knocks",

@@ -42,6 +42,7 @@ pub fn locations(id: &AgentId) -> Vec<Location> {
     all.extend(sfab_messaging::takedown(id));
     all.extend(sfab_vouches::takedown(id));
     all.extend(sfab_homes::takedown(id));
+    all.extend(sfab_square::takedown(id));
     all
 }
 
@@ -113,6 +114,7 @@ pub async fn found<S: Store>(
             }
         }
         Action::Pointers(pointers_of) => keys = pointed(store, id, l, pointers_of).await?,
+        Action::Search(belongs) => keys = searched(store, id, l, belongs).await?,
     }
     Ok(keys.into_iter().map(|k| (l.bucket, k)).collect())
 }
@@ -185,7 +187,24 @@ pub async fn apply<S: Store>(store: &S, id: &AgentId, l: &Location) -> Result<()
             }
             Ok(())
         }
+        Action::Search(belongs) => {
+            for key in searched(store, id, l, belongs).await? {
+                store.delete(l.bucket, &key).await?;
+            }
+            Ok(())
+        }
     }
+}
+
+/// The keys under the prefix `l.key` that `belongs` says are the agent's, from one listing.
+async fn searched<S: Store>(
+    store: &S,
+    id: &AgentId,
+    l: &Location,
+    belongs: fn(&str, &AgentId) -> bool,
+) -> Result<Vec<String>, StoreError> {
+    let listed = store.list(l.bucket, &l.key).await?;
+    Ok(listed.into_iter().filter(|k| belongs(k, id)).collect())
 }
 
 /// The keys the agent's file at `l.key` points to that exist and still name the agent, so a

@@ -45,6 +45,9 @@ READ_PREFIXES = (VOUCHES_PREFIX, VITALS_PREFIX)
 # after listing it by its full key, so it never asks for a missing one.
 PLACES_PREFIX = "places/"
 HOME_KEYS = "identities/*/home.json"
+# Story 4's Square, owned by lambda/world/square: the job only lists each quarter's notices of
+# the past 6 days, with their sizes, for its index under `world/square/`, and reads none.
+SQUARE_PREFIX = "square/"
 
 
 class WorldJob(Construct):
@@ -122,10 +125,12 @@ class WorldJob(Construct):
         """spec.md "Daily world job" ("Permissions"): list the claims bucket, without ever
         reading a claim, and read, write and delete in `world/` and `federation/`, and story 17's
         `genesis/`, list and read story 4's `vouches/` and `vitals/`, read and delete its
-        `places/` pointers, and list and read each `home.json` by its key, listing only those.
-        The outbound check needs no permission: the function isn't in a VPC."""
+        `places/` pointers, list and read each `home.json` by its key, and list `square/`,
+        listing only those. The outbound check needs no permission: the function isn't in a
+        VPC."""
         prefixes = (WORLD_PREFIX, FEDERATION_PREFIX, GENESIS_PREFIX)
-        listed = [f"{p}*" for p in (*prefixes, *READ_PREFIXES, PLACES_PREFIX)] + [HOME_KEYS]
+        listed = [f"{p}*" for p in (*prefixes, *READ_PREFIXES, PLACES_PREFIX, SQUARE_PREFIX)]
+        listed += [HOME_KEYS]
         statements = [
             iam.PolicyStatement(actions=["s3:ListBucket"], resources=[claims.bucket_arn]),
             iam.PolicyStatement(
