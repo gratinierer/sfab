@@ -13,8 +13,7 @@ R12.
   SNS topics with the email subscription and a policy on the alerts topic allowing both Budgets and
   CloudWatch, and all three budgets, as in `spec.md` "Abuse and cost controls",
   using the service name recorded in issue 03. Confirm the filter in the console's budget preview.
-  Until 03 records it, the code uses "Amazon Registrar", `spec.md` "First deploy" step 7's guess, as one
-  constant marked as a placeholder, so the code can be built before the account exists (owner, 2026-11-07).
+  Issue 03 recorded it as "Amazon Registrar" on 2026-11-15, and `DOMAIN_SERVICE_NAME` holds it.
 - The API stack: the API Lambda, from `lambda/target/lambda/api/bootstrap` on arm64, with `REQUIRED_BITS`
   (the CDK's `required_bits`), `IDENTITIES_BUCKET`, `CLAIMS_BUCKET`, from issue 15 `DOMAIN_NAME` and `ABUSE_CONTACT`, and from story 17 `IP_HASH_KEY` (a dynamic reference to the
   config secret, `18-deploy-from-codebuild#03`) and `GENESIS_IP_WINDOW_HOURS`, in its environment,
