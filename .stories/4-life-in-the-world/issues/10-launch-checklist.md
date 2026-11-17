@@ -19,6 +19,8 @@ Blocked by: 09, 11, 2-identity-api#10, 2-identity-api#16, 10-website#03, 12-publ
 
 ## Done when
 
+- The merged code, with the real `world/founders.yaml`, passed `deploy_plan.plan()`, deployed privately, and story 4's
+  smoke steps passed against it, before the cleanup.
 - `/federation/worlds`, `/world/census` and `/world/chronicle` show no test data, and the URL is published.
 - No founder was caught by the cleanup's takedown, and `smoke --production` passes.
 - The repo is public, the website's GitHub links resolve when signed out, and sfab is listed in the places chosen.
