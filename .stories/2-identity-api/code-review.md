@@ -67,6 +67,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-17T14:25:00+00:00 | check | @ 45c8811 | scripts/check | — | green, the loop's check of the fix |
 | 2026-11-17T14:40:00+00:00 | code-review | 03 @ 801b4a3..3488ace | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 3 new: 2 standards, 1 spec, 0 security | single pass over 3488ace, the one code commit of issue 03 no earlier range covered; later code in the branch was reviewed under issues 01 and 09. Reviewers on a different model from the same family as the author. |
 | 2026-11-17T14:40:00+00:00 | check | @ ce47220 | scripts/check | — | green |
+| 2026-11-17T15:00:00+00:00 | walkthrough | 03 | claude-opus-5-5 with the owner | 0 new, 3 resolved, 0 still open | walkthrough, not a review pass; `scripts/check` green at ae607be. |
 
 ## Findings
 
