@@ -965,11 +965,11 @@ a build of `production` (`.stories/18-deploy-from-codebuild/spec.md` "One-time m
    sends a registrant verification email, follow it, because AWS must otherwise suspend the
    domain, which takes the API offline. Don't continue until registration has finished and
    the console shows no verification pending. Copy the hosted zone's ID into `sfab/config`.
-7. Check the domain charge's service name in Cost Explorer, which can take up to a day to show it, against
-   `DOMAIN_SERVICE_NAME` in the CDK code, the budget's filter. Done on 2026-11-15: it's "Amazon Registrar" (issue 03,
-   `docs/aws-facts.md`), which the constant holds. The base stack holds the budgets, so this comes before deploying
-   it. If a later bill shows another name, change the constant, commit, and move `production` forward to it, as
-   before every build below that follows a code change.
+7. Wait for the domain charge to appear in Cost Explorer, which can take up to a day, and compare its service name
+   with `DOMAIN_SERVICE_NAME` in the CDK code, the budget's filter. The base stack holds the budgets, so this comes
+   before deploying it. The constant holds "Amazon Registrar", which this project's first bill showed on 2026-11-15
+   (issue 03, `docs/aws-facts.md`). If your bill shows another name, change the constant, commit the change and move
+   `production` forward to it, as before every build below that follows a code change.
 8. Deploy the base stack with a build:
    `aws codebuild start-build --project-name sfab-deploy --environment-variables-override name=DEPLOY_STACKS,value=SfabBase`.
    The build failure alert lives in this stack, so watch this build in the console. Its certificate covers
