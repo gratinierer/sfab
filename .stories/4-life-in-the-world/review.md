@@ -44,6 +44,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-17T20:00:00+00:00 | review | 1c2225353a | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 0 new, 0 resolved, 3 open | delta pass since 1867cea, over ee85ba7's `sfab.config.toml` to `sfab/config` edits in spec.md and ticket 10. R94-R96 re-verified, still true. Mixed commit: ee85ba7 also touched stories 2, 12 and 17, cdk/stacks.py and docs/restart-after-a-stop.md. The reviewer is on a different model from the same family as the author and orchestrator. |
 | 2026-11-17T20:10:00+00:00 | walkthrough | b5f058140f | claude-opus-5-5 (address-story-review-findings auto) | 0 new, 2 resolved, 1 still open | auto walkthrough, not a review pass. R94 needs the user. |
 | 2026-11-17T20:20:00+00:00 | review | e6515f6227 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 0 new, 0 resolved, 1 open | delta pass since 1c2225353a, over the auto walkthrough's edits to spec.md "Launch checklist" and ticket 10. The closure audit found R95 and R96 hold. R94 still waits on the user. The loop stopped with no progress possible. The reviewer is on a different model from the same family as the author and orchestrator. |
+| 2026-11-17T20:40:00+00:00 | walkthrough | 36ccdb34db | claude-opus-5-5 with the owner | 0 new, 1 resolved, 0 still open | walkthrough, not a review pass |
 
 ## Findings
 
