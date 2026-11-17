@@ -50,6 +50,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-17T21:20:00+00:00 | review | 4ab8497230 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 2 new, 0 resolved, 3 open | delta pass since af6a0b7848, over the auto walkthrough's edits to 01, 10 and 11; R97 and R99 closures audited and hold; R98 still true; same-family reviewer, weaker independence |
 | 2026-11-17T21:30:00+00:00 | walkthrough | 2044a44aa4 | claude-opus-5-5 (address-story-review-findings auto) | 0 new, 2 resolved, 1 still open | auto walkthrough, not a review pass. R98 needs the user |
 | 2026-11-17T21:40:00+00:00 | review | 63a4848103 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 0 new, 0 resolved, 1 open | delta pass since 4ab8497230, over the auto walkthrough's edits to ticket 10; R100 and R101 closures audited and hold; R98 still true; same-family reviewer, weaker independence |
+| 2026-11-17T21:50:00+00:00 | walkthrough | 6ba4008e76 | claude-opus-5-5 with the owner | 0 new, 1 resolved, 0 still open | walkthrough, not a review pass |
 
 ## Findings
 
