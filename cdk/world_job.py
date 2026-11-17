@@ -39,7 +39,11 @@ GENESIS_PREFIX = "genesis/"
 # is a 403 under a prefix-conditioned ListBucket (docs/aws-facts.md).
 VOUCHES_PREFIX = "vouches/"
 VITALS_PREFIX = "vitals/"
-READ_PREFIXES = (VOUCHES_PREFIX, VITALS_PREFIX)
+# Story 4's Academy, owned by lambda/world/academy: the job lists every course with its
+# enrolments, and every certificate, and reads each course and certificate it listed, never an
+# attempt, for the catalogue, the lists, lineage and which certificates count.
+ACADEMY_PREFIX = "academy/"
+READ_PREFIXES = (VOUCHES_PREFIX, VITALS_PREFIX, ACADEMY_PREFIX)
 # Story 4's homes: the lane pointers, owned by lambda/world/homes, which the job reads and
 # deletes when `home.json` disagrees, and each resident's `home.json`, which it only reads,
 # after listing it by its full key, so it never asks for a missing one.
@@ -124,7 +128,7 @@ class WorldJob(Construct):
     def _grant(self, identities: s3.IBucket, claims: s3.IBucket) -> None:
         """spec.md "Daily world job" ("Permissions"): list the claims bucket, without ever
         reading a claim, and read, write and delete in `world/` and `federation/`, and story 17's
-        `genesis/`, list and read story 4's `vouches/` and `vitals/`, read and delete its
+        `genesis/`, list and read story 4's `vouches/`, `vitals/` and `academy/`, read and delete its
         `places/` pointers, list and read each `home.json` by its key, and list `square/`,
         listing only those. The outbound check needs no permission: the function isn't in a
         VPC."""

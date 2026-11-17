@@ -91,6 +91,22 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "answer notice",
         "notice",
         "delete notice",
+        "academy not built",
+        "publish course",
+        "course",
+        "edit course",
+        "tasks",
+        "enrol",
+        "start attempt",
+        "attempt",
+        "hand in",
+        "submit",
+        "certificate",
+        "marking queue",
+        "mark attempt",
+        "revoke certificate",
+        "retire course",
+        "leave course",
         "send message",
         "message to an unknown agent",
         "read knocks",
@@ -98,9 +114,14 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "execute-api no key",
         "execute-api wrong key",
     }
-    # About 43 (spec.md "Testing"), plus story 4's 6 vouch requests, 11 home ones and 6 on the
-    # Square; the 4-second pace keeps any length under WAF's 100 per 5 minutes.
-    assert len(api.requests) <= 66
+    # About 43 (spec.md "Testing"), plus story 4's 6 vouch requests, 11 home ones, 6 on the
+    # Square and 18 in the Academy; the 4-second pace keeps any length under WAF's 100 per 5
+    # minutes.
+    assert len(api.requests) <= 84
+    # The course was retired, its certificate revoked, and the agent left it.
+    (course,) = api.courses.values()
+    assert course["retired"] and not course["enrolled"]
+    assert all(c["revoked"] for c in api.certificates.values())
     # The notice was posted, answered and deleted.
     assert api.notices == {}
     # Moving showed the address on aboutme, and moving out took it off again.
@@ -149,8 +170,8 @@ def test_a_world_code_a_racing_birth_used_is_retried_once_with_a_fresh_one():
     assert api.labels.count("genesis code") == 2
     assert "world birth" in api.labels, "the fresh code was accepted"
     assert len(api.pool) == 2
-    # The retry's GET and birth on top of the run's 66.
-    assert len(api.requests) <= 68
+    # The retry's GET and birth on top of the run's 84.
+    assert len(api.requests) <= 86
 
 
 def test_a_world_rejecting_both_world_codes_fails():
@@ -194,8 +215,8 @@ def test_the_same_used_world_code_again_is_refetched_until_a_fresh_one():
     assert api.labels.count("genesis code") == 3
     assert api.labels.count("invalid genesis code") == 1, "the same code isn't sent twice"
     assert "world birth" in api.labels, "the fresh code was accepted"
-    # Two refetches and a birth on top of the run's 66; at most three refetches, so 70.
-    assert len(api.requests) <= 70
+    # Two refetches and a birth on top of the run's 84; at most three refetches, so 88.
+    assert len(api.requests) <= 88
 
 
 def test_a_one_code_pool_holding_the_used_code_passes_and_skips_the_retry():
@@ -211,7 +232,7 @@ def test_a_one_code_pool_holding_the_used_code_passes_and_skips_the_retry():
     assert api.labels.count("genesis code") == 4, "the first fetch and three refetches"
     assert api.labels.count("invalid genesis code") == 1, "the same code isn't sent twice"
     assert any("skip" in line and "same" in line for line in lines), lines
-    assert len(api.requests) <= 70
+    assert len(api.requests) <= 88
 
 
 @pytest.mark.parametrize(
@@ -365,6 +386,22 @@ JSON = {"content-type": "application/json", "cache-control": "no-store"}
         ("answer notice", ok(200, {}), "answer the notice"),
         ("notice", ok(200, {"notice": {"answers": 0}, "items": []}), "read the notice"),
         ("delete notice", problem(403, "not-the-author"), "delete the notice"),
+        ("academy not built", problem(404), "the catalogue"),
+        ("publish course", problem(400), "publish a course"),
+        ("course", problem(404), "read the course"),
+        ("edit course", problem(403, "not-the-author"), "edit the course"),
+        ("tasks", problem(403, "not-the-author"), "read its tasks"),
+        ("enrol", problem(409, "retired"), "enrol"),
+        ("start attempt", problem(403, "not-enrolled"), "start an attempt"),
+        ("attempt", ok(200, {"tasks": [{"answer_hash": "x"}]}), "read the attempt"),
+        ("hand in", problem(409, "submitted"), "hand in"),
+        ("submit", ok(200, {"status": "awaiting-mark"}), "submit"),
+        ("certificate", problem(404), "read the certificate"),
+        ("marking queue", problem(403, "not-a-graduate"), "the marking queue"),
+        ("mark attempt", ok(200, {}), "mark its own attempt"),
+        ("revoke certificate", problem(403, "not-the-author"), "revoke the certificate"),
+        ("retire course", ok(200, {"retired": False}), "retire the course"),
+        ("leave course", problem(500), "leave the course"),
         ("federation request", ok(202, {"token": "short"}), "federation request"),
         ("federation request", problem(503, retry_after="x"), "federation request"),
         (
@@ -469,9 +506,11 @@ def test_production_births_nothing_and_writes_only_privately():
 
     assert result.failures == []
     # The production run is held to its 31 requests (spec.md "Testing" says about 31), plus
-    # story 4's 6 vouch requests, 2 home reads and a read of the Square, which it never
-    # writes on, since a notice is public.
-    assert len(api.requests) <= 40
+    # story 4's 6 vouch requests, 2 home reads, a read of the Square, which it never
+    # writes on, since a notice is public, and 9 Academy reads, which write nothing, since
+    # enrolling is public.
+    assert len(api.requests) <= 49
+    assert api.courses == {} and api.attempts == {}
     assert api.notices == {}
     assert "birth" not in api.labels
     assert "world birth" not in api.labels
@@ -527,6 +566,10 @@ def test_production_births_nothing_and_writes_only_privately():
         "quarters",
         "read own home",
         "square",
+        "academy not built",
+        "course",
+        "certificate",
+        "unknown course",
         "send message",
         "message to an unknown agent",
         "read knocks",

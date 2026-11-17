@@ -223,6 +223,19 @@ async fn built<S: Store>(store: &S) -> Result<Option<String>, Problem> {
     Ok(Some(built.as_of))
 }
 
+/// Every agent with standing, from one listing of the files the job last wrote, for another
+/// institution's daily step that runs after this one, such as the Academy's counting of
+/// certificates. Empty before the first run.
+pub async fn with_standing<S: Store>(store: &S) -> Result<BTreeSet<AgentId>, StoreError> {
+    Ok(store
+        .list(Bucket::Identities, STANDING_PREFIX)
+        .await?
+        .iter()
+        .filter_map(|k| k.strip_prefix(STANDING_PREFIX)?.strip_suffix(".json"))
+        .filter_map(AgentId::parse)
+        .collect())
+}
+
 /// Whether `id` has standing, and `as_of` the job's last run: `(false, None)` before the first.
 pub(crate) async fn read<S: Store>(
     store: &S,

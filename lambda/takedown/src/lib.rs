@@ -43,6 +43,7 @@ pub fn locations(id: &AgentId) -> Vec<Location> {
     all.extend(sfab_vouches::takedown(id));
     all.extend(sfab_homes::takedown(id));
     all.extend(sfab_square::takedown(id));
+    all.extend(sfab_academy::takedown(id));
     all
 }
 
@@ -115,6 +116,7 @@ pub async fn found<S: Store>(
         }
         Action::Pointers(pointers_of) => keys = pointed(store, id, l, pointers_of).await?,
         Action::Search(belongs) => keys = searched(store, id, l, belongs).await?,
+        Action::Folders(pointers_of) => keys = foldered(store, id, l, pointers_of).await?,
     }
     Ok(keys.into_iter().map(|k| (l.bucket, k)).collect())
 }
@@ -193,7 +195,34 @@ pub async fn apply<S: Store>(store: &S, id: &AgentId, l: &Location) -> Result<()
             }
             Ok(())
         }
+        Action::Folders(pointers_of) => {
+            for key in foldered(store, id, l, pointers_of).await? {
+                store.delete(l.bucket, &key).await?;
+            }
+            Ok(())
+        }
     }
+}
+
+/// Every key in the folder of each key the agent's file at `l.key` points to that still names
+/// the agent, each folder's named key last.
+async fn foldered<S: Store>(
+    store: &S,
+    id: &AgentId,
+    l: &Location,
+    pointers_of: fn(&[u8]) -> Vec<String>,
+) -> Result<Vec<String>, StoreError> {
+    let mut keys = Vec::new();
+    for anchor in pointed(store, id, l, pointers_of).await? {
+        let folder = &anchor[..anchor.rfind('/').map_or(0, |at| at + 1)];
+        if folder.is_empty() {
+            continue;
+        }
+        let listed = store.list(l.bucket, folder).await?;
+        keys.extend(listed.into_iter().filter(|k| *k != anchor));
+        keys.push(anchor);
+    }
+    Ok(keys)
 }
 
 /// The keys under the prefix `l.key` that `belongs` says are the agent's, from one listing.

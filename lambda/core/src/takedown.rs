@@ -43,6 +43,12 @@ pub enum Action {
     /// Delete every key under a prefix that this function says belongs to the agent, from the
     /// key alone, such as the Square's notices and answers, whose keys name their authors.
     Search(fn(&str, &AgentId) -> bool),
+    /// Read the agent's own file at the key, and for each key this function finds in its body,
+    /// in the same bucket, that still names the agent, delete everything in that key's folder,
+    /// the key itself last, so a rerun still finds the folder. Such as a teacher's courses,
+    /// named in `identities/<id>/academy.json`, each with its enrolments and attempts beside
+    /// `course.json`. A key naming someone else stays, with its folder.
+    Folders(fn(&[u8]) -> Vec<String>),
 }
 
 /// What [`Action::RemoveId`] writes in place of the ID.

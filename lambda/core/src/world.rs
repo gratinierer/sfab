@@ -12,7 +12,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use futures_util::{StreamExt, TryStreamExt, stream};
 use serde_json::Value;
 
-use crate::problem::Problem;
+use crate::problem::{Problem, Reply};
 use crate::storage::{Bucket, Condition, Metadata, Store, StoreError};
 
 /// Everything the daily job builds lives under here.
@@ -44,6 +44,18 @@ pub async fn rebuild<S: Store>(
     prefix: &str,
     files: BTreeMap<String, Vec<u8>>,
 ) -> Result<Rebuilt, StoreError> {
+    rebuild_where(store, prefix, files, |_| true).await
+}
+
+/// [`rebuild`] for the part of `prefix` that one crate owns, such as the Academy's per-agent
+/// pages under `world/agents/`, beside the takedown index there: only a surplus key that
+/// `owned` accepts is deleted.
+pub async fn rebuild_where<S: Store>(
+    store: &S,
+    prefix: &str,
+    files: BTreeMap<String, Vec<u8>>,
+    owned: impl Fn(&str) -> bool,
+) -> Result<Rebuilt, StoreError> {
     if !prefix.starts_with(PREFIX) || !prefix.ends_with('/') {
         return Err(StoreError::Other(format!(
             "a rebuild's prefix must be a folder under {PREFIX}: {prefix}"
@@ -61,7 +73,7 @@ pub async fn rebuild<S: Store>(
         .collect();
     let surplus: Vec<String> = existing
         .iter()
-        .filter(|k| !files.contains_key(*k) && !is_permanent(k))
+        .filter(|k| !files.contains_key(*k) && !is_permanent(k) && owned(k))
         .cloned()
         .collect();
 
@@ -165,4 +177,69 @@ async fn read<S: Store>(store: &S, key: &str) -> Result<Option<Value>, Problem> 
         tracing::error!("{key} in storage doesn't parse");
         Problem::internal()
     })
+}
+
+/// The most digits a page number may have, as story 2's resident pages allow.
+const MAX_PAGE_DIGITS: usize = 7;
+
+/// A list the daily job builds as ready-made page files, `<prefix><n>.json` from 1, `size`
+/// items each, each holding `{"items": [...], "next": <n + 1 or null>}`, for [`rebuild`]. An
+/// empty list still has its first page.
+pub fn page_files(prefix: &str, items: Vec<Value>, size: usize) -> BTreeMap<String, Vec<u8>> {
+    let chunks: Vec<&[Value]> = if items.is_empty() {
+        vec![&[]]
+    } else {
+        items.chunks(size).collect()
+    };
+    let pages = chunks.len();
+    chunks
+        .into_iter()
+        .enumerate()
+        .map(|(i, chunk)| {
+            let page = i + 1;
+            let next = (page < pages).then_some(page + 1);
+            let body = serde_json::json!({"items": chunk, "next": next});
+            let body = serde_json::to_vec(&body).expect("JSON values serialize");
+            (format!("{prefix}{page}.json"), body)
+        })
+        .collect()
+}
+
+/// A page of a list [`page_files`] built, as `{"items": [...], "next": "<path>?page=<n>"}`, with
+/// `?page=` the page number. Before the job's first run, which `built` shows by existing, every
+/// page is [`not_built_yet`]. After it, a list with no files reads as one empty page, so an
+/// unknown course or agent reads like one with nothing to show, and a page past the end is `404`.
+pub async fn read_page<S: Store>(
+    store: &S,
+    prefix: &str,
+    token: Option<&str>,
+    path: &str,
+    built: &str,
+) -> Result<Reply, Problem> {
+    let number = match token {
+        None => 1,
+        Some(t) => parse_page(t)
+            .ok_or_else(|| Problem::bad_request("?page= must be a token from a list's next"))?,
+    };
+    let key = format!("{prefix}{number}.json");
+    if let Some(found) = read(store, &key).await? {
+        let next = found["next"].as_u64().map(|n| format!("{path}?page={n}"));
+        let items = found["items"].clone();
+        return Ok(Reply::ok(serde_json::json!({"items": items, "next": next})));
+    }
+    match store.head(Bucket::Identities, built).await {
+        Ok(None) => Err(not_built_yet()),
+        Ok(Some(_)) if number == 1 => Ok(Reply::ok(serde_json::json!({"items": [], "next": null}))),
+        Ok(Some(_)) => Err(Problem::not_found("This page is past the end of the list")),
+        Err(e) => Err(Problem::storage(built, &e)),
+    }
+}
+
+/// A whole number from 1, with no leading zero, as `next` writes it.
+fn parse_page(token: &str) -> Option<usize> {
+    let ok = !token.is_empty()
+        && token.len() <= MAX_PAGE_DIGITS
+        && token.bytes().all(|b| b.is_ascii_digit())
+        && !token.starts_with('0');
+    ok.then(|| token.parse().ok()).flatten()
 }

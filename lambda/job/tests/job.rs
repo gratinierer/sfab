@@ -189,6 +189,27 @@ async fn the_job_indexes_every_quarter_s_square_skipping_markers() {
 }
 
 #[tokio::test]
+async fn the_job_builds_the_academy_s_catalogue_so_its_routes_answer() {
+    let store = Arc::new(MemoryStore::new());
+    let identity = Arc::new(sfab_identity::Identity::new(
+        store.clone(),
+        0,
+        sfab_genesis::testing::genesis(&store),
+    ));
+    let academy = sfab_academy::Academy::new(store.clone(), identity, 0);
+    let before = academy.catalogue(None).await.unwrap_err();
+    assert_eq!(before.kind, "not-built-yet");
+
+    let report = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, AGE_RULE_STARTS, NOW)
+        .await
+        .unwrap();
+
+    assert_eq!(report.academy.courses, 0);
+    let page = academy.catalogue(None).await.unwrap();
+    assert_eq!(page.body, json!({"items": [], "next": null}));
+}
+
+#[tokio::test]
 async fn the_job_makes_the_days_genesis_codes() {
     let store = Arc::new(MemoryStore::new());
 

@@ -127,6 +127,8 @@ def test_the_job_may_list_claims_and_write_only_world_federation_and_genesis(api
         # Story 4: read the vouches agents gave, and `born_at` for the age rule, never a claim.
         ("s3:GetObject", "Identities/vouches/*"),
         ("s3:GetObject", "Identities/vitals/*"),
+        # Story 4's Academy: read the courses and certificates it listed, never an attempt.
+        ("s3:GetObject", "Identities/academy/*"),
         # Story 4's homes: delete pointers `home.json` disagrees with, reading each home.
         ("s3:GetObject", "Identities/places/*"),
         ("s3:DeleteObject", "Identities/places/*"),
@@ -155,6 +157,7 @@ def test_the_job_lists_only_world_federation_and_genesis_in_the_identities_bucke
                     "genesis/*",
                     "vouches/*",
                     "vitals/*",
+                    "academy/*",
                     "places/*",
                     "square/*",
                     "identities/*/home.json",
@@ -181,6 +184,9 @@ def test_the_job_s_read_prefixes_are_the_crates_own():
     # The square crate's `PREFIX`.
     square = (lambda_dir / "world" / "square" / "src" / "lib.rs").read_text()
     assert f'pub const PREFIX: &str = "{job_module.SQUARE_PREFIX}";' in square
+    # The academy crate's `PREFIX`.
+    academy = (lambda_dir / "world" / "academy" / "src" / "lib.rs").read_text()
+    assert f'pub const PREFIX: &str = "{job_module.ACADEMY_PREFIX}";' in academy
 
 
 def test_only_the_job_may_touch_verified_federation_requests(api, base):
@@ -211,8 +217,8 @@ def test_only_the_job_may_write_or_delete_world(api, base):
         found = grants(api, base, role)
         assert ("s3:PutObject", "Identities/world/*") not in found, role
         # The API deletes only in `messages/` (issue 14), a used genesis code (story 17), a
-        # home's pointer and a deleted notice's answers (story 4); nothing but the job deletes
-        # in `world/`.
+        # home's pointer, a deleted notice's answers, and an enrolment or a marking pointer
+        # (story 4); nothing but the job deletes in `world/`.
         assert ("s3:DeleteObject", "Identities/world/*") not in found, role
         deletes = {resource for action, resource in found if action == "s3:DeleteObject"}
         allowed = {
@@ -220,6 +226,7 @@ def test_only_the_job_may_write_or_delete_world(api, base):
             "Identities/genesis/codes/*",
             "Identities/places/*",
             "Identities/square/*",
+            "Identities/academy/*",
         }
         assert deletes <= allowed, role
 

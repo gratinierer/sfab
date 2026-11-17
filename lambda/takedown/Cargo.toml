@@ -13,6 +13,7 @@ path = "src/main.rs"
 [dependencies]
 aws-config = { version = "1.13.0", default-features = false, features = ["rt-tokio", "default-https-client", "behavior-version-latest"] }
 aws-sdk-s3 = { version = "1.157.0", default-features = false, features = ["rt-tokio", "default-https-client", "behavior-version-latest"] }
+sfab-academy = { path = "../world/academy" }
 sfab-core = { path = "../core", features = ["s3"] }
 sfab-homes = { path = "../world/homes" }
 sfab-identity = { path = "../identity" }

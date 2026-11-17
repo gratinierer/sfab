@@ -366,6 +366,518 @@ fn get(operation: &'static str, path: &str, auth: Option<String>) -> Case {
     }
 }
 
+/// A write, with a valid proof unless `proof` says otherwise.
+fn write(
+    operation: &'static str,
+    method: &'static str,
+    path: &str,
+    auth: Option<String>,
+    proof: Proof,
+    body: &[u8],
+) -> Case {
+    Case {
+        operation,
+        method,
+        path: path.to_owned(),
+        authorization: auth,
+        proof,
+        body: body.to_vec(),
+        viewer: None,
+    }
+}
+
+/// The Academy's routes, with Finch teaching, Gull and Finch as students, and the daily job run
+/// part way through, so its routes answer both before and after.
+async fn academy(h: &Harness, auth: Option<String>, gauth: Option<String>, fid: &str, gid: &str) {
+    let courses = "/v1/academy/courses";
+    let body = |title: &str| {
+        serde_json::to_vec(&json!({
+            "title": title,
+            "pass": 50,
+            "tasks": [
+                {"kind": "check", "text": "Tie a bowline", "answer": "done"},
+                {"kind": "work", "text": "Describe it"},
+            ],
+        }))
+        .unwrap()
+    };
+    // Before the daily job's first run.
+    let (status, built) = h.send(get("readCatalogue", courses, None)).await;
+    assert_eq!(
+        (status, built["type"].clone()),
+        (404, json!("not-built-yet"))
+    );
+    // publishCourse: 201, 200 for the same proof, 400, 401, 409.
+    let publish = |a, p, b: &[u8]| write("publishCourse", "POST", courses, a, p, b);
+    let (status, course) = h
+        .send(publish(auth.clone(), Proof::Valid, &body("Knots")))
+        .await;
+    assert_eq!(status, 201);
+    let again = publish(auth.clone(), Proof::Valid, &body("Knots"));
+    assert_eq!(h.send(again).await, (200, course.clone()));
+    let cid = course["course"].as_str().unwrap().to_owned();
+    let none = publish(auth.clone(), Proof::None, &body("x"));
+    assert_eq!(h.send(none).await.0, 400);
+    let long = publish(auth.clone(), Proof::Valid, &body(&"x".repeat(129)));
+    assert_eq!(h.send(long).await.0, 400);
+    assert_eq!(h.send(publish(None, Proof::Valid, &body("x"))).await.0, 401);
+    for i in 2..=5 {
+        let more = publish(auth.clone(), Proof::Valid, &body(&format!("Course {i}")));
+        assert_eq!(h.send(more).await.0, 201);
+    }
+    let (status, full) = h
+        .send(publish(auth.clone(), Proof::Valid, &body("Sixth")))
+        .await;
+    assert_eq!((status, full["type"].clone()), (409, json!("list-full")));
+    let schemas = &h.spec["components"]["schemas"];
+    let limits = [
+        ("CourseTitle", sfab_academy::MAX_TITLE_CHARS),
+        ("Preparation", sfab_academy::MAX_PREPARATION_BYTES),
+        ("TaskText", sfab_academy::MAX_TASK_BYTES),
+        ("AnswerText", sfab_academy::MAX_ANSWER_BYTES),
+        ("MarkComment", sfab_academy::MAX_COMMENT_BYTES),
+    ];
+    for (schema, limit) in limits {
+        assert_eq!(schemas[schema]["maxLength"], json!(limit), "{schema}");
+    }
+    let request = &schemas["CourseRequest"]["properties"];
+    assert_eq!(request["tasks"]["maxItems"], json!(sfab_academy::MAX_TASKS));
+    assert_eq!(request["set_size"]["maximum"], json!(sfab_academy::MAX_SET));
+
+    let one = format!("{courses}/{cid}");
+    // readCourse: 200, 400, 404.
+    let (status, page) = h.send(get("readCourse", &one, None)).await;
+    assert_eq!((status, page["enrolled"].clone()), (200, Value::Null));
+    assert_eq!(
+        h.send(get("readCourse", &format!("{courses}/x"), None))
+            .await
+            .0,
+        400
+    );
+    let unknown = format!("{courses}/aaaaaaaaaaaa");
+    assert_eq!(h.send(get("readCourse", &unknown, None)).await.0, 404);
+    // editCourse: 200, 400, 401, 403, 404.
+    let edit = |path: &str, a, p, b: &[u8]| write("editCourse", "PUT", path, a, p, b);
+    let (status, edited) = h
+        .send(edit(
+            &one,
+            auth.clone(),
+            Proof::Valid,
+            &body("Better knots"),
+        ))
+        .await;
+    assert_eq!(
+        (status, edited["title"].clone()),
+        (200, json!("Better knots"))
+    );
+    assert_eq!(
+        h.send(edit(&one, auth.clone(), Proof::None, &body("x")))
+            .await
+            .0,
+        400
+    );
+    assert_eq!(
+        h.send(edit(&one, None, Proof::Valid, &body("x"))).await.0,
+        401
+    );
+    let theirs = edit(&one, gauth.clone(), Proof::Valid, &body("x"));
+    assert_eq!(h.send(theirs).await.0, 403);
+    let missing = edit(&unknown, auth.clone(), Proof::Valid, &body("x"));
+    assert_eq!(h.send(missing).await.0, 404);
+    // readTasks: 200, 400, 401, 403, 404.
+    let tasks = format!("{one}/tasks");
+    let (status, pool) = h.send(get("readTasks", &tasks, auth.clone())).await;
+    assert_eq!(
+        (status, pool["items"][1]["answer_hash"].clone()),
+        (200, Value::Null)
+    );
+    let bad = format!("{tasks}?page=x");
+    assert_eq!(h.send(get("readTasks", &bad, auth.clone())).await.0, 400);
+    assert_eq!(h.send(get("readTasks", &tasks, None)).await.0, 401);
+    assert_eq!(h.send(get("readTasks", &tasks, gauth.clone())).await.0, 403);
+    let none = format!("{unknown}/tasks");
+    assert_eq!(h.send(get("readTasks", &none, auth.clone())).await.0, 404);
+
+    // enrol: 201, 200, 400, 401, 404; leaveCourse: 200, 400, 401.
+    let enrolment = format!("{one}/enrolments/self");
+    let enrol = |path: &str, a, p| write("enrol", "PUT", path, a, p, b"");
+    for a in [&gauth, &auth] {
+        assert_eq!(
+            h.send(enrol(&enrolment, a.clone(), Proof::Valid)).await.0,
+            201
+        );
+    }
+    assert_eq!(
+        h.send(enrol(&enrolment, gauth.clone(), Proof::Valid))
+            .await
+            .0,
+        200
+    );
+    assert_eq!(
+        h.send(enrol(&enrolment, gauth.clone(), Proof::None))
+            .await
+            .0,
+        400
+    );
+    assert_eq!(h.send(enrol(&enrolment, None, Proof::Valid)).await.0, 401);
+    let elsewhere = format!("{unknown}/enrolments/self");
+    assert_eq!(
+        h.send(enrol(&elsewhere, gauth.clone(), Proof::Valid))
+            .await
+            .0,
+        404
+    );
+    let leave = |path: &str, a| Case {
+        operation: "leaveCourse",
+        method: "DELETE",
+        path: path.to_owned(),
+        authorization: a,
+        proof: Proof::None,
+        body: Vec::new(),
+        viewer: None,
+    };
+    let (status, left) = h.send(leave(&enrolment, auth.clone())).await;
+    assert_eq!((status, left["id"].clone()), (200, json!(fid)));
+    let bad = format!("{courses}/x/enrolments/self");
+    assert_eq!(h.send(leave(&bad, auth.clone())).await.0, 400);
+    assert_eq!(h.send(leave(&enrolment, None)).await.0, 401);
+
+    // startAttempt: 201, 200, 400, 401, 403, 404, then 409 after submitting.
+    let attempts = format!("{one}/attempts");
+    let start = |path: &str, a, p| write("startAttempt", "POST", path, a, p, b"");
+    let (status, attempt) = h.send(start(&attempts, gauth.clone(), Proof::Valid)).await;
+    assert_eq!(status, 201);
+    assert!(!attempt.to_string().contains("hash"));
+    let aid = attempt["attempt"].as_str().unwrap().to_owned();
+    assert_eq!(
+        h.send(start(&attempts, gauth.clone(), Proof::Valid))
+            .await
+            .0,
+        200
+    );
+    assert_eq!(
+        h.send(start(&attempts, gauth.clone(), Proof::None)).await.0,
+        400
+    );
+    assert_eq!(h.send(start(&attempts, None, Proof::Valid)).await.0, 401);
+    let (status, refused) = h.send(start(&attempts, auth.clone(), Proof::Valid)).await;
+    assert_eq!(
+        (status, refused["type"].clone()),
+        (403, json!("not-enrolled"))
+    );
+    let nowhere = format!("{unknown}/attempts");
+    assert_eq!(
+        h.send(start(&nowhere, gauth.clone(), Proof::Valid)).await.0,
+        404
+    );
+    // readAttempt: 200, 400, 401, 403, 404.
+    let mine = format!("{attempts}/{aid}");
+    assert_eq!(
+        h.send(get("readAttempt", &mine, gauth.clone())).await.0,
+        200
+    );
+    let bad = format!("{attempts}/nope");
+    assert_eq!(h.send(get("readAttempt", &bad, gauth.clone())).await.0, 400);
+    assert_eq!(h.send(get("readAttempt", &mine, None)).await.0, 401);
+    let (status, refused) = h.send(get("readAttempt", &mine, auth.clone())).await;
+    assert_eq!(
+        (status, refused["type"].clone()),
+        (403, json!("not-a-party"))
+    );
+    let later = format!("{attempts}/{gid}-2026-01-01");
+    assert_eq!(
+        h.send(get("readAttempt", &later, gauth.clone())).await.0,
+        404
+    );
+    // handIn: 200, 400, 401, 403, 404, then 409 after submitting.
+    let answer = |n: &str, a, p, text: &str| {
+        let path = format!("{mine}/answers/{n}");
+        let body = serde_json::to_vec(&json!({ "answer": text })).unwrap();
+        write("handIn", "PUT", &path, a, p, &body)
+    };
+    for (n, text) in [("1", "done"), ("2", "Loop, then tuck.")] {
+        let (status, handed) = h.send(answer(n, gauth.clone(), Proof::Valid, text)).await;
+        assert_eq!(
+            (status, handed["n"].clone()),
+            (200, json!(n.parse::<u8>().unwrap()))
+        );
+    }
+    assert_eq!(
+        h.send(answer("1", gauth.clone(), Proof::None, "x")).await.0,
+        400
+    );
+    let big = "x".repeat(sfab_academy::MAX_ANSWER_BYTES + 1);
+    assert_eq!(
+        h.send(answer("1", gauth.clone(), Proof::Valid, &big))
+            .await
+            .0,
+        400
+    );
+    assert_eq!(h.send(answer("1", None, Proof::Valid, "x")).await.0, 401);
+    assert_eq!(
+        h.send(answer("1", auth.clone(), Proof::Valid, "x")).await.0,
+        403
+    );
+    assert_eq!(
+        h.send(answer("3", gauth.clone(), Proof::Valid, "x"))
+            .await
+            .0,
+        404
+    );
+    // submitAttempt: 200, 400, 401, 403, 404.
+    let submit = |path: &str, a, p| write("submitAttempt", "PUT", path, a, p, b"");
+    let submission = format!("{mine}/submission");
+    let (status, submitted) = h
+        .send(submit(&submission, gauth.clone(), Proof::Valid))
+        .await;
+    assert_eq!(
+        (status, submitted["status"].clone()),
+        (200, json!("awaiting-mark"))
+    );
+    assert_eq!(
+        h.send(submit(&submission, gauth.clone(), Proof::None))
+            .await
+            .0,
+        400
+    );
+    assert_eq!(h.send(submit(&submission, None, Proof::Valid)).await.0, 401);
+    assert_eq!(
+        h.send(submit(&submission, auth.clone(), Proof::Valid))
+            .await
+            .0,
+        403
+    );
+    let gone = format!("{later}/submission");
+    assert_eq!(
+        h.send(submit(&gone, gauth.clone(), Proof::Valid)).await.0,
+        404
+    );
+    let (status, late) = h.send(answer("1", gauth.clone(), Proof::Valid, "y")).await;
+    assert_eq!((status, late["type"].clone()), (409, json!("submitted")));
+    let (status, soon) = h.send(start(&attempts, gauth.clone(), Proof::Valid)).await;
+    assert_eq!((status, soon["type"].clone()), (409, json!("too-soon")));
+
+    // readMarkingQueue: 200, 400, 401, 403, 404.
+    let queue = format!("{one}/marking");
+    let (status, waiting) = h.send(get("readMarkingQueue", &queue, auth.clone())).await;
+    assert_eq!(
+        (status, waiting["items"][0]["attempt"].clone()),
+        (200, json!(aid))
+    );
+    let bad = format!("{queue}?page=x");
+    assert_eq!(
+        h.send(get("readMarkingQueue", &bad, auth.clone())).await.0,
+        400
+    );
+    assert_eq!(h.send(get("readMarkingQueue", &queue, None)).await.0, 401);
+    let (status, refused) = h.send(get("readMarkingQueue", &queue, gauth.clone())).await;
+    assert_eq!(
+        (status, refused["type"].clone()),
+        (403, json!("not-a-graduate"))
+    );
+    let none = format!("{unknown}/marking");
+    assert_eq!(
+        h.send(get("readMarkingQueue", &none, auth.clone())).await.0,
+        404
+    );
+    // readMarking: 200, 400, 401, 403, 404.
+    let marking = format!("{queue}/{aid}");
+    let (status, work) = h.send(get("readMarking", &marking, auth.clone())).await;
+    assert_eq!(
+        (status, work["tasks"][0]["correct"].clone()),
+        (200, json!(true))
+    );
+    let bad = format!("{queue}/nope");
+    assert_eq!(h.send(get("readMarking", &bad, auth.clone())).await.0, 400);
+    assert_eq!(h.send(get("readMarking", &marking, None)).await.0, 401);
+    assert_eq!(
+        h.send(get("readMarking", &marking, gauth.clone())).await.0,
+        403
+    );
+    let absent = format!("{queue}/{gid}-2026-01-01");
+    assert_eq!(
+        h.send(get("readMarking", &absent, auth.clone())).await.0,
+        404
+    );
+    // markAttempt: 200, 400, 401, 403, 404.
+    let mark = |path: &str, a, p, b: &Value| {
+        write(
+            "markAttempt",
+            "PUT",
+            path,
+            a,
+            p,
+            &serde_json::to_vec(b).unwrap(),
+        )
+    };
+    let accept = json!({"accepted": [2], "comment": "Good."});
+    assert_eq!(
+        h.send(mark(&marking, auth.clone(), Proof::None, &accept))
+            .await
+            .0,
+        400
+    );
+    assert_eq!(
+        h.send(mark(&marking, None, Proof::Valid, &accept)).await.0,
+        401
+    );
+    assert_eq!(
+        h.send(mark(&marking, gauth.clone(), Proof::Valid, &accept))
+            .await
+            .0,
+        403
+    );
+    assert_eq!(
+        h.send(mark(&absent, auth.clone(), Proof::Valid, &accept))
+            .await
+            .0,
+        404
+    );
+    let (status, marked) = h
+        .send(mark(&marking, auth.clone(), Proof::Valid, &accept))
+        .await;
+    assert_eq!((status, marked["status"].clone()), (200, json!("passed")));
+
+    // readCertificate: 200, 400, 404; revokeCertificate: 403, 200, 400, 401, 404.
+    let certificate = format!("exam-{cid}-{gid}");
+    let read = format!("/v1/academy/certificates/{certificate}");
+    let (status, shown) = h.send(get("readCertificate", &read, None)).await;
+    assert_eq!((status, shown["marker"]["id"].clone()), (200, json!(fid)));
+    let bad = "/v1/academy/certificates/nope";
+    assert_eq!(h.send(get("readCertificate", bad, None)).await.0, 400);
+    let missing = format!("/v1/academy/certificates/exam-{cid}-{fid}");
+    assert_eq!(h.send(get("readCertificate", &missing, None)).await.0, 404);
+
+    // The daily job's routes, built now.
+    let residents = sfab_identity::residents(&*h.store).await.unwrap();
+    let standing = std::collections::BTreeSet::new();
+    sfab_academy::daily(&*h.store, &residents, &standing, NOW)
+        .await
+        .unwrap();
+    // readCatalogue: 200, 400, 404 past the end.
+    let (status, catalogue) = h.send(get("readCatalogue", courses, None)).await;
+    assert_eq!(
+        (status, catalogue["items"].as_array().unwrap().len()),
+        (200, 5)
+    );
+    assert_eq!(
+        h.send(get("readCatalogue", &format!("{courses}?page=x"), None))
+            .await
+            .0,
+        400
+    );
+    assert_eq!(
+        h.send(get("readCatalogue", &format!("{courses}?page=2"), None))
+            .await
+            .0,
+        404
+    );
+    let (status, page) = h.send(get("readCourse", &one, None)).await;
+    assert_eq!((status, page["graduates"].clone()), (200, json!(1)));
+    // readEnrolled, readGraduates, readTeacherGraduates, readEnrolments, readCertificates:
+    // 200, 400, 404 past the end; readTeacher: 200, 400.
+    let teacher = format!("/v1/academy/teachers/{fid}");
+    for (operation, path, first) in [
+        ("readEnrolled", format!("{one}/enrolled"), json!(gid)),
+        ("readGraduates", format!("{one}/graduates"), json!(gid)),
+        (
+            "readTeacherGraduates",
+            format!("{teacher}/graduates"),
+            json!(gid),
+        ),
+        (
+            "readEnrolments",
+            format!("/v1/identity/{gid}/enrolments"),
+            json!(cid),
+        ),
+        (
+            "readCertificates",
+            format!("/v1/identity/{gid}/certificates"),
+            json!(certificate),
+        ),
+    ] {
+        let (status, list) = h.send(get(operation, &path, None)).await;
+        assert_eq!(
+            (status, list["items"][0].clone()),
+            (200, first),
+            "{operation}"
+        );
+        let bad = format!("{path}?page=0");
+        assert_eq!(
+            h.send(get(operation, &bad, None)).await.0,
+            400,
+            "{operation}"
+        );
+        let past = format!("{path}?page=2");
+        assert_eq!(
+            h.send(get(operation, &past, None)).await.0,
+            404,
+            "{operation}"
+        );
+    }
+    let (status, page) = h.send(get("readTeacher", &teacher, None)).await;
+    assert_eq!((status, page["graduates"].clone()), (200, json!(1)));
+    assert_eq!(
+        h.send(get("readTeacher", "/v1/academy/teachers/x", None))
+            .await
+            .0,
+        400
+    );
+
+    let revoke = |path: &str, a, p| write("revokeCertificate", "PUT", path, a, p, b"");
+    let revocation = format!("{read}/revocation");
+    assert_eq!(
+        h.send(revoke(&revocation, gauth.clone(), Proof::Valid))
+            .await
+            .0,
+        403
+    );
+    let (status, revoked) = h
+        .send(revoke(&revocation, auth.clone(), Proof::Valid))
+        .await;
+    assert_eq!((status, revoked["revoked"].clone()), (200, json!(true)));
+    assert_eq!(
+        h.send(revoke(&revocation, auth.clone(), Proof::None))
+            .await
+            .0,
+        400
+    );
+    assert_eq!(h.send(revoke(&revocation, None, Proof::Valid)).await.0, 401);
+    let gone = format!("{missing}/revocation");
+    assert_eq!(
+        h.send(revoke(&gone, auth.clone(), Proof::Valid)).await.0,
+        404
+    );
+
+    // retireCourse: 200, 400, 401, 403, 404, then enrolling gets 409 retired.
+    let retirement = format!("{one}/retirement");
+    let retire = |path: &str, a, p| write("retireCourse", "PUT", path, a, p, b"");
+    assert_eq!(
+        h.send(retire(&retirement, gauth.clone(), Proof::Valid))
+            .await
+            .0,
+        403
+    );
+    let (status, retired) = h
+        .send(retire(&retirement, auth.clone(), Proof::Valid))
+        .await;
+    assert_eq!((status, retired["retired"].clone()), (200, json!(true)));
+    assert_eq!(
+        h.send(retire(&retirement, auth.clone(), Proof::None))
+            .await
+            .0,
+        400
+    );
+    assert_eq!(h.send(retire(&retirement, None, Proof::Valid)).await.0, 401);
+    let nowhere = format!("{unknown}/retirement");
+    assert_eq!(
+        h.send(retire(&nowhere, auth.clone(), Proof::Valid)).await.0,
+        404
+    );
+    let (status, refused) = h.send(enrol(&enrolment, auth.clone(), Proof::Valid)).await;
+    assert_eq!((status, refused["type"].clone()), (409, json!("retired")));
+}
+
 fn reclaim(auth: Option<String>, proof: Proof) -> Case {
     Case {
         operation: "reclaim",
@@ -963,6 +1475,8 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
     );
     let mine_missing = format!("{square}/2026-11-04-{fid}-1");
     assert_eq!(h.send(delete(&mine_missing, auth.clone())).await.0, 404);
+
+    academy(&h, auth.clone(), gauth.clone(), fid, gid).await;
 
     // moveOut: 200, 401.
     let out = |auth| Case {

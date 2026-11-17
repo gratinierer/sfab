@@ -225,3 +225,94 @@ async fn an_unknown_or_taken_down_id_reads_like_an_agent_with_nothing_to_show() 
         shown
     );
 }
+
+#[tokio::test]
+async fn a_rebuild_of_part_of_a_prefix_deletes_only_the_keys_it_owns() {
+    let store = MemoryStore::new();
+    // The Academy's per-agent pages, beside the takedown index, which it doesn't own.
+    put(&store, "world/agents/aaaaaaaaaaaa.json", "index").await;
+    put(&store, "world/agents/aaaaaaaaaaaa/enrolments/1.json", "old").await;
+    put(
+        &store,
+        "world/agents/bbbbbbbbbbbb/enrolments/1.json",
+        "gone",
+    )
+    .await;
+
+    let report = world::rebuild_where(
+        &store,
+        "world/agents/",
+        files(&[("world/agents/aaaaaaaaaaaa/enrolments/1.json", "new")]),
+        |k| k.contains("/enrolments/"),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(
+        report,
+        Rebuilt {
+            written: 1,
+            unchanged: 0,
+            deleted: 1
+        }
+    );
+    assert_eq!(
+        store.keys(B),
+        vec![
+            "world/agents/aaaaaaaaaaaa.json",
+            "world/agents/aaaaaaaaaaaa/enrolments/1.json"
+        ]
+    );
+}
+
+#[tokio::test]
+async fn page_files_hold_a_list_a_page_each_and_read_back_with_next() {
+    let store = MemoryStore::new();
+    let items: Vec<_> = (0..5).map(|i| json!(i)).collect();
+    let pages = world::page_files("world/x/list/", items, 2);
+    assert_eq!(
+        pages.keys().collect::<Vec<_>>(),
+        vec![
+            "world/x/list/1.json",
+            "world/x/list/2.json",
+            "world/x/list/3.json"
+        ]
+    );
+    let path = "/v1/x/list";
+    let built = "world/x.json";
+    let read =
+        |token: Option<&'static str>| world::read_page(&store, "world/x/list/", token, path, built);
+    // Before the job's first run, every page is not-built-yet.
+    assert_eq!(read(None).await.unwrap_err().kind, "not-built-yet");
+    for (k, v) in pages {
+        let written = store.put(B, &k, v, Metadata::new(), Condition::Always);
+        written.await.unwrap();
+    }
+    put(&store, built, "{}").await;
+
+    let first = read(None).await.unwrap();
+    assert_eq!(
+        first.body,
+        json!({"items": [0, 1], "next": "/v1/x/list?page=2"})
+    );
+    let last = read(Some("3")).await.unwrap();
+    assert_eq!(last.body, json!({"items": [4], "next": null}));
+    assert_eq!(read(Some("4")).await.unwrap_err().status, 404);
+    for bad in ["0", "01", "x", ""] {
+        assert_eq!(read(Some(bad)).await.unwrap_err().status, 400, "{bad}");
+    }
+    // Once built, a list with no file reads as an empty page, as for an unknown ID.
+    let empty = world::read_page(&store, "world/x/other/", None, path, built);
+    assert_eq!(
+        empty.await.unwrap().body,
+        json!({"items": [], "next": null})
+    );
+}
+
+#[test]
+fn an_empty_list_still_has_its_first_page() {
+    let pages = world::page_files("world/x/list/", Vec::new(), 20);
+    let first: serde_json::Value = serde_json::from_slice(&pages["world/x/list/1.json"]).unwrap();
+    assert_eq!(first, json!({"items": [], "next": null}));
+    assert_eq!(pages.len(), 1);
+}
