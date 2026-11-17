@@ -293,6 +293,11 @@ JSON = {"content-type": "application/json", "cache-control": "no-store"}
             problem(403, "about:blank"),
             "execute-api with a wrong origin key",
         ),
+        (
+            "execute-api wrong key",
+            plain(403, b'{"message":"Forbidden"}'),
+            "execute-api with a wrong origin key",
+        ),
         ("execute-api no key", ok(200, {}), "execute-api without the origin key is rejected"),
         ("aboutme 404", ok(200, {"id": "aaaaaaaaaaaa"}), "aboutme after unpublishing"),
         ("read friends", ok(200, {"items": [], "next": None}), "read friends"),
