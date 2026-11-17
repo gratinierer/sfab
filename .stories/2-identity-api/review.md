@@ -100,6 +100,7 @@ Rows below that mention $1000 predate the owner's correction of the rule to $100
 | 2026-11-14T17:35:00+00:00 | review | 3fa73ea115 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 0 new, 0 resolved, 1 open | delta pass since 062bfd33ab. The closure audit found R201 and R202 hold. R188 still waits on the user. The loop stopped with no progress possible. The reviewer is on a different model from the same family as the author and orchestrator. |
 | 2026-11-14T17:50:00+00:00 | walkthrough | 2749832f3c | claude-opus-5-5 with the owner | 0 new, 1 resolved, 0 still open | walkthrough, not a review pass. The owner chose to fix R188 by accepting the risk in spec.md. |
 | 2026-11-17T10:00:00+00:00 | review | 540b2b9407 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 2 new, 0 resolved, 2 open | delta pass since 3fa73ea115, over the edits to spec.md and issues 01, 03, 09 and 10, and issue 02's move to done/. The closure audit found R188 holds. Mixed commits: 540b2b9, b2a4823 (docs/aws-facts.md), da06380 (openapi/sfab.yaml, cdk/smoke.py, its tests, docs/aws-facts.md) and 3488ace (cdk/stacks.py, cdk/requirements.*, docs/aws-facts.md). The last three reviews were delta passes, so a full pass may be due. The reviewer is on a different model from the same family as the author and orchestrator. |
+| 2026-11-17T10:20:00+00:00 | walkthrough | 5e6820388e | claude-opus-5-5 (address-story-review-findings auto) | 0 new, 2 resolved, 0 still open | auto walkthrough, not a review pass. |
 
 ## Findings
 
