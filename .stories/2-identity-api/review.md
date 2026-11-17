@@ -102,6 +102,7 @@ Rows below that mention $1000 predate the owner's correction of the rule to $100
 | 2026-11-17T10:00:00+00:00 | review | 540b2b9407 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 2 new, 0 resolved, 2 open | delta pass since 3fa73ea115, over the edits to spec.md and issues 01, 03, 09 and 10, and issue 02's move to done/. The closure audit found R188 holds. Mixed commits: 540b2b9, b2a4823 (docs/aws-facts.md), da06380 (openapi/sfab.yaml, cdk/smoke.py, its tests, docs/aws-facts.md) and 3488ace (cdk/stacks.py, cdk/requirements.*, docs/aws-facts.md). The last three reviews were delta passes, so a full pass may be due. The reviewer is on a different model from the same family as the author and orchestrator. |
 | 2026-11-17T10:20:00+00:00 | walkthrough | 5e6820388e | claude-opus-5-5 (address-story-review-findings auto) | 0 new, 2 resolved, 0 still open | auto walkthrough, not a review pass. |
 | 2026-11-17T10:40:00+00:00 | review | 1d89b6b0e2 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 2 new, 0 resolved, 2 open | delta pass since 540b2b9407, over the auto walkthrough's edits to spec.md and issues 01, 03 and 10. The closure audit found R203 and R204 hold. The reviewer is on a different model from the same family as the author and orchestrator. |
+| 2026-11-17T10:50:00+00:00 | walkthrough | 06daa08b89 | claude-opus-5-5 (address-story-review-findings auto) | 0 new, 1 resolved, 1 still open | auto walkthrough, not a review pass. R206 needs the user. |
 
 ## Findings
 
