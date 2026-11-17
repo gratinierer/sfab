@@ -54,7 +54,7 @@ CHECK_BUDGET_NAME = "sfab-check"
 CHECK_BUDGET_PERCENT_OF_1_USD = 1
 
 # The service name domain charges appear under, which the stop budget excludes. Confirmed on
-# the first purchase's bill, 2026-11-15 (story 2, issue 03).
+# the first purchase's bill (docs/aws-facts.md, "Route 53, Budgets and other services").
 DOMAIN_SERVICE_NAME = "Amazon Registrar"
 
 # The proof of work's difficulty, which the API Lambda reads (spec.md "Proof of work").
