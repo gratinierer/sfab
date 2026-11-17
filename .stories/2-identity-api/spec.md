@@ -646,8 +646,9 @@ so each check repeats the stop and its email until it holds. While the steps pro
 - **The daily limit:** every 5 minutes, the function reads API Gateway's `Count` total since midnight
   UTC, summing its `SampleCount` per 5 minutes, the statistic AWS documents for it, and stops the API if it's over the limit. The total can pass the limit by a few minutes' traffic
   before the next check, which costs cents. Counting at the gateway means direct requests to
-  `execute-api` should be counted as well as those through CloudFront, though AWS doesn't say whether
-  `Count` includes rejected requests, so `issues/02-measure-rejected-request-billing.md` tests it.
+  `execute-api` should be counted as well as those through CloudFront. `Count` includes requests
+  rejected for a missing key and throttled requests, but not requests to a disabled endpoint, which
+  `issues/done/02-measure-rejected-request-billing.md` measured. None of these rejected requests are billed.
 - **The budget's 100% alert:** on the stop topic, an SNS topic that receives only this alert, and any
   message on it stops the API.
 - **The daily spend check:** once a day at 12:00 UTC, the function reads actual spend through the
@@ -709,11 +710,11 @@ which at these rates is a few dollars. WAF, CloudFront and data transfer are cov
 plan, and domain charges are excluded.
 
 Anything that keeps billing during a stop is visible through the alert budget, and other risks beyond the
-API are covered under "Prerequisites". One risk is accepted: if someone floods the
-`execute-api` URL during a stop, and AWS bills requests to a disabled endpoint, the budget would keep
-climbing, and the owner would have to delete the API by hand. That needs a leaked random URL, plus a
-billing behaviour AWS's former pricing page suggests is unlikely, though it didn't cover disabled
-endpoints, and `issues/02-measure-rejected-request-billing.md` measures it.
+API are covered under "Prerequisites". A flood of the
+`execute-api` URL during a stop costs nothing: `issues/done/02-measure-rejected-request-billing.md` measured
+on 2026-11-16 that requests to a disabled endpoint aren't billed, and neither are missing-key or throttled
+rejections. Those disabled-endpoint requests don't show in `Count` either, so the daily limit can't see
+them, but there's nothing for it to stop.
 
 Traffic that passes WAF never costs CloudFront overage, but sustained excess over the plan's
 allowance might slow delivery. The Free plan's 1 million requests a month is about 0.4 per second on
@@ -933,7 +934,7 @@ replaces the isolation that per-route IAM roles would have given.
   the URL isn't published. Federation will only have been tested against a fake second world.
 - **Done** means deployed, the registrant email verified, smoke-tested, and with the kill switch drill
   and the alarm, budget, WAF, takedown, website, federation and census checks passed, the billing test in
-  `issues/02-measure-rejected-request-billing.md` run and its result acted on, the lifecycle rules
+  `issues/done/02-measure-rejected-request-billing.md` run and its result acted on, the lifecycle rules
   confirmed on the deployed bucket. The cleanup and the public launch follow story 4's "Launch checklist". The public launch is a separate decision, and can't happen until
   `.stories/4-life-in-the-world/` is done and [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) is closed, which now also covers
   the Terms and the public features.
@@ -1026,13 +1027,13 @@ Story 17 is part of this first deploy (`.stories/17-genesis-codes/` intro), so s
 
 These could not be confirmed from AWS documentation:
 
-- Whether API Gateway bills requests it rejects, by throttle, missing origin key or disabled
-  endpoint, and whether `Count` includes them. AWS's current docs don't say, and unofficial sources
-  conflict. Its
+- **Answered 2026-11-17:** whether API Gateway bills requests it rejects, and whether `Count`
+  includes them. `issues/done/02-measure-rejected-request-billing.md` measured it on 2026-11-16: missing-key,
+  throttled and disabled-endpoint rejections aren't billed (534 billed requests, which is 520 successful plus
+  14 from other tests). `Count` includes missing-key and throttled rejections, but not disabled-endpoint
+  requests. That matches AWS's
   [former pricing page](https://web.archive.org/web/20211202141251/https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-pricing.html),
-  since removed, said authentication failures, missing or invalid API keys and throttled requests
-  aren't charged, and didn't cover a disabled endpoint. So this is probably fine, but that's
-  not a current guarantee. `issues/02-measure-rejected-request-billing.md` measures this.
+  and adds the disabled endpoint it didn't cover. The design stands.
 - Whether the managed `CachingDisabled` and `AllViewerExceptHostHeader` policies work on the
   Free plan. AWS's preconfigured API Gateway origin uses them, and the plan only excludes
   "custom caching rules", so this is very likely. `issues/01-cdk-api-gateway-wiring.md` proves

@@ -1,6 +1,5 @@
 # Measure whether rejected requests are billed
 
-Label: ready-for-human
 Blocked by:
 
 AWS's current docs don't say whether API Gateway bills REST API requests that it rejects, and
@@ -152,3 +151,21 @@ Record the result in `spec.md` "Open questions", and in `docs/aws-facts.md`.
 - 2026-11-16: about 37 more API Gateway requests were sent the same day, after the billing test and before 11:30 UTC, to a separate
   throttle-free test APIs (`sfab-import-test` and `-2`, issue 01's import tests). They don't touch the three APIs' `Count`,
   and they add at most 37 to the billed quantity, which can't change which combination it matches.
+- 2026-11-17: `Count` for 2026-11-16 (`SampleCount`, one-day period; `Sum` gives the same numbers):
+  - `sfab-billing-key`: 905, equal to its 905 × `403` (`4XXError` 905). Missing-key rejections are counted.
+  - `sfab-billing-throttled`: 3,279, equal to its 520 × `200` plus 2,759 × `429` (`4XXError` 2,759). Throttled
+    requests are counted.
+  - `sfab-billing-disabled`: no datapoints, and CloudWatch lists no metric with that `ApiName` at all. Requests
+    to a disabled default endpoint aren't counted.
+  - Account-wide `Count` with no dimensions: 4,221 = 905 + 3,279 + 31 + 6 (the import tests). The disabled API's
+    1,667 appear nowhere.
+  - So the daily limit sees key and throttle floods, but not floods to a disabled endpoint. That's the endpoint
+    the kill switch disables, so after a stop the limit goes blind by design. Cost Explorer decides whether those
+    1,667 were billed (the table's last row).
+- 2026-11-17: Cost Explorer API (`get-cost-and-usage`, daily, service Amazon API Gateway, grouped by usage
+  type) for 2026-11-16: `USE1-ApiGatewayRequest` 534, cost $0. That's 520 `200`s plus 14 of the import tests'
+  37, and no rejected kind (905, 1,667 or 2,759) fits. Rejections for a missing key, a throttle or a disabled
+  endpoint aren't billed. The figure was still marked `Estimated`, but no late correction could reach even
+  905. Decision table: `Count` includes key and throttle rejections, and disabled-endpoint requests are neither
+  counted nor billed, so the design stands. Recorded in `spec.md` ("Open questions", "What it can cost", the
+  daily limit) and in `docs/aws-facts.md`.

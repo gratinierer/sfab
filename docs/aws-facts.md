@@ -86,7 +86,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | A CloudFormation `RestApi` with both `Body` and `Name` is named `Name`, not the OpenAPI `info.title`, so CDK's `metricCount()` names the right `ApiName` | memory | AWS doesn't say which wins; the kill switch reads the name with `GetRestApi`, and issue 10 checks that the 50,000-call warning's metric has data | 2026-11-07 |
 | `disableExecuteApiEndpoint` affects all stages, returns `403`, and takes effect only after a stage update | memory | spec.md "Kill switch" says AWS documents it; not rechecked. CloudFormation's `RestApi` page only says it disables the default endpoint | 2026-11-07 |
 | `CreateDeployment` with a `stageName` points that existing stage at the new deployment | memory | The kill switch's stop step and the restart list rely on it; issue 10's drill proves it | 2026-11-07 |
-| Failed authentication, missing or invalid API keys and throttled requests aren't charged | docs | [old-pricing], a 2021 archive of a removed page, so possibly out of date; issue 02 of story `2-identity-api` confirms it | 2026-11-01 |
+| Requests rejected for a missing API key, throttled requests and requests to a disabled default endpoint aren't charged | tested | Issue 02 of story `2-identity-api`: on 2026-11-16, Cost Explorer's `USE1-ApiGatewayRequest` showed 534 for 520 `200`s plus up to 37 other requests, against 905 + 2,759 + 1,667 rejections; [old-pricing] said the same, without covering a disabled endpoint | 2026-11-17 |
 
 ## CDK
 
@@ -156,7 +156,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | The missing-data setting is ignored when enough older real datapoints exist, and an alarm may re-evaluate old data after a metric stops | docs | [alarms-missing] | 2026-11-01 |
 | A standard alarm costs $0.10 per metric per month, with 10 free | docs | [cw-pricing], from search results | 2026-11-01 |
 | Lambda `Invocations` equals the requests billed, and excludes throttled invocations | docs | [lambda-metrics] | 2026-11-01 |
-| API Gateway `Count` is "the total number API requests", without saying if rejected or throttled requests count, and its documented statistic is `SampleCount`, which the kill switch and the 50,000-call warning use | docs | [apigw-metrics]; issue 02 of story `2-identity-api` tests it | 2026-11-07 |
+| API Gateway `Count` (`SampleCount`) includes requests rejected for a missing API key (`403`) and throttled requests (`429`), but requests to a disabled default endpoint (`403`) appear in no `Count`, not even the account-wide one; `SampleCount` is the statistic the kill switch and the 50,000-call warning use | tested | Issue 02 of story `2-identity-api`, the 2026-11-16 runs: 905 of 905, 3,279 of 3,279, and 0 of 1,667; [apigw-metrics] documents `SampleCount` | 2026-11-17 |
 | API Gateway's `ApiName` metric dimension is the REST API's name, with non-ASCII characters removed | docs | [apigw-metrics] | 2026-11-07 |
 | API Gateway's account-level limit is about 10,000 requests per second | memory | | 2026-11-01 |
 | API Gateway's per-API metrics are sent at one-minute periods, and are free | docs | [apigw-monitoring], [cw-pricing], from search results | 2026-11-01 |
