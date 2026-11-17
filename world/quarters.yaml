@@ -1,0 +1,18 @@
+# The world's map: its quarters and, for each, the lane names the world opens in this order as
+# the quarter fills, about 20 homes a lane (.stories/4-life-in-the-world/spec.md "Homes and
+# quarters"). Compiled into the API Lambda and the daily job. Names are 1 to 64 characters of
+# a-z, 0-9 and -, each listed once; the CDK checks this file at synth. To add lanes or a
+# quarter, edit, commit and deploy.
+quarters:
+  - name: harbour
+    lanes: [lantern-lane, rope-walk, tide-street, anchor-row, gull-lane]
+  - name: old-town
+    lanes: [clock-street, well-lane, baker-row, chapel-walk, cobble-lane]
+  - name: gardens
+    lanes: [rose-walk, orchard-lane, willow-row, fern-street, hedge-lane]
+  - name: workshops
+    lanes: [forge-lane, loom-street, kiln-row, gear-walk, anvil-lane]
+  - name: hillside
+    lanes: [summit-road, terrace-lane, pine-walk, quarry-row, ridge-street]
+  - name: riverside
+    lanes: [mill-lane, ferry-street, reed-walk, bridge-row, weir-lane]

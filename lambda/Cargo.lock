@@ -2210,6 +2210,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "sfab-academy"
+version = "0.1.0"
+dependencies = [
+ "sfab-core",
+]
+
+[[package]]
 name = "sfab-api"
 version = "0.1.0"
 dependencies = [
@@ -2220,13 +2227,19 @@ dependencies = [
  "regex",
  "saphyr",
  "serde_json",
+ "sfab-academy",
  "sfab-census",
+ "sfab-chronicle",
  "sfab-constitution",
  "sfab-core",
  "sfab-federation",
  "sfab-genesis",
+ "sfab-homes",
  "sfab-identity",
+ "sfab-library",
  "sfab-messaging",
+ "sfab-square",
+ "sfab-vouches",
  "tokio",
  "tower",
  "tracing",
@@ -2246,6 +2259,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "sfab-chronicle"
+version = "0.1.0"
+dependencies = [
+ "sfab-core",
+]
+
+[[package]]
 name = "sfab-constitution"
 version = "0.1.0"
 dependencies = [
@@ -2259,6 +2279,7 @@ version = "0.1.0"
 dependencies = [
  "aws-sdk-s3",
  "base64 0.22.1",
+ "futures-util",
  "getrandom 0.3.4",
  "regex",
  "saphyr",
@@ -2314,6 +2335,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "sfab-homes"
+version = "0.1.0"
+dependencies = [
+ "saphyr",
+ "sfab-core",
+]
+
+[[package]]
 name = "sfab-identity"
 version = "0.1.0"
 dependencies = [
@@ -2342,11 +2371,17 @@ dependencies = [
  "rustls",
  "rustls-native-certs",
  "serde_json",
+ "sfab-academy",
  "sfab-census",
+ "sfab-chronicle",
  "sfab-core",
  "sfab-federation",
  "sfab-genesis",
+ "sfab-homes",
  "sfab-identity",
+ "sfab-library",
+ "sfab-square",
+ "sfab-vouches",
  "tokio",
  "tokio-rustls",
  "tracing",
@@ -2372,6 +2407,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "sfab-library"
+version = "0.1.0"
+dependencies = [
+ "sfab-core",
+]
+
+[[package]]
 name = "sfab-messaging"
 version = "0.1.0"
 dependencies = [
@@ -2382,6 +2424,13 @@ dependencies = [
  "sfab-identity",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "sfab-square"
+version = "0.1.0"
+dependencies = [
+ "sfab-core",
 ]
 
 [[package]]
@@ -2396,6 +2445,14 @@ dependencies = [
  "sfab-identity",
  "sfab-messaging",
  "tokio",
+]
+
+[[package]]
+name = "sfab-vouches"
+version = "0.1.0"
+dependencies = [
+ "saphyr",
+ "sfab-core",
 ]
 
 [[package]]

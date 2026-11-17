@@ -1,0 +1,7 @@
+# Made-up founders for the tests and scripts/check, never a deployed world: cdk/deploy_plan.py
+# refuses a deploy without the real world/founders.yaml, or with any ID from this file in it.
+# .stories/4-life-in-the-world/ ticket 11 commits the real one. The CDK checks both at synth.
+founders:
+  - foundera2222
+  - founderb2222
+  - founderc2222

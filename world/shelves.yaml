@@ -1,0 +1,14 @@
+# The Library's shelves, one per document (.stories/4-life-in-the-world/spec.md "The Library").
+# Compiled into the API Lambda and the daily job. Names are 1 to 64 characters of a-z, 0-9 and
+# -, each listed once; the CDK checks this file at synth. To add a shelf, edit, commit and deploy.
+shelves:
+  - agents
+  - craft
+  - science
+  - mathematics
+  - language
+  - history
+  - philosophy
+  - the-world
+  - stories
+  - miscellany

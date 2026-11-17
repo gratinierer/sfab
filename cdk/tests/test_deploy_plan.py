@@ -7,6 +7,26 @@ from test_sfab_config import ACCOUNT, FIXTURE, secret_data
 
 import deploy_plan
 import deployer_stack
+import world_config
+
+REAL_FOUNDERS = "founders:\n  - realfoundera\n  - realfounderb\n  - realfounderc\n"
+
+
+def world(tmp_path, founders):
+    """The committed quarters and shelves, with `founders` as founders.yaml, or none."""
+    tmp_path.mkdir(exist_ok=True)
+    for name in ("quarters", "shelves"):
+        (tmp_path / f"{name}.yaml").write_text((world_config.WORLD / f"{name}.yaml").read_text())
+    if founders is not None:
+        (tmp_path / "founders.yaml").write_text(founders)
+    return world_config.Files.under(tmp_path)
+
+
+@pytest.fixture(autouse=True)
+def real_founders(tmp_path, monkeypatch):
+    # The branch commits no world/founders.yaml until ticket 11, so the other tests deploy
+    # with stand-in real founders.
+    monkeypatch.setattr(world_config, "REAL_FILES", world(tmp_path, REAL_FOUNDERS))
 
 
 def full_secret(region="us-east-1"):
@@ -132,3 +152,60 @@ def test_main_fails_with_the_errors_on_stderr(capsys):
     assert code == 1
     assert captured.out == ""
     assert "SfabNope" in captured.err
+
+
+# Story 4: `.stories/4-life-in-the-world/spec.md` "Launch checklist", step 2.
+
+
+@pytest.mark.parametrize("argv", [["--all"], ["SfabApi"], ["SfabDeployer", "SfabBase"]])
+def test_a_deploy_without_world_founders_yaml_is_refused(tmp_path, argv):
+    aws = full_secret()
+
+    found = deploy_plan.plan(argv, environ={}, aws=aws, world=world(tmp_path / "w", None))
+
+    assert found.stacks == []
+    assert any("founders.yaml" in error for error in found.errors), found.errors
+    assert aws.calls == []
+
+
+def test_a_deploy_with_the_fixture_founders_is_refused(tmp_path):
+    fixture = world_config.FOUNDERS_FIXTURE.read_text()
+    aws = full_secret()
+
+    found = deploy_plan.plan(["--all"], environ={}, aws=aws, world=world(tmp_path / "w", fixture))
+
+    assert found.stacks == []
+    assert any("foundera2222" in error for error in found.errors), found.errors
+    assert aws.calls == []
+
+
+def test_one_fixture_founder_among_real_ones_is_refused(tmp_path):
+    mixed = REAL_FOUNDERS + "  - founderb2222\n"
+
+    found = deploy_plan.plan(
+        ["SfabApi"], environ={}, aws=full_secret(), world=world(tmp_path / "w", mixed)
+    )
+
+    assert any("founderb2222" in error for error in found.errors), found.errors
+
+
+def test_too_few_real_founders_are_refused(tmp_path):
+    two = "founders:\n  - realfoundera\n  - realfounderb\n"
+
+    found = deploy_plan.plan(
+        ["SfabApi"], environ={}, aws=full_secret(), world=world(tmp_path / "w", two)
+    )
+
+    assert any("at least 3 founders" in error for error in found.errors), found.errors
+
+
+def test_the_deployer_alone_needs_no_founders(tmp_path):
+    found = deploy_plan.plan(
+        ["SfabDeployer"],
+        environ={},
+        aws=StubbedAws(secret_error=NO_SECRET, account=ACCOUNT),
+        world=world(tmp_path / "w", None),
+    )
+
+    assert found.errors == []
+    assert found.require_secret is False

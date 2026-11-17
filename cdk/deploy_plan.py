@@ -4,7 +4,10 @@
 
 Checks, in this order, stopping at the first that fails: `SFAB_CONFIG` isn't set, so the
 fixture can't deploy; the arguments are `--all` or one or more of the app's stacks, so a
-build's `DEPLOY_STACKS` can't carry other CDK flags; the deploy runs in us-east-1; and the
+build's `DEPLOY_STACKS` can't carry other CDK flags; `world/founders.yaml` holds the real
+founders, not the fixture's made-up ones, unless the stacks are `SfabDeployer` alone, which
+deploys no world code (`.stories/4-life-in-the-world/spec.md` "Launch checklist", step 2); the
+deploy runs in us-east-1; and the
 config loads from the secret, unless the stacks are `SfabDeployer` alone, which creates the
 secret and so deploys without it ("Synth without the config"). On success it prints the mode
 scripts/check runs in (`require-secret`, or `fallback` for that one case, where scripts/check
@@ -22,6 +25,7 @@ from dataclasses import dataclass, field
 
 import deployer_stack
 import sfab_config
+import world_config
 
 STACKS = ("SfabBase", "SfabApi", "SfabWebsite", deployer_stack.STACK_NAME)
 ALL = "--all"
@@ -43,9 +47,11 @@ def plan(
     argv: list[str],
     environ: Mapping[str, str] | None = None,
     aws: sfab_config.Aws | None = None,
+    world: world_config.Files | None = None,
 ) -> Plan:
     environ = os.environ if environ is None else environ
     aws = sfab_config.Aws() if aws is None else aws
+    world = world_config.REAL_FILES if world is None else world
 
     if environ.get(sfab_config.ENV_VAR):
         return Plan(
@@ -58,6 +64,11 @@ def plan(
     errors = _check_arguments(argv)
     if errors:
         return Plan(errors=errors)
+
+    if argv != [deployer_stack.STACK_NAME]:
+        errors = world_config.founders_problems(world)
+        if errors:
+            return Plan(errors=errors)
 
     region = aws.region(environ)
     if region != deployer_stack.REGION:

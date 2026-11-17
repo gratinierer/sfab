@@ -1,0 +1,9 @@
+[package]
+name = "sfab-homes"
+version = "0.1.0"
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+saphyr = "0.3.3"
+sfab-core = { path = "../../core" }

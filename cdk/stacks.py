@@ -76,6 +76,9 @@ MESSAGE_DAYS = 30
 GENESIS_CODES_PREFIX = "genesis/codes/"
 GENESIS_IPS_PREFIX = "genesis/ips/"
 GENESIS_POOL_KEY = "genesis/pool.json"
+# Story 4's institutions' prefixes, each owned by one crate under lambda/world/, which a test
+# ties here (.stories/4-life-in-the-world/spec.md "Changes to story 2's parts").
+STORY_4_PREFIXES = ("vouches/", "places/", "square/", "academy/", "library/")
 # Where the API Lambda deletes: `DELETE /identity/self/messages/{message_id}`, and a birth's
 # used genesis code (story 17 "What `birth` does").
 API_DELETE_PREFIXES = ("messages/", GENESIS_CODES_PREFIX)
@@ -87,6 +90,7 @@ API_READ_WRITE_PREFIXES = (
     "vitals/",
     "federation/pending/",
     GENESIS_IPS_PREFIX,
+    *STORY_4_PREFIXES,
 )
 API_READ_WRITE_KEYS = (GENESIS_POOL_KEY,)
 API_READ_PREFIXES = ("world/", GENESIS_CODES_PREFIX)
@@ -97,6 +101,11 @@ FEDERATION_VERIFIED_DAYS = 30
 # Days before S3 deletes a genesis IP record: story 17 "The IP rule". Only needs to outlast
 # GENESIS_IP_WINDOW_HOURS; the daily job deletes older records itself, sooner.
 GENESIS_IP_RECORD_DAYS = 1
+# Story 4 "Vouches": residents born before this time need no age for standing. A placeholder
+# until launch checklist step 6 sets it to the launch date plus 30 days, which also ends
+# hypercare (docs/api-design.md "Changes"). Until then it lies so far ahead that the age rule
+# applies to no one.
+AGE_RULE_STARTS = "2099-12-31T00:00:00Z"
 
 
 STAGE = "v1"
@@ -562,8 +571,8 @@ class ApiStack(cdk.Stack):
         )
 
     def _grant_storage(self, base: BaseStack) -> None:
-        """spec.md "Architecture": only these prefixes, never `federation/verified/`.
-        Story 4 adds its own prefixes here."""
+        """spec.md "Architecture": only these prefixes, never `federation/verified/`,
+        story 4's included."""
         identities, claims = base.identities_bucket, base.claims_bucket
         read_write = [identities.arn_for_objects(f"{p}*") for p in API_READ_WRITE_PREFIXES]
         read_write += [identities.arn_for_objects(k) for k in API_READ_WRITE_KEYS]
