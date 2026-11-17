@@ -436,12 +436,12 @@ async fn every_write_without_a_valid_proof_gets_400_with_nothing_stored() {
         // Made for another body.
         let mut other_body = clone(&sent);
         other_body.body.extend_from_slice(b" ");
-        other_body.proof = Some(proof_only_for(&made_for, &other_body));
+        other_body.proof = Some(proof_for_but_not(&made_for, &other_body));
         cases.push((name, other_body));
         // Made for another route.
         let mut other_path = clone(&sent);
         other_path.path = "/v1/identity/other";
-        other_path.proof = Some(proof_only_for(&made_for, &other_path));
+        other_path.proof = Some(proof_for_but_not(&made_for, &other_path));
         cases.push((name, other_path));
         // A stale one.
         let mut stale = clone(&sent);
@@ -454,7 +454,7 @@ async fn every_write_without_a_valid_proof_gets_400_with_nothing_stored() {
         authorization: claim_auth.clone(),
         ..clone(&for_b)
     };
-    for_a.proof = Some(proof_only_for(&for_b, &for_a));
+    for_a.proof = Some(proof_for_but_not(&for_b, &for_a));
     cases.push(("evolve", for_a));
 
     let before_b = snapshot(&w.store);
@@ -472,18 +472,18 @@ async fn every_write_without_a_valid_proof_gets_400_with_nothing_stored() {
     }
 }
 
-/// A `Proof` header, solved at `NOW`, that meets `BITS` for `made_for` but not for `sent`.
+/// A `Proof` header, solved at `NOW`, that meets `BITS` for `valid_for` but not for `refused_for`.
 ///
-/// The nonce is searched for rather than reused from `made_for`'s own proof: a proof for one
+/// The nonce is searched for rather than reused from `valid_for`'s own proof: a proof for one
 /// request meets the difficulty for any other by chance 1 time in 2^`BITS` (1 in 4,096), and the
 /// server is right to accept it then. Skipping such nonces makes a "made for another …" case
 /// certain to be refused, so the test can't fail by luck.
-fn proof_only_for(made_for: &Sent, sent: &Sent) -> String {
+fn proof_for_but_not(valid_for: &Sent, refused_for: &Sent) -> String {
     let header = (0u64..)
         .map(|n| format!("{NOW}:{n}"))
-        .find(|h| meets_bits(made_for, h) && !meets_bits(sent, h))
+        .find(|h| meets_bits(valid_for, h) && !meets_bits(refused_for, h))
         .expect("some nonce works");
-    assert!(meets_bits(made_for, &header) && !meets_bits(sent, &header));
+    assert!(meets_bits(valid_for, &header) && !meets_bits(refused_for, &header));
     header
 }
 
