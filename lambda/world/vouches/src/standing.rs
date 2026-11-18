@@ -23,7 +23,7 @@ use serde_json::{Value, json};
 use sfab_core::daily::{DAY, rfc3339};
 use sfab_core::id::AgentId;
 use sfab_core::problem::Problem;
-use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
+use sfab_core::storage::{Bucket, Store, StoreError};
 use sfab_core::world::{self, PARALLEL, Rebuilt};
 
 use crate::{Given, PREFIX, given_key, to_json};
@@ -46,11 +46,6 @@ pub(crate) fn standing_key(id: &AgentId) -> String {
 
 pub(crate) fn vouched_by_key(id: &AgentId) -> String {
     format!("{VOUCHED_BY_PREFIX}{id}.json")
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Built {
-    as_of: String,
 }
 
 /// One counted vouch, as `vouched-by` shows it: the giver's ID.
@@ -171,18 +166,7 @@ pub async fn daily<S: Store>(
         .collect();
     let a = world::rebuild(store, STANDING_PREFIX, standing_files).await?;
     let b = world::rebuild(store, VOUCHED_BY_PREFIX, vouched_files).await?;
-    let built = Built {
-        as_of: rfc3339(now),
-    };
-    store
-        .put(
-            Bucket::Identities,
-            BUILT_KEY,
-            to_json(&built),
-            Metadata::new(),
-            Condition::Always,
-        )
-        .await?;
+    world::write_built(store, BUILT_KEY, &rfc3339(now)).await?;
     Ok(DailyReport {
         standing: standing.len(),
         vouched: received.len(),
@@ -209,18 +193,7 @@ async fn given_by<S: Store>(store: &S, giver: &AgentId) -> Result<Given, StoreEr
 
 /// The job's last run, or `None` before the first.
 async fn built<S: Store>(store: &S) -> Result<Option<String>, Problem> {
-    let object = store
-        .get(Bucket::Identities, BUILT_KEY)
-        .await
-        .map_err(|e| Problem::storage("reading the standing run", &e))?;
-    let Some(object) = object else {
-        return Ok(None);
-    };
-    let built: Built = serde_json::from_slice(&object.body).map_err(|_| {
-        tracing::error!("{BUILT_KEY} doesn't parse");
-        Problem::internal()
-    })?;
-    Ok(Some(built.as_of))
+    world::built_at(store, BUILT_KEY).await
 }
 
 /// Every agent with standing, from one listing of the files the job last wrote, for another

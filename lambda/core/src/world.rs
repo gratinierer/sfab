@@ -137,6 +137,36 @@ pub async fn write_if_changed<S: Store>(
     Ok(true)
 }
 
+/// Writes a daily step's run marker, `{"as_of": <as_of>}` at `key`, last in its run: its
+/// routes take the key's existence as "the job has run" ([`read_for_agent`], [`read_page`]).
+pub async fn write_built<S: Store>(store: &S, key: &str, as_of: &str) -> Result<(), StoreError> {
+    let body = serde_json::to_vec(&serde_json::json!({"as_of": as_of})).expect("JSON serializes");
+    store
+        .put(
+            Bucket::Identities,
+            key,
+            body,
+            Metadata::new(),
+            Condition::Always,
+        )
+        .await
+}
+
+/// The `as_of` of the run marker [`write_built`] wrote at `key`, or `None` before the step's
+/// first run. A storage error or a marker that doesn't parse is a logged `500`.
+pub async fn built_at<S: Store>(store: &S, key: &str) -> Result<Option<String>, Problem> {
+    let Some(found) = read(store, key).await? else {
+        return Ok(None);
+    };
+    match found["as_of"].as_str() {
+        Some(as_of) => Ok(Some(as_of.to_owned())),
+        None => {
+            tracing::error!("{key} in storage has no as_of");
+            Err(Problem::internal())
+        }
+    }
+}
+
 /// A JSON file the daily job listed, or `None` when it's gone since or doesn't parse, which is
 /// logged and skipped so one bad file can't stop the run.
 pub async fn read_json<S: Store, T: DeserializeOwned>(

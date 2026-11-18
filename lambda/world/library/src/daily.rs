@@ -17,14 +17,13 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use futures_util::{StreamExt, TryStreamExt, stream};
-use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use sfab_core::daily::rfc3339;
 use sfab_core::id::AgentId;
 use sfab_core::paging::OFFSET_PAGE;
 use sfab_core::problem::{Problem, Reply};
-use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
+use sfab_core::storage::{Bucket, Store, StoreError};
 use sfab_core::takedown::Index;
 use sfab_core::world::{self, PARALLEL, Rebuilt};
 
@@ -50,11 +49,6 @@ fn shelf_prefix(shelf: &str) -> String {
 
 fn cited_by_prefix(id: &DocumentId) -> String {
     format!("{CITED_BY_PREFIX}{}/", id.as_str())
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Built {
-    as_of: String,
 }
 
 /// What a run did, for the job's log.
@@ -205,18 +199,7 @@ pub async fn daily<S: Store>(
     }
 
     let rebuilt = world::rebuild(store, WORLD_PREFIX, files).await?;
-    let built = to_json(&Built {
-        as_of: rfc3339(now),
-    });
-    store
-        .put(
-            Bucket::Identities,
-            BUILT_KEY,
-            built,
-            Metadata::new(),
-            Condition::Always,
-        )
-        .await?;
+    world::write_built(store, BUILT_KEY, &rfc3339(now)).await?;
     let listed = documents
         .iter()
         .filter(|(_, f)| f.title().is_some())

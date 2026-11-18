@@ -28,7 +28,7 @@ use sfab_core::daily::rfc3339;
 use sfab_core::id::AgentId;
 use sfab_core::paging::OFFSET_PAGE;
 use sfab_core::problem::{Problem, Reply};
-use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
+use sfab_core::storage::{Bucket, Store, StoreError};
 use sfab_core::takedown::Index;
 use sfab_core::world::{self, AGENTS_PREFIX, PARALLEL, Rebuilt};
 
@@ -108,11 +108,6 @@ fn is_agent_page(key: &str) -> bool {
     };
     let parts: Vec<&str> = rest.split('/').collect();
     matches!(parts.as_slice(), [id, "enrolments" | "certificates", _] if AgentId::parse(id).is_some())
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Built {
-    as_of: String,
 }
 
 /// One of a teacher's courses on its page.
@@ -560,18 +555,7 @@ pub async fn daily<S: Store>(
     rebuilt.written += agents.written;
     rebuilt.unchanged += agents.unchanged;
     rebuilt.deleted += agents.deleted;
-    let built = to_json(&Built {
-        as_of: rfc3339(now),
-    });
-    store
-        .put(
-            Bucket::Identities,
-            BUILT_KEY,
-            built,
-            Metadata::new(),
-            Condition::Always,
-        )
-        .await?;
+    world::write_built(store, BUILT_KEY, &rfc3339(now)).await?;
     Ok(DailyReport {
         courses: courses.len(),
         certificates: held.len(),
@@ -585,9 +569,7 @@ pub async fn daily<S: Store>(
 
 /// When the job last ran, or `None` before its first run.
 async fn built<S: Store>(store: &S) -> Result<Option<String>, Problem> {
-    let found: Option<(Built, String)> =
-        read_file(store, BUILT_KEY, "reading the Academy's run").await?;
-    Ok(found.map(|(b, _)| b.as_of))
+    world::built_at(store, BUILT_KEY).await
 }
 
 /// A course's counts and its teacher's lineage numbers, for the course page: from the teacher's
