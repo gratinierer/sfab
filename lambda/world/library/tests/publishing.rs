@@ -5,8 +5,10 @@
 mod common;
 
 use common::*;
-use serde_json::json;
-use sfab_core::storage::Bucket;
+use serde_json::{Value, json};
+use sfab_core::gate::admit_write;
+use sfab_core::proof::hex;
+use sfab_core::storage::{Bucket, Condition, Metadata, Store};
 
 #[tokio::test]
 async fn an_author_with_standing_publishes_a_document_at_the_id_it_picked() {
@@ -232,6 +234,38 @@ async fn a_retried_edition_returns_it_with_200() {
     assert_eq!(again, (200, first));
     let key = format!("library/{id}/2.json");
     assert_eq!(w.store.writes_to(Bucket::Identities, &key), 1);
+}
+
+#[tokio::test]
+async fn a_retry_that_names_edition_1_reads_it_from_the_document() {
+    let w = world();
+    let a = author(&w, "Wren", &[]).await;
+    let id = doc("knots");
+    published(&w, &a, &id, &[]).await;
+    // A proof is bound to its path, so only a document whose edition 1 names this call's proof
+    // reaches the retry branch for edition 1: written here by hand.
+    let sent = edition_call(&a, &id, "1", &edition_body("One", &[]), NOW);
+    let admitted = admit_write(&sent.call(), NOW, BITS).unwrap();
+    let key = format!("library/{id}/document.json");
+    let mut file: Value =
+        serde_json::from_slice(&w.store.object(Bucket::Identities, &key).unwrap().body).unwrap();
+    file["editions"][0]["proof"] = json!(hex(&admitted.hash));
+    let body = serde_json::to_vec(&file).unwrap();
+    w.store
+        .put(
+            Bucket::Identities,
+            &key,
+            body,
+            Metadata::new(),
+            Condition::Always,
+        )
+        .await
+        .unwrap();
+
+    let (status, page) = send_edition(&w, &sent, &id, "1", NOW).await.unwrap();
+
+    assert_eq!(status, 200);
+    assert_eq!(page, read_edition(&w, &id, "1").await.unwrap().1);
 }
 
 #[tokio::test]

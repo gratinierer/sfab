@@ -505,10 +505,14 @@ impl<S: Store> Library<S> {
                     "This edition exists; editions never change",
                 ));
             }
-            let (edition, _) = self
-                .read_edition(&id, n)
-                .await?
-                .ok_or_else(no_such_edition)?;
+            let edition = if n == 1 {
+                file.first.clone()
+            } else {
+                self.read_edition(&id, n)
+                    .await?
+                    .ok_or_else(no_such_edition)?
+                    .0
+            };
             return Ok(Reply::ok(file.shown_edition(&id, n, &edition)));
         }
         if n > MAX_EDITIONS {
@@ -574,7 +578,8 @@ impl<S: Store> Library<S> {
         Ok(Reply::created(file.shown_edition(&id, n, &edition)))
     }
 
-    /// Edition `n` of a document, from `document.json` for 1, or its own file.
+    /// Edition `n` of a document from its own file, for `n` after 1: edition 1 is `first` in
+    /// `document.json`.
     async fn read_edition(
         &self,
         id: &DocumentId,
