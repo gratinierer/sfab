@@ -71,6 +71,14 @@ pub fn academy_key(id: &AgentId) -> String {
     format!("identities/{id}/academy.json")
 }
 
+/// An author's list of the Library documents it ever published, `identities/<id>/library.json`,
+/// inside this crate's `identities/` folder so a takedown's delete of it covers the list. Its
+/// rules and format belong to the library crate (`lambda/world/library`), which reaches it
+/// through this key.
+pub fn library_key(id: &AgentId) -> String {
+    format!("identities/{id}/library.json")
+}
+
 fn vitals_key(id: &AgentId) -> String {
     format!("vitals/{id}.json")
 }

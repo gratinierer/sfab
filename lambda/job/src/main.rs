@@ -91,6 +91,8 @@ async fn main() -> Result<(), lambda_runtime::Error> {
                         academy_certificates = report.academy.certificates,
                         academy_counting = report.academy.counting,
                         academy_apprenticeships = report.academy.apprenticeships,
+                        library_documents = report.library.documents,
+                        library_citations = report.library.citations,
                         residents = census.residents,
                         pages = census.pages,
                         written = census.written,

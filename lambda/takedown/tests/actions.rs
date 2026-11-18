@@ -246,3 +246,50 @@ async fn folders_delete_all_beside_a_file_the_agent_s_file_names_while_it_names_
     );
     assert!(found(&store, &wren(), &l).await.unwrap().is_empty());
 }
+
+/// A note that keeps the author, so the anchor still names the agent on a rerun.
+fn removed_keeping_author(current: &[u8]) -> Option<Vec<u8>> {
+    let text = String::from_utf8_lossy(current);
+    (!text.contains("removed")).then(|| text.replace("words", "removed").into_bytes())
+}
+
+#[tokio::test]
+async fn note_folders_note_all_beside_a_file_the_agent_s_file_names_the_named_one_last() {
+    let store = MemoryStore::new();
+    put(
+        &store,
+        "identities/wrenwrenwren/library.json",
+        "library/aaaa/document.json\nlibrary/bbbb/document.json",
+    )
+    .await;
+    let mine = r#"{"author":"wrenwrenwren","words":1}"#;
+    put(&store, "library/aaaa/document.json", mine).await;
+    put(&store, "library/aaaa/2.json", r#"{"words":2}"#).await;
+    // Someone else's document, so the list was out of date.
+    let theirs = r#"{"author":"mossmossmoss","words":1}"#;
+    put(&store, "library/bbbb/document.json", theirs).await;
+    let l = location(
+        "identities/wrenwrenwren/library.json",
+        Action::NoteFolders(lines, removed_keeping_author),
+    );
+
+    let keys: Vec<String> = found(&store, &wren(), &l)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|(_, k)| k)
+        .collect();
+    assert_eq!(
+        keys,
+        vec!["library/aaaa/2.json", "library/aaaa/document.json"]
+    );
+    apply(&store, &wren(), &l).await.unwrap();
+
+    assert_eq!(body(&store, "library/aaaa/2.json"), r#"{"removed":2}"#);
+    assert_eq!(
+        body(&store, "library/aaaa/document.json"),
+        r#"{"author":"wrenwrenwren","removed":1}"#
+    );
+    assert_eq!(body(&store, "library/bbbb/document.json"), theirs);
+    assert!(found(&store, &wren(), &l).await.unwrap().is_empty());
+}

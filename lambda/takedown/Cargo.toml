@@ -17,6 +17,7 @@ sfab-academy = { path = "../world/academy" }
 sfab-core = { path = "../core", features = ["s3"] }
 sfab-homes = { path = "../world/homes" }
 sfab-identity = { path = "../identity" }
+sfab-library = { path = "../world/library" }
 sfab-messaging = { path = "../messaging" }
 sfab-square = { path = "../world/square" }
 sfab-vouches = { path = "../world/vouches" }

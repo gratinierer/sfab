@@ -44,6 +44,7 @@ pub fn locations(id: &AgentId) -> Vec<Location> {
     all.extend(sfab_homes::takedown(id));
     all.extend(sfab_square::takedown(id));
     all.extend(sfab_academy::takedown(id));
+    all.extend(sfab_library::takedown(id));
     all
 }
 
@@ -83,8 +84,8 @@ async fn existing_keys<S: Store>(
 }
 
 /// The keys of one location that its action would still change: every key under a prefix to
-/// delete, a key to delete, mark or note that exists and isn't yet a note, and the keys under a
-/// prefix that name the agent.
+/// delete, a key to delete, mark or note that exists and isn't yet a note, the keys under a
+/// prefix that name the agent, and the keys in the agent's folders still to delete or note.
 pub async fn found<S: Store>(
     store: &S,
     id: &AgentId,
@@ -117,6 +118,15 @@ pub async fn found<S: Store>(
         Action::Pointers(pointers_of) => keys = pointed(store, id, l, pointers_of).await?,
         Action::Search(belongs) => keys = searched(store, id, l, belongs).await?,
         Action::Folders(pointers_of) => keys = foldered(store, id, l, pointers_of).await?,
+        Action::NoteFolders(pointers_of, note_of) => {
+            for key in foldered(store, id, l, pointers_of).await? {
+                if let Some(current) = store.get(l.bucket, &key).await?
+                    && note_of(&current.body).is_some()
+                {
+                    keys.push(key);
+                }
+            }
+        }
     }
     Ok(keys.into_iter().map(|k| (l.bucket, k)).collect())
 }
@@ -198,6 +208,12 @@ pub async fn apply<S: Store>(store: &S, id: &AgentId, l: &Location) -> Result<()
         Action::Folders(pointers_of) => {
             for key in foldered(store, id, l, pointers_of).await? {
                 store.delete(l.bucket, &key).await?;
+            }
+            Ok(())
+        }
+        Action::NoteFolders(pointers_of, note_of) => {
+            for key in foldered(store, id, l, pointers_of).await? {
+                rewrite(store, l.bucket, &key, note_of).await?;
             }
             Ok(())
         }

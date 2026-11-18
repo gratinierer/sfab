@@ -2426,7 +2426,15 @@ dependencies = [
 name = "sfab-library"
 version = "0.1.0"
 dependencies = [
+ "futures-util",
+ "serde",
+ "serde_json",
  "sfab-core",
+ "sfab-genesis",
+ "sfab-identity",
+ "sfab-vouches",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -2468,6 +2476,7 @@ dependencies = [
  "sfab-genesis",
  "sfab-homes",
  "sfab-identity",
+ "sfab-library",
  "sfab-messaging",
  "sfab-square",
  "sfab-vouches",

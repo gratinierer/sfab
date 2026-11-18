@@ -21,6 +21,7 @@ use sfab_federation::{Federation, Here};
 use sfab_genesis::{Genesis, IpRule};
 use sfab_homes::Homes;
 use sfab_identity::{Identity, List};
+use sfab_library::Library;
 use sfab_messaging::Messaging;
 use sfab_square::Square;
 use sfab_vouches::Vouches;
@@ -41,6 +42,7 @@ pub struct AppState<S> {
     homes: Homes<S>,
     square: Square<S>,
     academy: Academy<S>,
+    library: Library<S>,
     census: Census<S>,
     federation: Federation<S>,
     genesis: Arc<Genesis<S>>,
@@ -83,6 +85,7 @@ pub fn app<S: Store>(
         homes: Homes::new(store.clone(), identity.clone(), required_bits),
         square: Square::new(store.clone(), identity.clone(), required_bits),
         academy: Academy::new(store.clone(), identity.clone(), required_bits),
+        library: Library::new(store.clone(), identity.clone(), required_bits),
         identity,
         census: Census::new(store.clone()),
         genesis,
@@ -244,6 +247,24 @@ pub fn app<S: Store>(
         .route(
             "/academy/apprenticeships/{apprenticeship}/certificate",
             post(award_certificate::<S>),
+        )
+        .route("/library/shelves", get(read_shelves::<S>))
+        .route("/library/shelves/{shelf}", get(read_shelf::<S>))
+        .route(
+            "/library/documents/{document}",
+            get(read_document::<S>).put(publish_document::<S>),
+        )
+        .route(
+            "/library/documents/{document}/cited-by",
+            get(read_cited_by::<S>),
+        )
+        .route(
+            "/library/documents/{document}/editions/{n}",
+            get(read_edition::<S>).put(publish_edition::<S>),
+        )
+        .route(
+            "/library/documents/{document}/editions/{n}/withdrawal",
+            put(withdraw_edition::<S>),
         )
         .route("/identity/{id}/enrolments", get(read_enrolments::<S>))
         .route("/identity/{id}/certificates", get(read_certificates::<S>))
@@ -774,6 +795,80 @@ async fn answer_notice<S: Store>(
     let now = (state.now)();
     let call = signed.call();
     respond(state.square.answer(&call, &quarter, &notice_id, now).await)
+}
+
+async fn read_shelves<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    uri: OriginalUri,
+) -> Response {
+    let token = page(&uri);
+    respond(state.library.shelves(token.as_deref()))
+}
+
+async fn read_shelf<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(shelf): Path<String>,
+    uri: OriginalUri,
+) -> Response {
+    let token = page(&uri);
+    respond(state.library.shelf(&shelf, token.as_deref()).await)
+}
+
+async fn read_document<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(document): Path<String>,
+) -> Response {
+    respond(state.library.document(&document).await)
+}
+
+async fn publish_document<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(document): Path<String>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    respond(state.library.publish(&signed.call(), &document, now).await)
+}
+
+async fn read_cited_by<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(document): Path<String>,
+    uri: OriginalUri,
+) -> Response {
+    let token = page(&uri);
+    respond(state.library.cited_by(&document, token.as_deref()).await)
+}
+
+async fn read_edition<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path((document, n)): Path<(String, String)>,
+) -> Response {
+    respond(state.library.edition(&document, &n).await)
+}
+
+async fn publish_edition<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path((document, n)): Path<(String, String)>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    let call = signed.call();
+    respond(
+        state
+            .library
+            .publish_edition(&call, &document, &n, now)
+            .await,
+    )
+}
+
+async fn withdraw_edition<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path((document, n)): Path<(String, String)>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    let call = signed.call();
+    respond(state.library.withdraw(&call, &document, &n, now).await)
 }
 
 async fn read_catalogue<S: Store>(

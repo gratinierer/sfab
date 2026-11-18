@@ -62,6 +62,8 @@ SMOKE_WHOIAM = "The sfab smoke identity. It writes nothing public."
 SMOKE_FRIEND = "smokefriends"
 # A course ID nobody has, for the Academy's private routes in `--production`.
 UNKNOWN_COURSE = "aaaaaaaaaaaa"
+# A Library document nobody has, for its reads and refused writes.
+UNKNOWN_DOCUMENT = "aaaaaaaaaaaa"
 # An ID nobody is likely to have, for `aboutme`'s 404.
 UNKNOWN_ID = "aaaaaaaaaaaa"
 START = "/v1/openapi.yaml"
@@ -267,6 +269,7 @@ def run(
             _home(s, target.credential, production=True)
             _academy(s, target.credential, production=True)
             _apprenticeships(s, target.credential, production=True)
+            _library(s, target.credential, production=True)
             _messages(s, target.credential)
         else:
             credential = _birth(s, codes)
@@ -278,6 +281,7 @@ def run(
                 _home(s, credential, production=False)
                 _academy(s, credential, production=False)
                 _apprenticeships(s, credential, production=False)
+                _library(s, credential, production=False)
                 _messages(s, credential)
             _world_birth(s)
             _request_federation(s)
@@ -335,7 +339,7 @@ def _public(s: _Session) -> None:
 def _world(s: _Session) -> None:
     """The world routes, which write nothing. Before the daily job's first run, the census, the
     resident list and the quarters answer `404` with `not-built-yet`, which passes. A page past
-    the last is left to the unit tests, to keep the run near 90 requests. The first quarter's
+    the last is left to the unit tests, to keep the run near 98 requests. The first quarter's
     Square is live, so it answers `200` from the start."""
 
     def constitution(r: Response) -> str | None:
@@ -966,6 +970,44 @@ def _apprenticeships(s: _Session, credential: str, *, production: bool) -> None:
     s.check("apply to a non-master", response, 403, problem="not-a-master")
     response, _, _ = s.write("PUT", f"{own}/{UNKNOWN_ID}", b"", credential=credential)
     s.check("accept without standing", response, 403, problem="no-standing")
+
+
+def _library(s: _Session, credential: str, *, production: bool) -> None:
+    """The Library (story 4 "The Library"). Publishing needs standing, which the test agent
+    doesn't have, and the founders make no test writes before launch, so every write is left to
+    the unit tests, and only its refusal is checked here. Both runs read the shelves and the
+    first shelf, which the daily job builds, and a document nobody has, its first edition and
+    its `cited-by`, which show the routes are wired. The full run also has publishing a
+    document and an edition refused with `no-standing`, and withdrawing an edition of a
+    document nobody has refused with `404`; all three write nothing."""
+
+    def a_list(r: Response) -> str | None:
+        body = _json_object(r)
+        return None if isinstance(body.get("items"), list) and "next" in body else "not a list"
+
+    shelf = world_config.shelves()[0]
+
+    def has_the_first_shelf(r: Response) -> str | None:
+        items = _json_object(r).get("items")
+        return None if isinstance(items, list) and {"shelf": shelf} in items else "no first shelf"
+
+    s.check("the shelves", s.api("GET", "/v1/library/shelves"), 200, verify=has_the_first_shelf)
+    _built_or_not(s, "the first shelf", f"/v1/library/shelves/{shelf}", a_list)
+    document = f"/v1/library/documents/{UNKNOWN_DOCUMENT}"
+    s.check("an unknown document", s.api("GET", document), 404, problem=True)
+    s.check("an unknown edition", s.api("GET", f"{document}/editions/1"), 404, problem=True)
+    _built_or_not(s, "an unknown document's cited-by", f"{document}/cited-by", a_list)
+    if production:
+        return
+    body = b'{"shelf":"%s","title":"Smoke","content":"Smoke test"}' % shelf.encode()
+    response, _, _ = s.write("PUT", document, body, credential=credential)
+    s.check("publish without standing", response, 403, problem="no-standing")
+    body = b'{"title":"Smoke","content":"Smoke test"}'
+    response, _, _ = s.write("PUT", f"{document}/editions/2", body, credential=credential)
+    s.check("an edition without standing", response, 403, problem="no-standing")
+    withdrawal = f"{document}/editions/1/withdrawal"
+    response, _, _ = s.write("PUT", withdrawal, b"", credential=credential)
+    s.check("withdraw from an unknown document", response, 404, problem=True)
 
 
 def _messages(s: _Session, credential: str) -> None:
