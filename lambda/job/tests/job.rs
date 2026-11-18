@@ -324,13 +324,14 @@ async fn the_job_writes_the_chronicle_from_ids_only_and_a_rerun_writes_the_same_
     let entry = chronicle.latest().await.unwrap().body;
     assert_eq!(entry["date"], "2026-11-06");
     assert_eq!(entry["residents"], 3);
-    assert_eq!(
-        entry["events"],
-        json!([
-            {"kind": "standing", "ids": ["foundera2222", "founderb2222"], "others": 0},
-            {"kind": "homes", "ids": ["aaaaaaaaaaaa"], "others": 0},
-            {"kind": "lanes", "ids": ["harbour/lantern-lane"], "others": 0},
-        ])
+    // The first entry gives only the count and the milestones, which name agents by ID.
+    assert_eq!(entry["events"], json!([]));
+    assert!(
+        entry["milestones"]
+            .as_array()
+            .unwrap()
+            .contains(&json!({"milestone": "first-home", "id": "aaaaaaaaaaaa"})),
+        "{entry}"
     );
     let key = "world/chronicle/2026-11-06.json";
     let written = store.object(Bucket::Identities, key).unwrap().body;

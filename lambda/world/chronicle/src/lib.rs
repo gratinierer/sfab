@@ -349,7 +349,10 @@ pub async fn daily<S: Store>(
         .map(|b| after.residents as i64 - b.residents as i64);
     let mut lines = Vec::new();
     let mut events = Vec::new();
-    for (kind, label) in KINDS {
+    // With no earlier facts, such as the first run after launch, everything would read as new,
+    // so the entry gives only the count, and the milestones that fired.
+    let kinds = if before.is_some() { &KINDS[..] } else { &[] };
+    for (kind, label) in kinds {
         let new: Vec<String> = kind_set(&after, kind)
             .difference(kind_set(was, kind))
             .cloned()
@@ -364,6 +367,7 @@ pub async fn daily<S: Store>(
     }
     let mut most_cited = Value::Null;
     if let (Some(document), Some((_, n))) = (&after.most_cited, &facts.most_cited)
+        && before.is_some()
         && after.most_cited != was.most_cited
     {
         lines.push(format!(

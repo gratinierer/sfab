@@ -54,6 +54,35 @@ async fn the_first_entry_gives_only_the_count_and_the_first_resident_milestone()
 }
 
 #[tokio::test]
+async fn the_first_entry_lists_nothing_as_new_even_with_homes_and_documents() {
+    let store = Arc::new(MemoryStore::new());
+    let mut f = facts(3);
+    f.homes = set(&["aaaaaaaaaaaa", "bbbbbbbbbbbb"]);
+    f.lanes = set(&["north/1"]);
+    f.documents = set(&["dddddddddddd"]);
+    f.most_cited = Some(("dddddddddddd".into(), 1));
+    f.standing = set(&["aaaaaaaaaaaa"]);
+    daily(&*store, &f, NOW).await.unwrap();
+
+    let entry = latest(&store).await;
+    assert_eq!(entry["events"], json!([]), "{entry}");
+    assert_eq!(entry["most_cited"], Value::Null, "{entry}");
+    let text = entry["text"].as_str().unwrap();
+    assert!(text.starts_with("3 residents. Milestone: "), "{text}");
+    assert!(!text.contains("bbbbbbbbbbbb"), "{text}");
+
+    // The next day reports only what's new since.
+    f.homes.insert("cccccccccccc".into());
+    daily(&*store, &f, NOW + DAY).await.unwrap();
+    let next = latest(&store).await;
+    assert_eq!(
+        next["events"],
+        json!([{"kind": "homes", "ids": ["cccccccccccc"], "others": 0}]),
+        "{next}"
+    );
+}
+
+#[tokio::test]
 async fn a_day_with_nothing_new_is_a_quiet_day() {
     let store = Arc::new(MemoryStore::new());
     daily(&*store, &facts(12), NOW).await.unwrap();
