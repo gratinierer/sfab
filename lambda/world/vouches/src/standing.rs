@@ -164,17 +164,15 @@ pub async fn daily<S: Store>(
             (vouched_by_key(id), to_json(&Counted { items }))
         })
         .collect();
-    let a = world::rebuild(store, STANDING_PREFIX, standing_files).await?;
-    let b = world::rebuild(store, VOUCHED_BY_PREFIX, vouched_files).await?;
+    let mut rebuilt = world::rebuild(store, STANDING_PREFIX, standing_files).await?;
+    rebuilt += world::rebuild(store, VOUCHED_BY_PREFIX, vouched_files).await?;
     world::write_built(store, BUILT_KEY, &rfc3339(now)).await?;
+    // The run marker is one more file written.
+    rebuilt.written += 1;
     Ok(DailyReport {
         standing: standing.len(),
         vouched: received.len(),
-        rebuilt: Rebuilt {
-            written: a.written + b.written + 1,
-            unchanged: a.unchanged + b.unchanged,
-            deleted: a.deleted + b.deleted,
-        },
+        rebuilt,
     })
 }
 

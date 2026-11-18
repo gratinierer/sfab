@@ -552,9 +552,7 @@ pub async fn daily<S: Store>(
 
     let mut rebuilt = world::rebuild(store, WORLD_PREFIX, files).await?;
     let agents = world::rebuild_where(store, AGENTS_PREFIX, agent_pages, is_agent_page).await?;
-    rebuilt.written += agents.written;
-    rebuilt.unchanged += agents.unchanged;
-    rebuilt.deleted += agents.deleted;
+    rebuilt += agents;
     world::write_built(store, BUILT_KEY, &rfc3339(now)).await?;
     Ok(DailyReport {
         courses: courses.len(),

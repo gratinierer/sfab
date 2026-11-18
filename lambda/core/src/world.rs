@@ -38,6 +38,15 @@ pub struct Rebuilt {
     pub deleted: usize,
 }
 
+/// Two rebuilds' counts together, for a step that rebuilds more than one prefix.
+impl std::ops::AddAssign for Rebuilt {
+    fn add_assign(&mut self, other: Self) {
+        self.written += other.written;
+        self.unchanged += other.unchanged;
+        self.deleted += other.deleted;
+    }
+}
+
 /// Makes `prefix`, which must be under `world/` and end in `/`, hold exactly `files`: writes each
 /// one that's new or changed, and deletes every other key under `prefix`, except the
 /// Chronicle's entries and milestones. Safe to repeat: a second run with the same set writes
