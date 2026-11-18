@@ -15,6 +15,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 |---|---|---|---|---|---|
 | 2026-11-18T07:17:05+00:00 | check | @ 6c26943 | scripts/check | — | green (baseline from `/implement-story 4`, run at 2a211d7 before the first merge; each implementer's check was green on its merged tree) |
 | 2026-11-18T07:17:05+00:00 | code-review | 01, 02, 03, 04, 05, 06, 07, 08, 09 @ 2a211d7..6c26943 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 29 new: 13 standards, 13 spec, 3 security | `auto` round 1, caller mode from `/implement-story 4`, commit filter `(#4)`. Same vendor family as the author (Sonnet for code by Opus). The 1.3 MB diff was split into three slices (issues 01–04, 05–06, 07–09), each axis on three reviewers. C25 was raised by the security reviewer outside its axis and confirmed by the orchestrator. |
+| 2026-11-18T07:38:33+00:00 | walkthrough | 01, 02, 03, 04, 05, 06, 07, 08, 09 @ 6c26943..HEAD | claude-opus-5-5 (address-code-review-findings auto; fixes by an Opus fixer sub-agent, one commit per finding) | 0 new, 17 resolved, 12 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
