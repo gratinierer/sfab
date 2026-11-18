@@ -27,7 +27,7 @@ use serde_json::{Value, json};
 use sfab_core::daily::{DAY, parse_rfc3339, utc_date};
 use sfab_core::id::AgentId;
 use sfab_core::problem::{Problem, Reply};
-use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
+use sfab_core::storage::{Bucket, Store, StoreError};
 use sfab_core::takedown::{Action, Location, Phase};
 use sfab_core::world::{self, CHRONICLE, Rebuilt};
 
@@ -415,15 +415,21 @@ pub async fn daily<S: Store>(
 
     // Milestones first, so a run that fails later still never fires one twice; the facts last,
     // so a rerun after a failure compares with the same ones.
-    write_if_changed(store, &listed, MILESTONES_KEY, to_json(&milestones)).await?;
+    world::write_if_changed(
+        store,
+        MILESTONES_KEY,
+        to_json(&milestones),
+        listed.contains(MILESTONES_KEY),
+    )
+    .await?;
     let key = entry_key(&date);
-    write_if_changed(store, &listed, &key, to_json(&entry)).await?;
+    world::write_if_changed(store, &key, to_json(&entry), listed.contains(&key)).await?;
     let seen = Seen {
         date: date.clone(),
         before,
         after,
     };
-    write_if_changed(store, &listed, SEEN_KEY, to_json(&seen)).await?;
+    world::write_if_changed(store, SEEN_KEY, to_json(&seen), listed.contains(SEEN_KEY)).await?;
 
     let mut dates: BTreeSet<String> = listed
         .iter()
@@ -474,29 +480,6 @@ async fn read_listed<S: Store, T: for<'de> Deserialize<'de>>(
     Ok(serde_json::from_slice(&object.body)
         .inspect_err(|_| tracing::error!("{key} doesn't parse; read as missing"))
         .ok())
-}
-
-async fn write_if_changed<S: Store>(
-    store: &S,
-    listed: &BTreeSet<String>,
-    key: &str,
-    body: Vec<u8>,
-) -> Result<(), StoreError> {
-    if listed.contains(key)
-        && let Some(current) = store.get(Bucket::Identities, key).await?
-        && current.body == body
-    {
-        return Ok(());
-    }
-    store
-        .put(
-            Bucket::Identities,
-            key,
-            body,
-            Metadata::new(),
-            Condition::Always,
-        )
-        .await
 }
 
 /// The Chronicle's routes, which read what the last [`daily`] wrote.
