@@ -525,7 +525,8 @@ impl<S: Store> Academy<S> {
             None => {
                 let at = file.submitted_at.clone().unwrap_or_default();
                 let p = Pointer { submitted_at: at };
-                put_file(&*self.store, &pointer, &p, Condition::Always, "queueing").await?;
+                // A pointer never changes once written, so a repeat that finds one keeps it.
+                put_file(&*self.store, &pointer, &p, Condition::IfAbsent, "queueing").await?;
                 return Ok(());
             }
             Some(true) => {
