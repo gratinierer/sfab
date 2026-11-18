@@ -375,14 +375,11 @@ impl<S: Store> Academy<S> {
             proof,
         };
         let first = found.is_none();
-        put_file(
-            &*self.store,
-            &key,
-            &application,
-            Condition::Always,
-            "applying",
-        )
-        .await?;
+        // On the read's ETag, so a takedown or another write since isn't overwritten.
+        let condition = condition_for(found.map(|(_, etag)| etag));
+        if !put_file(&*self.store, &key, &application, condition, "applying").await? {
+            return Err(Problem::lost_race("applying"));
+        }
         let reply = shown(&application);
         Ok(if first {
             Reply::created(reply)
