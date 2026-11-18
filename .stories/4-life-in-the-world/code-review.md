@@ -1,0 +1,51 @@
+# 4-life-in-the-world: code review
+
+Code reviews of this story's issues. The journal lists every pass: `code-review` runs of `/review-code`,
+`check` rows for the `scripts/check` run before each review, and `walkthrough` passes of
+`/address-code-review-findings`. The findings table lists what each run found and what became of it. Rows are never
+deleted or renumbered: a fixed finding flips to `resolved`.
+
+Statuses: `open` / `resolved` / `wontfix` / `superseded`.
+Axes: `standards` / `spec` / `security`.
+Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
+
+## Review journal
+
+| Date | Kind | Reviewed | By | Findings | Notes |
+|---|---|---|---|---|---|
+| 2026-11-18T07:17:05+00:00 | check | @ 6c26943 | scripts/check | — | green (baseline from `/implement-story 4`, run at 2a211d7 before the first merge; each implementer's check was green on its merged tree) |
+| 2026-11-18T07:17:05+00:00 | code-review | 01, 02, 03, 04, 05, 06, 07, 08, 09 @ 2a211d7..6c26943 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 29 new: 13 standards, 13 spec, 3 security | `auto` round 1, caller mode from `/implement-story 4`, commit filter `(#4)`. Same vendor family as the author (Sonnet for code by Opus). The 1.3 MB diff was split into three slices (issues 01–04, 05–06, 07–09), each axis on three reviewers. C25 was raised by the security reviewer outside its axis and confirmed by the orchestrator. |
+
+## Findings
+
+| # | Status | Axis | Affects | Description | Comments |
+|---|---|---|---|---|---|
+| C1 | open | standards | 01, lambda/world/census/src/lib.rs:140 | Census keeps its own `write_if_changed` (:140) and `not_built_yet` (:223), now second copies of the `sfab_core::world` helpers issue 01 added, against CODING_STANDARDS "What every route shares lives in `lambda/core`". | 2026-11-18: found. |
+| C2 | open | standards | 08, lambda/world/chronicle/src/lib.rs:479 | The Chronicle adds a third copy of `write_if_changed` because core's (`lambda/core/src/world.rs:114`) is private; core should export it and both crates call it. | 2026-11-18: found. |
+| C3 | open | standards | 01, lambda/world/genesis/src/lib.rs:371 | Genesis keeps its own `not_built_yet` with a different message instead of `world::not_built_yet()`. | 2026-11-18: found. |
+| C4 | open | standards | 05, lambda/world/academy/src/daily.rs:588 | `read_json` is copied character for character in `lambda/world/library/src/daily.rs:249`, with a third variant `read_listed` in the Chronicle; shared storage plumbing belongs in `core::world`. | 2026-11-18: found. |
+| C5 | open | standards | 05, lambda/world/academy/src/lib.rs:312 | Typed-storage helpers `to_json`, `read_file`, `put_file`, `condition_for` and `empty_body` are private copies in the Academy and the Library (`library/src/lib.rs:306,317,338`), with similar read-parse-or-500 helpers in homes (`read_home`), the Square (`read_file`) and census (`read`); core has none to swap to, so it needs new ones. | 2026-11-18: found. |
+| C6 | open | standards | 05, lambda/world/academy/src/exam.rs:528 | `settle` writes the marking-queue pointer with `Condition::Always` after reading the attempt, against "A write that depends on what a read found is conditional"; a takedown in between can leave a pointer behind. | 2026-11-18: found. |
+| C7 | open | standards | 06, lambda/world/academy/src/apprenticeship.rs:382 | Possible conditional-write gap: `apply` reads the application then writes it with `Condition::Always`; an idempotent overwrite, so either use the read's ETag or say in a comment why `Always` is safe. | 2026-11-18: found. |
+| C8 | open | standards | 01, lambda/core/src/world.rs:114 | Possible conditional-write gap: `write_if_changed` (and the Chronicle's copy, `chronicle/src/lib.rs:416`) reads then puts with `Condition::Always`; the daily job is the keys' only writer, so it may be fine, but the rule is stated flatly. | 2026-11-18: found. |
+| C9 | open | standards | 06, docs/aws-facts.md | Issue 06 relies on the 30-day lifecycle expiry of `academy/applications/` but no `docs/aws-facts.md` row names the Academy for it, as `AGENTS.md` "Reference files" asks. | 2026-11-18: found. |
+| C10 | open | standards | 05, lambda/world/academy/src/exam.rs:75 | Possible Duplicated Code: `bad_id`, `not_a_party` and `no_such_*` are defined in several Academy files (and `bad_id` in vouches), and `not_a_party` carries two texts for the same `403` type (`exam.rs:75`, `apprenticeship.rs:263`). | 2026-11-18: found. |
+| C11 | open | standards | 07, lambda/world/library/src/daily.rs:205 | Possible Duplicated Code: the closing "built" marker write (`Built { as_of }`, `BUILT_KEY`, `put` with `Condition::Always`) repeats in the Library, the Academy (`daily.rs:565`) and vouches (`standing.rs`); a `world::write_built` would remove it. | 2026-11-18: found. |
+| C12 | open | standards | 03, lambda/world/homes/src/lib.rs:682 | Possible Primitive Obsession: `read_counts` matches `p.kind == "not-built-yet"` on a string; an `Option`-returning core reader would remove it. | 2026-11-18: found. |
+| C13 | open | standards | 09, lambda/world/academy/src/daily.rs:562 | Possible Duplicated Code: a hand-written merge of `written`, `unchanged` and `deleted` from a second `Rebuilt`; a `Rebuilt::add` in core would remove it. | 2026-11-18: found. |
+| C14 | open | spec | 02, lambda/world/vouches/src/standing.rs:84 | The daily job never checks blocks, so a vouch whose recipient later blocked the giver still counts and still shows in `vouched-by`; spec: "A vouch given before the block stays stored, and the daily job ignores it." | 2026-11-18: found. |
+| C15 | open | spec | 01, lambda/world/vouches/build.rs:8 | `build.rs` compiles in `world/founders.yaml` whenever it exists, so once ticket 11 commits it the tests (job tests hard-code `foundera2222`, `founderc2222`) run on real IDs and fail; spec: "Tests and `scripts/check` use a fixture founders file". | 2026-11-18: found. |
+| C16 | open | spec | 01, cdk/world_config.py | `founders_problems` refuses a deploy only when a founder ID is in the fixture set, so a file mixing real and fixture IDs deploys; spec: "a deploy that refuses the fixture". | 2026-11-18: found. |
+| C17 | open | spec | 02, lambda/world/vouches/src/lib.rs:176 | A vouch for oneself answers `400`, which neither the spec nor the issue asks for (harmless; the daily job also skips self-vouches). | 2026-11-18: found. |
+| C18 | open | spec | 01, lambda/core/src/problem.rs:111 | `Problem::lost_race` refactors story 2's lost-race `500` into core and touches `lambda/identity/src/lib.rs:194`, unasked; behaviour unchanged. | 2026-11-18: found. |
+| C19 | open | spec | 05, lambda/world/academy/src/exam.rs:490 | `mark` checks that each accepted position is a `work` task but not that the student handed it in, so a blank attempt can pass; spec: "A mark is… the handed-in tasks it accepts". | 2026-11-18: found. |
+| C20 | open | spec | 05, lambda/world/academy/src/exam.rs:237 | A retake after a revoked certificate gets no new certificate, because `settle` writes it `IfAbsent` and the revoked one stays; the spec doesn't say, and the issue's Comments don't record the choice. | 2026-11-18: found. |
+| C21 | open | spec | 06, lambda/world/academy/src/lib.rs | The takedown's search of `academy/applications/` also deletes applications the agent sent, while spec "Takedown" says "Applications it sent: Left to expire within 30 days"; recorded in issues 06 and 09 Comments, but code and spec disagree. | 2026-11-18: found. |
+| C22 | open | spec | 08, lambda/world/chronicle/src/lib.rs:330 | With no earlier `seen.json` the first entry lists every existing home, lane, course, certificate, master, document and standing agent as new; spec: "reporting only the count on a day without one, such as the first after launch". The test at `chronicle/tests/daily.rs:38` has no such facts, so it can't show this. | 2026-11-18: found. |
+| C23 | open | spec | 08, lambda/world/chronicle/src/lib.rs:285 | A milestone names the smallest new ID (`difference(...).next()`), not the first to arrive, so after missed days or a batch "the first home, {id}" can name an arbitrary agent. | 2026-11-18: found. |
+| C24 | open | spec | 07, lambda/world/library/src/lib.rs:471 | `add_to_list` runs before the `IfAbsent` write of `document.json`, so a failed or raced document write still spends one of the 3 lifetime slots, untested and not recorded as a choice. | 2026-11-18: found. |
+| C25 | open | spec | 07, lambda/world/library/src/lib.rs:568 | A retry of `PUT .../editions/1` with the same proof calls `read_edition(1)`, which reads `library/<doc>/1.json`, but edition 1 lives in `document.json`, so the retry answers `404` instead of `200`. | 2026-11-18: found (raised by the security reviewer, confirmed against `edition_key` and the two other `read_edition` callers, which special-case edition 1). |
+| C26 | open | spec | 07, lambda/world/library/src/daily.rs:46 | The doc comment "Bare IDs on a page..." sits above `DOCUMENTS_LIST` instead of `ID_PAGE` (cosmetic). | 2026-11-18: found. |
+| C27 | open | security | 06, lambda/world/academy/src/apprenticeship.rs:700 | `add_work` and `comment` run only `party_record` before writing, with no `Relation::Blocked` check against the other party, so a blocked party still posts to the blocker; breaks SECURITY_RULES rule 8, "Blocks are refused openly with `403 blocked`". | 2026-11-18: found. |
+| C28 | open | security | 02, lambda/world/vouches/src/lib.rs:228 | Before the first daily run, `vouched_by` answers `404 not-built-yet` for an agent that publishes `vouches` but `200` empty for unknown, taken-down or non-publishing IDs, telling an anonymous caller which IDs exist; breaks rule 13, "no route confirms which IDs exist". | 2026-11-18: found. |
+| C29 | open | security | 04, lambda/world/square/src/lib.rs:355 | `Square::delete` deletes a notice's answers one by one with no bound beyond the quarter's residents, and the route's cost figure doesn't count that Lambda time (rule 23, lower confidence). | 2026-11-18: found. |
