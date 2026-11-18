@@ -362,6 +362,28 @@ async fn handed_in_work_is_marked_by_the_teacher_or_a_graduate_and_a_pass_is_a_c
 }
 
 #[tokio::test]
+async fn a_mark_can_accept_only_work_the_student_handed_in() {
+    let w = world();
+    let t = born(&w, "Wren").await;
+    let s = born(&w, "Kite").await;
+    let course = published(&w, &t, &course_body("Work", 1, 1, 100)).await;
+    enrol(&w, &s, &course, NOW).await.unwrap();
+    let attempt = started(&w, &s, &course, NOW).await;
+    let (_, blank) = submit(&w, &s, &course, &attempt, NOW).await.unwrap();
+    assert_eq!(blank["status"], "awaiting-mark");
+
+    assert_eq!(
+        mark(&w, &t, &course, &attempt, &json!({"accepted": [2]})).await,
+        Err((400, "about:blank")),
+        "a blank work task can't be accepted"
+    );
+    let (_, failed) = mark(&w, &t, &course, &attempt, &json!({"accepted": []}))
+        .await
+        .unwrap();
+    assert_eq!(failed["status"], "failed");
+}
+
+#[tokio::test]
 async fn no_one_marks_its_own_attempt() {
     let w = world();
     let t = born(&w, "Wren").await;

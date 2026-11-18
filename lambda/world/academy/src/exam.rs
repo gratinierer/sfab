@@ -705,9 +705,9 @@ impl<S: Store> Academy<S> {
             accepted.dedup();
             let valid = accepted.len() == request.accepted.len()
                 && accepted.iter().all(|n| {
-                    file.tasks
-                        .get(n.wrapping_sub(1))
-                        .is_some_and(|t| t.kind == Kind::Work)
+                    let at = n.wrapping_sub(1);
+                    let handed_in = file.answers.get(at).is_some_and(Option::is_some);
+                    handed_in && file.tasks.get(at).is_some_and(|t| t.kind == Kind::Work)
                 });
             if !valid {
                 return Err(Problem::bad_request(
