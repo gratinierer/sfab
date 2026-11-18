@@ -35,10 +35,15 @@ use crate::{
 pub const FRESH_SECONDS: i64 = 15 * 60;
 
 /// What a run did, for the job's log.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct DailyReport {
     /// Homes whose pointer and `home.json` agree, across the map.
     pub residents: usize,
+    /// The agents in those homes, for the Chronicle; one behind a pointer too fresh to check
+    /// joins at the next run.
+    pub living: BTreeSet<AgentId>,
+    /// The lanes with a resident, as `quarter/lane`, for the Chronicle.
+    pub lanes: BTreeSet<String>,
     /// Pointers deleted because `home.json` disagreed.
     pub ghosts: usize,
     pub rebuilt: Rebuilt,
@@ -70,13 +75,15 @@ pub async fn daily<S: Store>(
         let agrees = agrees(store, &address, map).await?;
         Ok::<_, StoreError>((address, agrees))
     });
-    let checked: Vec<(Address, bool)> = stream::iter(checks)
+    let checked: Vec<(Address, Option<AgentId>)> = stream::iter(checks)
         .buffer_unordered(PARALLEL)
         .try_collect()
         .await?;
     let mut ghosts = 0;
+    let mut living = BTreeSet::new();
     for (address, agrees) in checked {
-        if agrees {
+        if let Some(id) = agrees {
+            living.insert(id);
             taken.insert(address);
         } else {
             store
@@ -88,6 +95,7 @@ pub async fn daily<S: Store>(
 
     let as_of = rfc3339(now);
     let mut files = BTreeMap::new();
+    let mut lived_on = BTreeSet::new();
     for quarter in map {
         let mut free = Vec::new();
         let mut lanes = Vec::new();
@@ -108,6 +116,7 @@ pub async fn daily<S: Store>(
             }
             if on_lane > 0 {
                 lanes.push(json!({"lane": lane, "residents": on_lane}));
+                lived_on.insert(format!("{}/{lane}", quarter.name));
             }
             residents += on_lane;
         }
@@ -124,6 +133,8 @@ pub async fn daily<S: Store>(
     let rebuilt = world::rebuild(store, QUARTERS_PREFIX, files).await?;
     Ok(DailyReport {
         residents: taken.len(),
+        living,
+        lanes: lived_on,
         ghosts,
         rebuilt,
     })
@@ -135,20 +146,20 @@ fn address_of_key(key: &str, map: &[Quarter]) -> Option<Address> {
     Address::parse(rest, map)
 }
 
-/// Whether the pointer at `address` names an agent whose `home.json` says it lives there.
+/// The agent the pointer at `address` names, if its `home.json` says it lives there.
 async fn agrees<S: Store>(
     store: &S,
     address: &Address,
     map: &[Quarter],
-) -> Result<bool, StoreError> {
+) -> Result<Option<AgentId>, StoreError> {
     let Some(id) = resident(store, address).await? else {
-        return Ok(false);
+        return Ok(None);
     };
     let Some(home) = home_of(store, &id).await? else {
-        return Ok(false);
+        return Ok(None);
     };
     let lives_here = home.address.and_then(|a| Address::parse(&a, map));
-    Ok(lives_here.as_ref() == Some(address))
+    Ok((lives_here.as_ref() == Some(address)).then_some(id))
 }
 
 /// `home.json`, listed first so a missing one is never asked for. One that doesn't parse is

@@ -54,7 +54,7 @@ use sfab_identity::Identity;
 pub use apprenticeship::{
     APPLICATION_DAYS, APPLICATIONS_PREFIX, MAX_APPRENTICES, MAX_NOTE_CHARS, MAX_WORK_BYTES,
 };
-pub use daily::{DailyReport, daily};
+pub use daily::{DailyReport, Issued, Public, daily};
 
 /// Where courses, attempts, marking, certificates and apprenticeships live. IAM in
 /// `cdk/stacks.py` names it too, tied here by a CDK test.

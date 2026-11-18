@@ -2270,7 +2270,11 @@ dependencies = [
 name = "sfab-chronicle"
 version = "0.1.0"
 dependencies = [
+ "serde",
+ "serde_json",
  "sfab-core",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -2472,6 +2476,7 @@ dependencies = [
  "aws-sdk-s3",
  "serde_json",
  "sfab-academy",
+ "sfab-chronicle",
  "sfab-core",
  "sfab-genesis",
  "sfab-homes",

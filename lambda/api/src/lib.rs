@@ -14,6 +14,7 @@ use axum::routing::{delete, get, post, put};
 
 use sfab_academy::Academy;
 use sfab_census::Census;
+use sfab_chronicle::Chronicle;
 use sfab_core::gate::Call;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::Store;
@@ -44,6 +45,7 @@ pub struct AppState<S> {
     academy: Academy<S>,
     library: Library<S>,
     census: Census<S>,
+    chronicle: Chronicle<S>,
     federation: Federation<S>,
     genesis: Arc<Genesis<S>>,
     /// The current Unix time, so tests can fix it.
@@ -88,6 +90,7 @@ pub fn app<S: Store>(
         library: Library::new(store.clone(), identity.clone(), required_bits),
         identity,
         census: Census::new(store.clone()),
+        chronicle: Chronicle::new(store.clone()),
         genesis,
         federation: Federation::new(store, required_bits, here),
         now,
@@ -271,6 +274,9 @@ pub fn app<S: Store>(
         .route("/world/constitution", get(constitution))
         .route("/world/census", get(census::<S>))
         .route("/world/residents", get(residents::<S>))
+        .route("/world/chronicle", get(chronicle::<S>))
+        .route("/world/chronicle/days", get(chronicle_days::<S>))
+        .route("/world/chronicle/days/{date}", get(chronicle_day::<S>))
         .route("/world/genesis-code", get(genesis_code::<S>))
         .route("/federation/world", get(federation_world::<S>))
         .route("/federation/worlds", get(federation_worlds::<S>))
@@ -409,6 +415,24 @@ async fn census<S: Store>(State(state): State<Arc<AppState<S>>>) -> Response {
 
 async fn residents<S: Store>(State(state): State<Arc<AppState<S>>>, uri: OriginalUri) -> Response {
     respond(state.census.residents(page(&uri).as_deref()).await)
+}
+
+async fn chronicle<S: Store>(State(state): State<Arc<AppState<S>>>) -> Response {
+    respond(state.chronicle.latest().await)
+}
+
+async fn chronicle_days<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    uri: OriginalUri,
+) -> Response {
+    respond(state.chronicle.days(page(&uri).as_deref()).await)
+}
+
+async fn chronicle_day<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(date): Path<String>,
+) -> Response {
+    respond(state.chronicle.day(&date).await)
 }
 
 async fn genesis_code<S: Store>(State(state): State<Arc<AppState<S>>>) -> Response {

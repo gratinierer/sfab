@@ -268,6 +268,15 @@ class FakeApi:
             return "census", ok(200, census)
         if path == "/v1/world/residents":
             return "residents", ok(200, {"items": sorted(self.claims), "next": None})
+        if path == "/v1/world/chronicle":
+            text = "A quiet day. 0 residents."
+            entry = {"date": "2026-11-04", "residents": 0, "change": None, "events": [],
+                     "milestones": [], "text": text}
+            return "chronicle", ok(200, entry)
+        if path == "/v1/world/chronicle/days":
+            return "chronicle days", ok(200, {"items": ["2026-11-04"], "next": None})
+        if path.startswith("/v1/world/chronicle/days/"):
+            return "chronicle day", problem(404)
         if path == "/v1/federation/world":
             return "federation world", ok(
                 200,

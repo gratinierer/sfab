@@ -2068,6 +2068,48 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
         assert_eq!(h.send(world("residents", path)).await.0, expected, "{path}");
     }
 
+    // The Chronicle: before the daily job's first entry, then after it.
+    let day = "/v1/world/chronicle/days/2026-11-04";
+    for (op, path) in [
+        ("chronicle", "/v1/world/chronicle"),
+        ("chronicleDays", "/v1/world/chronicle/days"),
+        ("chronicleDay", day),
+    ] {
+        let (status, body) = h.send(world(op, path)).await;
+        assert_eq!(
+            (status, &body["type"]),
+            (404, &json!("not-built-yet")),
+            "{path}"
+        );
+    }
+    let facts = sfab_chronicle::Facts {
+        residents: ids.len(),
+        ..Default::default()
+    };
+    sfab_chronicle::daily(&*h.store, &facts, NOW).await.unwrap();
+    let (status, latest) = h.send(world("chronicle", "/v1/world/chronicle")).await;
+    assert_eq!((status, &latest["date"]), (200, &json!("2026-11-04")));
+    let (status, days) = h
+        .send(world("chronicleDays", "/v1/world/chronicle/days"))
+        .await;
+    assert_eq!(
+        (status, days),
+        (200, json!({"items": ["2026-11-04"], "next": null}))
+    );
+    assert_eq!(h.send(world("chronicleDay", day)).await, (200, latest));
+    for (path, expected) in [
+        ("/v1/world/chronicle/days/2026-11-03", 404),
+        ("/v1/world/chronicle/days/yesterday", 400),
+        ("/v1/world/chronicle/days?page=2", 404),
+    ] {
+        let op = if path.contains("?") {
+            "chronicleDays"
+        } else {
+            "chronicleDay"
+        };
+        assert_eq!(h.send(world(op, path)).await.0, expected, "{path}");
+    }
+
     // The genesis pool: before the daily job's first pool, with codes, then a stale pool.
     let pool = || get("genesisCode", "/v1/world/genesis-code", None);
     let (status, body) = h.send(pool()).await;
