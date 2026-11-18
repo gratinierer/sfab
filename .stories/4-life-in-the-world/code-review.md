@@ -19,6 +19,8 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-18T07:42:05+00:00 | check | @ 494749c | scripts/check | — | green (loop check of round 1's fixes) |
 | 2026-11-18T07:42:05+00:00 | code-review | 01, 02, 03, 04, 05, 06, 07, 08, 09 @ 6c26943..494749c | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 5 new: 4 standards, 1 spec, 0 security | `auto` round 2, the fix commits only, commit filter `(#4)`. Same vendor family as the author (Sonnet for code by Opus). |
 | 2026-11-18T07:43:13+00:00 | walkthrough | 01, 02, 03, 04, 05, 06, 07, 08, 09 @ 494749c..HEAD | claude-opus-5-5 (address-code-review-findings auto) | 0 new, 1 resolved, 16 still open | auto walkthrough, not a review pass |
+| 2026-11-18T07:46:12+00:00 | check | @ 464a48b | scripts/check | — | green (loop check of round 2's fixes) |
+| 2026-11-18T07:46:12+00:00 | code-review | 01, 02, 03, 04, 05, 06, 07, 08, 09 @ 92d2ed3..464a48b | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 0 new: 0 standards, 0 spec, 0 security | `auto` round 3, the C30 fix only, commit filter `(#4)`. Same vendor family as the author. |
 
 ## Findings
 
