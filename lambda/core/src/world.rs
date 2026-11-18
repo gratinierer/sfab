@@ -195,7 +195,13 @@ pub fn not_built_yet() -> Problem {
 /// A file the daily job built, or [`not_built_yet`] until it exists. Storage errors and a file
 /// that doesn't parse are a logged `500`.
 pub async fn read_built<S: Store>(store: &S, key: &str) -> Result<Value, Problem> {
-    read(store, key).await?.ok_or_else(not_built_yet)
+    read_if_built(store, key).await?.ok_or_else(not_built_yet)
+}
+
+/// A file the daily job built, or `None` until it exists, for a route that answers without it,
+/// such as with zeros. Storage errors and a file that doesn't parse are a logged `500`.
+pub async fn read_if_built<S: Store>(store: &S, key: &str) -> Result<Option<Value>, Problem> {
+    read(store, key).await
 }
 
 /// A file the daily job builds per agent, such as `world/academy/masters/<id>.json`. Once the

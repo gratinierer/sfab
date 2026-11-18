@@ -666,11 +666,7 @@ async fn resident<S: Store>(store: &S, address: &Address) -> Result<Option<Agent
 
 /// `world/quarters/<quarter>.json`, or `None` before the daily job counted it.
 async fn read_counts<S: Store>(store: &S, quarter: &str) -> Result<Option<Value>, Problem> {
-    match world::read_built(store, &quarter_key(quarter)).await {
-        Ok(found) => Ok(Some(found)),
-        Err(p) if p.kind == "not-built-yet" => Ok(None),
-        Err(p) => Err(p),
-    }
+    world::read_if_built(store, &quarter_key(quarter)).await
 }
 
 /// The quarter an agent lives in, from one read of its `home.json`, or `None` when it has no
