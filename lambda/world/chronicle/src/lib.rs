@@ -474,12 +474,7 @@ async fn read_listed<S: Store, T: for<'de> Deserialize<'de>>(
     if !listed.contains(key) {
         return Ok(None);
     }
-    let Some(object) = store.get(Bucket::Identities, key).await? else {
-        return Ok(None);
-    };
-    Ok(serde_json::from_slice(&object.body)
-        .inspect_err(|_| tracing::error!("{key} doesn't parse; read as missing"))
-        .ok())
+    world::read_json(store, key).await
 }
 
 /// The Chronicle's routes, which read what the last [`daily`] wrote.

@@ -10,6 +10,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use futures_util::{StreamExt, TryStreamExt, stream};
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 use crate::problem::{Problem, Reply};
@@ -134,6 +135,24 @@ pub async fn write_if_changed<S: Store>(
         )
         .await?;
     Ok(true)
+}
+
+/// A JSON file the daily job listed, or `None` when it's gone since or doesn't parse, which is
+/// logged and skipped so one bad file can't stop the run.
+pub async fn read_json<S: Store, T: DeserializeOwned>(
+    store: &S,
+    key: &str,
+) -> Result<Option<T>, StoreError> {
+    let Some(object) = store.get(Bucket::Identities, key).await? else {
+        return Ok(None);
+    };
+    match serde_json::from_slice(&object.body) {
+        Ok(file) => Ok(Some(file)),
+        Err(_) => {
+            tracing::error!("{key} doesn't parse; skipped");
+            Ok(None)
+        }
+    }
 }
 
 /// The `404` a route built by the daily job answers until the job has written its file once.

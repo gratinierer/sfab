@@ -97,7 +97,7 @@ pub async fn daily<S: Store>(
         listed_files.insert(key);
     }
     let reads = ids.into_iter().map(|id| async move {
-        let found = read_json::<S, DocumentFile>(store, &id.key()).await?;
+        let found = world::read_json::<S, DocumentFile>(store, &id.key()).await?;
         Ok::<_, StoreError>(found.map(|f| (id, f)))
     });
     let documents: Vec<(DocumentId, DocumentFile)> = stream::iter(reads)
@@ -129,7 +129,7 @@ pub async fn daily<S: Store>(
             .collect::<Vec<_>>()
     });
     let reads = later.map(|(id, key)| async move {
-        let found = read_json::<S, Edition>(store, &key).await?;
+        let found = world::read_json::<S, Edition>(store, &key).await?;
         Ok::<_, StoreError>(found.map(|e| (id, e.citations)))
     });
     let mut cites: BTreeMap<DocumentId, Vec<String>> = documents
@@ -242,24 +242,6 @@ pub async fn daily<S: Store>(
         most_cited,
         index,
     })
-}
-
-/// A JSON file the job listed, or `None` when it's gone since or doesn't parse, which is
-/// logged and skipped so one bad file can't stop the run.
-async fn read_json<S: Store, T: for<'de> Deserialize<'de>>(
-    store: &S,
-    key: &str,
-) -> Result<Option<T>, StoreError> {
-    let Some(object) = store.get(Bucket::Identities, key).await? else {
-        return Ok(None);
-    };
-    match serde_json::from_slice(&object.body) {
-        Ok(file) => Ok(Some(file)),
-        Err(_) => {
-            tracing::error!("{key} doesn't parse; skipped");
-            Ok(None)
-        }
-    }
 }
 
 /// How many documents cite `id`, from the first `cited-by` page: 0 once the job has run and

@@ -263,7 +263,7 @@ pub async fn daily<S: Store>(
         }
     }
     let reads = with_file.into_iter().map(|id| async move {
-        let found = read_json::<S, CourseFile>(store, &id.key()).await?;
+        let found = world::read_json::<S, CourseFile>(store, &id.key()).await?;
         Ok::<_, StoreError>(found.map(|f| (id, f)))
     });
     let files: Vec<Option<(CourseId, CourseFile)>> = stream::iter(reads)
@@ -297,7 +297,7 @@ pub async fn daily<S: Store>(
         .into_iter()
         .filter_map(|k| certificates::id_of_key(&k).map(|id| (id, k)))
         .map(|(id, key)| async move {
-            let found = read_json::<S, CertificateFile>(store, &key).await?;
+            let found = world::read_json::<S, CertificateFile>(store, &key).await?;
             Ok::<_, StoreError>(found.map(|f| (id, f)))
         });
     let held: Vec<(String, CertificateFile)> = stream::iter(reads)
@@ -329,7 +329,7 @@ pub async fn daily<S: Store>(
             Some((id, k))
         })
         .map(|(id, key)| async move {
-            let found = read_json::<S, Record>(store, &key).await?;
+            let found = world::read_json::<S, Record>(store, &key).await?;
             Ok::<_, StoreError>(found.map(|f| (id, f)))
         });
     let apprenticeships: Vec<(ApprenticeshipId, Record)> = stream::iter(reads)
@@ -581,24 +581,6 @@ pub async fn daily<S: Store>(
         public,
         index,
     })
-}
-
-/// A JSON file the job listed, or `None` when it's gone since or doesn't parse, which is
-/// logged and skipped so one bad file can't stop the run.
-async fn read_json<S: Store, T: for<'de> Deserialize<'de>>(
-    store: &S,
-    key: &str,
-) -> Result<Option<T>, StoreError> {
-    let Some(object) = store.get(Bucket::Identities, key).await? else {
-        return Ok(None);
-    };
-    match serde_json::from_slice(&object.body) {
-        Ok(file) => Ok(Some(file)),
-        Err(_) => {
-            tracing::error!("{key} doesn't parse; skipped");
-            Ok(None)
-        }
-    }
 }
 
 /// When the job last ran, or `None` before its first run.
