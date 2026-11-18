@@ -607,6 +607,14 @@ async fn a_takedown_run_twice_around_a_daily_run_leaves_only_a_marker_of_every_k
         standing: both,
         ..Default::default()
     };
+    // A day before with nothing yet, since the first entry gives only the count.
+    let before = sfab_chronicle::Facts {
+        residents: 2,
+        ..Default::default()
+    };
+    sfab_chronicle::daily(&*w.store, &before, NOW - DAY)
+        .await
+        .unwrap();
     sfab_chronicle::daily(&*w.store, &facts, NOW).await.unwrap();
     let chronicle = "world/chronicle/";
     let entry = "world/chronicle/2026-11-04.json";
@@ -873,6 +881,7 @@ fn snapshot(store: &MemoryStore) -> Vec<(String, Vec<u8>)> {
 }
 
 const HOUR: i64 = 3_600;
+const DAY: i64 = 24 * HOUR;
 
 fn window(from: &str, to: &str) -> Mode {
     Mode::Window {
