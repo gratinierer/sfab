@@ -7,7 +7,7 @@
 mod contacts;
 mod profile;
 
-pub use contacts::{List, MAX_ENTRIES, Relation};
+pub use contacts::{List, MAX_ENTRIES, Relation, blocked_by};
 pub use profile::Field;
 
 use std::collections::BTreeSet;

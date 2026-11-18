@@ -6,6 +6,8 @@
 //! When a friend leaves the list, a published copy drops it before `contacts.json` is saved, and
 //! after any change the copy is rebuilt from a fresh read, as "Public profile" orders.
 
+use std::collections::BTreeSet;
+
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
@@ -93,6 +95,28 @@ impl Contacts {
             blocked: self.blocked.clone(),
         }
     }
+}
+
+/// The IDs `id` blocks, for the daily world job, which ignores a vouch from them
+/// (`.stories/4-life-in-the-world/spec.md` "Vouches: trust"). `contacts.json` is listed by its
+/// full key before it's read, since the job may not list `identities/` and a `GetObject` on a
+/// missing key is a `403` without that (`docs/aws-facts.md`): one LIST, and one GET when it
+/// exists. One that doesn't parse is logged and blocks nobody, so one bad file can't stop the run.
+pub async fn blocked_by<S: Store>(store: &S, id: &AgentId) -> Result<BTreeSet<String>, StoreError> {
+    let key = contacts_key(id);
+    let listed = store.list(Bucket::Identities, &key).await?;
+    if !listed.contains(&key) {
+        return Ok(BTreeSet::new());
+    }
+    let Some(object) = store.get(Bucket::Identities, &key).await? else {
+        return Ok(BTreeSet::new());
+    };
+    let contacts: Contacts = serde_json::from_slice(&object.body)
+        .inspect_err(|_| {
+            tracing::error!("contacts in storage don't parse; read as blocking nobody")
+        })
+        .unwrap_or_default();
+    Ok(contacts.blocked.into_iter().map(|e| e.id).collect())
 }
 
 /// How a recipient lists a sender, for messages: `.stories/2-identity-api/spec.md` "Messages".

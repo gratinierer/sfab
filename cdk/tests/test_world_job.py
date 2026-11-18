@@ -135,6 +135,8 @@ def test_the_job_may_list_claims_and_write_only_world_federation_and_genesis(api
         ("s3:GetObject", "Identities/places/*"),
         ("s3:DeleteObject", "Identities/places/*"),
         ("s3:GetObject", "Identities/identities/*/home.json"),
+        # Story 4's standing: each vouched-for resident's blocks.
+        ("s3:GetObject", "Identities/identities/*/contacts.json"),
     }
     assert len(publish) == 1
     assert topic_id(base, "Alerts") in next(iter(publish))[1]
@@ -164,6 +166,7 @@ def test_the_job_lists_only_world_federation_and_genesis_in_the_identities_bucke
                     "places/*",
                     "square/*",
                     "identities/*/home.json",
+                    "identities/*/contacts.json",
                 ]
             }
         }
@@ -184,6 +187,9 @@ def test_the_job_s_read_prefixes_are_the_crates_own():
     assert f'pub const PREFIX: &str = "{job_module.PLACES_PREFIX}";' in homes
     home = job_module.HOME_KEYS.replace("*", "{id}")
     assert f'format!("{home}")' in identity
+    # And its `contacts.json` key, for the blocks standing ignores.
+    contacts = job_module.CONTACTS_KEYS.replace("*", "{id}")
+    assert f'format!("{contacts}")' in identity
     # The square crate's `PREFIX`.
     square = (lambda_dir / "world" / "square" / "src" / "lib.rs").read_text()
     assert f'pub const PREFIX: &str = "{job_module.SQUARE_PREFIX}";' in square

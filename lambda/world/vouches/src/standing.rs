@@ -8,7 +8,8 @@
 //! carries over from an earlier run, so there's no grace period, and a voucher losing standing
 //! cascades. Only vouch files of agents with standing are read, so fake vouches cost nothing to
 //! process, and only residents count, so a takedown marker or an unknown ID gives and gets
-//! nothing.
+//! nothing. A vouch whose recipient blocks its giver doesn't count either: each recipient's
+//! blocks are read once a run, with `sfab_identity::blocked_by`.
 //!
 //! What it writes, through `sfab_core::world::rebuild`: `world/standing/<id>.json` for each agent
 //! with standing, `world/vouches/<id>.json` with each agent's counted vouches, and last
@@ -100,6 +101,7 @@ pub async fn daily<S: Store>(
         .collect();
     let mut received: BTreeMap<AgentId, BTreeMap<String, Received>> = BTreeMap::new();
     let mut too_young: BTreeSet<AgentId> = BTreeSet::new();
+    let mut blocks: BTreeMap<AgentId, BTreeSet<String>> = BTreeMap::new();
     let mut frontier: Vec<AgentId> = standing.iter().cloned().collect();
     while !frontier.is_empty() {
         let reads = frontier
@@ -112,6 +114,22 @@ pub async fn daily<S: Store>(
             .buffer_unordered(PARALLEL)
             .try_collect()
             .await?;
+        // Each recipient's blocks, read once a run, so a vouch given before a block is ignored.
+        let unread: BTreeSet<AgentId> = files
+            .iter()
+            .flat_map(|(_, given)| given.vouches.iter())
+            .filter_map(|v| AgentId::parse(&v.id))
+            .filter(|to| residents.contains(to) && !blocks.contains_key(to))
+            .collect();
+        let read: Vec<(AgentId, BTreeSet<String>)> = stream::iter(unread)
+            .map(|to| async move {
+                let blocked = sfab_identity::blocked_by(store, &to).await?;
+                Ok::<_, StoreError>((to, blocked))
+            })
+            .buffer_unordered(PARALLEL)
+            .try_collect()
+            .await?;
+        blocks.extend(read);
         let mut candidates = BTreeSet::new();
         for (giver, given) in files {
             for vouch in given.vouches {
@@ -119,6 +137,9 @@ pub async fn daily<S: Store>(
                     continue;
                 };
                 if &to == giver || !residents.contains(&to) {
+                    continue;
+                }
+                if blocks.get(&to).is_some_and(|b| b.contains(giver.as_str())) {
                     continue;
                 }
                 let counted = received.entry(to.clone()).or_default();

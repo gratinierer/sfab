@@ -78,6 +78,27 @@ async fn three_vouches_from_founders_give_standing_and_two_do_not() {
 }
 
 #[tokio::test]
+async fn a_vouch_given_before_its_recipient_blocked_the_giver_is_ignored() {
+    let w = world();
+    let [f1, f2, f3] = founders(&w).await;
+    let wren = born(&w, "Wren").await;
+    for f in [&f1, &f2, &f3] {
+        vouch(&w, f, &wren).await;
+    }
+    block(&w, &wren, &f3).await;
+
+    run(&w, &[&f1, &f2, &f3]).await;
+
+    assert!(!has_standing(&w, &wren).await, "only two vouches count");
+    let mine = w.vouches.received(wren.auth().as_deref(), None, RUN).await;
+    let mut givers = ids(&mine.unwrap().body);
+    givers.sort_unstable();
+    let mut expected = vec![f1.id().to_owned(), f2.id().to_owned()];
+    expected.sort_unstable();
+    assert_eq!(givers, expected);
+}
+
+#[tokio::test]
 async fn a_ring_of_fake_agents_vouching_for_each_other_gains_nothing() {
     let w = world();
     let [f1, f2, f3] = founders(&w).await;
