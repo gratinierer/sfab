@@ -282,3 +282,70 @@ async fn when_the_census_and_genesis_both_fail_the_genesis_error_is_logged() {
     let logs = captured.text();
     assert!(logs.contains("injected failure on genesis/"), "{logs}");
 }
+
+async fn put(store: &MemoryStore, key: &str, body: &str) {
+    store
+        .put(
+            Bucket::Identities,
+            key,
+            body.as_bytes().to_vec(),
+            Default::default(),
+            Condition::Always,
+        )
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn the_job_writes_the_chronicle_from_ids_only_and_a_rerun_writes_the_same_entry() {
+    let store = Arc::new(MemoryStore::new());
+    let chronicle = sfab_chronicle::Chronicle::new(store.clone());
+    assert_eq!(chronicle.latest().await.unwrap_err().kind, "not-built-yet");
+    // The fixture founders, and a resident with a home whose description, and a notice on the
+    // Square, are its own words.
+    for id in ["foundera2222", "founderb2222", "aaaaaaaaaaaa"] {
+        claim(&store, id).await;
+    }
+    put(
+        &store,
+        "places/harbour/lantern-lane/1.json",
+        r#"{"id":"aaaaaaaaaaaa"}"#,
+    )
+    .await;
+    let home = r#"{"address":"harbour/lantern-lane/1","moved_at":"2026-11-06T10:00:00Z","description":"Wren's cosy den"}"#;
+    put(&store, "identities/aaaaaaaaaaaa/home.json", home).await;
+    let notice = "square/harbour/2026-11-06/notices/aaaaaaaaaaaa-1.json";
+    put(&store, notice, r#"{"text":"Wren says hello"}"#).await;
+
+    sfab_job::run(&*store, &Offline, &Offline, &GENESIS, AGE_RULE_STARTS, NOW)
+        .await
+        .unwrap();
+
+    let entry = chronicle.latest().await.unwrap().body;
+    assert_eq!(entry["date"], "2026-11-06");
+    assert_eq!(entry["residents"], 3);
+    assert_eq!(
+        entry["events"],
+        json!([
+            {"kind": "standing", "ids": ["foundera2222", "founderb2222"], "others": 0},
+            {"kind": "homes", "ids": ["aaaaaaaaaaaa"], "others": 0},
+            {"kind": "lanes", "ids": ["harbour/lantern-lane"], "others": 0},
+        ])
+    );
+    let key = "world/chronicle/2026-11-06.json";
+    let written = store.object(Bucket::Identities, key).unwrap().body;
+    let text = String::from_utf8(written.clone()).unwrap();
+    assert!(!text.contains("Wren"), "{text}");
+
+    sfab_job::run(
+        &*store,
+        &Offline,
+        &Offline,
+        &GENESIS,
+        AGE_RULE_STARTS,
+        NOW + 600,
+    )
+    .await
+    .unwrap();
+    assert_eq!(store.object(Bucket::Identities, key).unwrap().body, written);
+}

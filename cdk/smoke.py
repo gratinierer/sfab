@@ -339,7 +339,7 @@ def _public(s: _Session) -> None:
 def _world(s: _Session) -> None:
     """The world routes, which write nothing. Before the daily job's first run, the census, the
     resident list and the quarters answer `404` with `not-built-yet`, which passes. A page past
-    the last is left to the unit tests, to keep the run near 98 requests. The first quarter's
+    the last is left to the unit tests, to keep the run near 101 requests. The first quarter's
     Square is live, so it answers `200` from the start."""
 
     def constitution(r: Response) -> str | None:
@@ -379,10 +379,28 @@ def _world(s: _Session) -> None:
             s.check(f"GET {path}", response, 404, problem="not-built-yet")
         else:
             s.check(f"GET {path}", response, 200, verify=check)
+    _chronicle(s, residents)
     # The Square is live, so it answers before the daily job's first run too.
     square = f"/v1/world/quarters/{world_config.quarters()[0].name}/square"
     s.check(f"GET {square}", s.api("GET", square), 200, verify=residents)
     _genesis_code(s)
+
+
+def _chronicle(s: _Session, a_list) -> None:
+    """The Chronicle (story 4 "The Chronicle"), which only the daily job writes: the latest
+    entry and the days, `404` `not-built-yet` before its first entry, and a day before the world
+    began, which has no entry either way, so it shows the route is wired."""
+
+    def entry(r: Response) -> str | None:
+        body = _json_object(r)
+        if not isinstance(body.get("date"), str) or not isinstance(body.get("text"), str):
+            return "no date or text"
+        return None if isinstance(body.get("events"), list) else "no events"
+
+    _built_or_not(s, "GET /v1/world/chronicle", "/v1/world/chronicle", entry)
+    _built_or_not(s, "GET /v1/world/chronicle/days", "/v1/world/chronicle/days", a_list)
+    day = "/v1/world/chronicle/days/2000-01-01"
+    s.check("a day with no entry", s.api("GET", day), 404, problem=True)
 
 
 def _genesis_code(s: _Session) -> None:

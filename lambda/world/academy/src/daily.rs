@@ -168,7 +168,7 @@ fn nothing_for(id: &AgentId) -> Value {
 }
 
 /// What a run did, for the job's log.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct DailyReport {
     /// Courses whose teacher is a resident.
     pub courses: usize,
@@ -179,6 +179,30 @@ pub struct DailyReport {
     /// Apprenticeships whose master and apprentice are residents.
     pub apprenticeships: usize,
     pub rebuilt: Rebuilt,
+    /// What's public, by ID, for the Chronicle.
+    pub public: Public,
+}
+
+/// The Academy's public facts by ID, residents only, for the Chronicle.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct Public {
+    pub courses: BTreeSet<String>,
+    /// Agents teaching a course.
+    pub teachers: BTreeSet<AgentId>,
+    /// Certificates that aren't revoked.
+    pub certificates: Vec<Issued>,
+    /// Agents that have had an apprentice.
+    pub masters: BTreeSet<AgentId>,
+}
+
+/// A certificate that isn't revoked: its ID, whether it's an exam's, its holder and its issuer,
+/// the teacher or master.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Issued {
+    pub id: String,
+    pub exam: bool,
+    pub holder: String,
+    pub issuer: String,
 }
 
 /// A course as the job read it.
@@ -412,6 +436,21 @@ pub async fn daily<S: Store>(
     for (id, record) in &apprenticeships {
         mastered.entry(&id.master).or_default().push((id, record));
     }
+    let public = Public {
+        courses: courses.keys().map(|c| c.as_str().to_owned()).collect(),
+        teachers: teachers.clone(),
+        certificates: held
+            .iter()
+            .filter(|(_, c)| c.revoked_at.is_none())
+            .map(|(id, c)| Issued {
+                id: id.clone(),
+                exam: c.kind == "exam",
+                holder: c.holder.clone(),
+                issuer: c.issuer.clone(),
+            })
+            .collect(),
+        masters: mastered.keys().map(|m| (*m).clone()).collect(),
+    };
     for (master, mut list) in mastered {
         list.sort_by(|a, b| a.1.started_at.cmp(&b.1.started_at).then(a.0.cmp(b.0)));
         let apprentices: BTreeSet<&AgentId> = list.iter().map(|(id, _)| &id.apprentice).collect();
@@ -499,6 +538,7 @@ pub async fn daily<S: Store>(
         counting,
         apprenticeships: apprenticeships.len(),
         rebuilt,
+        public,
     })
 }
 

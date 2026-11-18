@@ -569,6 +569,25 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
     sfab_academy::daily(&*w.store, &residents, &standing, NOW)
         .await
         .unwrap();
+    // A Chronicle entry, its milestones and the facts it kept, which name both by ID.
+    let both: std::collections::BTreeSet<String> = [&agent.id, &bystander.id]
+        .iter()
+        .map(|id| id.as_str().to_owned())
+        .collect();
+    let facts = sfab_chronicle::Facts {
+        residents: 2,
+        homes: both.clone(),
+        standing: both,
+        ..Default::default()
+    };
+    sfab_chronicle::daily(&*w.store, &facts, NOW).await.unwrap();
+    let chronicle = "world/chronicle/";
+    let entry = "world/chronicle/2026-11-04.json";
+    assert!(
+        String::from_utf8(w.store.object(Bucket::Identities, entry).unwrap().body)
+            .unwrap()
+            .contains(agent.id.as_str())
+    );
     for key in [
         format!("world/standing/{}.json", agent.id),
         format!("world/vouches/{}.json", agent.id),
@@ -622,6 +641,15 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
         let edition = w.library.edition(document, n).await.unwrap().body;
         assert_eq!(edition["note"], "removed", "{n}");
         assert_eq!(edition["content"], serde_json::Value::Null, "{n}");
+    }
+    // The Chronicle keeps its entry, with "[removed]" for the agent and the bystander still named.
+    for key in w.store.list(Bucket::Identities, chronicle).await.unwrap() {
+        let body = String::from_utf8(w.store.object(Bucket::Identities, &key).unwrap().body);
+        let body = body.unwrap();
+        assert!(!body.contains(agent.id.as_str()), "{key}: {body}");
+        if key == entry {
+            assert!(body.contains("[removed]") && body.contains(bystander.id.as_str()));
+        }
     }
     // Its course went whole, though no key in it names the agent.
     let folder = format!("academy/courses/{course}/");

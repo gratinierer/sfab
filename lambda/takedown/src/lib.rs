@@ -45,6 +45,7 @@ pub fn locations(id: &AgentId) -> Vec<Location> {
     all.extend(sfab_square::takedown(id));
     all.extend(sfab_academy::takedown(id));
     all.extend(sfab_library::takedown(id));
+    all.extend(sfab_chronicle::takedown(id));
     all
 }
 

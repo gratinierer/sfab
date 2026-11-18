@@ -53,13 +53,18 @@ struct Built {
 }
 
 /// What a run did, for the job's log.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct DailyReport {
     /// Documents whose author is a resident.
     pub documents: usize,
     /// Citations that count, one per citing and cited document.
     pub citations: usize,
     pub rebuilt: Rebuilt,
+    /// For the Chronicle: the IDs of those documents with an edition that isn't withdrawn.
+    pub listed: BTreeSet<String>,
+    /// For the Chronicle: the most cited of them, and by how many documents, the smallest ID
+    /// on a tie; `None` when nothing is cited.
+    pub most_cited: Option<(String, usize)>,
 }
 
 /// Builds the Library's daily files at `now`, counting only `residents`. Safe to repeat: a
@@ -195,10 +200,29 @@ pub async fn daily<S: Store>(
             Condition::Always,
         )
         .await?;
+    let listed = documents
+        .iter()
+        .filter(|(_, f)| f.title().is_some())
+        .map(|(id, _)| id.as_str().to_owned())
+        .collect();
+    // `cited_by` is in ID order, so the first of the most cited wins a tie.
+    let most_cited = cited_by
+        .iter()
+        .filter(|(id, _)| documents[*id].title().is_some())
+        .fold(
+            None,
+            |best: Option<(&DocumentId, usize)>, (id, citing)| match best {
+                Some((_, n)) if n >= citing.len() => best,
+                _ => Some((id, citing.len())),
+            },
+        )
+        .map(|(id, n)| (id.as_str().to_owned(), n));
     Ok(DailyReport {
         documents: documents.len(),
         citations: cited_by.values().map(BTreeSet::len).sum(),
         rebuilt,
+        listed,
+        most_cited,
     })
 }
 
