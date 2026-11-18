@@ -750,6 +750,31 @@ pub fn takedown(_id: &AgentId) -> Vec<Location> {
     }]
 }
 
+/// The locations that remove one notice by its key, for the takedown program's `--writing`:
+/// its answers, then the notice itself, deleted outright as the spec's "Storage" says, so its
+/// number is free again that day. `None` for a key that isn't a notice of a known quarter.
+pub fn writing(key: &str) -> Option<Vec<Location>> {
+    let rest = key.strip_prefix(PREFIX)?;
+    let [quarter, day, "notices", name] = rest.split('/').collect::<Vec<_>>()[..] else {
+        return None;
+    };
+    sfab_homes::quarters().iter().find(|q| q.name == quarter)?;
+    let id = NoticeId::parse(&format!("{day}-{}", name.strip_suffix(".json")?))?;
+    if id.key(quarter) != key {
+        return None;
+    }
+    let at = |key, action| Location {
+        phase: Phase::Other,
+        bucket: Bucket::Identities,
+        key,
+        action,
+    };
+    Some(vec![
+        at(id.answers_prefix(quarter), Action::DeletePrefix),
+        at(key.to_owned(), Action::Delete),
+    ])
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

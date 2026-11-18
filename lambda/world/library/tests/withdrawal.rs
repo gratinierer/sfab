@@ -85,7 +85,10 @@ async fn take_down(w: &World, who: &Agent) {
         let Action::NoteFolders(pointers_of, note_of) = l.action else {
             panic!("the Library's list notes folders");
         };
-        let list = w.store.get(l.bucket, &l.key).await.unwrap().unwrap();
+        // The author's list, or the takedown index, which no daily run has built here.
+        let Some(list) = w.store.get(l.bucket, &l.key).await.unwrap() else {
+            continue;
+        };
         for anchor in pointers_of(&list.body) {
             let folder = &anchor[..anchor.rfind('/').unwrap() + 1];
             for key in w.store.list(l.bucket, folder).await.unwrap() {

@@ -48,7 +48,7 @@ use sfab_core::paging::{OFFSET_PAGE, offset_page};
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::proof::{body_hash, hex};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
-use sfab_core::takedown::{Action, Location, Phase};
+use sfab_core::takedown::{self, Action, Location, Phase};
 use sfab_identity::Identity;
 
 pub use apprenticeship::{
@@ -741,14 +741,33 @@ fn counted_belongs_to(key: &str, id: &AgentId) -> bool {
         .is_some_and(|name| !name.contains('/') && certificates::held_by(name, id))
 }
 
+/// Whether a key the takedown index names is the agent's from its name, under `academy/` or
+/// whether a certificate it holds counts.
+fn indexed_belongs_to(key: &str, id: &AgentId) -> bool {
+    belongs_to(key, id) || counted_belongs_to(key, id)
+}
+
+/// The course and apprenticeship files the takedown index names, each whole folder to go.
+fn indexed_folders(body: &[u8]) -> Vec<String> {
+    takedown::indexed(body, daily::FOLDERS_LIST)
+}
+
+/// The keys the takedown index names that are the agent's by their names.
+fn indexed_keys(body: &[u8]) -> Vec<String> {
+    takedown::indexed(body, daily::KEYS_LIST)
+}
+
 /// This crate's locations for an agent, for the takedown program: first its public pages from
 /// the daily job, which ends their reading at once; then its courses, each whole folder, with
-/// the enrolments and attempts in it, found through its counter while it still exists; then
-/// its enrolments, attempts, marking pointers, the certificates it holds, its apprenticeships
-/// with their work and comments, and the applications it received or sent, found by one search
-/// of `academy/`, and whether those certificates counted. Certificates it issued, as teacher,
-/// marker or master, stay and show it as removed. The other agent of an apprenticeship keeps
-/// any certificate it was awarded. The counter goes with `identities/<id>/`.
+/// the enrolments and attempts in it, found through its counter while it still exists and
+/// through the takedown index; then, through the index, its apprenticeships with their work
+/// and comments, each whole folder, its enrolments, attempts, marking pointers, the
+/// certificates it holds and whether they counted; and the applications it received or sent,
+/// found by one search of `academy/applications/`, which expire within 30 days. What happened
+/// since the index was built is found by a second run after the next daily run. Certificates it
+/// issued, as teacher, marker or master, stay and show it as removed. The other agent of an
+/// apprenticeship keeps any certificate it was awarded. The counter goes with
+/// `identities/<id>/`.
 pub fn takedown(id: &AgentId) -> Vec<Location> {
     let at = |phase, key: String, action| Location {
         phase,
@@ -762,20 +781,47 @@ pub fn takedown(id: &AgentId) -> Vec<Location> {
         .collect();
     all.push(at(Phase::First, daily::teacher_key(id), Action::Delete));
     all.push(at(Phase::First, daily::master_key(id), Action::Delete));
+    let index = takedown::index_key(id);
     all.extend([
         at(
             Phase::Pointers,
             sfab_identity::academy_key(id),
             Action::Folders(courses_of),
         ),
-        at(Phase::Other, PREFIX.to_owned(), Action::Search(belongs_to)),
+        at(
+            Phase::Pointers,
+            index.clone(),
+            Action::Folders(indexed_folders),
+        ),
+        at(
+            Phase::Pointers,
+            index,
+            Action::Indexed(indexed_keys, indexed_belongs_to),
+        ),
         at(
             Phase::Other,
-            daily::COUNTED_PREFIX.to_owned(),
-            Action::Search(counted_belongs_to),
+            APPLICATIONS_PREFIX.to_owned(),
+            Action::Search(belongs_to),
         ),
     ]);
     all
+}
+
+/// The locations that remove one course by the key of its `course.json`, for the takedown
+/// program's `--writing`: its whole folder, with its enrolments, attempts and marking queue.
+/// Certificates it gave stay with their holders, and it keeps its place among its teacher's
+/// courses, as a retired course does. `None` for any other key.
+pub fn writing(key: &str) -> Option<Vec<Location>> {
+    let course = key
+        .strip_prefix(COURSES_PREFIX)?
+        .strip_suffix("/course.json")
+        .and_then(CourseId::parse)?;
+    Some(vec![Location {
+        phase: Phase::Other,
+        bucket: Bucket::Identities,
+        key: course.folder(),
+        action: Action::DeletePrefix,
+    }])
 }
 
 #[cfg(test)]

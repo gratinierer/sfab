@@ -40,7 +40,7 @@ use sfab_core::paging::{OFFSET_PAGE, offset_page};
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::proof::hex;
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
-use sfab_core::takedown::{Action, Location, Phase};
+use sfab_core::takedown::{self, Action, Location, Phase};
 use sfab_identity::Identity;
 
 pub use daily::{DailyReport, daily};
@@ -802,16 +802,83 @@ fn removed_note(body: &[u8]) -> Option<Vec<u8>> {
     Some(to_json(&edition))
 }
 
+/// The documents the takedown index names.
+fn indexed_documents(body: &[u8]) -> Vec<String> {
+    takedown::indexed(body, daily::DOCUMENTS_LIST)
+}
+
 /// This crate's locations for an agent, for the takedown program: every edition of every
-/// document in its list, found while the list still exists, gets the note "removed", so
-/// citations don't silently break. The list goes with `identities/<id>/`.
+/// document in its list, found while the list still exists, and in the takedown index, which
+/// still names them once the list is gone, gets the note "removed", so citations don't
+/// silently break. The list goes with `identities/<id>/`.
 pub fn takedown(id: &AgentId) -> Vec<Location> {
-    vec![Location {
+    let noted = |key, documents_of: fn(&[u8]) -> Vec<String>| Location {
         phase: Phase::Pointers,
         bucket: Bucket::Identities,
-        key: sfab_identity::library_key(id),
+        key,
         action: Action::NoteFolders(documents_of, removed_note),
-    }]
+    };
+    vec![
+        noted(sfab_identity::library_key(id), documents_of),
+        noted(takedown::index_key(id), indexed_documents),
+    ]
+}
+
+/// The note "removed" on edition `N` in a document file, in `first` for edition 1 and in the
+/// list of editions, which then no longer gives its title. `None` once it's a note, or for a
+/// file that isn't a document.
+fn removed_edition<const N: usize>(body: &[u8]) -> Option<Vec<u8>> {
+    let mut file: DocumentFile = serde_json::from_slice(body).ok()?;
+    let mut changed = false;
+    if N == 1 && file.first.note.is_none() {
+        file.first.noted(REMOVED);
+        changed = true;
+    }
+    if let Some(l) = file.editions.iter_mut().find(|l| l.n == N)
+        && l.note.is_none()
+    {
+        l.title = None;
+        l.note = Some(REMOVED.to_owned());
+        changed = true;
+    }
+    changed.then(|| to_json(&file))
+}
+
+/// [`removed_edition`] for each edition a document can have.
+const REMOVED_EDITION: [fn(&[u8]) -> Option<Vec<u8>>; MAX_EDITIONS] = [
+    removed_edition::<1>,
+    removed_edition::<2>,
+    removed_edition::<3>,
+    removed_edition::<4>,
+    removed_edition::<5>,
+];
+
+/// The locations that remove one edition by the key of the file that holds it, for the
+/// takedown program's `--writing`: `library/<document>/<n>.json` for editions 2 to 5, then its
+/// entry in `document.json`, or `document.json` alone for edition 1, which it holds. Each shows
+/// "removed", as a takedown's editions do, so citations don't silently break. `None` for any
+/// other key.
+pub fn writing(key: &str) -> Option<Vec<Location>> {
+    let (document, name) = key.strip_prefix(PREFIX)?.split_once('/')?;
+    let id = DocumentId::parse(document)?;
+    let n = match name {
+        "document.json" => 1,
+        _ => parse_n(name.strip_suffix(".json")?)
+            .ok()
+            .filter(|n| (2..=MAX_EDITIONS).contains(n))?,
+    };
+    let noted = |key, note_of| Location {
+        phase: Phase::Other,
+        bucket: Bucket::Identities,
+        key,
+        action: Action::Note(note_of),
+    };
+    let mut all = Vec::new();
+    if n > 1 {
+        all.push(noted(id.edition_key(n), removed_note));
+    }
+    all.push(noted(id.key(), REMOVED_EDITION[n - 1]));
+    Some(all)
 }
 
 #[cfg(test)]

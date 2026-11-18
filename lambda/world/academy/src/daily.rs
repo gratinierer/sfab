@@ -14,7 +14,9 @@
 //! `academy/apprenticeships/` and a read of each record, and a file for each certificate that
 //! counts; under `world/agents/<id>/`, each agent's
 //! `enrolments` and `certificates` pages, beside the takedown index, which isn't this crate's;
-//! and last `world/academy.json`, which says the job has run.
+//! and last `world/academy.json`, which says the job has run. It also reports, for that
+//! takedown index, every agent's courses and apprenticeships and the keys that name it, takedown
+//! markers' too, so a takedown's second run finds what its first missed.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -27,10 +29,12 @@ use sfab_core::id::AgentId;
 use sfab_core::paging::OFFSET_PAGE;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
-use sfab_core::world::{self, PARALLEL, Rebuilt};
+use sfab_core::takedown::Index;
+use sfab_core::world::{self, AGENTS_PREFIX, PARALLEL, Rebuilt};
 
 use crate::apprenticeship::{APPRENTICESHIPS_PREFIX, ApprenticeshipId, Record};
 use crate::certificates::{self, CERTIFICATES_PREFIX, CertificateFile};
+use crate::exam::AttemptId;
 use crate::{Academy, COURSES_PREFIX, CourseFile, CourseId, parse_course, read_file, to_json};
 
 /// Everything this step writes under `world/academy/`.
@@ -42,8 +46,11 @@ const TEACHERS_PREFIX: &str = "world/academy/teachers/";
 const MASTERS_PREFIX: &str = "world/academy/masters/";
 /// A file for each certificate that counts.
 pub(crate) const COUNTED_PREFIX: &str = "world/academy/certificates/";
-/// The per-agent public pages live under `world/agents/<id>/`.
-const AGENTS_PREFIX: &str = "world/agents/";
+/// The takedown index's list of the course and apprenticeship files whose whole folder goes.
+pub(crate) const FOLDERS_LIST: &str = "academy/folders";
+/// The takedown index's list of keys that name the agent: enrolments, attempts, marking
+/// pointers, the certificates it holds and whether they count.
+pub(crate) const KEYS_LIST: &str = "academy/keys";
 /// Bare IDs on a page, as `docs/api-design.md` "Lists" allows.
 const ID_PAGE: usize = 1_000;
 
@@ -181,6 +188,8 @@ pub struct DailyReport {
     pub rebuilt: Rebuilt,
     /// What's public, by ID, for the Chronicle.
     pub public: Public,
+    /// Every agent's Academy files, for the takedown index.
+    pub index: Index,
 }
 
 /// The Academy's public facts by ID, residents only, for the Chronicle.
@@ -225,6 +234,7 @@ pub async fn daily<S: Store>(
     let residents: BTreeSet<&AgentId> = residents.iter().collect();
     let resident = |id: &str| AgentId::parse(id).filter(|a| residents.contains(a));
 
+    let mut index = Index::default();
     // Courses and enrolments, by key, from one listing.
     let mut enrolled: BTreeMap<CourseId, Vec<AgentId>> = BTreeMap::new();
     let mut with_file = Vec::new();
@@ -236,9 +246,17 @@ pub async fn daily<S: Store>(
         match parts.as_slice() {
             [course, "course.json"] => with_file.extend(CourseId::parse(course)),
             [course, "enrolled", name] => {
+                if let Some(id) = name.strip_suffix(".json").and_then(AgentId::parse) {
+                    index.add(id, KEYS_LIST, key.clone());
+                }
                 let id = name.strip_suffix(".json").and_then(resident);
                 if let (Some(course), Some(id)) = (CourseId::parse(course), id) {
                     enrolled.entry(course).or_default().push(id);
+                }
+            }
+            [_, "attempts" | "marking", name] => {
+                if let Some(a) = name.strip_suffix(".json").and_then(AttemptId::parse) {
+                    index.add(a.student, KEYS_LIST, key.clone());
                 }
             }
             _ => {}
@@ -252,9 +270,14 @@ pub async fn daily<S: Store>(
         .buffer_unordered(PARALLEL)
         .try_collect()
         .await?;
+    let files: Vec<(CourseId, CourseFile)> = files.into_iter().flatten().collect();
+    for (id, file) in &files {
+        if let Some(teacher) = AgentId::parse(&file.teacher) {
+            index.add(teacher, FOLDERS_LIST, id.key());
+        }
+    }
     let mut courses: BTreeMap<CourseId, Course> = files
         .into_iter()
-        .flatten()
         .filter(|(_, f)| resident(&f.teacher).is_some())
         .map(|(id, file)| {
             let enrolled = enrolled.remove(&id).unwrap_or_default();
@@ -283,6 +306,14 @@ pub async fn daily<S: Store>(
         .await?
         .into_iter()
         .flatten()
+        .collect();
+    for (id, cert) in &held {
+        if let Some(holder) = AgentId::parse(&cert.holder) {
+            index.add(holder, KEYS_LIST, certificates::key_of(id));
+        }
+    }
+    let held: Vec<(String, CertificateFile)> = held
+        .into_iter()
         .filter(|(_, f)| resident(&f.holder).is_some())
         .collect();
 
@@ -307,6 +338,14 @@ pub async fn daily<S: Store>(
         .await?
         .into_iter()
         .flatten()
+        .collect();
+    for (id, _) in &apprenticeships {
+        for party in [&id.master, &id.apprentice] {
+            index.add(party.clone(), FOLDERS_LIST, id.key());
+        }
+    }
+    let apprenticeships: Vec<(ApprenticeshipId, Record)> = apprenticeships
+        .into_iter()
         .filter(|(id, r)| {
             residents.contains(&id.master)
                 && residents.contains(&id.apprentice)
@@ -343,6 +382,7 @@ pub async fn daily<S: Store>(
         if counts {
             counting += 1;
             files.insert(counted_key(id), to_json(&json!({"counts": true})));
+            index.add(holder.clone(), KEYS_LIST, counted_key(id));
         }
         if cert.kind == "exam"
             && let Some(course) = cert.course.as_deref().and_then(CourseId::parse)
@@ -539,6 +579,7 @@ pub async fn daily<S: Store>(
         apprenticeships: apprenticeships.len(),
         rebuilt,
         public,
+        index,
     })
 }
 

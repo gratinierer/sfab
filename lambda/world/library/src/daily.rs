@@ -10,7 +10,9 @@
 //! `cited-by` holds each citing document once. Through `sfab_core::world::rebuild` it writes,
 //! under `world/library/`, each shelf's pages, most cited first, and each cited document's
 //! `cited-by` pages, the first with the `total`; and last `world/library.json`, which says the
-//! job has run.
+//! job has run. It also reports, for the takedown index, every author's documents with an
+//! edition that isn't a note yet, a taken-down author's too, so a takedown's second run notes
+//! what its first missed.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -23,6 +25,7 @@ use sfab_core::id::AgentId;
 use sfab_core::paging::OFFSET_PAGE;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
+use sfab_core::takedown::Index;
 use sfab_core::world::{self, PARALLEL, Rebuilt};
 
 use crate::{
@@ -37,6 +40,8 @@ const BUILT_KEY: &str = "world/library.json";
 const SHELVES_PREFIX: &str = "world/library/shelves/";
 const CITED_BY_PREFIX: &str = "world/library/cited-by/";
 /// Bare IDs on a page, as `docs/api-design.md` "Lists" allows.
+/// The takedown index's list of the author's documents, each to be noted "removed".
+pub(crate) const DOCUMENTS_LIST: &str = "library/documents";
 const ID_PAGE: usize = 1_000;
 
 fn shelf_prefix(shelf: &str) -> String {
@@ -65,6 +70,8 @@ pub struct DailyReport {
     /// For the Chronicle: the most cited of them, and by how many documents, the smallest ID
     /// on a tie; `None` when nothing is cited.
     pub most_cited: Option<(String, usize)>,
+    /// Every author's documents still to note, for the takedown index.
+    pub index: Index,
 }
 
 /// Builds the Library's daily files at `now`, counting only `residents`. Safe to repeat: a
@@ -93,12 +100,22 @@ pub async fn daily<S: Store>(
         let found = read_json::<S, DocumentFile>(store, &id.key()).await?;
         Ok::<_, StoreError>(found.map(|f| (id, f)))
     });
-    let documents: BTreeMap<DocumentId, DocumentFile> = stream::iter(reads)
+    let documents: Vec<(DocumentId, DocumentFile)> = stream::iter(reads)
         .buffer_unordered(PARALLEL)
         .try_collect::<Vec<_>>()
         .await?
         .into_iter()
         .flatten()
+        .collect();
+    let mut index = Index::default();
+    for (id, f) in &documents {
+        let left = f.first.note.is_none() || f.editions.iter().any(|l| l.note.is_none());
+        if left && let Some(author) = AgentId::parse(&f.author) {
+            index.add(author, DOCUMENTS_LIST, id.key());
+        }
+    }
+    let documents: BTreeMap<DocumentId, DocumentFile> = documents
+        .into_iter()
         .filter(|(_, f)| resident(&f.author))
         .collect();
 
@@ -223,6 +240,7 @@ pub async fn daily<S: Store>(
         rebuilt,
         listed,
         most_cited,
+        index,
     })
 }
 
