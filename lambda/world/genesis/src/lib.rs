@@ -16,6 +16,7 @@ use serde_json::json;
 use sfab_core::daily::{DAY, is_rfc3339_second, next_daily_run, rfc3339, utc_date};
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
+use sfab_core::world;
 
 pub use daily::{Batch, Daily, DailyReport, Summary, WorldDay, Written, daily, read_summary};
 use ip::IPS_PREFIX;
@@ -367,9 +368,7 @@ impl<S: Store> Genesis<S> {
             .get(BUCKET, POOL_KEY)
             .await
             .map_err(|e| Problem::storage("reading the genesis pool", &e))?
-            .ok_or_else(|| {
-                Problem::not_built_yet("No genesis codes yet: the daily job hasn't run once")
-            })?;
+            .ok_or_else(world::not_built_yet)?;
         let pool: Pool = serde_json::from_slice(&object.body).map_err(|_| {
             tracing::error!("the genesis pool doesn't parse");
             Problem::internal()
