@@ -15,7 +15,8 @@ use serde_json::json;
 
 use sfab_core::id::AgentId;
 use sfab_core::problem::{Problem, Reply};
-use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
+use sfab_core::storage::{Bucket, Store, StoreError};
+use sfab_core::world;
 
 /// Resident IDs on a page, the most a list of bare IDs may hold (`docs/api-design.md` "Lists").
 pub const PAGE_SIZE: usize = 1_000;
@@ -104,11 +105,14 @@ pub async fn snapshot<S: Store>(
         )
     });
     // Pages first, so the census never points past what's written.
-    let written: usize = stream::iter(files)
-        .map(|(key, body, known)| write_if_changed(store, key, body, known))
-        .buffer_unordered(PARALLEL)
-        .try_fold(0, |n, changed| async move { Ok(n + usize::from(changed)) })
-        .await?;
+    let written: usize =
+        stream::iter(files)
+            .map(|(key, body, known)| async move {
+                world::write_if_changed(store, &key, body, known).await
+            })
+            .buffer_unordered(PARALLEL)
+            .try_fold(0, |n, changed| async move { Ok(n + usize::from(changed)) })
+            .await?;
 
     let census = CensusFile {
         residents: residents.len(),
@@ -116,7 +120,7 @@ pub async fn snapshot<S: Store>(
     };
     let census = serde_json::to_vec(&census).expect("the census serializes");
     let written = written
-        + usize::from(write_if_changed(store, CENSUS_KEY.into(), census, census_known).await?);
+        + usize::from(world::write_if_changed(store, CENSUS_KEY, census, census_known).await?);
 
     let wanted: BTreeSet<String> = (1..=pages).map(page_key).collect();
     let surplus: Vec<String> = existing.difference(&wanted).cloned().collect();
@@ -135,32 +139,6 @@ pub async fn snapshot<S: Store>(
     })
 }
 
-/// Writes `body` unless the object already holds it. `known` says a listing saw the key, so a
-/// new page costs no read.
-async fn write_if_changed<S: Store>(
-    store: &S,
-    key: String,
-    body: Vec<u8>,
-    known: bool,
-) -> Result<bool, StoreError> {
-    if known
-        && let Some(current) = store.get(Bucket::Identities, &key).await?
-        && current.body == body
-    {
-        return Ok(false);
-    }
-    store
-        .put(
-            Bucket::Identities,
-            &key,
-            body,
-            Metadata::new(),
-            Condition::Always,
-        )
-        .await?;
-    Ok(true)
-}
-
 /// The census and resident routes, which read what the last [`snapshot`] wrote.
 pub struct Census<S> {
     store: Arc<S>,
@@ -173,7 +151,10 @@ impl<S: Store> Census<S> {
 
     /// `GET /world/census`: how many residents there are, and `as_of`.
     pub async fn census(&self) -> Result<Reply, Problem> {
-        let file: CensusFile = self.read(CENSUS_KEY).await?.ok_or_else(not_built_yet)?;
+        let file: CensusFile = self
+            .read(CENSUS_KEY)
+            .await?
+            .ok_or_else(world::not_built_yet)?;
         Ok(Reply::ok(json!(file)))
     }
 
@@ -188,7 +169,7 @@ impl<S: Store> Census<S> {
         };
         let Some(file) = self.read::<PageFile>(&page_key(number)).await? else {
             return Err(match self.read::<CensusFile>(CENSUS_KEY).await? {
-                None => not_built_yet(),
+                None => world::not_built_yet(),
                 Some(_) => Problem::not_found("No such page: it's past the last one"),
             });
         };
@@ -218,10 +199,4 @@ fn parse_page(token: &str) -> Option<usize> {
         && token.bytes().all(|b| b.is_ascii_digit())
         && !token.starts_with('0');
     ok.then(|| token.parse().ok()).flatten()
-}
-
-fn not_built_yet() -> Problem {
-    Problem::not_built_yet(
-        "The daily world job hasn't built this yet; try again after its next run, just after 00:00 UTC",
-    )
 }

@@ -109,9 +109,10 @@ fn is_permanent(key: &str) -> bool {
         .is_some_and(|rest| !rest.contains('/'))
 }
 
-/// Writes `body` unless the object already holds it. `known` says a listing saw the key, so a
-/// new file costs no read.
-async fn write_if_changed<S: Store>(
+/// Writes `body` unless the object already holds it, and says whether it wrote. `known` says a
+/// listing saw the key, so a new file costs no read. For the daily job's own keys, which it alone
+/// writes.
+pub async fn write_if_changed<S: Store>(
     store: &S,
     key: &str,
     body: Vec<u8>,

@@ -20,7 +20,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 
 | # | Status | Axis | Affects | Description | Comments |
 |---|---|---|---|---|---|
-| C1 | open | standards | 01, lambda/world/census/src/lib.rs:140 | Census keeps its own `write_if_changed` (:140) and `not_built_yet` (:223), now second copies of the `sfab_core::world` helpers issue 01 added, against CODING_STANDARDS "What every route shares lives in `lambda/core`". | 2026-11-18: found. |
+| C1 | resolved | standards | 01, lambda/world/census/src/lib.rs:140 | Census keeps its own `write_if_changed` (:140) and `not_built_yet` (:223), now second copies of the `sfab_core::world` helpers issue 01 added, against CODING_STANDARDS "What every route shares lives in `lambda/core`". | 2026-11-18: found. 2026-11-18: fixed: core's `world::write_if_changed` is now public, and census calls it and `world::not_built_yet` instead of its own copies; `cargo test -p sfab-census -p sfab-core` green. |
 | C2 | open | standards | 08, lambda/world/chronicle/src/lib.rs:479 | The Chronicle adds a third copy of `write_if_changed` because core's (`lambda/core/src/world.rs:114`) is private; core should export it and both crates call it. | 2026-11-18: found. |
 | C3 | open | standards | 01, lambda/world/genesis/src/lib.rs:371 | Genesis keeps its own `not_built_yet` with a different message instead of `world::not_built_yet()`. | 2026-11-18: found. |
 | C4 | open | standards | 05, lambda/world/academy/src/daily.rs:588 | `read_json` is copied character for character in `lambda/world/library/src/daily.rs:249`, with a third variant `read_listed` in the Chronicle; shared storage plumbing belongs in `core::world`. | 2026-11-18: found. |
