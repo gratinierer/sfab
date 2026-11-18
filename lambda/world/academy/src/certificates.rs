@@ -14,6 +14,7 @@ use sfab_core::id::AgentId;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Condition, Store};
 
+use crate::apprenticeship::ApprenticeshipId;
 use crate::{Academy, CourseId, daily, empty_body, put_file, read_file};
 
 /// Where certificates live, which the daily job lists.
@@ -56,6 +57,18 @@ impl CertificateFile {
         }
     }
 
+    pub(crate) fn apprenticeship(apprentice: &str, master: &str, issued_at: String) -> Self {
+        Self {
+            kind: "apprenticeship".to_owned(),
+            holder: apprentice.to_owned(),
+            issuer: master.to_owned(),
+            marker: None,
+            course: None,
+            issued_at,
+            revoked_at: None,
+        }
+    }
+
     /// Whose standing makes it count: the marker's, or else the issuer's.
     pub(crate) fn vouched_by(&self) -> &str {
         self.marker.as_deref().unwrap_or(&self.issuer)
@@ -69,7 +82,7 @@ pub(crate) fn exam_key(course: &CourseId, holder: &AgentId) -> String {
     )
 }
 
-fn key_of(certificate: &str) -> String {
+pub(crate) fn key_of(certificate: &str) -> String {
     format!("{CERTIFICATES_PREFIX}{certificate}.json")
 }
 
@@ -86,16 +99,9 @@ pub(crate) fn valid(id: &str) -> bool {
     if let Some(rest) = id.strip_prefix("exam-") {
         return exam_parts(rest).is_some();
     }
-    let Some(rest) = id.strip_prefix("apprenticeship-") else {
-        return false;
-    };
-    let b = rest.as_bytes();
-    b.len() == 12 + 1 + 12 + 1 + 10
-        && b[12] == b'-'
-        && b[25] == b'-'
-        && AgentId::parse(&rest[..12]).is_some()
-        && AgentId::parse(&rest[13..25]).is_some()
-        && sfab_core::daily::parse_rfc3339(&format!("{}T00:00:00Z", &rest[26..])).is_some()
+    id.strip_prefix("apprenticeship-")
+        .and_then(ApprenticeshipId::parse)
+        .is_some()
 }
 
 fn exam_parts(rest: &str) -> Option<(CourseId, AgentId)> {
@@ -103,12 +109,18 @@ fn exam_parts(rest: &str) -> Option<(CourseId, AgentId)> {
     Some((CourseId::parse(course)?, AgentId::parse(holder)?))
 }
 
-/// Whether a file name `<certificate>.json` is an exam certificate `id` holds.
+/// Whether a file name `<certificate>.json` is a certificate `id` holds: an exam it passed, or
+/// an apprenticeship it served.
 pub(crate) fn held_by(name: &str, id: &AgentId) -> bool {
-    name.strip_suffix(".json")
-        .and_then(|n| n.strip_prefix("exam-"))
-        .and_then(exam_parts)
-        .is_some_and(|(_, holder)| &holder == id)
+    let Some(name) = name.strip_suffix(".json") else {
+        return false;
+    };
+    if let Some(rest) = name.strip_prefix("exam-") {
+        return exam_parts(rest).is_some_and(|(_, holder)| &holder == id);
+    }
+    name.strip_prefix("apprenticeship-")
+        .and_then(ApprenticeshipId::parse)
+        .is_some_and(|a| &a.apprentice == id)
 }
 
 fn bad_certificate() -> Problem {

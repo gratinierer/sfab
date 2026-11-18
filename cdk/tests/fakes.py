@@ -89,6 +89,8 @@ _ACADEMY = re.compile(r"/v1/academy/.*|/v1/identity/[a-z2-7]{12}/(enrolments|cer
 _BODILESS = re.compile(
     r"/v1/academy/courses/[^/]+/(retirement|enrolments/self|attempts|attempts/[^/]+/submission)"
     r"|/v1/academy/certificates/[^/]+/revocation"
+    r"|/v1/academy/masters/self/applications/[^/]+"
+    r"|/v1/academy/apprenticeships/[^/]+/(ending|certificate)"
 )
 _SEND = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/messages")
 _MESSAGE = re.compile(r"/v1/identity/self/messages/(?P<message_id>k-[a-z2-7]{12}|m-[0-9a-z-]+)")
@@ -318,6 +320,10 @@ class FakeApi:
                 allowed = {"answer"}
             if "/marking/" in path:
                 allowed = {"accepted", "comment"}
+            if path.endswith("/applications/self"):
+                allowed = {"note"}
+            if path.startswith("/v1/academy/apprenticeships/"):
+                allowed = {"text"}
             if path.endswith("federation/requests"):
                 allowed = {"domain"}
             if path.endswith("publication"):
@@ -604,6 +610,17 @@ class FakeApi:
     def _academy(self, agent: str, r: Request, path: str):
         """The Academy's private routes, for one answer-check course, as the real API."""
         parts = path.split("/")[2:]
+        if parts[1] == "masters":
+            # The smoke agent has no standing, and nobody it names is a master.
+            if parts[2] != "self":
+                if r.method == "GET":
+                    return "academy not built", problem(404, "not-built-yet")
+                return "apply to master", problem(403, "not-a-master")
+            if r.method == "GET":
+                return "read applications", problem(403, "no-standing")
+            return "accept application", problem(403, "no-standing")
+        if parts[1] == "apprenticeships":
+            return "apprenticeship work", problem(403, "not-a-party")
         if parts[1] == "certificates":
             found = self.certificates.get(parts[2])
             if found is None:

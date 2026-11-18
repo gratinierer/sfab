@@ -813,6 +813,24 @@ def test_the_square_expires_after_7_days_as_its_crate_hides_it(base):
     assert found and int(found[1]) == stacks.SQUARE_DAYS
 
 
+def test_applications_to_masters_expire_after_30_days_as_the_academy_hides_them(base):
+    # One rule on the academy crate's applications prefix, and nothing else in `academy/`
+    # expires: courses, attempts, certificates and apprenticeships last (story 4 "The Academy").
+    rules = expiry_rules(base, "Identities")
+    assert rules["academy/applications/"] == stacks.ACADEMY_APPLICATION_DAYS == 30
+    assert [p for p in rules if p.startswith("academy/")] == ["academy/applications/"]
+    academy = sfab_config.REPO_ROOT / "lambda" / "world" / "academy" / "src"
+    source = (academy / "apprenticeship.rs").read_text()
+    found = re.search(r'pub const APPLICATIONS_PREFIX: &str = "([^"]+)";', source)
+    assert found and found[1] == stacks.ACADEMY_APPLICATIONS_PREFIX
+    found = re.search(r"pub const APPLICATION_DAYS: i64 = (\d+);", source)
+    assert found and int(found[1]) == stacks.ACADEMY_APPLICATION_DAYS
+    # The prefix lies inside the crate's own `academy/`.
+    lib = (academy / "lib.rs").read_text()
+    found = re.search(r'pub const PREFIX: &str = "([^"]+)";', lib)
+    assert found and stacks.ACADEMY_APPLICATIONS_PREFIX.startswith(found[1])
+
+
 def test_the_federation_crate_s_lifetimes_match_the_lifecycle_rules():
     # lambda/world/federation hides expired requests itself, so its days must be the rules'.
     lib = (sfab_config.REPO_ROOT / "lambda" / "world" / "federation" / "src" / "lib.rs").read_text()

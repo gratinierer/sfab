@@ -2219,6 +2219,7 @@ dependencies = [
  "sfab-core",
  "sfab-genesis",
  "sfab-identity",
+ "sfab-vouches",
  "tokio",
  "tracing",
 ]
