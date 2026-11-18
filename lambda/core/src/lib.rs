@@ -4,6 +4,7 @@
 pub mod config;
 pub mod credentials;
 pub mod daily;
+pub mod files;
 pub mod gate;
 pub mod id;
 pub mod paging;

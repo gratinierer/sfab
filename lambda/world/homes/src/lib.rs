@@ -28,6 +28,7 @@ use serde_json::{Value, json};
 
 use sfab_core::config;
 use sfab_core::daily::{DAY, next_daily_run, parse_rfc3339, rfc3339};
+use sfab_core::files::{read_file, to_json};
 use sfab_core::gate::{Call, admit_write};
 use sfab_core::id::AgentId;
 use sfab_core::paging::{OFFSET_PAGE, offset_page};
@@ -229,10 +230,6 @@ struct DescriptionRequest {
     description: String,
 }
 
-fn to_json<T: Serialize>(value: &T) -> Vec<u8> {
-    serde_json::to_vec(value).expect("plain data serializes")
-}
-
 fn no_such_place() -> Problem {
     Problem::not_found("There's no such quarter, lane or home on the map")
 }
@@ -247,18 +244,7 @@ async fn read_home<S: Store>(
     store: &S,
     id: &AgentId,
 ) -> Result<Option<(HomeFile, String)>, Problem> {
-    let object = store
-        .get(Bucket::Identities, &home_key(id))
-        .await
-        .map_err(|e| Problem::storage("reading a home", &e))?;
-    let Some(object) = object else {
-        return Ok(None);
-    };
-    let home = serde_json::from_slice(&object.body).map_err(|_| {
-        tracing::error!("a home in storage doesn't parse");
-        Problem::internal()
-    })?;
-    Ok(Some((home, object.etag)))
+    read_file(store, &home_key(id), "reading a home").await
 }
 
 /// Deletes a pointer that no longer counts. A failure is only logged: the daily job deletes

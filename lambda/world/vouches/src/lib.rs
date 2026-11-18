@@ -25,6 +25,7 @@ use serde_json::{Value, json};
 
 use sfab_core::config;
 use sfab_core::daily::rfc3339;
+use sfab_core::files::to_json;
 use sfab_core::gate::{Call, admit_write};
 use sfab_core::id::AgentId;
 use sfab_core::paging::{OFFSET_PAGE, offset_page};
@@ -123,10 +124,6 @@ struct VouchRequest {
 
 fn bad_id() -> Problem {
     Problem::bad_request("The ID must be 12 lowercase base32 characters")
-}
-
-fn to_json<T: Serialize>(value: &T) -> Vec<u8> {
-    serde_json::to_vec(value).expect("plain data serializes")
 }
 
 /// `items` paged 20 at a time along `path`, as story 2's "Lists" says.

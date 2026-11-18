@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use sfab_core::daily::{DAY, is_rfc3339_second, next_daily_run, rfc3339, utc_date};
+use sfab_core::files::to_json;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 use sfab_core::world;
@@ -196,10 +197,6 @@ pub async fn write_pool<S: Store>(store: &S, now: i64, codes: &[Code]) -> Result
             Condition::Always,
         )
         .await
-}
-
-fn to_json<T: Serialize>(value: &T) -> Vec<u8> {
-    serde_json::to_vec(value).expect("plain data serializes")
 }
 
 /// A code that passed `admit`, for `use_up` after the birth.

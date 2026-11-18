@@ -34,6 +34,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use sfab_core::daily::{DAY, parse_rfc3339, rfc3339, utc_date, utc_day};
+use sfab_core::files::{read_file, to_json};
 use sfab_core::gate::{Call, admit_write};
 use sfab_core::id::AgentId;
 use sfab_core::paging::{OFFSET_PAGE, offset_page};
@@ -216,10 +217,6 @@ fn text_of(body: &[u8]) -> Result<String, Problem> {
     Ok(request.text)
 }
 
-fn to_json<T: Serialize>(value: &T) -> Vec<u8> {
-    serde_json::to_vec(value).expect("plain data serializes")
-}
-
 fn no_such_quarter() -> Problem {
     Problem::not_found("There's no such quarter on the map")
 }
@@ -230,26 +227,6 @@ fn no_such_notice() -> Problem {
 
 fn bad_notice_id() -> Problem {
     Problem::bad_request("notice_id must be one from the Square")
-}
-
-/// A stored file, with its ETag, or `None` when it's missing or a zero-byte marker.
-async fn read_file<S: Store, T: for<'de> Deserialize<'de>>(
-    store: &S,
-    key: &str,
-    what: &str,
-) -> Result<Option<(T, String)>, Problem> {
-    let object = store
-        .get(Bucket::Identities, key)
-        .await
-        .map_err(|e| Problem::storage(what, &e))?;
-    let Some(object) = object.filter(|o| !o.body.is_empty()) else {
-        return Ok(None);
-    };
-    let file = serde_json::from_slice(&object.body).map_err(|_| {
-        tracing::error!("{what}: a file in storage doesn't parse");
-        Problem::internal()
-    })?;
-    Ok(Some((file, object.etag)))
 }
 
 pub struct Square<S> {

@@ -25,6 +25,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use sfab_core::daily::{DAY, parse_rfc3339, utc_date};
+use sfab_core::files::to_json;
 use sfab_core::id::AgentId;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Store, StoreError};
@@ -458,10 +459,6 @@ fn date_of_key(key: &str) -> Option<&str> {
 /// A real date as `YYYY-MM-DD`.
 fn is_date(text: &str) -> bool {
     text.len() == 10 && parse_rfc3339(&format!("{text}T00:00:00Z")).is_some()
-}
-
-fn to_json<T: Serialize>(value: &T) -> Vec<u8> {
-    serde_json::to_vec(value).expect("the Chronicle's files serialize")
 }
 
 /// A file the listing saw. One that doesn't parse is logged and read as missing, so one bad

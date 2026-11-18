@@ -13,6 +13,7 @@ use futures_util::{StreamExt, TryStreamExt, stream};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+use sfab_core::files::read_file;
 use sfab_core::id::AgentId;
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Store, StoreError};
@@ -178,17 +179,8 @@ impl<S: Store> Census<S> {
     }
 
     async fn read<T: for<'de> Deserialize<'de>>(&self, key: &str) -> Result<Option<T>, Problem> {
-        let Some(object) = self.store.get(Bucket::Identities, key).await.map_err(|e| {
-            tracing::error!(error = ?e, "reading {key} failed");
-            Problem::internal()
-        })?
-        else {
-            return Ok(None);
-        };
-        serde_json::from_slice(&object.body).map(Some).map_err(|_| {
-            tracing::error!("{key} in storage doesn't parse");
-            Problem::internal()
-        })
+        let found = read_file(&*self.store, key, &format!("reading {key}")).await?;
+        Ok(found.map(|(file, _)| file))
     }
 }
 

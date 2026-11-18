@@ -34,12 +34,13 @@ use serde_json::{Value, json};
 
 use sfab_core::config;
 use sfab_core::daily::rfc3339;
+use sfab_core::files::{empty_body, put_file, read_file, to_json};
 use sfab_core::gate::{Call, admit_write};
 use sfab_core::id::{AgentId, is_base32};
 use sfab_core::paging::{OFFSET_PAGE, offset_page};
 use sfab_core::problem::{Problem, Reply};
 use sfab_core::proof::hex;
-use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
+use sfab_core::storage::{Bucket, Condition, Store};
 use sfab_core::takedown::{self, Action, Location, Phase};
 use sfab_identity::Identity;
 
@@ -296,66 +297,6 @@ fn edition_parts(
         }
     }
     Ok((title, content, citations))
-}
-
-fn to_json<T: Serialize>(value: &T) -> Vec<u8> {
-    serde_json::to_vec(value).expect("plain data serializes")
-}
-
-/// A body that says nothing, for a `PUT` on a named state: empty, or `{}`.
-fn empty_body(body: &[u8]) -> Result<(), Problem> {
-    if body.is_empty() {
-        return Ok(());
-    }
-    match serde_json::from_slice::<Value>(body) {
-        Ok(Value::Object(map)) if map.is_empty() => Ok(()),
-        _ => Err(Problem::bad_request("The body must be empty or {}")),
-    }
-}
-
-/// A stored file, with its ETag, or `None` when it's missing.
-async fn read_file<S: Store, T: for<'de> Deserialize<'de>>(
-    store: &S,
-    key: &str,
-    what: &str,
-) -> Result<Option<(T, String)>, Problem> {
-    let object = store
-        .get(Bucket::Identities, key)
-        .await
-        .map_err(|e| Problem::storage(what, &e))?;
-    let Some(object) = object.filter(|o| !o.body.is_empty()) else {
-        return Ok(None);
-    };
-    let file = serde_json::from_slice(&object.body).map_err(|_| {
-        tracing::error!("{what}: a file in storage doesn't parse");
-        Problem::internal()
-    })?;
-    Ok(Some((file, object.etag)))
-}
-
-/// Writes `value` at `key` under `condition`, with a lost condition as `Ok(false)`
-/// (`docs/aws-facts.md`, "`PutObject` with `If-None-Match: *`" and "with `If-Match`").
-async fn put_file<S: Store, T: Serialize>(
-    store: &S,
-    key: &str,
-    value: &T,
-    condition: Condition,
-    what: &str,
-) -> Result<bool, Problem> {
-    let written = store
-        .put(
-            Bucket::Identities,
-            key,
-            to_json(value),
-            Metadata::new(),
-            condition,
-        )
-        .await;
-    match written {
-        Ok(()) => Ok(true),
-        Err(StoreError::ConditionFailed | StoreError::Missing) => Ok(false),
-        Err(e) => Err(Problem::storage(what, &e)),
-    }
 }
 
 pub struct Library<S> {
