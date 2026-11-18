@@ -38,9 +38,9 @@ const WORLD_PREFIX: &str = "world/library/";
 const BUILT_KEY: &str = "world/library.json";
 const SHELVES_PREFIX: &str = "world/library/shelves/";
 const CITED_BY_PREFIX: &str = "world/library/cited-by/";
-/// Bare IDs on a page, as `docs/api-design.md` "Lists" allows.
 /// The takedown index's list of the author's documents, each to be noted "removed".
 pub(crate) const DOCUMENTS_LIST: &str = "library/documents";
+/// Bare IDs on a page, as `docs/api-design.md` "Lists" allows.
 const ID_PAGE: usize = 1_000;
 
 fn shelf_prefix(shelf: &str) -> String {
