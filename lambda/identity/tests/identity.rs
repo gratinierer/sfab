@@ -614,7 +614,8 @@ async fn take_down(store: &MemoryStore, id: &AgentId) {
             | Action::Pointers(_)
             | Action::Search(_)
             | Action::Folders(_)
-            | Action::NoteFolders(..) => {
+            | Action::NoteFolders(..)
+            | Action::Indexed(..) => {
                 panic!("identity's list uses none of these")
             }
         }

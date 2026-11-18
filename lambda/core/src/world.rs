@@ -20,6 +20,9 @@ pub const PREFIX: &str = "world/";
 /// The Chronicle's folder: its direct children, the daily entries `<date>.json` and
 /// `milestones.json`, are permanent; only its subfolders, such as `days/`, are rebuilt.
 pub const CHRONICLE: &str = "world/chronicle/";
+/// The per-agent files: public pages under `world/agents/<id>/`, which the Academy builds, and
+/// beside them the takedown index `world/agents/<id>.json` of [`crate::takedown::index_key`].
+pub const AGENTS_PREFIX: &str = "world/agents/";
 /// S3 calls in flight at once, as story 2 "Daily world job" sets for the job.
 pub const PARALLEL: usize = 50;
 
@@ -47,7 +50,7 @@ pub async fn rebuild<S: Store>(
     rebuild_where(store, prefix, files, |_| true).await
 }
 
-/// [`rebuild`] for the part of `prefix` that one crate owns, such as the Academy's per-agent
+/// [`rebuild`] for the part of `prefix` that one writer owns, such as the Academy's per-agent
 /// pages under `world/agents/`, beside the takedown index there: only a surplus key that
 /// `owned` accepts is deleted.
 pub async fn rebuild_where<S: Store>(

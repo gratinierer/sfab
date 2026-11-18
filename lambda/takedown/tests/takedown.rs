@@ -17,7 +17,7 @@ use sfab_identity::{Identity, List};
 use sfab_library::Library;
 use sfab_messaging::Messaging;
 use sfab_square::Square;
-use sfab_takedown::{Mode, execute, plan};
+use sfab_takedown::{Mode, execute, plan, plan_writing, remove_writing, writing};
 use sfab_vouches::Vouches;
 
 const BITS: u32 = 8;
@@ -51,6 +51,33 @@ fn world() -> World {
         identity,
         store,
     }
+}
+
+/// No federation server answers and no email goes, for the daily job.
+struct Offline;
+
+impl sfab_federation::Fetch for Offline {
+    async fn fetch(&self, _: &str, _: &str) -> Option<Vec<u8>> {
+        None
+    }
+}
+
+impl sfab_federation::Notify for Offline {
+    async fn notify(&self, _: &str, _: &str) -> Result<(), String> {
+        Ok(())
+    }
+}
+
+/// One run of the daily job at `now`, which builds the takedown index the program reads first.
+async fn daily(w: &World, now: i64) {
+    let genesis = sfab_genesis::Daily {
+        codes_per_day: 3,
+        ip_window: sfab_genesis::Window::hours(4),
+    };
+    let starts = "2099-12-31T00:00:00Z";
+    sfab_job::run(&*w.store, &Offline, &Offline, &genesis, starts, now)
+        .await
+        .expect("the daily job");
 }
 
 /// The first free home every time.
@@ -535,7 +562,7 @@ async fn assert_taken_down(w: &World, agent: &Agent, born_at: &str) {
 }
 
 #[tokio::test]
-async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
+async fn a_takedown_run_twice_around_a_daily_run_leaves_only_a_marker_of_every_kind_of_data() {
     let w = world();
     let agent = full_agent(&w, "Wren", NOW).await;
     let bystander = full_agent(&w, "Moss", NOW).await;
@@ -609,25 +636,50 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
         .as_str()
         .unwrap()
         .to_owned();
-    // The bystander's own keys; the apprenticeships' keys name both, and go.
+    // The bystander's own keys outside `world/`, which the daily job rebuilds; the
+    // apprenticeships' keys name both, and go.
     let own = |store: &MemoryStore| -> Vec<String> {
         keys_of(store, &bystander.id)
             .into_iter()
-            .filter(|k| !k.contains(agent.id.as_str()))
+            .filter(|k| !k.contains(agent.id.as_str()) && !k.starts_with("world/"))
             .collect()
     };
     let bystander_keys = own(&w.store);
     assert!(keys_of(&w.store, &bystander.id).len() > bystander_keys.len());
-
-    let targets = plan(&*w.store, &Mode::One(agent.id.clone())).await.unwrap();
+    let mode = Mode::One(agent.id.clone());
     let waits = AtomicUsize::new(0);
+
+    // No daily run has built its takedown index yet, so the first run misses what only the
+    // index names, such as the certificates it holds and the apprenticeship it serves.
+    let targets = plan(&*w.store, &mode).await.unwrap();
+    execute(&*w.store, &targets, counting(&waits))
+        .await
+        .unwrap();
+    let held = format!("academy/certificates/exam-{course}-{}.json", agent.id);
+    assert!(w.store.object(Bucket::Identities, &held).is_some());
+    let index = format!("world/agents/{}.json", agent.id);
+    assert!(w.store.object(Bucket::Identities, &index).is_none());
+    // The Chronicle keeps its entry, with "[removed]" for the agent and the bystander still named.
+    for key in w.store.list(Bucket::Identities, chronicle).await.unwrap() {
+        let body = String::from_utf8(w.store.object(Bucket::Identities, &key).unwrap().body);
+        let body = body.unwrap();
+        assert!(!body.contains(agent.id.as_str()), "{key}: {body}");
+        if key == entry {
+            assert!(body.contains("[removed]") && body.contains(bystander.id.as_str()));
+        }
+    }
+
+    // The daily job builds it for the marked agent, and the second run finds the rest.
+    daily(&w, NOW + HOUR).await;
+    assert!(w.store.object(Bucket::Identities, &index).is_some());
+    let targets = plan(&*w.store, &mode).await.unwrap();
+    assert!(targets[0].born.taken_down);
     execute(&*w.store, &targets, counting(&waits))
         .await
         .unwrap();
 
-    assert_eq!(waits.load(Ordering::SeqCst), 1);
+    assert_eq!(waits.load(Ordering::SeqCst), 2);
     assert_taken_down(&w, &agent, "2026-11-05T12:00:00Z").await;
-    assert_eq!(keys_of(&w.store, &bystander.id), bystander_keys);
     assert_eq!(own(&w.store), bystander_keys);
     let apprenticeships = w.store.list(Bucket::Identities, "academy/apprenticeships/");
     assert_eq!(apprenticeships.await.unwrap(), Vec::<String>::new());
@@ -642,21 +694,33 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
         assert_eq!(edition["note"], "removed", "{n}");
         assert_eq!(edition["content"], serde_json::Value::Null, "{n}");
     }
-    // The Chronicle keeps its entry, with "[removed]" for the agent and the bystander still named.
-    for key in w.store.list(Bucket::Identities, chronicle).await.unwrap() {
-        let body = String::from_utf8(w.store.object(Bucket::Identities, &key).unwrap().body);
-        let body = body.unwrap();
-        assert!(!body.contains(agent.id.as_str()), "{key}: {body}");
-        if key == entry {
-            assert!(body.contains("[removed]") && body.contains(bystander.id.as_str()));
-        }
-    }
     // Its course went whole, though no key in it names the agent.
     let folder = format!("academy/courses/{course}/");
     assert_eq!(
         w.store.list(Bucket::Identities, &folder).await.unwrap(),
         Vec::<String>::new()
     );
+    // The next daily run rebuilds what others' files said of it, and no index for it, since
+    // nothing of its own is left.
+    daily(&w, NOW + 2 * HOUR).await;
+    let claim_key = format!("claims/{}/claim.json", agent.id);
+    assert_eq!(keys_of(&w.store, &agent.id), vec![claim_key]);
+    // No file names it any more, apart from the vouch the bystander gave it, which stays until
+    // the bystander withdraws it, the bystander's counter, which drops the apprenticeship it
+    // names when it next accepts, and its document, which keeps its author.
+    let library = format!("library/{document}/");
+    let given = format!("vouches/{}.json", bystander.id);
+    let counter = format!("identities/{}/academy.json", bystander.id);
+    for b in [Bucket::Claims, Bucket::Identities] {
+        for key in w.store.keys(b) {
+            let body = w.store.object(b, &key).unwrap().body;
+            let names = String::from_utf8_lossy(&body).contains(agent.id.as_str());
+            assert!(
+                !names || key == given || key == counter || key.starts_with(&library),
+                "{key} still names it"
+            );
+        }
+    }
 }
 
 #[tokio::test]
@@ -705,6 +769,7 @@ async fn a_taken_down_teacher_s_graduates_keep_certificates_that_show_it_removed
         .await
         .unwrap();
     let certificate = format!("exam-{course}-{}", student.id);
+    daily(&w, NOW + HOUR).await;
 
     let targets = plan(&*w.store, &Mode::One(teacher.id.clone()))
         .await
@@ -747,6 +812,7 @@ async fn a_taken_down_master_s_apprentice_keeps_its_certificate_showing_it_remov
     let auth = bearer(&master.id, &master.claim);
     let path = format!("/v1/academy/apprenticeships/{id}/certificate");
     apprenticeship_write(&w, &auth, "award", &path, &id, "", b"").await;
+    daily(&w, NOW + HOUR).await;
 
     let targets = plan(&*w.store, &Mode::One(master.id.clone()))
         .await
@@ -781,6 +847,7 @@ async fn a_claim_that_does_not_parse_still_gets_a_marker_without_born_at() {
         )
         .await
         .unwrap();
+    daily(&w, NOW + HOUR).await;
 
     let targets = plan(&*w.store, &Mode::One(agent.id.clone())).await.unwrap();
     execute(&*w.store, &targets, async {}).await.unwrap();
@@ -843,6 +910,7 @@ fn sorted_ids<'a>(ids: impl IntoIterator<Item = &'a AgentId>) -> Vec<AgentId> {
 async fn a_dry_run_shows_the_window_and_writes_nothing() {
     let w = world();
     let [_, first, second, _] = four_agents(&w).await;
+    daily(&w, NOW + 3 * HOUR).await;
     let stored = snapshot(&w.store);
 
     let targets = plan(&*w.store, &flood()).await.unwrap();
@@ -856,8 +924,17 @@ async fn a_dry_run_shows_the_window_and_writes_nothing() {
     assert_eq!(t.born.born_at.as_deref(), Some("2026-11-05T12:00:00Z"));
     assert!(!t.born.taken_down);
     let found: Vec<_> = t.found.iter().map(|(_, k)| k.clone()).collect();
-    // Every key that names it, its home's pointer and its course, whose keys don't.
+    // Every key that names it, its home's pointer, its course and the Chronicle's files that
+    // name it, whose keys don't.
     let mut expected = keys_of(&w.store, &first.id);
+    for key in w.store.keys(Bucket::Identities) {
+        let body = w.store.object(Bucket::Identities, &key).unwrap().body;
+        if key.starts_with("world/chronicle/")
+            && String::from_utf8_lossy(&body).contains(first.id.as_str())
+        {
+            expected.push(key);
+        }
+    }
     expected.push(format!("places/{}.json", first.address));
     let course = expected
         .iter()
@@ -926,6 +1003,7 @@ impl Store for Flaky {
 async fn a_window_run_cut_off_after_the_markers_finishes_on_a_rerun() {
     let w = world();
     let [before, first, second, after] = four_agents(&w).await;
+    daily(&w, NOW + 3 * HOUR).await;
     let untouched = [keys_of(&w.store, &before.id), keys_of(&w.store, &after.id)];
     let flaky = Flaky {
         inner: w.store.clone(),
@@ -963,6 +1041,7 @@ async fn a_window_run_cut_off_after_the_markers_finishes_on_a_rerun() {
 async fn writes_in_flight_during_the_wait_are_removed_too() {
     let w = world();
     let agent = full_agent(&w, "Wren", NOW).await;
+    daily(&w, NOW + HOUR).await;
     let targets = plan(&*w.store, &Mode::One(agent.id.clone())).await.unwrap();
 
     // Writes that passed the claim check just before step 1 land during the wait.
@@ -983,6 +1062,7 @@ async fn writes_in_flight_during_the_wait_are_removed_too() {
 async fn a_rerun_of_a_finished_takedown_succeeds_and_changes_nothing() {
     let w = world();
     let agent = full_agent(&w, "Wren", NOW).await;
+    daily(&w, NOW + HOUR).await;
     let mode = Mode::One(agent.id.clone());
     let waits = AtomicUsize::new(0);
     let targets = plan(&*w.store, &mode).await.unwrap();
@@ -1005,6 +1085,7 @@ async fn a_rerun_of_a_finished_takedown_succeeds_and_changes_nothing() {
 async fn a_window_takes_down_everyone_born_in_it_with_one_wait() {
     let w = world();
     let [before, first, second, after] = four_agents(&w).await;
+    daily(&w, NOW + 3 * HOUR).await;
     let untouched = [keys_of(&w.store, &before.id), keys_of(&w.store, &after.id)];
 
     let targets = plan(&*w.store, &flood()).await.unwrap();
@@ -1020,4 +1101,66 @@ async fn a_window_takes_down_everyone_born_in_it_with_one_wait() {
         [keys_of(&w.store, &before.id), keys_of(&w.store, &after.id)],
         untouched
     );
+}
+
+#[tokio::test]
+async fn one_notice_edition_or_course_goes_after_its_dry_run_and_nothing_else_of_its_author() {
+    let w = world();
+    let agent = full_agent(&w, "Wren", NOW).await;
+    let residents = sfab_identity::residents(&*w.store).await.unwrap();
+    let founders = [agent.id.clone()];
+    let starts = "2099-12-31T00:00:00Z";
+    sfab_vouches::daily(&*w.store, &founders, &residents, starts, NOW)
+        .await
+        .unwrap();
+    let document = "knotsknotsaa";
+    library_data(&w, &bearer(&agent.id, &agent.claim), document, NOW).await;
+    let squares = w.store.list(Bucket::Identities, "square/").await.unwrap();
+    let notice = squares.iter().find(|k| k.contains("/notices/")).unwrap();
+    let course = w.store.list(Bucket::Identities, "academy/courses/").await;
+    let course = course.unwrap();
+    let course = course.iter().find(|k| k.ends_with("/course.json")).unwrap();
+    let course_folder = course.strip_suffix("course.json").unwrap().to_owned();
+    let edition = format!("library/{document}/2.json");
+    let first = format!("library/{document}/document.json");
+
+    for key in [notice, &edition, course] {
+        let locations = writing(key).expect("a writing");
+        let stored = snapshot(&w.store);
+        let found = plan_writing(&*w.store, &locations).await.unwrap();
+        assert_eq!(snapshot(&w.store), stored, "{key}: a dry run writes nothing");
+        assert!(found.iter().any(|(_, k)| k == key), "{key}");
+        remove_writing(&*w.store, &locations).await.unwrap();
+        let found = plan_writing(&*w.store, &locations).await.unwrap();
+        assert_eq!(found, Vec::new(), "{key}: a rerun finds nothing");
+    }
+
+    // The notice went with its answer.
+    let squares = w.store.list(Bucket::Identities, "square/").await.unwrap();
+    assert_eq!(squares, Vec::<String>::new());
+    // The edition shows "removed", in its file and its document's list; edition 1 is untouched.
+    let shown = w.library.edition(document, "2").await.unwrap().body;
+    assert_eq!(shown["note"], "removed");
+    assert_eq!(shown["content"], serde_json::Value::Null);
+    let shown = w.library.document(document).await.unwrap().body;
+    assert_eq!(shown["editions"][1]["note"], "removed");
+    assert_eq!(shown["title"], "Knots");
+    let shown = w.library.edition(document, "1").await.unwrap().body;
+    assert_eq!(shown["content"], "How to tie them.");
+    // The course went whole.
+    let left = w.store.list(Bucket::Identities, &course_folder).await.unwrap();
+    assert_eq!(left, Vec::<String>::new());
+    // Edition 1 is the one in `document.json`.
+    let locations = writing(&first).unwrap();
+    remove_writing(&*w.store, &locations).await.unwrap();
+    let shown = w.library.document(document).await.unwrap().body;
+    assert_eq!(shown["editions"][0]["note"], "removed");
+    assert_eq!(shown["title"], serde_json::Value::Null);
+    let shown = w.library.edition(document, "1").await.unwrap().body;
+    assert_eq!(shown["content"], serde_json::Value::Null);
+    // The author is still there, home and all.
+    let claim = format!("claims/{}/claim.json", agent.id);
+    assert!(!w.store.object(Bucket::Claims, &claim).unwrap().body.is_empty());
+    let home = format!("identities/{}/home.json", agent.id);
+    assert!(w.store.object(Bucket::Identities, &home).is_some());
 }

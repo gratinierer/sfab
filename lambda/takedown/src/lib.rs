@@ -6,11 +6,11 @@ mod args;
 
 use std::future::Future;
 
-pub use args::{Args, USAGE, parse_args};
+pub use args::{Args, Command, USAGE, parse_args};
 
 use sfab_core::id::AgentId;
 use sfab_core::storage::{Bucket, Condition, Store, StoreError};
-use sfab_core::takedown::{Action, Location, Phase, remove_id};
+use sfab_core::takedown::{Action, Location, Phase, index_key, remove_id};
 use sfab_identity::Born;
 
 /// Which agents to take down.
@@ -38,7 +38,15 @@ pub struct Target {
 /// The one list of an agent's locations: every crate's takedown function. Story 4 adds its
 /// crates here.
 pub fn locations(id: &AgentId) -> Vec<Location> {
-    let mut all = sfab_identity::takedown(id);
+    // The takedown index, which the crates' locations read in step 3, goes last of the
+    // agent's `world/` files, just before `identities/<id>/`, so a rerun still finds it.
+    let mut all = vec![Location {
+        phase: Phase::Last,
+        bucket: Bucket::Identities,
+        key: index_key(id),
+        action: Action::Delete,
+    }];
+    all.extend(sfab_identity::takedown(id));
     all.extend(sfab_messaging::takedown(id));
     all.extend(sfab_vouches::takedown(id));
     all.extend(sfab_homes::takedown(id));
@@ -47,6 +55,43 @@ pub fn locations(id: &AgentId) -> Vec<Location> {
     all.extend(sfab_library::takedown(id));
     all.extend(sfab_chronicle::takedown(id));
     all
+}
+
+/// The locations that remove one writing, by its key: a Square notice, a Library edition or an
+/// Academy course, each crate saying what its own writing's removal means, or `None` for any
+/// other key (`.stories/4-life-in-the-world/spec.md` "Takedown").
+pub fn writing(key: &str) -> Option<Vec<Location>> {
+    sfab_square::writing(key)
+        .or_else(|| sfab_library::writing(key))
+        .or_else(|| sfab_academy::writing(key))
+}
+
+/// The keys removing one writing would still change. It writes nothing, which makes it the
+/// dry run.
+pub async fn plan_writing<S: Store>(
+    store: &S,
+    locations: &[Location],
+) -> Result<Vec<(Bucket, String)>, StoreError> {
+    let mut all = Vec::new();
+    for l in locations {
+        all.extend(found_for(store, None, l).await?);
+    }
+    Ok(all)
+}
+
+/// Removes one writing, in its locations' order. Its author stays, so there's no marker and no
+/// wait; each step is safe to repeat, so a rerun after an interruption finishes it.
+pub async fn remove_writing<S: Store>(store: &S, locations: &[Location]) -> Result<(), StoreError> {
+    for l in locations {
+        apply_for(store, None, l).await?;
+    }
+    Ok(())
+}
+
+/// The agent an action needs, which removing one writing has none of: a crate's writing names
+/// only actions that need none.
+fn agent(id: Option<&AgentId>) -> Result<&AgentId, StoreError> {
+    id.ok_or_else(|| StoreError::Other("this action needs an agent".to_owned()))
 }
 
 /// What a takedown would handle. It writes nothing, which makes it the dry run.
@@ -92,6 +137,14 @@ pub async fn found<S: Store>(
     id: &AgentId,
     l: &Location,
 ) -> Result<Vec<(Bucket, String)>, StoreError> {
+    found_for(store, Some(id), l).await
+}
+
+async fn found_for<S: Store>(
+    store: &S,
+    id: Option<&AgentId>,
+    l: &Location,
+) -> Result<Vec<(Bucket, String)>, StoreError> {
     let mut keys = Vec::new();
     match l.action {
         Action::DeletePrefix => keys = store.list(l.bucket, &l.key).await?,
@@ -108,6 +161,7 @@ pub async fn found<S: Store>(
             }
         }
         Action::RemoveId => {
+            let id = agent(id)?;
             for key in store.list(l.bucket, &l.key).await? {
                 if let Some(current) = store.get(l.bucket, &key).await?
                     && remove_id(&current.body, id).is_some()
@@ -116,17 +170,22 @@ pub async fn found<S: Store>(
                 }
             }
         }
-        Action::Pointers(pointers_of) => keys = pointed(store, id, l, pointers_of).await?,
-        Action::Search(belongs) => keys = searched(store, id, l, belongs).await?,
-        Action::Folders(pointers_of) => keys = foldered(store, id, l, pointers_of).await?,
+        Action::Pointers(pointers_of) => keys = pointed(store, agent(id)?, l, pointers_of).await?,
+        Action::Search(belongs) => keys = searched(store, agent(id)?, l, belongs).await?,
+        Action::Folders(pointers_of) => {
+            keys = foldered(store, agent(id)?, l, pointers_of).await?;
+        }
         Action::NoteFolders(pointers_of, note_of) => {
-            for key in foldered(store, id, l, pointers_of).await? {
+            for key in foldered(store, agent(id)?, l, pointers_of).await? {
                 if let Some(current) = store.get(l.bucket, &key).await?
                     && note_of(&current.body).is_some()
                 {
                     keys.push(key);
                 }
             }
+        }
+        Action::Indexed(keys_of, belongs) => {
+            keys = listed(store, agent(id)?, l, keys_of, belongs).await?;
         }
     }
     Ok(keys.into_iter().map(|k| (l.bucket, k)).collect())
@@ -178,6 +237,14 @@ async fn apply_each<'a, S: Store>(
 /// Applies one location's action for the agent `id`. Each is safe to repeat: what's already
 /// deleted, marked, noted or rewritten counts as done.
 pub async fn apply<S: Store>(store: &S, id: &AgentId, l: &Location) -> Result<(), StoreError> {
+    apply_for(store, Some(id), l).await
+}
+
+async fn apply_for<S: Store>(
+    store: &S,
+    id: Option<&AgentId>,
+    l: &Location,
+) -> Result<(), StoreError> {
     match l.action {
         Action::Delete => store.delete(l.bucket, &l.key).await,
         Action::DeletePrefix => {
@@ -189,36 +256,64 @@ pub async fn apply<S: Store>(store: &S, id: &AgentId, l: &Location) -> Result<()
         Action::Marker(metadata_of) => mark(store, l, metadata_of).await,
         Action::Note(note_of) => rewrite(store, l.bucket, &l.key, note_of).await,
         Action::RemoveId => {
+            let id = agent(id)?;
             for key in store.list(l.bucket, &l.key).await? {
                 rewrite(store, l.bucket, &key, |body| remove_id(body, id)).await?;
             }
             Ok(())
         }
         Action::Pointers(pointers_of) => {
-            for key in pointed(store, id, l, pointers_of).await? {
+            for key in pointed(store, agent(id)?, l, pointers_of).await? {
                 store.delete(l.bucket, &key).await?;
             }
             Ok(())
         }
         Action::Search(belongs) => {
-            for key in searched(store, id, l, belongs).await? {
+            for key in searched(store, agent(id)?, l, belongs).await? {
                 store.delete(l.bucket, &key).await?;
             }
             Ok(())
         }
         Action::Folders(pointers_of) => {
-            for key in foldered(store, id, l, pointers_of).await? {
+            for key in foldered(store, agent(id)?, l, pointers_of).await? {
                 store.delete(l.bucket, &key).await?;
             }
             Ok(())
         }
         Action::NoteFolders(pointers_of, note_of) => {
-            for key in foldered(store, id, l, pointers_of).await? {
+            for key in foldered(store, agent(id)?, l, pointers_of).await? {
                 rewrite(store, l.bucket, &key, note_of).await?;
             }
             Ok(())
         }
+        Action::Indexed(keys_of, belongs) => {
+            for key in listed(store, agent(id)?, l, keys_of, belongs).await? {
+                store.delete(l.bucket, &key).await?;
+            }
+            Ok(())
+        }
     }
+}
+
+/// The keys the agent's file at `l.key` names that exist and that `belongs` says are the
+/// agent's from the key alone.
+async fn listed<S: Store>(
+    store: &S,
+    id: &AgentId,
+    l: &Location,
+    keys_of: fn(&[u8]) -> Vec<String>,
+    belongs: fn(&str, &AgentId) -> bool,
+) -> Result<Vec<String>, StoreError> {
+    let Some(file) = store.get(l.bucket, &l.key).await? else {
+        return Ok(Vec::new());
+    };
+    let mut keys = Vec::new();
+    for key in keys_of(&file.body) {
+        if belongs(&key, id) && store.head(l.bucket, &key).await?.is_some() {
+            keys.push(key);
+        }
+    }
+    Ok(keys)
 }
 
 /// Every key in the folder of each key the agent's file at `l.key` points to that still names

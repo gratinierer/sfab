@@ -2,8 +2,13 @@
 //! each, so a key format exists only in its crate. `docs/adr/0004-rules-live-in-crates.md` and
 //! `.stories/2-identity-api/spec.md` "Storage"; the program that runs them is issue 08's.
 
+use std::collections::{BTreeMap, BTreeSet};
+
+use serde_json::{Value, json};
+
 use crate::id::AgentId;
-use crate::storage::{Bucket, Metadata};
+use crate::storage::{Bucket, Metadata, Store, StoreError};
+use crate::world::{self, Rebuilt};
 
 /// When a location is handled, in the spec's order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -55,6 +60,11 @@ pub enum Action {
     /// `identities/<id>/library.json`, each edition showing "removed". `None` from the second
     /// function means the object is already a note.
     NoteFolders(fn(&[u8]) -> Vec<String>, fn(&[u8]) -> Option<Vec<u8>>),
+    /// Read the agent's own file at the key, such as the takedown index, and delete each key
+    /// the first function finds in its body that the second says is the agent's from the key
+    /// alone, such as an enrolment, whose body names nobody. A key that isn't, because the
+    /// file was out of date or wrong, stays.
+    Indexed(fn(&[u8]) -> Vec<String>, fn(&str, &AgentId) -> bool),
 }
 
 /// What [`Action::RemoveId`] writes in place of the ID.
@@ -75,6 +85,86 @@ pub fn remove_id(body: &[u8], id: &AgentId) -> Option<Vec<u8>> {
     }
     out.extend_from_slice(rest);
     found.then_some(out)
+}
+
+/// The takedown index's key for an agent, `world/agents/<id>.json`, beside its public pages
+/// under `world/agents/<id>/`: `.stories/4-life-in-the-world/spec.md` "Takedown". Only the daily
+/// job writes it, and no route serves it, because it names private attempts too.
+pub fn index_key(id: &AgentId) -> String {
+    format!("{}{id}.json", world::AGENTS_PREFIX)
+}
+
+/// Whether a key under `world/agents/` is a takedown index, not a public page.
+fn is_index(key: &str) -> bool {
+    key.strip_prefix(world::AGENTS_PREFIX)
+        .and_then(|rest| rest.strip_suffix(".json"))
+        .is_some_and(|id| AgentId::parse(id).is_some())
+}
+
+/// What the daily job's steps found of each agent's, for the takedown index: per agent, per
+/// named list, such as the Academy's folders, the keys. Each crate names its own lists, and
+/// reads them back with [`indexed`] in its takedown function. It holds every agent with keys,
+/// takedown markers too, so a takedown's second run, after the next daily run, finds what the
+/// first missed.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Index(BTreeMap<AgentId, BTreeMap<&'static str, BTreeSet<String>>>);
+
+impl Index {
+    pub fn add(&mut self, id: AgentId, list: &'static str, key: String) {
+        self.0
+            .entry(id)
+            .or_default()
+            .entry(list)
+            .or_default()
+            .insert(key);
+    }
+
+    pub fn merge(&mut self, other: Index) {
+        for (id, lists) in other.0 {
+            for (list, keys) in lists {
+                for key in keys {
+                    self.add(id.clone(), list, key);
+                }
+            }
+        }
+    }
+
+    /// The agents it has keys for.
+    pub fn agents(&self) -> usize {
+        self.0.len()
+    }
+}
+
+/// Makes `world/agents/` hold exactly one index for each agent in `index`, leaving the public
+/// pages there alone, so an agent with nothing left loses its index.
+pub async fn rebuild_index<S: Store>(store: &S, index: Index) -> Result<Rebuilt, StoreError> {
+    let files = index
+        .0
+        .into_iter()
+        .map(|(id, lists)| {
+            // `{"id": <id>, "lists": {<list>: [<key>, ...]}}`.
+            let lists: BTreeMap<&str, Vec<String>> = lists
+                .into_iter()
+                .map(|(list, keys)| (list, keys.into_iter().collect()))
+                .collect();
+            let file = json!({"id": id.as_str(), "lists": lists});
+            let body = serde_json::to_vec(&file).expect("an index serializes");
+            (index_key(&id), body)
+        })
+        .collect();
+    world::rebuild_where(store, world::AGENTS_PREFIX, files, is_index).await
+}
+
+/// The keys an index body names in `list`, none when it doesn't parse.
+pub fn indexed(body: &[u8], list: &str) -> Vec<String> {
+    let file: Option<Value> = serde_json::from_slice(body).ok();
+    let keys = file.as_ref().and_then(|f| f["lists"][list].as_array());
+    keys.map(|keys| {
+        keys.iter()
+            .filter_map(|k| k.as_str().map(str::to_owned))
+            .collect()
+    })
+    .unwrap_or_default()
 }
 
 #[derive(Debug, Clone)]

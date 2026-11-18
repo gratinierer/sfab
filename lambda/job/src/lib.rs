@@ -16,6 +16,8 @@ use sfab_chronicle::{Certificate, DailyReport as ChronicleReport, Facts};
 use sfab_core::daily::rfc3339;
 use sfab_core::id::AgentId;
 use sfab_core::storage::{Store, StoreError};
+use sfab_core::takedown;
+use sfab_core::world::Rebuilt;
 use sfab_federation::{DailyReport, Fetch, Notify};
 use sfab_genesis::{Daily, DailyReport as GenesisReport};
 use sfab_homes::DailyReport as HomesReport;
@@ -34,6 +36,8 @@ pub struct Report {
     pub academy: AcademyReport,
     pub library: LibraryReport,
     pub chronicle: ChronicleReport,
+    /// The takedown index `world/agents/<id>.json`, from the Academy's and Library's reports.
+    pub takedown_index: Rebuilt,
     pub federation: DailyReport,
 }
 
@@ -42,8 +46,8 @@ pub struct Report {
 /// `age_rule_starts`, RFC 3339 to the second, which `cdk/stacks.py` sets, then cleaning the
 /// lanes' pointers and counting each quarter's homes, indexing each quarter's Square, and
 /// building the Academy's catalogue, lists and lineage from the standing just worked out, and
-/// the Library's shelves and citations, and last before federation the Chronicle's entry from
-/// what they all found.
+/// the Library's shelves and citations, then the takedown index from what those two found, and
+/// last before federation the Chronicle's entry from what they all found.
 pub async fn run<S: Store, F: Fetch, N: Notify>(
     store: &S,
     fetch: &F,
@@ -76,6 +80,9 @@ pub async fn run<S: Store, F: Fetch, N: Notify>(
     let with_standing = sfab_vouches::with_standing(store).await?;
     let academy = sfab_academy::daily(store, &residents, &with_standing, now).await?;
     let library = sfab_library::daily(store, &residents, now).await?;
+    let mut index = academy.index.clone();
+    index.merge(library.index.clone());
+    let takedown_index = takedown::rebuild_index(store, index).await?;
     let facts = chronicle_facts(&census, &with_standing, &homes, &academy, &library);
     let chronicle = sfab_chronicle::daily(store, &facts, now).await?;
     let federation = sfab_federation::daily(store, fetch, notify, now).await?;
@@ -88,6 +95,7 @@ pub async fn run<S: Store, F: Fetch, N: Notify>(
         square,
         academy,
         library,
+        takedown_index,
         federation,
     })
 }

@@ -293,3 +293,39 @@ async fn note_folders_note_all_beside_a_file_the_agent_s_file_names_the_named_on
     assert_eq!(body(&store, "library/bbbb/document.json"), theirs);
     assert!(found(&store, &wren(), &l).await.unwrap().is_empty());
 }
+
+#[tokio::test]
+async fn indexed_deletes_the_keys_the_index_names_that_are_the_agent_s_by_their_names() {
+    let store = MemoryStore::new();
+    put(
+        &store,
+        "world/agents/wrenwrenwren.json",
+        "square/a/wrenwrenwren-1.json\nsquare/a/mossmossmoss-1.json\nsquare/a/wrenwrenwren-2.json",
+    )
+    .await;
+    // Their bodies name nobody, and one key the index names isn't its own.
+    put(&store, "square/a/wrenwrenwren-1.json", "{}").await;
+    put(&store, "square/a/mossmossmoss-1.json", "{}").await;
+    let l = location(
+        "world/agents/wrenwrenwren.json",
+        Action::Indexed(lines, named_last),
+    );
+
+    let keys: Vec<String> = found(&store, &wren(), &l)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|(_, k)| k)
+        .collect();
+    assert_eq!(keys, vec!["square/a/wrenwrenwren-1.json"]);
+    apply(&store, &wren(), &l).await.unwrap();
+
+    assert_eq!(
+        store.keys(B),
+        vec![
+            "square/a/mossmossmoss-1.json",
+            "world/agents/wrenwrenwren.json"
+        ]
+    );
+    assert!(found(&store, &wren(), &l).await.unwrap().is_empty());
+}
