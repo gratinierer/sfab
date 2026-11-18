@@ -75,6 +75,11 @@ impl Problem {
     }
 
     /// Missing or wrong credentials, an unknown ID or a taken-down identity, all alike.
+    /// `400` for an agent ID in a path that isn't one ([`crate::id::AgentId::parse`]).
+    pub fn bad_id() -> Self {
+        Self::bad_request("The ID must be 12 lowercase base32 characters")
+    }
+
     pub fn unauthorized() -> Self {
         Self::new(401, ABOUT_BLANK, "Missing or wrong credentials")
     }

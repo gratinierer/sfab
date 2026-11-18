@@ -122,10 +122,6 @@ struct VouchRequest {
     reason: String,
 }
 
-fn bad_id() -> Problem {
-    Problem::bad_request("The ID must be 12 lowercase base32 characters")
-}
-
 /// `items` paged 20 at a time along `path`, as story 2's "Lists" says.
 fn page_of(items: &[Value], token: Option<&str>, path: &str) -> Result<Reply, Problem> {
     let page = offset_page(items.len(), token, OFFSET_PAGE, path)?;
@@ -169,7 +165,7 @@ impl<S: Store> Vouches<S> {
     pub async fn give(&self, call: &Call<'_>, to: &str, now: i64) -> Result<Reply, Problem> {
         let admitted = admit_write(call, now, self.required_bits)?;
         let giver = self.identity.caller(call.authorization, now).await?;
-        let to = AgentId::parse(to).ok_or_else(bad_id)?;
+        let to = AgentId::parse(to).ok_or_else(Problem::bad_id)?;
         if to == giver {
             return Err(Problem::bad_request("An agent can't vouch for itself"));
         }
@@ -230,7 +226,7 @@ impl<S: Store> Vouches<S> {
         now: i64,
     ) -> Result<Reply, Problem> {
         let giver = self.identity.caller(authorization, now).await?;
-        let to = AgentId::parse(to).ok_or_else(bad_id)?;
+        let to = AgentId::parse(to).ok_or_else(Problem::bad_id)?;
         let (mut given, etag) = read_given(&*self.store, &giver)
             .await
             .map_err(|e| Problem::storage("reading given vouches", &e))?;
@@ -274,7 +270,7 @@ impl<S: Store> Vouches<S> {
     /// `GET /identity/{id}/vouched-by`: the same, if the agent publishes `vouches`, and
     /// otherwise an empty page, as for an unknown or taken-down ID.
     pub async fn vouched_by(&self, id: &str, page: Option<&str>) -> Result<Reply, Problem> {
-        let id = AgentId::parse(id).ok_or_else(bad_id)?;
+        let id = AgentId::parse(id).ok_or_else(Problem::bad_id)?;
         let path = format!("/v1/identity/{id}/vouched-by");
         let items = if self.identity.publishes(&id, Field::Vouches).await? {
             standing::counted(&*self.store, &id).await?
@@ -288,7 +284,7 @@ impl<S: Store> Vouches<S> {
     /// last run. An unknown or taken-down ID, and every ID before the first run, gets `false`,
     /// the last with `as_of: null`, so it can't be used to probe which IDs exist.
     pub async fn standing(&self, id: &str) -> Result<Reply, Problem> {
-        let id = AgentId::parse(id).ok_or_else(bad_id)?;
+        let id = AgentId::parse(id).ok_or_else(Problem::bad_id)?;
         let (standing, as_of) = standing::read(&*self.store, &id).await?;
         Ok(Reply::ok(
             json!({"id": id.as_str(), "standing": standing, "as_of": as_of}),

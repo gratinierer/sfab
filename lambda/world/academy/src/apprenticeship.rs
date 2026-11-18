@@ -236,10 +236,6 @@ fn application_key(master: &AgentId, applicant: &AgentId) -> String {
     format!("{APPLICATIONS_PREFIX}{master}/{applicant}.json")
 }
 
-fn bad_id() -> Problem {
-    Problem::bad_request("The ID must be 12 lowercase base32 characters")
-}
-
 fn bad_apprenticeship() -> Problem {
     Problem::bad_request("An apprenticeship is <master>-<apprentice>-<YYYY-MM-DD>")
 }
@@ -337,7 +333,7 @@ impl<S: Store> Academy<S> {
     pub async fn apply(&self, call: &Call<'_>, master: &str, now: i64) -> Result<Reply, Problem> {
         let admitted = admit_write(call, now, self.required_bits)?;
         let applicant = self.identity.caller(call.authorization, now).await?;
-        let master = AgentId::parse(master).ok_or_else(bad_id)?;
+        let master = AgentId::parse(master).ok_or_else(Problem::bad_id)?;
         let request: NoteRequest = serde_json::from_slice(call.body)
             .map_err(|_| Problem::bad_request("Malformed request body"))?;
         let chars = request.note.chars().count();
@@ -474,7 +470,7 @@ impl<S: Store> Academy<S> {
     ) -> Result<Reply, Problem> {
         let admitted = admit_write(call, now, self.required_bits)?;
         let master = self.identity.caller(call.authorization, now).await?;
-        let applicant = AgentId::parse(applicant).ok_or_else(bad_id)?;
+        let applicant = AgentId::parse(applicant).ok_or_else(Problem::bad_id)?;
         empty_body(call.body)?;
         self.need_standing(&master).await?;
         let counter_key = sfab_identity::academy_key(&master);

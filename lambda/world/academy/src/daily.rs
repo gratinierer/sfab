@@ -646,10 +646,6 @@ pub(crate) async fn counts<S: Store>(
     Ok((found.is_some(), Some(as_of)))
 }
 
-fn bad_id() -> Problem {
-    Problem::bad_request("The ID must be 12 lowercase base32 characters")
-}
-
 impl<S: Store> Academy<S> {
     /// `GET /academy/courses`: the catalogue, 20 a page.
     pub async fn catalogue(&self, page: Option<&str>) -> Result<Reply, Problem> {
@@ -678,7 +674,7 @@ impl<S: Store> Academy<S> {
     /// `GET /academy/teachers/{id}`: a teacher's or marker's page, counts only. An unknown or
     /// taken-down ID reads like an agent that teaches nothing.
     pub async fn teacher(&self, id: &str) -> Result<Reply, Problem> {
-        let id = AgentId::parse(id).ok_or_else(bad_id)?;
+        let id = AgentId::parse(id).ok_or_else(Problem::bad_id)?;
         let page =
             world::read_for_agent(&*self.store, &teacher_key(&id), BUILT_KEY, nothing_for(&id))
                 .await?;
@@ -687,7 +683,7 @@ impl<S: Store> Academy<S> {
 
     /// `GET /academy/teachers/{id}/graduates`: its graduates, by ID, 1,000 a page.
     pub async fn teacher_graduates(&self, id: &str, page: Option<&str>) -> Result<Reply, Problem> {
-        let id = AgentId::parse(id).ok_or_else(bad_id)?;
+        let id = AgentId::parse(id).ok_or_else(Problem::bad_id)?;
         let path = format!("/v1/academy/teachers/{id}/graduates");
         let prefix = teacher_graduates_prefix(&id);
         world::read_page(&*self.store, &prefix, page, &path, BUILT_KEY).await
@@ -697,7 +693,7 @@ impl<S: Store> Academy<S> {
     /// apprentices and apprenticeships it has had, and the certificates it awarded. An unknown
     /// or taken-down ID reads like an agent that has had no apprentice.
     pub async fn master(&self, id: &str) -> Result<Reply, Problem> {
-        let id = AgentId::parse(id).ok_or_else(bad_id)?;
+        let id = AgentId::parse(id).ok_or_else(Problem::bad_id)?;
         let page = world::read_for_agent(&*self.store, &master_key(&id), BUILT_KEY, no_master(&id))
             .await?;
         Ok(Reply::ok(page))
@@ -706,7 +702,7 @@ impl<S: Store> Academy<S> {
     /// `GET /academy/masters/{id}/apprentices`: its current and past apprenticeships, whose IDs
     /// name each apprentice, oldest first, 1,000 a page.
     pub async fn master_apprentices(&self, id: &str, page: Option<&str>) -> Result<Reply, Problem> {
-        let id = AgentId::parse(id).ok_or_else(bad_id)?;
+        let id = AgentId::parse(id).ok_or_else(Problem::bad_id)?;
         let path = format!("/v1/academy/masters/{id}/apprentices");
         let prefix = master_apprentices_prefix(&id);
         world::read_page(&*self.store, &prefix, page, &path, BUILT_KEY).await
@@ -714,7 +710,7 @@ impl<S: Store> Academy<S> {
 
     /// `GET /identity/{id}/enrolments`: the courses an agent is enrolled in, 1,000 a page.
     pub async fn enrolments(&self, id: &str, page: Option<&str>) -> Result<Reply, Problem> {
-        let id = AgentId::parse(id).ok_or_else(bad_id)?;
+        let id = AgentId::parse(id).ok_or_else(Problem::bad_id)?;
         let path = format!("/v1/identity/{id}/enrolments");
         world::read_page(
             &*self.store,
@@ -729,7 +725,7 @@ impl<S: Store> Academy<S> {
     /// `GET /identity/{id}/certificates`: the certificates an agent holds, revoked ones too,
     /// 1,000 a page.
     pub async fn certificates(&self, id: &str, page: Option<&str>) -> Result<Reply, Problem> {
-        let id = AgentId::parse(id).ok_or_else(bad_id)?;
+        let id = AgentId::parse(id).ok_or_else(Problem::bad_id)?;
         let path = format!("/v1/identity/{id}/certificates");
         world::read_page(
             &*self.store,
