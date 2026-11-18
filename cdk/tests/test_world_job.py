@@ -129,6 +129,8 @@ def test_the_job_may_list_claims_and_write_only_world_federation_and_genesis(api
         ("s3:GetObject", "Identities/vitals/*"),
         # Story 4's Academy: read the courses and certificates it listed, never an attempt.
         ("s3:GetObject", "Identities/academy/*"),
+        # Story 4's Library: read each document and edition it listed, for citations.
+        ("s3:GetObject", "Identities/library/*"),
         # Story 4's homes: delete pointers `home.json` disagrees with, reading each home.
         ("s3:GetObject", "Identities/places/*"),
         ("s3:DeleteObject", "Identities/places/*"),
@@ -158,6 +160,7 @@ def test_the_job_lists_only_world_federation_and_genesis_in_the_identities_bucke
                     "vouches/*",
                     "vitals/*",
                     "academy/*",
+                    "library/*",
                     "places/*",
                     "square/*",
                     "identities/*/home.json",
@@ -187,6 +190,9 @@ def test_the_job_s_read_prefixes_are_the_crates_own():
     # The academy crate's `PREFIX`.
     academy = (lambda_dir / "world" / "academy" / "src" / "lib.rs").read_text()
     assert f'pub const PREFIX: &str = "{job_module.ACADEMY_PREFIX}";' in academy
+    # The library crate's `PREFIX`.
+    library = (lambda_dir / "world" / "library" / "src" / "lib.rs").read_text()
+    assert f'pub const PREFIX: &str = "{job_module.LIBRARY_PREFIX}";' in library
 
 
 def test_only_the_job_may_touch_verified_federation_requests(api, base):

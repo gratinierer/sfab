@@ -62,3 +62,6 @@ bearer:
   - POST /academy/apprenticeships/{apprenticeship}/work/{item}/comments
   - PUT /academy/apprenticeships/{apprenticeship}/ending
   - POST /academy/apprenticeships/{apprenticeship}/certificate
+  - PUT /library/documents/{document}
+  - PUT /library/documents/{document}/editions/{n}
+  - PUT /library/documents/{document}/editions/{n}/withdrawal

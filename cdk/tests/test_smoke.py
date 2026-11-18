@@ -111,6 +111,12 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "apprenticeship work",
         "apply to master",
         "accept application",
+        "shelves",
+        "library not built",
+        "document",
+        "publish document",
+        "publish edition",
+        "withdraw edition",
         "send message",
         "message to an unknown agent",
         "read knocks",
@@ -119,9 +125,9 @@ def test_full_run_passes_against_a_working_api_and_covers_every_case():
         "execute-api wrong key",
     }
     # About 43 (spec.md "Testing"), plus story 4's 6 vouch requests, 11 home ones, 6 on the
-    # Square and 24 in the Academy; the 4-second pace keeps any length under WAF's 100 per 5
-    # minutes.
-    assert len(api.requests) <= 90
+    # Square, 24 in the Academy and 8 in the Library; the 4-second pace keeps any length under
+    # WAF's 100 per 5 minutes.
+    assert len(api.requests) <= 98
     # The course was retired, its certificate revoked, and the agent left it.
     (course,) = api.courses.values()
     assert course["retired"] and not course["enrolled"]
@@ -174,8 +180,8 @@ def test_a_world_code_a_racing_birth_used_is_retried_once_with_a_fresh_one():
     assert api.labels.count("genesis code") == 2
     assert "world birth" in api.labels, "the fresh code was accepted"
     assert len(api.pool) == 2
-    # The retry's GET and birth on top of the run's 90.
-    assert len(api.requests) <= 92
+    # The retry's GET and birth on top of the run's 98.
+    assert len(api.requests) <= 100
 
 
 def test_a_world_rejecting_both_world_codes_fails():
@@ -219,8 +225,8 @@ def test_the_same_used_world_code_again_is_refetched_until_a_fresh_one():
     assert api.labels.count("genesis code") == 3
     assert api.labels.count("invalid genesis code") == 1, "the same code isn't sent twice"
     assert "world birth" in api.labels, "the fresh code was accepted"
-    # Two refetches and a birth on top of the run's 90; at most three refetches, so 94.
-    assert len(api.requests) <= 94
+    # Two refetches and a birth on top of the run's 98; at most three refetches, so 102.
+    assert len(api.requests) <= 102
 
 
 def test_a_one_code_pool_holding_the_used_code_passes_and_skips_the_retry():
@@ -236,7 +242,7 @@ def test_a_one_code_pool_holding_the_used_code_passes_and_skips_the_retry():
     assert api.labels.count("genesis code") == 4, "the first fetch and three refetches"
     assert api.labels.count("invalid genesis code") == 1, "the same code isn't sent twice"
     assert any("skip" in line and "same" in line for line in lines), lines
-    assert len(api.requests) <= 94
+    assert len(api.requests) <= 102
 
 
 @pytest.mark.parametrize(
@@ -512,8 +518,9 @@ def test_production_births_nothing_and_writes_only_privately():
     # The production run is held to its 31 requests (spec.md "Testing" says about 31), plus
     # story 4's 6 vouch requests, 2 home reads, a read of the Square, which it never
     # writes on, since a notice is public, and 13 Academy reads, which write nothing, since
-    # enrolling is public and applying is addressed to a master.
-    assert len(api.requests) <= 53
+    # enrolling is public and applying is addressed to a master, and 5 Library reads, since
+    # publishing is public.
+    assert len(api.requests) <= 58
     assert api.courses == {} and api.attempts == {}
     assert api.notices == {}
     assert "birth" not in api.labels

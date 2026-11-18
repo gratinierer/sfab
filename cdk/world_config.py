@@ -80,6 +80,11 @@ def quarters(path: Path = QUARTERS) -> tuple[Quarter, ...]:
     return _quarters(path)
 
 
+def shelves(path: Path = SHELVES) -> tuple[str, ...]:
+    """The shelves alone, for the smoke script, which reads the first."""
+    return _shelves(path)
+
+
 def founders_problems(files: Files = REAL_FILES) -> list[str]:
     """Why these founders mustn't deploy: the file is missing or broken, or it holds a fixture
     ID. Empty when it may."""

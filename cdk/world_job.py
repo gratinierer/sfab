@@ -43,7 +43,10 @@ VITALS_PREFIX = "vitals/"
 # enrolments, and every certificate, and reads each course and certificate it listed, never an
 # attempt, for the catalogue, the lists, lineage and which certificates count.
 ACADEMY_PREFIX = "academy/"
-READ_PREFIXES = (VOUCHES_PREFIX, VITALS_PREFIX, ACADEMY_PREFIX)
+# Story 4's Library, owned by lambda/world/library: the job lists every document and edition,
+# and reads each document and each listed edition, for citations and the shelves.
+LIBRARY_PREFIX = "library/"
+READ_PREFIXES = (VOUCHES_PREFIX, VITALS_PREFIX, ACADEMY_PREFIX, LIBRARY_PREFIX)
 # Story 4's homes: the lane pointers, owned by lambda/world/homes, which the job reads and
 # deletes when `home.json` disagrees, and each resident's `home.json`, which it only reads,
 # after listing it by its full key, so it never asks for a missing one.
@@ -128,7 +131,8 @@ class WorldJob(Construct):
     def _grant(self, identities: s3.IBucket, claims: s3.IBucket) -> None:
         """spec.md "Daily world job" ("Permissions"): list the claims bucket, without ever
         reading a claim, and read, write and delete in `world/` and `federation/`, and story 17's
-        `genesis/`, list and read story 4's `vouches/`, `vitals/` and `academy/`, read and delete its
+        `genesis/`, list and read story 4's `vouches/`, `vitals/`, `academy/` and `library/`, read
+        and delete its
         `places/` pointers, list and read each `home.json` by its key, and list `square/`,
         listing only those. The outbound check needs no permission: the function isn't in a
         VPC."""

@@ -878,6 +878,222 @@ async fn academy(h: &Harness, auth: Option<String>, gauth: Option<String>, fid: 
     assert_eq!((status, refused["type"].clone()), (409, json!("retired")));
 }
 
+/// The Library's routes, with Finch, a founder with standing, as author and Gull, without
+/// standing, refused, and the daily job run part way through, so its routes answer both before
+/// and after.
+async fn library(h: &Harness, auth: Option<String>, gauth: Option<String>, fid: &str) {
+    // readShelves: 200, 400, 404.
+    let (status, shelves) = h
+        .send(get("readShelves", "/v1/library/shelves", None))
+        .await;
+    assert_eq!(
+        (status, shelves["items"][0]["shelf"].clone()),
+        (200, json!("agents"))
+    );
+    let made_up = get("readShelves", "/v1/library/shelves?page=x", None);
+    assert_eq!(h.send(made_up).await.0, 400);
+    let past = get("readShelves", "/v1/library/shelves?page=900", None);
+    assert_eq!(h.send(past).await.0, 404);
+    // Before the daily job's first run.
+    let shelf = "/v1/library/shelves/craft";
+    let (status, early) = h.send(get("readShelf", shelf, None)).await;
+    assert_eq!(
+        (status, early["type"].clone()),
+        (404, json!("not-built-yet"))
+    );
+
+    // publishDocument: 201, 200 for the same proof, 400, 401, 403, 409.
+    let id = "knotsknotsaa";
+    let one = format!("/v1/library/documents/{id}");
+    let body = |title: &str, citations: &[&str]| {
+        serde_json::to_vec(&json!({
+            "shelf": "craft",
+            "title": title,
+            "content": "How to tie them.",
+            "citations": citations,
+        }))
+        .unwrap()
+    };
+    let publish = |path: &str, a, p, b: &[u8]| write("publishDocument", "PUT", path, a, p, b);
+    let (status, document) = h
+        .send(publish(
+            &one,
+            auth.clone(),
+            Proof::Valid,
+            &body("Knots", &[]),
+        ))
+        .await;
+    assert_eq!((status, document["author"].clone()), (201, json!(fid)));
+    let again = publish(&one, auth.clone(), Proof::Valid, &body("Knots", &[]));
+    assert_eq!(h.send(again).await, (200, document));
+    let other = publish(&one, auth.clone(), Proof::Valid, &body("Other", &[]));
+    let (status, taken) = h.send(other).await;
+    assert_eq!(
+        (status, taken["type"].clone()),
+        (409, json!("already-exists"))
+    );
+    let none = publish(&one, auth.clone(), Proof::None, &body("x", &[]));
+    assert_eq!(h.send(none).await.0, 400);
+    let long = publish(
+        &one,
+        auth.clone(),
+        Proof::Valid,
+        &body(&"x".repeat(129), &[]),
+    );
+    assert_eq!(h.send(long).await.0, 400);
+    let anonymous = publish(&one, None, Proof::Valid, &body("x", &[]));
+    assert_eq!(h.send(anonymous).await.0, 401);
+    let gulls = "/v1/library/documents/gullgullgull";
+    let (status, refused) = h
+        .send(publish(gulls, gauth.clone(), Proof::Valid, &body("x", &[])))
+        .await;
+    assert_eq!(
+        (status, refused["type"].clone()),
+        (403, json!("no-standing"))
+    );
+    let schemas = &h.spec["components"]["schemas"];
+    assert_eq!(
+        schemas["DocumentTitle"]["maxLength"],
+        json!(sfab_library::MAX_TITLE_CHARS)
+    );
+    assert_eq!(
+        schemas["DocumentContent"]["maxLength"],
+        json!(sfab_library::MAX_CONTENT_BYTES)
+    );
+    assert_eq!(
+        schemas["Citations"]["maxItems"],
+        json!(sfab_library::MAX_CITATIONS)
+    );
+    let editions = &schemas["Document"]["properties"]["editions"]["maxItems"];
+    assert_eq!(editions, &json!(sfab_library::MAX_EDITIONS));
+
+    // readDocument: 200, 400, 404.
+    let (status, page) = h.send(get("readDocument", &one, None)).await;
+    assert_eq!((status, page["cited_by"].clone()), (200, Value::Null));
+    let bad = get("readDocument", "/v1/library/documents/x", None);
+    assert_eq!(h.send(bad).await.0, 400);
+    let unknown = "/v1/library/documents/aaaaaaaaaaaa";
+    assert_eq!(h.send(get("readDocument", unknown, None)).await.0, 404);
+
+    // publishEdition: 201, 200, 400, 401, 403, 404, 409.
+    let second = format!("{one}/editions/2");
+    let citing = format!("{id}/1");
+    let edition_body = |title: &str| {
+        serde_json::to_vec(&json!({"title": title, "content": "Better.", "citations": [citing]}))
+            .unwrap()
+    };
+    let edition = |path: &str, a, p, b: &[u8]| write("publishEdition", "PUT", path, a, p, b);
+    let (status, made) = h
+        .send(edition(
+            &second,
+            auth.clone(),
+            Proof::Valid,
+            &edition_body("Two"),
+        ))
+        .await;
+    assert_eq!((status, made["n"].clone()), (201, json!(2)));
+    let again = edition(&second, auth.clone(), Proof::Valid, &edition_body("Two"));
+    assert_eq!(h.send(again).await, (200, made));
+    let other = edition(&second, auth.clone(), Proof::Valid, &edition_body("Other"));
+    assert_eq!(h.send(other).await.0, 409);
+    let skipped = edition(
+        &format!("{one}/editions/4"),
+        auth.clone(),
+        Proof::Valid,
+        &edition_body("x"),
+    );
+    assert_eq!(h.send(skipped).await.0, 400);
+    let anonymous = edition(&second, None, Proof::Valid, &edition_body("x"));
+    assert_eq!(h.send(anonymous).await.0, 401);
+    let theirs = edition(
+        &format!("{one}/editions/3"),
+        gauth.clone(),
+        Proof::Valid,
+        &edition_body("x"),
+    );
+    let (status, refused) = h.send(theirs).await;
+    assert_eq!(
+        (status, refused["type"].clone()),
+        (403, json!("no-standing"))
+    );
+    let missing = edition(
+        &format!("{unknown}/editions/2"),
+        auth.clone(),
+        Proof::Valid,
+        &edition_body("x"),
+    );
+    assert_eq!(h.send(missing).await.0, 404);
+
+    // readEdition: 200, 400, 404.
+    let first = format!("{one}/editions/1");
+    let (status, read) = h.send(get("readEdition", &first, None)).await;
+    assert_eq!((status, read["newer_edition"].clone()), (200, json!(2)));
+    let zero = get("readEdition", &format!("{one}/editions/0"), None);
+    assert_eq!(h.send(zero).await.0, 400);
+    let absent = get("readEdition", &format!("{one}/editions/5"), None);
+    assert_eq!(h.send(absent).await.0, 404);
+
+    // withdrawEdition: 200, 400, 401, 403, 404.
+    let withdraw = |path: &str, a, p| write("withdrawEdition", "PUT", path, a, p, b"");
+    let withdrawal = format!("{second}/withdrawal");
+    let (status, withdrawn) = h
+        .send(withdraw(&withdrawal, auth.clone(), Proof::Valid))
+        .await;
+    assert_eq!(
+        (status, withdrawn["note"].clone()),
+        (200, json!("withdrawn by the author"))
+    );
+    assert_eq!(
+        h.send(withdraw(&withdrawal, auth.clone(), Proof::None))
+            .await
+            .0,
+        400
+    );
+    assert_eq!(
+        h.send(withdraw(&withdrawal, None, Proof::Valid)).await.0,
+        401
+    );
+    let (status, refused) = h
+        .send(withdraw(&withdrawal, gauth.clone(), Proof::Valid))
+        .await;
+    assert_eq!(
+        (status, refused["type"].clone()),
+        (403, json!("not-the-author"))
+    );
+    let gone = format!("{unknown}/editions/1/withdrawal");
+    assert_eq!(
+        h.send(withdraw(&gone, auth.clone(), Proof::Valid)).await.0,
+        404
+    );
+
+    // readCitedBy: 404 before the daily job, then 200, 400.
+    let cited = format!("{one}/cited-by");
+    let (status, early) = h.send(get("readCitedBy", &cited, None)).await;
+    assert_eq!(
+        (status, early["type"].clone()),
+        (404, json!("not-built-yet"))
+    );
+    let residents = sfab_identity::residents(&*h.store).await.unwrap();
+    sfab_library::daily(&*h.store, &residents, NOW)
+        .await
+        .unwrap();
+    let (status, page) = h.send(get("readCitedBy", &cited, None)).await;
+    assert_eq!((status, page["items"].clone()), (200, json!([])));
+    let made_up = get("readCitedBy", &format!("{cited}?page=x"), None);
+    assert_eq!(h.send(made_up).await.0, 400);
+
+    // readShelf: 200, 400, and 404 for an unknown shelf.
+    let (status, page) = h.send(get("readShelf", shelf, None)).await;
+    assert_eq!(
+        (status, page["items"][0]["document"].clone()),
+        (200, json!(id))
+    );
+    let made_up = get("readShelf", &format!("{shelf}?page=x"), None);
+    assert_eq!(h.send(made_up).await.0, 400);
+    let nowhere = get("readShelf", "/v1/library/shelves/nowhere", None);
+    assert_eq!(h.send(nowhere).await.0, 404);
+}
+
 /// Masters and apprenticeships, with Finch, a founder with standing, as master and Gull as
 /// apprentice, after the Academy's daily job has run once.
 async fn apprenticeships(
@@ -1783,6 +1999,7 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
 
     academy(&h, auth.clone(), gauth.clone(), fid, gid).await;
     apprenticeships(&h, auth.clone(), gauth.clone(), fid, gid).await;
+    library(&h, auth.clone(), gauth.clone(), fid).await;
 
     // moveOut: 200, 401.
     let out = |auth| Case {

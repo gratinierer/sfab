@@ -49,6 +49,12 @@ pub enum Action {
     /// named in `identities/<id>/academy.json`, each with its enrolments and attempts beside
     /// `course.json`. A key naming someone else stays, with its folder.
     Folders(fn(&[u8]) -> Vec<String>),
+    /// [`Action::Folders`], but leaving a note instead of deleting: each object in each
+    /// folder gets the note the second function makes from its body, the named key last, so a
+    /// rerun still finds the folder. Such as an author's documents, named in
+    /// `identities/<id>/library.json`, each edition showing "removed". `None` from the second
+    /// function means the object is already a note.
+    NoteFolders(fn(&[u8]) -> Vec<String>, fn(&[u8]) -> Option<Vec<u8>>),
 }
 
 /// What [`Action::RemoveId`] writes in place of the ID.

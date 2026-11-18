@@ -210,6 +210,28 @@ async fn the_job_builds_the_academy_s_catalogue_so_its_routes_answer() {
 }
 
 #[tokio::test]
+async fn the_job_builds_the_library_s_shelves_so_its_routes_answer() {
+    let store = Arc::new(MemoryStore::new());
+    let identity = Arc::new(sfab_identity::Identity::new(
+        store.clone(),
+        0,
+        sfab_genesis::testing::genesis(&store),
+    ));
+    let library = sfab_library::Library::new(store.clone(), identity, 0);
+    let shelf = &sfab_library::shelves()[0];
+    let before = library.shelf(shelf, None).await.unwrap_err();
+    assert_eq!(before.kind, "not-built-yet");
+
+    let report = sfab_job::run(&*store, &Offline, &Offline, &GENESIS, AGE_RULE_STARTS, NOW)
+        .await
+        .unwrap();
+
+    assert_eq!(report.library.documents, 0);
+    let page = library.shelf(shelf, None).await.unwrap();
+    assert_eq!(page.body, json!({"items": [], "next": null}));
+}
+
+#[tokio::test]
 async fn the_job_makes_the_days_genesis_codes() {
     let store = Arc::new(MemoryStore::new());
 

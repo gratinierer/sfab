@@ -10,6 +10,7 @@ import re
 import yaml
 
 import sfab_config
+import world_config
 from api_client import Request, Response, agent_id, leading_zero_bits
 
 
@@ -91,7 +92,9 @@ _BODILESS = re.compile(
     r"|/v1/academy/certificates/[^/]+/revocation"
     r"|/v1/academy/masters/self/applications/[^/]+"
     r"|/v1/academy/apprenticeships/[^/]+/(ending|certificate)"
+    r"|/v1/library/documents/[^/]+/editions/[^/]+/withdrawal"
 )
+_LIBRARY = re.compile(r"/v1/library/.*")
 _SEND = re.compile(r"/v1/identity/(?P<id>[a-z2-7]{12})/messages")
 _MESSAGE = re.compile(r"/v1/identity/self/messages/(?P<message_id>k-[a-z2-7]{12}|m-[0-9a-z-]+)")
 
@@ -324,6 +327,10 @@ class FakeApi:
                 allowed = {"note"}
             if path.startswith("/v1/academy/apprenticeships/"):
                 allowed = {"text"}
+            if re.fullmatch(r"/v1/library/documents/[^/]+", path):
+                allowed = {"shelf", "title", "content", "citations"}
+            if re.fullmatch(r"/v1/library/documents/[^/]+/editions/[^/]+", path):
+                allowed = {"title", "content", "citations"}
             if path.endswith("federation/requests"):
                 allowed = {"domain"}
             if path.endswith("publication"):
@@ -357,6 +364,8 @@ class FakeApi:
             return self._aboutme(about["id"])
         if _ACADEMY.fullmatch(path) and r.method == "GET" and "authorization" not in headers:
             return self._academy_public(path)
+        if _LIBRARY.fullmatch(path) and r.method == "GET":
+            return self._library_public(path)
         if path == "/v1/federation/requests":
             domain = json.loads(r.body)["domain"]
             if domain in self.federation:
@@ -461,6 +470,13 @@ class FakeApi:
             return self._square(agent, r, path)
         if _ACADEMY.fullmatch(path):
             return self._academy(agent, r, path)
+        if _LIBRARY.fullmatch(path):
+            # The smoke agent has no standing, so it publishes nothing, and has nothing to
+            # withdraw.
+            if path.endswith("/withdrawal"):
+                return "withdraw edition", problem(404)
+            label = "publish edition" if "/editions/" in path else "publish document"
+            return label, problem(403, "no-standing")
         lists = self.contacts.setdefault(agent, {"friends": [], "blocked": []})
         if contact:
             kind, other = contact["list"], contact["id"]
@@ -591,6 +607,20 @@ class FakeApi:
             "started_at": "2026-11-05T00:00:00Z", "status": a["status"], "pass": 100,
             "tasks": tasks, "submitted_at": None, "score": None, "passed": None, "mark": None,
         }
+
+    def _library_public(self, path: str):
+        """The Library's reads: nobody has published, and the daily job hasn't run."""
+        parts = path.split("/")[3:]
+        if parts == ["shelves"]:
+            items = [{"shelf": s} for s in world_config.shelves()]
+            return "shelves", ok(200, {"items": items[:20], "next": None})
+        if parts[0] == "shelves":
+            if parts[1] not in world_config.shelves():
+                return "shelf", problem(404)
+            return "library not built", problem(404, "not-built-yet")
+        if parts[-1] == "cited-by":
+            return "library not built", problem(404, "not-built-yet")
+        return "document", problem(404)
 
     def _academy_public(self, path: str):
         """The anonymous reads: the daily job's routes aren't built yet."""

@@ -14,6 +14,7 @@ use sfab_core::storage::{
 use sfab_genesis::testing as genesis;
 use sfab_homes::Homes;
 use sfab_identity::{Identity, List};
+use sfab_library::Library;
 use sfab_messaging::Messaging;
 use sfab_square::Square;
 use sfab_takedown::{Mode, execute, plan};
@@ -33,6 +34,7 @@ struct World {
     homes: Homes<MemoryStore>,
     square: Square<MemoryStore>,
     academy: Academy<MemoryStore>,
+    library: Library<MemoryStore>,
 }
 
 fn world() -> World {
@@ -45,6 +47,7 @@ fn world() -> World {
         homes: Homes::new(store.clone(), identity.clone(), BITS).with(map, first),
         square: Square::new(store.clone(), identity.clone(), BITS),
         academy: Academy::new(store.clone(), identity.clone(), BITS),
+        library: Library::new(store.clone(), identity.clone(), BITS),
         identity,
         store,
     }
@@ -387,6 +390,25 @@ async fn academy_data(w: &World, auth: &str, now: i64) -> String {
     course
 }
 
+/// The agent's Library data, which needs standing: a document `document` with a second
+/// edition, in its author's list.
+async fn library_data(w: &World, auth: &str, document: &str, now: i64) {
+    let path = format!("/v1/library/documents/{document}");
+    let body = br#"{"shelf":"craft","title":"Knots","content":"How to tie them."}"#;
+    let proof = solve("PUT", &path, Some(auth), body, now);
+    let published = w
+        .library
+        .publish(&signed("PUT", &path, auth, body, &proof), document, now)
+        .await;
+    assert_eq!(published.expect("a document").status, 201);
+    let path = format!("/v1/library/documents/{document}/editions/2");
+    let body = br#"{"title":"Knots, again","content":"Better."}"#;
+    let proof = solve("PUT", &path, Some(auth), body, now);
+    let call = signed("PUT", &path, auth, body, &proof);
+    let edition = w.library.publish_edition(&call, document, "2", now).await;
+    assert_eq!(edition.expect("an edition").status, 201);
+}
+
 /// One Academy write by the agent `auth` names, with a fresh proof: `apply`, `accept`,
 /// `work`, `comment` or `award`, at the path its route has.
 async fn apprenticeship_write(
@@ -527,6 +549,9 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
     sfab_vouches::daily(&*w.store, &founders, &residents, starts, NOW)
         .await
         .unwrap();
+    // A Library document with two editions, which stays with notes.
+    let document = "knotsknotsaa";
+    library_data(&w, &bearer(&agent.id, &agent.claim), document, NOW).await;
     // An apprenticeship each way, with work and comments; the certificate the agent was
     // awarded; and an application it received and one it sent after both started.
     apprenticeship(&w, &agent, &bystander).await;
@@ -592,6 +617,12 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
     assert_eq!(places, vec![format!("places/{}.json", bystander.address)]);
     let newcomer = full_agent(&w, "Kite", NOW).await;
     assert_eq!(newcomer.address, agent.address);
+    // Its document stays, every edition showing "removed", so citations don't break.
+    for n in ["1", "2"] {
+        let edition = w.library.edition(document, n).await.unwrap().body;
+        assert_eq!(edition["note"], "removed", "{n}");
+        assert_eq!(edition["content"], serde_json::Value::Null, "{n}");
+    }
     // Its course went whole, though no key in it names the agent.
     let folder = format!("academy/courses/{course}/");
     assert_eq!(
