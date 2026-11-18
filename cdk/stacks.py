@@ -88,6 +88,10 @@ API_DELETE_PREFIXES = ("messages/", GENESIS_CODES_PREFIX, "places/", "square/", 
 # expires them; the square crate's KEEP_DAYS hides older ones from the same day (story 4
 # "The Square").
 SQUARE_DAYS = 7
+# The Academy's applications to masters, owned by lambda/world/academy, expire after this; the
+# crate's APPLICATION_DAYS hides older ones from the same day (story 4 "The Academy").
+ACADEMY_APPLICATIONS_PREFIX = "academy/applications/"
+ACADEMY_APPLICATION_DAYS = 30
 # The identities bucket's prefixes the API Lambda reads and writes, the single keys it reads
 # and writes, and the prefixes it only reads. A HEAD needs GetObject.
 API_READ_WRITE_PREFIXES = (
@@ -203,7 +207,8 @@ class BaseStack(cdk.Stack):
 
         # Inboxes can't grow forever: spec.md "Messages". Federation requests expire too:
         # spec.md "Federation", genesis IP records: story 17 "The IP rule", and everything on the
-        # Square, one rule for every quarter: story 4 "The Square". The API
+        # Square, one rule for every quarter: story 4 "The Square", and applications to the
+        # Academy's masters: story 4 "The Academy". The API
         # and the daily world job hide or delete anything older themselves, because S3 removes
         # expired objects some time later (docs/aws-facts.md).
         self.identities_bucket = self._bucket(
@@ -224,6 +229,11 @@ class BaseStack(cdk.Stack):
                 ),
                 s3.LifecycleRule(
                     id="Square", prefix="square/", expiration=cdk.Duration.days(SQUARE_DAYS)
+                ),
+                s3.LifecycleRule(
+                    id="AcademyApplications",
+                    prefix=ACADEMY_APPLICATIONS_PREFIX,
+                    expiration=cdk.Duration.days(ACADEMY_APPLICATION_DAYS),
                 ),
                 s3.LifecycleRule(
                     id="GenesisIps",

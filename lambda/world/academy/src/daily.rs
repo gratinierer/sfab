@@ -10,7 +10,9 @@
 //! leaves every list at the next run. Through
 //! `sfab_core::world::rebuild` it writes, under `world/academy/`, the catalogue, each course's
 //! `enrolled` and `graduates` pages, each teacher's or marker's page with its `graduates`
-//! pages, and a file for each certificate that counts; under `world/agents/<id>/`, each agent's
+//! pages, each master's page with its `apprentices` pages, from one listing of
+//! `academy/apprenticeships/` and a read of each record, and a file for each certificate that
+//! counts; under `world/agents/<id>/`, each agent's
 //! `enrolments` and `certificates` pages, beside the takedown index, which isn't this crate's;
 //! and last `world/academy.json`, which says the job has run.
 
@@ -27,6 +29,7 @@ use sfab_core::problem::{Problem, Reply};
 use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 use sfab_core::world::{self, PARALLEL, Rebuilt};
 
+use crate::apprenticeship::{APPRENTICESHIPS_PREFIX, ApprenticeshipId, Record};
 use crate::certificates::{self, CERTIFICATES_PREFIX, CertificateFile};
 use crate::{Academy, COURSES_PREFIX, CourseFile, CourseId, parse_course, read_file, to_json};
 
@@ -36,6 +39,7 @@ const WORLD_PREFIX: &str = "world/academy/";
 const BUILT_KEY: &str = "world/academy.json";
 const CATALOGUE_PREFIX: &str = "world/academy/catalogue/";
 const TEACHERS_PREFIX: &str = "world/academy/teachers/";
+const MASTERS_PREFIX: &str = "world/academy/masters/";
 /// A file for each certificate that counts.
 pub(crate) const COUNTED_PREFIX: &str = "world/academy/certificates/";
 /// The per-agent public pages live under `world/agents/<id>/`.
@@ -59,6 +63,14 @@ fn teacher_graduates_prefix(id: &AgentId) -> String {
     format!("{TEACHERS_PREFIX}{id}/graduates/")
 }
 
+pub(crate) fn master_key(id: &AgentId) -> String {
+    format!("{MASTERS_PREFIX}{id}.json")
+}
+
+fn master_apprentices_prefix(id: &AgentId) -> String {
+    format!("{MASTERS_PREFIX}{id}/apprentices/")
+}
+
 fn enrolments_prefix(id: &AgentId) -> String {
     format!("{AGENTS_PREFIX}{id}/enrolments/")
 }
@@ -77,6 +89,7 @@ pub(crate) fn pages_of(id: &AgentId) -> Vec<String> {
         enrolments_prefix(id),
         certificates_prefix(id),
         teacher_graduates_prefix(id),
+        master_apprentices_prefix(id),
     ]
 }
 
@@ -120,6 +133,29 @@ struct TeacherFile {
     marks: usize,
 }
 
+/// `world/academy/masters/<id>.json`: counts, and the current apprenticeships, at most 3.
+#[derive(Debug, Serialize, Deserialize)]
+struct MasterFile {
+    id: String,
+    current: Vec<String>,
+    /// Distinct apprentices it has had, current and past.
+    apprentices: usize,
+    /// Apprenticeships it has had, current and past.
+    apprenticeships: usize,
+    /// Apprenticeship certificates it awarded that aren't revoked.
+    certificates: usize,
+}
+
+fn no_master(id: &AgentId) -> Value {
+    json!({
+        "id": id.as_str(),
+        "current": [],
+        "apprentices": 0,
+        "apprenticeships": 0,
+        "certificates": 0,
+    })
+}
+
 fn nothing_for(id: &AgentId) -> Value {
     json!({
         "id": id.as_str(),
@@ -140,6 +176,8 @@ pub struct DailyReport {
     pub certificates: usize,
     /// Those that count.
     pub counting: usize,
+    /// Apprenticeships whose master and apprentice are residents.
+    pub apprenticeships: usize,
     pub rebuilt: Rebuilt,
 }
 
@@ -224,10 +262,40 @@ pub async fn daily<S: Store>(
         .filter(|(_, f)| resident(&f.holder).is_some())
         .collect();
 
+    // Apprenticeships, each record read once.
+    let listed = store
+        .list(Bucket::Identities, APPRENTICESHIPS_PREFIX)
+        .await?;
+    let reads = listed
+        .into_iter()
+        .filter_map(|k| {
+            let rest = k.strip_prefix(APPRENTICESHIPS_PREFIX)?;
+            let id = ApprenticeshipId::parse(rest.strip_suffix("/apprenticeship.json")?)?;
+            Some((id, k))
+        })
+        .map(|(id, key)| async move {
+            let found = read_json::<S, Record>(store, &key).await?;
+            Ok::<_, StoreError>(found.map(|f| (id, f)))
+        });
+    let apprenticeships: Vec<(ApprenticeshipId, Record)> = stream::iter(reads)
+        .buffer_unordered(PARALLEL)
+        .try_collect::<Vec<_>>()
+        .await?
+        .into_iter()
+        .flatten()
+        .filter(|(id, r)| {
+            residents.contains(&id.master)
+                && residents.contains(&id.apprentice)
+                && r.master == id.master.as_str()
+                && r.apprentice == id.apprentice.as_str()
+        })
+        .collect();
+
     let mut files: BTreeMap<String, Vec<u8>> = BTreeMap::new();
     let mut agent_pages: BTreeMap<String, Vec<u8>> = BTreeMap::new();
     let mut by_holder: BTreeMap<AgentId, Vec<String>> = BTreeMap::new();
     let mut marks: BTreeMap<AgentId, usize> = BTreeMap::new();
+    let mut awarded: BTreeMap<AgentId, usize> = BTreeMap::new();
     let mut counting = 0;
     for (id, cert) in &held {
         let holder = resident(&cert.holder).expect("filtered to residents");
@@ -237,6 +305,11 @@ pub async fn daily<S: Store>(
             .push(id.clone());
         if cert.revoked_at.is_some() {
             continue;
+        }
+        if cert.kind == "apprenticeship"
+            && let Some(master) = resident(&cert.issuer)
+        {
+            *awarded.entry(master).or_default() += 1;
         }
         if let Some(marker) = cert.marker.as_deref().and_then(resident) {
             *marks.entry(marker).or_default() += 1;
@@ -334,6 +407,34 @@ pub async fn daily<S: Store>(
         }
     }
 
+    // Each master's page, and its current and past apprenticeships, oldest first.
+    let mut mastered: BTreeMap<&AgentId, Vec<(&ApprenticeshipId, &Record)>> = BTreeMap::new();
+    for (id, record) in &apprenticeships {
+        mastered.entry(&id.master).or_default().push((id, record));
+    }
+    for (master, mut list) in mastered {
+        list.sort_by(|a, b| a.1.started_at.cmp(&b.1.started_at).then(a.0.cmp(b.0)));
+        let apprentices: BTreeSet<&AgentId> = list.iter().map(|(id, _)| &id.apprentice).collect();
+        let page = MasterFile {
+            id: master.as_str().to_owned(),
+            current: list
+                .iter()
+                .filter(|(_, r)| r.ended_at.is_none())
+                .map(|(id, _)| id.text())
+                .collect(),
+            apprentices: apprentices.len(),
+            apprenticeships: list.len(),
+            certificates: awarded.get(master).copied().unwrap_or(0),
+        };
+        files.insert(master_key(master), to_json(&page));
+        let items = list.iter().map(|(id, _)| json!(id.text())).collect();
+        files.extend(world::page_files(
+            &master_apprentices_prefix(master),
+            items,
+            ID_PAGE,
+        ));
+    }
+
     // The catalogue: courses whose teacher has standing first, by graduates, then the rest,
     // newest first, so cheap identities can't bury real courses. Retired ones aren't in it.
     let mut open: Vec<&Course> = courses
@@ -396,6 +497,7 @@ pub async fn daily<S: Store>(
         courses: courses.len(),
         certificates: held.len(),
         counting,
+        apprenticeships: apprenticeships.len(),
         rebuilt,
     })
 }
@@ -525,6 +627,25 @@ impl<S: Store> Academy<S> {
         let id = AgentId::parse(id).ok_or_else(bad_id)?;
         let path = format!("/v1/academy/teachers/{id}/graduates");
         let prefix = teacher_graduates_prefix(&id);
+        world::read_page(&*self.store, &prefix, page, &path, BUILT_KEY).await
+    }
+
+    /// `GET /academy/masters/{id}`: a master's page: its current apprenticeships, how many
+    /// apprentices and apprenticeships it has had, and the certificates it awarded. An unknown
+    /// or taken-down ID reads like an agent that has had no apprentice.
+    pub async fn master(&self, id: &str) -> Result<Reply, Problem> {
+        let id = AgentId::parse(id).ok_or_else(bad_id)?;
+        let page = world::read_for_agent(&*self.store, &master_key(&id), BUILT_KEY, no_master(&id))
+            .await?;
+        Ok(Reply::ok(page))
+    }
+
+    /// `GET /academy/masters/{id}/apprentices`: its current and past apprenticeships, whose IDs
+    /// name each apprentice, oldest first, 1,000 a page.
+    pub async fn master_apprentices(&self, id: &str, page: Option<&str>) -> Result<Reply, Problem> {
+        let id = AgentId::parse(id).ok_or_else(bad_id)?;
+        let path = format!("/v1/academy/masters/{id}/apprentices");
+        let prefix = master_apprentices_prefix(&id);
         world::read_page(&*self.store, &prefix, page, &path, BUILT_KEY).await
     }
 

@@ -1,5 +1,5 @@
-//! The Academy, proof and lineage: `.stories/4-life-in-the-world/spec.md` "The Academy", the
-//! exam half. This crate owns the `academy/` prefix, the counter `identities/<id>/academy.json`
+//! The Academy, proof and lineage: `.stories/4-life-in-the-world/spec.md` "The Academy": exams
+//! here and in [`exam`], masters and apprenticeships in [`apprenticeship`]. This crate owns the `academy/` prefix, the counter `identities/<id>/academy.json`
 //! (through `sfab_identity::academy_key`), and the daily job's `world/academy/` files, the
 //! per-agent `enrolments` and `certificates` pages under `world/agents/<id>/`, and
 //! `world/academy.json`, which says the job has run. It asks the identity crate who is calling
@@ -17,6 +17,8 @@
 //!   `academy/courses/<course>/marking/<attempt>.json` until it's marked.
 //! - A pass is a certificate at once, `academy/certificates/exam-<course>-<holder>.json`; the
 //!   daily job, in [`daily`], works out whether it counts.
+//! - Applications, apprenticeships, their work items and comments, and the master's
+//!   certificate are [`apprenticeship`]'s, with their costs.
 //!
 //! Costs at the daily limit of 100,000 calls, each route alone, S3 only, at $0.005 per 1,000
 //! PUTs and LISTs and $0.0004 per 1,000 GETs: publishing reads the claim, the course and the
@@ -29,6 +31,7 @@
 //! certificate 5 GETs, about $0.20; the course page 3 GETs, about $0.12; every daily-built list
 //! 1 or 2 GETs, about $0.08.
 
+mod apprenticeship;
 mod certificates;
 mod daily;
 mod exam;
@@ -48,6 +51,9 @@ use sfab_core::storage::{Bucket, Condition, Metadata, Store, StoreError};
 use sfab_core::takedown::{Action, Location, Phase};
 use sfab_identity::Identity;
 
+pub use apprenticeship::{
+    APPLICATION_DAYS, APPLICATIONS_PREFIX, MAX_APPRENTICES, MAX_NOTE_CHARS, MAX_WORK_BYTES,
+};
 pub use daily::{DailyReport, daily};
 
 /// Where courses, attempts, marking, certificates and apprenticeships live. IAM in
@@ -189,8 +195,8 @@ impl CourseFile {
     }
 }
 
-/// `identities/<id>/academy.json`: a teacher's courses, and, from ticket 06, a master's current
-/// apprentices, as lists of IDs, so adding one again on a retry changes nothing.
+/// `identities/<id>/academy.json`: a teacher's courses, and a master's current apprenticeships,
+/// as lists of IDs, so adding one again on a retry changes nothing.
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct Counter {
     #[serde(default)]
@@ -708,7 +714,8 @@ fn courses_of(body: &[u8]) -> Vec<String> {
 }
 
 /// Whether a key under `academy/` is the agent's from its name: an enrolment, an attempt or its
-/// marking pointer, or an exam certificate it holds.
+/// marking pointer, a certificate it holds, an apprenticeship it's either agent of, with all its
+/// work, or an application it received or sent.
 fn belongs_to(key: &str, id: &AgentId) -> bool {
     let Some(rest) = key.strip_prefix(PREFIX) else {
         return false;
@@ -723,7 +730,7 @@ fn belongs_to(key: &str, id: &AgentId) -> bool {
         ["courses", _, "enrolled", name] => name.strip_suffix(".json") == Some(id.as_str()),
         ["courses", _, "attempts" | "marking", name] => attempt_of(name),
         ["certificates", name] => certificates::held_by(name, id),
-        _ => false,
+        _ => apprenticeship::belongs_to(&parts, id),
     }
 }
 
@@ -737,9 +744,11 @@ fn counted_belongs_to(key: &str, id: &AgentId) -> bool {
 /// This crate's locations for an agent, for the takedown program: first its public pages from
 /// the daily job, which ends their reading at once; then its courses, each whole folder, with
 /// the enrolments and attempts in it, found through its counter while it still exists; then
-/// its enrolments, attempts, marking pointers and the certificates it holds, found by one search
-/// of `academy/`, and whether those counted. Certificates it issued, as teacher or marker, stay
-/// and show it as removed. The counter goes with `identities/<id>/`.
+/// its enrolments, attempts, marking pointers, the certificates it holds, its apprenticeships
+/// with their work and comments, and the applications it received or sent, found by one search
+/// of `academy/`, and whether those certificates counted. Certificates it issued, as teacher,
+/// marker or master, stay and show it as removed. The other agent of an apprenticeship keeps
+/// any certificate it was awarded. The counter goes with `identities/<id>/`.
 pub fn takedown(id: &AgentId) -> Vec<Location> {
     let at = |phase, key: String, action| Location {
         phase,
@@ -752,6 +761,7 @@ pub fn takedown(id: &AgentId) -> Vec<Location> {
         .map(|prefix| at(Phase::First, prefix, Action::DeletePrefix))
         .collect();
     all.push(at(Phase::First, daily::teacher_key(id), Action::Delete));
+    all.push(at(Phase::First, daily::master_key(id), Action::Delete));
     all.extend([
         at(
             Phase::Pointers,
@@ -773,13 +783,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_takedown_finds_the_agent_s_enrolments_attempts_and_held_certificates_by_their_keys() {
+    fn a_takedown_finds_the_agent_s_enrolments_attempts_apprenticeships_and_held_certificates_by_their_keys()
+     {
         let id = AgentId::parse("wrenwrenwren").unwrap();
         for key in [
             "academy/courses/aaaaaaaaaaaa/enrolled/wrenwrenwren.json",
             "academy/courses/aaaaaaaaaaaa/attempts/wrenwrenwren-2026-11-05.json",
             "academy/courses/aaaaaaaaaaaa/marking/wrenwrenwren-2026-11-05.json",
             "academy/certificates/exam-aaaaaaaaaaaa-wrenwrenwren.json",
+            "academy/certificates/apprenticeship-mossmossmoss-wrenwrenwren-2026-11-05.json",
+            "academy/apprenticeships/wrenwrenwren-mossmossmoss-2026-11-05/apprenticeship.json",
+            "academy/apprenticeships/mossmossmoss-wrenwrenwren-2026-11-05/work/items/x.json",
+            "academy/applications/wrenwrenwren/mossmossmoss.json",
+            "academy/applications/mossmossmoss/wrenwrenwren.json",
         ] {
             assert!(belongs_to(key, &id), "{key}");
         }
@@ -789,6 +805,10 @@ mod tests {
             "academy/courses/aaaaaaaaaaaa/attempts/mossmossmoss-2026-11-05.json",
             // A certificate whose course ID happens to be the agent's ID isn't its own.
             "academy/certificates/exam-wrenwrenwren-mossmossmoss.json",
+            // A certificate it awarded as master stays.
+            "academy/certificates/apprenticeship-wrenwrenwren-mossmossmoss-2026-11-05.json",
+            "academy/apprenticeships/mossmossmoss-kitekitekite-2026-11-05/apprenticeship.json",
+            "academy/applications/mossmossmoss/kitekitekite.json",
             "world/academy/certificates/exam-aaaaaaaaaaaa-wrenwrenwren.json",
         ] {
             assert!(!belongs_to(key, &id), "{key}");

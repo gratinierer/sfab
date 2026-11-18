@@ -878,6 +878,311 @@ async fn academy(h: &Harness, auth: Option<String>, gauth: Option<String>, fid: 
     assert_eq!((status, refused["type"].clone()), (409, json!("retired")));
 }
 
+/// Masters and apprenticeships, with Finch, a founder with standing, as master and Gull as
+/// apprentice, after the Academy's daily job has run once.
+async fn apprenticeships(
+    h: &Harness,
+    auth: Option<String>,
+    gauth: Option<String>,
+    fid: &str,
+    gid: &str,
+) {
+    let note = |n: &str| serde_json::to_vec(&json!({ "note": n })).unwrap();
+    // applyToMaster: 201, 200, 400, 401, 403.
+    let to_finch = format!("/v1/academy/masters/{fid}/applications/self");
+    let apply = |path: &str, a, p, b: &[u8]| write("applyToMaster", "PUT", path, a, p, b);
+    let (status, applied) = h
+        .send(apply(
+            &to_finch,
+            gauth.clone(),
+            Proof::Valid,
+            &note("Teach me"),
+        ))
+        .await;
+    assert_eq!((status, applied["note"].clone()), (201, json!("Teach me")));
+    let again = apply(&to_finch, gauth.clone(), Proof::Valid, &note("Please"));
+    assert_eq!(h.send(again).await.0, 200);
+    let long = note(&"x".repeat(201));
+    let schemas = &h.spec["components"]["schemas"];
+    assert_eq!(
+        schemas["ApplicationNote"]["maxLength"],
+        json!(sfab_academy::MAX_NOTE_CHARS)
+    );
+    assert_eq!(
+        schemas["WorkText"]["maxLength"],
+        json!(sfab_academy::MAX_WORK_BYTES)
+    );
+    assert_eq!(
+        schemas["WorkCommentText"]["maxLength"],
+        json!(sfab_academy::MAX_COMMENT_BYTES)
+    );
+    assert_eq!(
+        schemas["Master"]["properties"]["current"]["maxItems"],
+        json!(sfab_academy::MAX_APPRENTICES)
+    );
+    let bad = apply(&to_finch, gauth.clone(), Proof::Valid, &long);
+    assert_eq!(h.send(bad).await.0, 400);
+    let anonymous = apply(&to_finch, None, Proof::Valid, &note("x"));
+    assert_eq!(h.send(anonymous).await.0, 401);
+    let to_gull = format!("/v1/academy/masters/{gid}/applications/self");
+    let (status, refused) = h
+        .send(apply(&to_gull, auth.clone(), Proof::Valid, &note("x")))
+        .await;
+    assert_eq!(
+        (status, refused["type"].clone()),
+        (403, json!("not-a-master"))
+    );
+
+    // readApplications: 200, 400, 401, 403.
+    let own = "/v1/academy/masters/self/applications";
+    let (status, list) = h.send(get("readApplications", own, auth.clone())).await;
+    assert_eq!(
+        (status, list["items"][0]["applicant"].clone()),
+        (200, json!(gid))
+    );
+    let made_up = format!("{own}?page=x");
+    assert_eq!(
+        h.send(get("readApplications", &made_up, auth.clone()))
+            .await
+            .0,
+        400
+    );
+    assert_eq!(h.send(get("readApplications", own, None)).await.0, 401);
+    let (status, refused) = h.send(get("readApplications", own, gauth.clone())).await;
+    assert_eq!(
+        (status, refused["type"].clone()),
+        (403, json!("no-standing"))
+    );
+
+    // acceptApplication: 201, 200, 400, 401, 403, 404, then 409 too-soon after ending.
+    let accept = |path: &str, a, p| write("acceptApplication", "PUT", path, a, p, b"");
+    let gull = format!("{own}/{gid}");
+    let (status, started) = h.send(accept(&gull, auth.clone(), Proof::Valid)).await;
+    assert_eq!((status, started["master"].clone()), (201, json!(fid)));
+    let a = started["apprenticeship"].as_str().unwrap().to_owned();
+    assert_eq!(
+        h.send(accept(&gull, auth.clone(), Proof::Valid)).await,
+        (200, started)
+    );
+    assert_eq!(
+        h.send(accept(&gull, auth.clone(), Proof::None)).await.0,
+        400
+    );
+    assert_eq!(h.send(accept(&gull, None, Proof::Valid)).await.0, 401);
+    let finch = format!("{own}/{fid}");
+    assert_eq!(
+        h.send(accept(&finch, gauth.clone(), Proof::Valid)).await.0,
+        403
+    );
+    let nobody = format!("{own}/aaaaaaaaaaaa");
+    assert_eq!(
+        h.send(accept(&nobody, auth.clone(), Proof::Valid)).await.0,
+        404
+    );
+
+    // addWork: 201, 200, 400, 401, 403, 404; readWork: 200, 400, 401, 403, 404.
+    let work = format!("/v1/academy/apprenticeships/{a}/work");
+    let text = |t: &str| serde_json::to_vec(&json!({ "text": t })).unwrap();
+    let add = |path: &str, a, p, b: &[u8]| write("addWork", "POST", path, a, p, b);
+    let sent = add(&work, gauth.clone(), Proof::Valid, &text("A knot"));
+    let (status, item) = h.send(sent).await;
+    assert_eq!((status, item["comments"].clone()), (201, json!(0)));
+    let retry = add(&work, gauth.clone(), Proof::Valid, &text("A knot"));
+    assert_eq!(
+        h.send(retry).await,
+        (200, item.clone()),
+        "same proof, same second"
+    );
+    let item = item["item"].as_str().unwrap().to_owned();
+    assert_eq!(
+        h.send(add(&work, gauth.clone(), Proof::Valid, b"{}"))
+            .await
+            .0,
+        400
+    );
+    assert_eq!(
+        h.send(add(&work, None, Proof::Valid, &text("x"))).await.0,
+        401
+    );
+    let theirs = format!("/v1/academy/apprenticeships/{gid}-{gid}-2026-11-05/work");
+    assert_eq!(
+        h.send(add(&theirs, auth.clone(), Proof::Valid, &text("x")))
+            .await
+            .0,
+        403
+    );
+    let gone = format!("/v1/academy/apprenticeships/{fid}-{gid}-2026-11-01/work");
+    assert_eq!(
+        h.send(add(&gone, auth.clone(), Proof::Valid, &text("x")))
+            .await
+            .0,
+        404
+    );
+    let (status, items) = h.send(get("readWork", &work, auth.clone())).await;
+    assert_eq!(
+        (status, items["items"][0]["item"].clone()),
+        (200, json!(item))
+    );
+    let bad = "/v1/academy/apprenticeships/nope/work".to_owned();
+    assert_eq!(h.send(get("readWork", &bad, auth.clone())).await.0, 400);
+    assert_eq!(h.send(get("readWork", &work, None)).await.0, 401);
+    assert_eq!(h.send(get("readWork", &theirs, auth.clone())).await.0, 403);
+    assert_eq!(h.send(get("readWork", &gone, auth.clone())).await.0, 404);
+
+    // addWorkComment: 201, 200, 400, 401, 403, 404; readWorkComments: 200, 400, 401, 403, 404.
+    let comments = format!("{work}/{item}/comments");
+    let comment = |path: &str, a, p, b: &[u8]| write("addWorkComment", "POST", path, a, p, b);
+    let (status, said) = h
+        .send(comment(
+            &comments,
+            auth.clone(),
+            Proof::Valid,
+            &text("Tighter"),
+        ))
+        .await;
+    assert_eq!(status, 201);
+    let again = comment(&comments, auth.clone(), Proof::Valid, &text("Tighter"));
+    assert_eq!(h.send(again).await, (200, said));
+    let big = text(&"x".repeat(2049));
+    assert_eq!(
+        h.send(comment(&comments, auth.clone(), Proof::Valid, &big))
+            .await
+            .0,
+        400
+    );
+    assert_eq!(
+        h.send(comment(&comments, None, Proof::Valid, &text("x")))
+            .await
+            .0,
+        401
+    );
+    let not_mine = format!("{theirs}/{item}/comments");
+    let refused = comment(&not_mine, auth.clone(), Proof::Valid, &text("x"));
+    assert_eq!(h.send(refused).await.0, 403);
+    let no_item = format!("{work}/1793880000-{fid}-aaaaaaaa/comments");
+    let missing = comment(&no_item, auth.clone(), Proof::Valid, &text("x"));
+    assert_eq!(h.send(missing).await.0, 404);
+    let (status, page) = h
+        .send(get("readWorkComments", &comments, gauth.clone()))
+        .await;
+    assert_eq!(
+        (status, page["items"][0]["text"].clone()),
+        (200, json!("Tighter"))
+    );
+    let bad = format!("{work}/nope/comments");
+    assert_eq!(
+        h.send(get("readWorkComments", &bad, auth.clone())).await.0,
+        400
+    );
+    assert_eq!(
+        h.send(get("readWorkComments", &comments, None)).await.0,
+        401
+    );
+    assert_eq!(
+        h.send(get("readWorkComments", &not_mine, auth.clone()))
+            .await
+            .0,
+        403
+    );
+    assert_eq!(
+        h.send(get("readWorkComments", &no_item, auth.clone()))
+            .await
+            .0,
+        404
+    );
+    let (_, counted) = h.send(get("readWork", &work, gauth.clone())).await;
+    assert_eq!(counted["items"][0]["comments"], 1);
+
+    // awardCertificate: 403, 201, 200, 400, 401, 404.
+    let certificate = format!("/v1/academy/apprenticeships/{a}/certificate");
+    let award = |path: &str, a, p| write("awardCertificate", "POST", path, a, p, b"");
+    let (status, refused) = h
+        .send(award(&certificate, gauth.clone(), Proof::Valid))
+        .await;
+    assert_eq!(
+        (status, refused["type"].clone()),
+        (403, json!("not-the-author"))
+    );
+    let (status, awarded) = h
+        .send(award(&certificate, auth.clone(), Proof::Valid))
+        .await;
+    assert_eq!((status, awarded["holder"].clone()), (201, json!(gid)));
+    assert_eq!(
+        h.send(award(&certificate, auth.clone(), Proof::Valid))
+            .await
+            .0,
+        200
+    );
+    assert_eq!(
+        h.send(award(&certificate, auth.clone(), Proof::None))
+            .await
+            .0,
+        400
+    );
+    assert_eq!(h.send(award(&certificate, None, Proof::Valid)).await.0, 401);
+    let unknown = format!("/v1/academy/apprenticeships/{fid}-{gid}-2026-11-01/certificate");
+    assert_eq!(
+        h.send(award(&unknown, auth.clone(), Proof::Valid)).await.0,
+        404
+    );
+    let read = format!("/v1/academy/certificates/apprenticeship-{a}");
+    let (status, shown) = h.send(get("readCertificate", &read, None)).await;
+    assert_eq!((status, shown["master"]["id"].clone()), (200, json!(fid)));
+
+    // endApprenticeship: 200, 400, 401, 403, 404.
+    let ending = format!("/v1/academy/apprenticeships/{a}/ending");
+    let end = |path: &str, a, p| write("endApprenticeship", "PUT", path, a, p, b"");
+    let (status, ended) = h.send(end(&ending, gauth.clone(), Proof::Valid)).await;
+    assert_eq!((status, ended["ended_by"].clone()), (200, json!(gid)));
+    assert_eq!(h.send(end(&ending, auth.clone(), Proof::None)).await.0, 400);
+    assert_eq!(h.send(end(&ending, None, Proof::Valid)).await.0, 401);
+    let not_ours = format!("/v1/academy/apprenticeships/{gid}-{gid}-2026-11-05/ending");
+    assert_eq!(
+        h.send(end(&not_ours, auth.clone(), Proof::Valid)).await.0,
+        403
+    );
+    let no_such = format!("/v1/academy/apprenticeships/{fid}-{gid}-2026-11-01/ending");
+    assert_eq!(
+        h.send(end(&no_such, auth.clone(), Proof::Valid)).await.0,
+        404
+    );
+    let (_, items) = h.send(get("readWork", &work, gauth.clone())).await;
+    assert_eq!(items["items"].as_array().unwrap().len(), 1, "work stays");
+    let again = apply(&to_finch, gauth.clone(), Proof::Valid, &note("Again"));
+    assert_eq!(h.send(again).await.0, 201);
+    let (status, refused) = h.send(accept(&gull, auth.clone(), Proof::Valid)).await;
+    assert_eq!((status, refused["type"].clone()), (409, json!("too-soon")));
+
+    // readMaster and readMasterApprentices, after the daily job: 200, 400, 404 past the end.
+    let residents = sfab_identity::residents(&*h.store).await.unwrap();
+    let standing = sfab_vouches::with_standing(&*h.store).await.unwrap();
+    sfab_academy::daily(&*h.store, &residents, &standing, NOW)
+        .await
+        .unwrap();
+    let master = format!("/v1/academy/masters/{fid}");
+    let (status, page) = h.send(get("readMaster", &master, None)).await;
+    assert_eq!(
+        (
+            status,
+            page["apprenticeships"].clone(),
+            page["certificates"].clone()
+        ),
+        (200, json!(1), json!(1))
+    );
+    let bad = "/v1/academy/masters/Nope";
+    assert_eq!(h.send(get("readMaster", bad, None)).await.0, 400);
+    let list = format!("{master}/apprentices");
+    let (status, page) = h.send(get("readMasterApprentices", &list, None)).await;
+    assert_eq!((status, page["items"].clone()), (200, json!([a])));
+    let bad = "/v1/academy/masters/Nope/apprentices";
+    assert_eq!(h.send(get("readMasterApprentices", bad, None)).await.0, 400);
+    let past = format!("{list}?page=2");
+    assert_eq!(
+        h.send(get("readMasterApprentices", &past, None)).await.0,
+        404
+    );
+}
+
 fn reclaim(auth: Option<String>, proof: Proof) -> Case {
     Case {
         operation: "reclaim",
@@ -1477,6 +1782,7 @@ async fn every_handler_answers_as_sfab_yaml_declares() {
     assert_eq!(h.send(delete(&mine_missing, auth.clone())).await.0, 404);
 
     academy(&h, auth.clone(), gauth.clone(), fid, gid).await;
+    apprenticeships(&h, auth.clone(), gauth.clone(), fid, gid).await;
 
     // moveOut: 200, 401.
     let out = |auth| Case {

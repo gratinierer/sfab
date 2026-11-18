@@ -387,6 +387,60 @@ async fn academy_data(w: &World, auth: &str, now: i64) -> String {
     course
 }
 
+/// One Academy write by the agent `auth` names, with a fresh proof: `apply`, `accept`,
+/// `work`, `comment` or `award`, at the path its route has.
+async fn apprenticeship_write(
+    w: &World,
+    auth: &str,
+    route: &str,
+    path: &str,
+    arg: &str,
+    item: &str,
+    body: &[u8],
+) -> serde_json::Value {
+    let method = if matches!(route, "work" | "comment" | "award") {
+        "POST"
+    } else {
+        "PUT"
+    };
+    let proof = solve(method, path, Some(auth), body, NOW);
+    let call = signed(method, path, auth, body, &proof);
+    let done = match route {
+        "apply" => w.academy.apply(&call, arg, NOW).await,
+        "accept" => w.academy.accept(&call, arg, NOW).await,
+        "work" => w.academy.add_work(&call, arg, NOW).await,
+        "comment" => w.academy.comment(&call, arg, item, NOW).await,
+        _ => w.academy.award(&call, arg, NOW).await,
+    };
+    let done = done.unwrap_or_else(|p| panic!("{route}: {}", p.status));
+    assert!(done.status < 300, "{route}");
+    done.body
+}
+
+/// `apprentice` applies to `master`, which has standing and accepts; both add a work item and
+/// a comment on it. Returns the apprenticeship.
+async fn apprenticeship(w: &World, master: &Agent, apprentice: &Agent) -> String {
+    let (m, a) = (
+        bearer(&master.id, &master.claim),
+        bearer(&apprentice.id, &apprentice.claim),
+    );
+    let path = format!("/v1/academy/masters/{}/applications/self", master.id);
+    let note = br#"{"note":"Teach me"}"#;
+    apprenticeship_write(w, &a, "apply", &path, master.id.as_str(), "", note).await;
+    let path = format!("/v1/academy/masters/self/applications/{}", apprentice.id);
+    let started =
+        apprenticeship_write(w, &m, "accept", &path, apprentice.id.as_str(), "", b"").await;
+    let id = started["apprenticeship"].as_str().unwrap().to_owned();
+    let work = format!("/v1/academy/apprenticeships/{id}/work");
+    let text = br#"{"text":"A knot"}"#;
+    let item = apprenticeship_write(w, &a, "work", &work, &id, "", text).await;
+    let item = item["item"].as_str().unwrap().to_owned();
+    apprenticeship_write(w, &m, "work", &work, &id, "", text).await;
+    let path = format!("{work}/{item}/comments");
+    apprenticeship_write(w, &m, "comment", &path, &id, &item, text).await;
+    id
+}
+
 fn birth_body(name: &str, genesis_code: &str) -> String {
     serde_json::json!({ "name": name, "genesis_code": genesis_code }).to_string()
 }
@@ -473,6 +527,19 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
     sfab_vouches::daily(&*w.store, &founders, &residents, starts, NOW)
         .await
         .unwrap();
+    // An apprenticeship each way, with work and comments; the certificate the agent was
+    // awarded; and an application it received and one it sent after both started.
+    apprenticeship(&w, &agent, &bystander).await;
+    let served = apprenticeship(&w, &bystander, &agent).await;
+    let auth = bearer(&bystander.id, &bystander.claim);
+    let path = format!("/v1/academy/apprenticeships/{served}/certificate");
+    apprenticeship_write(&w, &auth, "award", &path, &served, "", b"").await;
+    let path = format!("/v1/academy/masters/{}/applications/self", agent.id);
+    let note = br#"{"note":"Again"}"#;
+    apprenticeship_write(&w, &auth, "apply", &path, agent.id.as_str(), "", note).await;
+    let auth = bearer(&agent.id, &agent.claim);
+    let path = format!("/v1/academy/masters/{}/applications/self", bystander.id);
+    apprenticeship_write(&w, &auth, "apply", &path, bystander.id.as_str(), "", note).await;
     let standing = sfab_vouches::with_standing(&*w.store).await.unwrap();
     sfab_academy::daily(&*w.store, &residents, &standing, NOW)
         .await
@@ -483,6 +550,12 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
         format!("world/agents/{}/enrolments/1.json", agent.id),
         format!("world/agents/{}/certificates/1.json", agent.id),
         format!("world/academy/teachers/{}.json", agent.id),
+        format!("world/academy/masters/{}.json", agent.id),
+        format!("world/academy/masters/{}/apprentices/1.json", agent.id),
+        format!("academy/certificates/apprenticeship-{served}.json"),
+        format!("world/academy/certificates/apprenticeship-{served}.json"),
+        format!("academy/applications/{}/{}.json", agent.id, bystander.id),
+        format!("academy/applications/{}/{}.json", bystander.id, agent.id),
     ] {
         assert!(w.store.object(Bucket::Identities, &key).is_some(), "{key}");
     }
@@ -492,7 +565,15 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
         .as_str()
         .unwrap()
         .to_owned();
-    let bystander_keys = keys_of(&w.store, &bystander.id);
+    // The bystander's own keys; the apprenticeships' keys name both, and go.
+    let own = |store: &MemoryStore| -> Vec<String> {
+        keys_of(store, &bystander.id)
+            .into_iter()
+            .filter(|k| !k.contains(agent.id.as_str()))
+            .collect()
+    };
+    let bystander_keys = own(&w.store);
+    assert!(keys_of(&w.store, &bystander.id).len() > bystander_keys.len());
 
     let targets = plan(&*w.store, &Mode::One(agent.id.clone())).await.unwrap();
     let waits = AtomicUsize::new(0);
@@ -503,6 +584,9 @@ async fn one_agent_with_every_kind_of_data_leaves_only_a_marker() {
     assert_eq!(waits.load(Ordering::SeqCst), 1);
     assert_taken_down(&w, &agent, "2026-11-05T12:00:00Z").await;
     assert_eq!(keys_of(&w.store, &bystander.id), bystander_keys);
+    assert_eq!(own(&w.store), bystander_keys);
+    let apprenticeships = w.store.list(Bucket::Identities, "academy/apprenticeships/");
+    assert_eq!(apprenticeships.await.unwrap(), Vec::<String>::new());
     // Its `places/...` pointer is gone, and its address free for the next agent.
     let places = w.store.list(Bucket::Identities, "places/").await.unwrap();
     assert_eq!(places, vec![format!("places/{}.json", bystander.address)]);
@@ -582,6 +666,45 @@ async fn a_taken_down_teacher_s_graduates_keep_certificates_that_show_it_removed
             .unwrap()
             .is_empty()
     );
+}
+
+#[tokio::test]
+async fn a_taken_down_master_s_apprentice_keeps_its_certificate_showing_it_removed() {
+    let w = world();
+    let master = full_agent(&w, "Wren", NOW).await;
+    let apprentice = full_agent(&w, "Moss", NOW).await;
+    let residents = sfab_identity::residents(&*w.store).await.unwrap();
+    let founders = [master.id.clone()];
+    sfab_vouches::daily(
+        &*w.store,
+        &founders,
+        &residents,
+        "2099-12-31T00:00:00Z",
+        NOW,
+    )
+    .await
+    .unwrap();
+    let id = apprenticeship(&w, &master, &apprentice).await;
+    let auth = bearer(&master.id, &master.claim);
+    let path = format!("/v1/academy/apprenticeships/{id}/certificate");
+    apprenticeship_write(&w, &auth, "award", &path, &id, "", b"").await;
+
+    let targets = plan(&*w.store, &Mode::One(master.id.clone()))
+        .await
+        .unwrap();
+    execute(&*w.store, &targets, async {}).await.unwrap();
+
+    let shown = w.academy.certificate(&format!("apprenticeship-{id}")).await;
+    let shown = shown.unwrap().body;
+    assert_eq!(
+        shown["master"],
+        serde_json::json!({"id": master.id.as_str(), "removed": true})
+    );
+    assert_eq!(shown["holder"], apprentice.id.as_str());
+    // The shared record and its work went.
+    let folder = format!("academy/apprenticeships/{id}/");
+    let left = w.store.list(Bucket::Identities, &folder).await.unwrap();
+    assert_eq!(left, Vec::<String>::new());
 }
 
 #[tokio::test]

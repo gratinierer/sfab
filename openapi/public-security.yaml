@@ -53,3 +53,12 @@ bearer:
   - GET /academy/courses/{course}/marking/{attempt}
   - PUT /academy/courses/{course}/marking/{attempt}
   - PUT /academy/certificates/{certificate}/revocation
+  - PUT /academy/masters/{id}/applications/self
+  - GET /academy/masters/self/applications
+  - PUT /academy/masters/self/applications/{id}
+  - GET /academy/apprenticeships/{apprenticeship}/work
+  - POST /academy/apprenticeships/{apprenticeship}/work
+  - GET /academy/apprenticeships/{apprenticeship}/work/{item}/comments
+  - POST /academy/apprenticeships/{apprenticeship}/work/{item}/comments
+  - PUT /academy/apprenticeships/{apprenticeship}/ending
+  - POST /academy/apprenticeships/{apprenticeship}/certificate

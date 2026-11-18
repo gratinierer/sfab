@@ -212,6 +212,39 @@ pub fn app<S: Store>(
             "/academy/teachers/{id}/graduates",
             get(read_teacher_graduates::<S>),
         )
+        .route("/academy/masters/{id}", get(read_master::<S>))
+        .route(
+            "/academy/masters/{id}/apprentices",
+            get(read_master_apprentices::<S>),
+        )
+        .route(
+            "/academy/masters/{id}/applications/self",
+            put(apply_to_master::<S>),
+        )
+        .route(
+            "/academy/masters/self/applications",
+            get(read_applications::<S>),
+        )
+        .route(
+            "/academy/masters/self/applications/{id}",
+            put(accept_application::<S>),
+        )
+        .route(
+            "/academy/apprenticeships/{apprenticeship}/work",
+            get(read_work::<S>).post(add_work::<S>),
+        )
+        .route(
+            "/academy/apprenticeships/{apprenticeship}/work/{item}/comments",
+            get(read_comments::<S>).post(add_comment::<S>),
+        )
+        .route(
+            "/academy/apprenticeships/{apprenticeship}/ending",
+            put(end_apprenticeship::<S>),
+        )
+        .route(
+            "/academy/apprenticeships/{apprenticeship}/certificate",
+            post(award_certificate::<S>),
+        )
         .route("/identity/{id}/enrolments", get(read_enrolments::<S>))
         .route("/identity/{id}/certificates", get(read_certificates::<S>))
         .route("/world/constitution", get(constitution))
@@ -952,6 +985,134 @@ async fn read_teacher_graduates<S: Store>(
 ) -> Response {
     let token = page(&uri);
     respond(state.academy.teacher_graduates(&id, token.as_deref()).await)
+}
+
+async fn read_master<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+) -> Response {
+    respond(state.academy.master(&id).await)
+}
+
+async fn read_master_apprentices<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+    uri: OriginalUri,
+) -> Response {
+    let token = page(&uri);
+    respond(
+        state
+            .academy
+            .master_apprentices(&id, token.as_deref())
+            .await,
+    )
+}
+
+async fn apply_to_master<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    respond(state.academy.apply(&signed.call(), &id, now).await)
+}
+
+async fn read_applications<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    headers: HeaderMap,
+    uri: OriginalUri,
+) -> Response {
+    let authorization = header(&headers, "authorization");
+    let token = page(&uri);
+    let now = (state.now)();
+    let read = state
+        .academy
+        .applications(authorization, token.as_deref(), now);
+    respond(read.await)
+}
+
+async fn accept_application<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(id): Path<String>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    respond(state.academy.accept(&signed.call(), &id, now).await)
+}
+
+async fn read_work<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(apprenticeship): Path<String>,
+    headers: HeaderMap,
+    uri: OriginalUri,
+) -> Response {
+    let authorization = header(&headers, "authorization");
+    let token = page(&uri);
+    let now = (state.now)();
+    let read = state
+        .academy
+        .work(authorization, &apprenticeship, token.as_deref(), now);
+    respond(read.await)
+}
+
+async fn add_work<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(apprenticeship): Path<String>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    let call = signed.call();
+    respond(state.academy.add_work(&call, &apprenticeship, now).await)
+}
+
+async fn read_comments<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path((apprenticeship, item)): Path<(String, String)>,
+    headers: HeaderMap,
+    uri: OriginalUri,
+) -> Response {
+    let authorization = header(&headers, "authorization");
+    let token = page(&uri);
+    let now = (state.now)();
+    let read = state
+        .academy
+        .comments(authorization, &apprenticeship, &item, token.as_deref(), now);
+    respond(read.await)
+}
+
+async fn add_comment<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path((apprenticeship, item)): Path<(String, String)>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    let call = signed.call();
+    respond(
+        state
+            .academy
+            .comment(&call, &apprenticeship, &item, now)
+            .await,
+    )
+}
+
+async fn end_apprenticeship<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(apprenticeship): Path<String>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    let call = signed.call();
+    respond(state.academy.end(&call, &apprenticeship, now).await)
+}
+
+async fn award_certificate<S: Store>(
+    State(state): State<Arc<AppState<S>>>,
+    Path(apprenticeship): Path<String>,
+    signed: Signed,
+) -> Response {
+    let now = (state.now)();
+    let call = signed.call();
+    respond(state.academy.award(&call, &apprenticeship, now).await)
 }
 
 async fn read_enrolments<S: Store>(

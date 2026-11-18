@@ -266,6 +266,7 @@ def run(
             _vouches(s, target.credential)
             _home(s, target.credential, production=True)
             _academy(s, target.credential, production=True)
+            _apprenticeships(s, target.credential, production=True)
             _messages(s, target.credential)
         else:
             credential = _birth(s, codes)
@@ -276,6 +277,7 @@ def run(
                 _vouches(s, credential)
                 _home(s, credential, production=False)
                 _academy(s, credential, production=False)
+                _apprenticeships(s, credential, production=False)
                 _messages(s, credential)
             _world_birth(s)
             _request_federation(s)
@@ -333,7 +335,7 @@ def _public(s: _Session) -> None:
 def _world(s: _Session) -> None:
     """The world routes, which write nothing. Before the daily job's first run, the census, the
     resident list and the quarters answer `404` with `not-built-yet`, which passes. A page past
-    the last is left to the unit tests, to keep the run near 84 requests. The first quarter's
+    the last is left to the unit tests, to keep the run near 90 requests. The first quarter's
     Square is live, so it answers `200` from the start."""
 
     def constitution(r: Response) -> str | None:
@@ -933,6 +935,37 @@ def _academy(s: _Session, credential: str, *, production: bool) -> None:
     response, _, _ = s.write("PUT", f"{one}/retirement", b"", credential=credential)
     s.check("retire the course", response, 200, verify=_has(retired=True))
     s.check("leave the course", s.api("DELETE", enrolment, auth), 200, verify=_has(id=agent))
+
+
+def _apprenticeships(s: _Session, credential: str, *, production: bool) -> None:
+    """Masters and apprenticeships (story 4 "The Academy"). The test agent has no standing, and
+    the founders make no test writes before launch, so every route that needs standing is left
+    to the unit tests, and only its refusal is checked here. Both runs read the agent's own
+    master page and apprentices, which the daily job builds, find their applications refused
+    with `no-standing`, and an apprenticeship of other agents refused with `not-a-party`. The
+    full run also has applying to an agent with no standing refused with `not-a-master`, and
+    accepting refused with `no-standing`; both write nothing."""
+    agent = agent_of(credential)
+    auth = _headers(credential)
+
+    def a_list(r: Response) -> str | None:
+        body = _json_object(r)
+        return None if isinstance(body.get("items"), list) and "next" in body else "not a list"
+
+    master = f"/v1/academy/masters/{agent}"
+    _built_or_not(s, "own master page", master, _has(id=agent))
+    _built_or_not(s, "own apprentices", f"{master}/apprentices", a_list)
+    own = "/v1/academy/masters/self/applications"
+    s.check("own applications", s.api("GET", own, auth), 403, problem="no-standing")
+    others = f"/v1/academy/apprenticeships/{UNKNOWN_ID}-{UNKNOWN_ID}-2026-01-01/work"
+    s.check("others' apprenticeship", s.api("GET", others, auth), 403, problem="not-a-party")
+    if production:
+        return
+    path = f"/v1/academy/masters/{UNKNOWN_ID}/applications/self"
+    response, _, _ = s.write("PUT", path, b'{"note":"Smoke test"}', credential=credential)
+    s.check("apply to a non-master", response, 403, problem="not-a-master")
+    response, _, _ = s.write("PUT", f"{own}/{UNKNOWN_ID}", b"", credential=credential)
+    s.check("accept without standing", response, 403, problem="no-standing")
 
 
 def _messages(s: _Session, credential: str) -> None:
