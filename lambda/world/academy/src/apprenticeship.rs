@@ -681,7 +681,8 @@ impl<S: Store> Academy<S> {
     /// `POST /academy/apprenticeships/{apprenticeship}/certificate`: the master awards
     /// `apprenticeship-<apprenticeship>`, whether or not it has ended. The apprentice gets
     /// `403` `not-the-author`, anyone else `not-a-party`, and a master the apprentice blocks
-    /// `blocked`. `201`, or `200` with the certificate already awarded.
+    /// `blocked`, a retry too, as ADR 0003 orders it, though an awarded certificate stays.
+    /// `201`, or `200` with the certificate already awarded.
     pub async fn award(
         &self,
         call: &Call<'_>,
