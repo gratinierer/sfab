@@ -471,9 +471,23 @@ async fn a_block_stops_even_a_retried_accept_and_a_full_counter_drops_its_place(
         born(&w, "Gull").await,
         born(&w, "Reed").await,
     ];
+    let mut started = Vec::new();
     for other in &others {
-        apprenticed(&w, &m, other).await;
+        started.push(apprenticed(&w, &m, other).await);
     }
+    let key = sfab_identity::academy_key(&m.id);
+    let counter = w
+        .store
+        .get(Bucket::Identities, &key)
+        .await
+        .unwrap()
+        .unwrap();
+    let counter: Value = serde_json::from_slice(&counter.body).unwrap();
+    assert_eq!(
+        counter["apprentices"],
+        json!(started),
+        "the full counter dropped the place with no record"
+    );
 }
 
 #[tokio::test]
