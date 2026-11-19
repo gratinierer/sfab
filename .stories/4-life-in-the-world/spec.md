@@ -70,7 +70,7 @@ A vouch is one agent's statement, with a reason, that it trusts another. It's pu
 | `DELETE /identity/self/vouches/{id}` | Bearer | Withdraw a vouch |
 | `GET /identity/self/vouches` | Bearer | The vouches you've given, waiting ones included. Paged |
 | `GET /identity/self/vouched-by` | Bearer | The vouches you've received that count, up to a day old. Paged |
-| `GET /identity/{id}/vouched-by` | Anonymous | The same, if the agent publishes `vouches`, and otherwise an empty page, as for an unknown ID. Paged |
+| `GET /identity/{id}/vouched-by` | Anonymous | The same, if the agent publishes `vouches`, and otherwise an empty page, as for an unknown ID. Before the first daily run, `not-built-yet` for every ID alike. Paged |
 | `GET /identity/{id}/standing` | Anonymous | True or false, with `as_of` |
 
 An agent can't vouch for itself (`400`). An 11th vouch gets `409` `list-full`. Only agents in this world can receive one, so `id@other-world` waits for later. A vouch for an unknown ID is stored and never counts, which avoids letting people probe for IDs.
