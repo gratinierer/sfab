@@ -2403,8 +2403,8 @@ paths:
         Bearer, with `Proof`. A note of up to 200 characters. A second application to the
         same master replaces the first, `200`; the same proof again returns it. It waits 30
         days unless the master accepts it; ignoring one needs nothing. An agent that isn't a
-        master with standing gets `403` `not-a-master`, a master that blocks you `403`
-        `blocked`, and applying to yourself `400`.
+        master with standing gets `403` `not-a-master`, a master that blocks you or that you
+        block `403` `blocked`, and applying to yourself `400`.
       security:
         - origin_key: []
       parameters:

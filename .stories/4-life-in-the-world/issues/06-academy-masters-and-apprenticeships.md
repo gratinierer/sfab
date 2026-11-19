@@ -43,8 +43,8 @@ Blocked by: 05
 
 - **Cost figures,** at 100,000 calls a day, S3 only (add about $0.35 for API Gateway to compare with the
   spec's). Standing is the vouches step's run marker and a HEAD, 2 GETs. Applying reads the claim, standing,
-  the master's `contacts.json` (and `identity.json` without one) and the earlier application, and writes one:
-  up to 6 GETs and a PUT, about $0.74. The applications list the claim, standing, a LIST and up to 20 GETs,
+  the master's `contacts.json` and its own (each with `identity.json` without one) and the earlier
+  application, and writes one: up to 8 GETs and a PUT, about $0.82. The applications list the claim, standing, a LIST and up to 20 GETs,
   about $1.42. Accepting reads the claim, standing, the counter, the record by its key (a same-day restart),
   the applicant's `contacts.json` (and `identity.json` without one) for a block, the application and the
   applicant's claim (taken down?), then writes the counter and the record and deletes the application: 8 or 9

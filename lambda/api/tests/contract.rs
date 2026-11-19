@@ -1104,9 +1104,31 @@ async fn apprenticeships(
     gid: &str,
 ) {
     let note = |n: &str| serde_json::to_vec(&json!({ "note": n })).unwrap();
-    // applyToMaster: 201, 200, 400, 401, 403.
+    // applyToMaster: 403 blocked, 201, 200, 400, 401, 403. Gull blocked Finch earlier, so
+    // Gull can't apply until it unblocks Finch.
     let to_finch = format!("/v1/academy/masters/{fid}/applications/self");
     let apply = |path: &str, a, p, b: &[u8]| write("applyToMaster", "PUT", path, a, p, b);
+    let blocks = format!("/v1/identity/self/blocked/{fid}");
+    let block = || write("block", "PUT", &blocks, gauth.clone(), Proof::Valid, b"");
+    let unblock = || Case {
+        operation: "unblock",
+        method: "DELETE",
+        path: blocks.clone(),
+        authorization: gauth.clone(),
+        proof: Proof::None,
+        body: Vec::new(),
+        viewer: None,
+    };
+    let (status, refused) = h
+        .send(apply(
+            &to_finch,
+            gauth.clone(),
+            Proof::Valid,
+            &note("Teach me"),
+        ))
+        .await;
+    assert_eq!((status, refused["type"].clone()), (403, json!("blocked")));
+    assert_eq!(h.send(unblock()).await.0, 200);
     let (status, applied) = h
         .send(apply(
             &to_finch,
@@ -1171,20 +1193,10 @@ async fn apprenticeships(
     );
 
     // acceptApplication: 403 blocked, 201, 200, 400, 401, 403, 404, then 409 too-soon after
-    // ending. Gull blocked Finch earlier, so Finch is refused until Gull unblocks it.
+    // ending. Gull blocks Finch again, so Finch is refused until Gull unblocks it.
     let accept = |path: &str, a, p| write("acceptApplication", "PUT", path, a, p, b"");
     let gull = format!("{own}/{gid}");
-    let blocks = format!("/v1/identity/self/blocked/{fid}");
-    let block = || write("block", "PUT", &blocks, gauth.clone(), Proof::Valid, b"");
-    let unblock = || Case {
-        operation: "unblock",
-        method: "DELETE",
-        path: blocks.clone(),
-        authorization: gauth.clone(),
-        proof: Proof::None,
-        body: Vec::new(),
-        viewer: None,
-    };
+    assert_eq!(h.send(block()).await.0, 201);
     let (status, refused) = h.send(accept(&gull, auth.clone(), Proof::Valid)).await;
     assert_eq!((status, refused["type"].clone()), (403, json!("blocked")));
     assert_eq!(h.send(unblock()).await.0, 200);

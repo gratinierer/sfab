@@ -475,3 +475,18 @@ async fn a_block_stops_even_a_retried_accept_and_a_full_counter_drops_its_place(
         apprenticed(&w, &m, other).await;
     }
 }
+
+#[tokio::test]
+async fn an_applicant_that_blocks_the_master_cant_apply() {
+    let w = world();
+    let m = born(&w, "Wren").await;
+    let s = born(&w, "Moss").await;
+    give_standing(&w, &[&m]).await;
+    block(&w, &s, &m).await;
+    assert_eq!(
+        apply(&w, &s, m.id(), "Teach me", NOW).await,
+        Err((403, "blocked"))
+    );
+    let (_, list) = applications(&w, &m, NOW).await.unwrap();
+    assert_eq!(list["items"].as_array().unwrap().len(), 0, "nothing stored");
+}

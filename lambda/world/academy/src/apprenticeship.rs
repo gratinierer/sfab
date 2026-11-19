@@ -354,8 +354,8 @@ impl<S: Store> Academy<S> {
 
     /// `PUT /academy/masters/{id}/applications/self`, in ADR 0003's order: the proof, the
     /// caller, the ID and the note of up to [`MAX_NOTE_CHARS`] characters, then whether the
-    /// agent is a master with standing (`403` `not-a-master`), and a block by it (`403`
-    /// `blocked`), then a retry with the same proof, which returns the application with `200`.
+    /// agent is a master with standing (`403` `not-a-master`), and a block either way (`403`
+    /// `blocked`), since a master can't accept an applicant that blocks it, then a retry with the same proof, which returns the application with `200`.
     /// A second application replaces the first, `200`; a first is `201`.
     pub async fn apply(&self, call: &Call<'_>, master: &str, now: i64) -> Result<Reply, Problem> {
         let admitted = admit_write(call, now, self.required_bits)?;
@@ -380,6 +380,12 @@ impl<S: Store> Academy<S> {
             return Err(Problem::forbidden(
                 "blocked",
                 "The master blocks you, so no application was stored",
+            ));
+        }
+        if self.identity.relation(&applicant, &master).await? == Some(Relation::Blocked) {
+            return Err(Problem::forbidden(
+                "blocked",
+                "You block this master; unblock it to apply",
             ));
         }
         let key = application_key(&master, &applicant);
