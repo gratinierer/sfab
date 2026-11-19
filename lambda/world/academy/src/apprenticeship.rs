@@ -19,9 +19,9 @@
 //!
 //! Costs at the daily limit of 100,000 calls, each route alone, S3 only: applying up to 6 GETs
 //! and a PUT, about $0.74 a day; the applications list up to 23 GETs and a LIST, about $1.42;
-//! accepting 7 GETs and 2 PUTs, about $1.28, or 3 GETs more with a full counter; adding work 2
-//! GETs and a PUT, about $0.58; the work or comments list up to 23 GETs and a LIST, about
-//! $1.42; a comment 3 GETs and 2 PUTs, about $1.12, or a GET and a PUT more for each lost
+//! accepting 7 GETs and 2 PUTs, about $1.28, or 3 GETs more with a full counter; adding work up
+//! to 4 GETs and a PUT, about $0.66; the work or comments list up to 23 GETs and a LIST, about
+//! $1.42; a comment up to 5 GETs and 2 PUTs, about $1.20, or a GET and a PUT more for each lost
 //! `If-Match` on the count; ending 3 GETs and 2 PUTs, about $1.12; awarding 2 GETs and a PUT,
 //! about $0.58.
 
@@ -112,6 +112,15 @@ impl ApprenticeshipId {
 
     fn is_party(&self, id: &AgentId) -> bool {
         &self.master == id || &self.apprentice == id
+    }
+
+    /// The party that isn't `id`, one of the two.
+    fn other_party(&self, id: &AgentId) -> &AgentId {
+        if &self.master == id {
+            &self.apprentice
+        } else {
+            &self.master
+        }
     }
 
     pub(crate) fn certificate(&self) -> String {
@@ -323,6 +332,24 @@ impl<S: Store> Academy<S> {
         self.read_record(id)
             .await?
             .ok_or_else(no_such_apprenticeship)
+    }
+
+    /// [`Self::party_record`] for a write: also `403` `blocked` when the other party blocks
+    /// `caller`, so a block stops its work and comments (SECURITY_RULES rule 8).
+    async fn party_record_to_write(
+        &self,
+        caller: &AgentId,
+        id: &ApprenticeshipId,
+    ) -> Result<(Record, String), Problem> {
+        let found = self.party_record(caller, id).await?;
+        let other = id.other_party(caller);
+        if self.identity.relation(other, caller).await? == Some(Relation::Blocked) {
+            return Err(Problem::forbidden(
+                "blocked",
+                "The other party blocks you, so nothing was stored",
+            ));
+        }
+        Ok(found)
     }
 
     /// `PUT /academy/masters/{id}/applications/self`, in ADR 0003's order: the proof, the
@@ -700,7 +727,7 @@ impl<S: Store> Academy<S> {
         let author = self.identity.caller(call.authorization, now).await?;
         let id = parse_apprenticeship(apprenticeship)?;
         let text = text_of(call.body, MAX_WORK_BYTES, "8 KB")?;
-        self.party_record(&author, &id).await?;
+        self.party_record_to_write(&author, &id).await?;
         let item = PostId::new(admitted.timestamp, &author, &admitted.hash);
         let post = Post {
             author: author.as_str().to_owned(),
@@ -831,7 +858,7 @@ impl<S: Store> Academy<S> {
         let id = parse_apprenticeship(apprenticeship)?;
         let item = PostId::parse(item).ok_or_else(bad_item)?;
         let text = text_of(call.body, MAX_COMMENT_BYTES, "2 KB")?;
-        self.party_record(&author, &id).await?;
+        self.party_record_to_write(&author, &id).await?;
         let (found, etag) = self.read_item(&id, &item).await?;
         let comment = PostId::new(admitted.timestamp, &author, &admitted.hash);
         let post = Post {

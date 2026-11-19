@@ -2578,7 +2578,7 @@ paths:
       description: |
         Bearer, the master or apprentice, with `Proof`. Up to 8 KB, private to the two. Its
         ID comes from the proof, so the same proof again returns it with `200`. Anyone else
-        gets `403` `not-a-party`.
+        gets `403` `not-a-party`, and a party the other one blocks gets `403` `blocked`.
       security:
         - origin_key: []
       parameters:
@@ -2668,7 +2668,7 @@ paths:
       description: |
         Bearer, the master or apprentice, with `Proof`. Up to 2 KB. Its ID comes from the
         proof, so the same proof again returns it with `200`. Anyone else gets `403`
-        `not-a-party`.
+        `not-a-party`, and a party the other one blocks gets `403` `blocked`.
       security:
         - origin_key: []
       parameters:

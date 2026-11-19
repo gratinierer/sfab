@@ -405,3 +405,31 @@ async fn a_master_s_pages_answer_not_built_yet_before_the_first_run() {
         Err((400, "about:blank"))
     );
 }
+
+#[tokio::test]
+async fn a_block_stops_the_blocked_party_adding_work_or_comments() {
+    let w = world();
+    let m = born(&w, "Wren").await;
+    let s = born(&w, "Moss").await;
+    give_standing(&w, &[&m]).await;
+    let a = apprenticed(&w, &m, &s).await;
+    let (_, item) = add_work(&w, &work_call(&s, &a, "My first knot"), &a)
+        .await
+        .unwrap();
+    let id = item["item"].as_str().unwrap().to_owned();
+
+    block(&w, &m, &s).await;
+    assert_eq!(
+        add_work(&w, &work_call(&s, &a, "Another knot"), &a).await,
+        Err((403, "blocked"))
+    );
+    assert_eq!(
+        comment(&w, &s, &a, &id, "Like this?").await,
+        Err((403, "blocked"))
+    );
+    let (_, list) = work(&w, &m, &a).await.unwrap();
+    assert_eq!(list["items"].as_array().unwrap().len(), 1, "nothing stored");
+    assert_eq!(list["items"][0]["comments"], 0);
+    let (status, _) = comment(&w, &m, &a, &id, "Tighter").await.unwrap();
+    assert_eq!(status, 201, "the blocker still writes");
+}
