@@ -206,3 +206,22 @@ async fn a_post_reads_the_home_lists_the_day_and_writes_once() {
     assert_eq!(calls.lists - before.lists, 1);
     assert_eq!(calls.puts - before.puts, 1);
 }
+
+#[tokio::test]
+async fn deleting_a_notice_with_many_answers_removes_them_all() {
+    let w = world();
+    let a = resident(&w, "Wren", "harbour").await;
+    let id = posted(&w, &a, "harbour", "Roll call", NOW).await;
+    // More than one round of parallel deletes.
+    for n in 0..60 {
+        let b = resident(&w, &format!("Agent {n}"), "harbour").await;
+        answer_notice(&w, &b, "harbour", &id, "here", NOW)
+            .await
+            .unwrap();
+    }
+
+    assert_eq!(delete(&w, &a, "harbour", &id, NOW).await.unwrap().0, 200);
+    let answers = format!("square/harbour/{TODAY}/answers/");
+    let left = w.store.keys(Bucket::Identities);
+    assert!(!left.iter().any(|k| k.starts_with(&answers)), "{left:?}");
+}

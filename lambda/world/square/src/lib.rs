@@ -6,7 +6,8 @@
 //!   takes the first free number with `If-None-Match: *`, so the limit needs no counter. The
 //!   file holds the proof's hash, so a retry returns the notice, and the answer count as a hint.
 //! - An author's delete leaves a zero-byte marker, which keeps the number taken that day, and
-//!   deletes the answers.
+//!   deletes the answers, `DELETES_AT_ONCE` at a time, so a notice with one answer from every
+//!   resident of its quarter still goes within the API's timeout.
 //! - An answer is at `square/<quarter>/<day>/answers/<author>-<n>/<answerer>.json`. A first one
 //!   adds 1 to the notice's count with `If-Match`; a replaced one doesn't.
 //! - Everything under `square/` expires through a 7-day lifecycle rule, and routes show only
@@ -21,7 +22,8 @@
 //! number a racing post took; an answer reads the claim, `home.json`, the notice,
 //! `contacts.json` (and `identity.json` without one) and the answer, and makes 2 PUTs, up to 6
 //! GETs, about $1.24, or 3 PUTs when the count's `If-Match` loses a race once; a delete reads
-//! the claim and the notice, writes the marker and lists the answers, about $1.08; the Square
+//! the claim and the notice, writes the marker and lists the answers, about $1.08, and deletes
+//! them, free; the Square
 //! one LIST and up to 20 GETs, plus the index, about $1.34, or the index and 20 GETs past
 //! today, about $0.84; a notice up to 21 GETs and a LIST, about $1.34.
 
@@ -30,6 +32,7 @@ mod daily;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
+use futures_util::{StreamExt, TryStreamExt, stream};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -62,6 +65,9 @@ pub const NOTICES_PER_DAY: u8 = 3;
 pub const KEEP_DAYS: i64 = 7;
 /// Tries at adding 1 to a notice's answer count, on a lost `If-Match`.
 const COUNT_TRIES: usize = 3;
+
+/// How many of a deleted notice's answers go at once: a thousand take about 20 rounds.
+const DELETES_AT_ONCE: usize = 50;
 
 /// A notice's name: its day, its author and its number that day, written
 /// `2026-11-05-<author>-1`.
@@ -396,12 +402,13 @@ impl<S: Store> Square<S> {
             .list(Bucket::Identities, &id.answers_prefix(quarter))
             .await
             .map_err(|e| Problem::storage("listing a notice's answers", &e))?;
-        for answer in answers {
-            self.store
-                .delete(Bucket::Identities, &answer)
-                .await
-                .map_err(|e| Problem::storage("deleting an answer", &e))?;
-        }
+        let store = &*self.store;
+        stream::iter(answers)
+            .map(|answer| async move { store.delete(Bucket::Identities, &answer).await })
+            .buffer_unordered(DELETES_AT_ONCE)
+            .try_collect::<Vec<()>>()
+            .await
+            .map_err(|e| Problem::storage("deleting an answer", &e))?;
         Ok(gone())
     }
 
