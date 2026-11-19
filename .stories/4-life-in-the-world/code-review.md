@@ -30,6 +30,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-19T10:55:00+00:00 | code-review | 01, 02, 03, 04, 05, 06, 07, 08, 09 @ 4455f8a..dc9baca | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 0 new: 0 standards, 0 spec, 0 security | reviewers on another model of the author's family (Sonnet for Opus); `/review-code b8ce046 auto 4` round 2 |
 | 2026-11-19T12:00:00+00:00 | walkthrough | 06 @ d8d5062..HEAD | claude-opus-5-5 (address-code-review-findings) | 0 new, 1 resolved, 0 still open | walkthrough, not a review pass |
 | 2026-11-19T12:20:00+00:00 | code-review | 06 @ d8d5062..71fba41 | claude-opus-5-5 (built-in `/code-review`, a fork of the code's author) | 4 new: 0 standards, 4 spec, 0 security | not `/review-code`, and by the author's own model, so it doesn't count for the closing gate; a fresh `/review-code` on Sonnet still must cover these commits |
+| 2026-11-19T13:00:00+00:00 | walkthrough | 06 @ 616ed71..HEAD | claude-opus-5-5 (address-code-review-findings) | 0 new, 4 resolved, 0 still open | walkthrough, not a review pass |
 
 ## Findings
 
