@@ -20,6 +20,8 @@ Blocked by: 05
 
 - Unit tests cover a 4th apprentice, applying to an agent that isn't a master, a retried accept, and work items
   staying private to the two after `ending`.
+- Unit tests cover a block either way refusing an application, a block by the applicant refusing an accept, a
+  retried one included, and a block by the apprentice refusing the certificate, while `ending` stays open.
 - A CDK assertion test covers the applications lifecycle rule.
 - Routes that need standing are tested only by unit tests, because the founders make no test writes before
   launch.
