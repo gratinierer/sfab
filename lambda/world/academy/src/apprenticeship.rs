@@ -348,9 +348,10 @@ impl<S: Store> Academy<S> {
         Ok(())
     }
 
-    /// [`Self::party_record`] for a write: also `403` `blocked` when the other party blocks
-    /// `caller`, so a block stops its work and comments (SECURITY_RULES rule 8).
-    async fn party_record_to_write(
+    /// [`Self::party_record`], refused with `403` `blocked` when the other party blocks
+    /// `caller`, for the writes a block stops: work, comments and the certificate
+    /// (SECURITY_RULES rule 8).
+    async fn unblocked_party_record(
         &self,
         caller: &AgentId,
         id: &ApprenticeshipId,
@@ -719,7 +720,7 @@ impl<S: Store> Academy<S> {
                 "Only the master awards the certificate",
             ));
         }
-        let (record, _) = self.party_record_to_write(&caller, &id).await?;
+        let (record, _) = self.unblocked_party_record(&caller, &id).await?;
         let certificate = id.certificate();
         let key = certificates::key_of(&certificate);
         let file =
@@ -756,7 +757,7 @@ impl<S: Store> Academy<S> {
         let author = self.identity.caller(call.authorization, now).await?;
         let id = parse_apprenticeship(apprenticeship)?;
         let text = text_of(call.body, MAX_WORK_BYTES, "8 KB")?;
-        self.party_record_to_write(&author, &id).await?;
+        self.unblocked_party_record(&author, &id).await?;
         let item = PostId::new(admitted.timestamp, &author, &admitted.hash);
         let post = Post {
             author: author.as_str().to_owned(),
@@ -887,7 +888,7 @@ impl<S: Store> Academy<S> {
         let id = parse_apprenticeship(apprenticeship)?;
         let item = PostId::parse(item).ok_or_else(bad_item)?;
         let text = text_of(call.body, MAX_COMMENT_BYTES, "2 KB")?;
-        self.party_record_to_write(&author, &id).await?;
+        self.unblocked_party_record(&author, &id).await?;
         let (found, etag) = self.read_item(&id, &item).await?;
         let comment = PostId::new(admitted.timestamp, &author, &admitted.hash);
         let post = Post {
