@@ -121,27 +121,25 @@ fn is_permanent(key: &str) -> bool {
 
 /// Writes `body` unless the object already holds it, and says whether it wrote. `known` says a
 /// listing saw the key, so a new file costs no read. For the daily job's own keys, which it alone
-/// writes.
+/// writes. A write after a read is conditional on what the read found, so a takedown that
+/// deletes the key in between isn't undone: the write fails, and the next run tries again.
 pub async fn write_if_changed<S: Store>(
     store: &S,
     key: &str,
     body: Vec<u8>,
     known: bool,
 ) -> Result<bool, StoreError> {
-    if known
-        && let Some(current) = store.get(Bucket::Identities, key).await?
-        && current.body == body
-    {
-        return Ok(false);
-    }
+    let condition = if known {
+        match store.get(Bucket::Identities, key).await? {
+            Some(current) if current.body == body => return Ok(false),
+            Some(current) => Condition::IfMatch(current.etag),
+            None => Condition::IfAbsent,
+        }
+    } else {
+        Condition::Always
+    };
     store
-        .put(
-            Bucket::Identities,
-            key,
-            body,
-            Metadata::new(),
-            Condition::Always,
-        )
+        .put(Bucket::Identities, key, body, Metadata::new(), condition)
         .await?;
     Ok(true)
 }

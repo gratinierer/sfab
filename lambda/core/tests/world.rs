@@ -6,7 +6,9 @@ use std::collections::BTreeMap;
 
 use serde_json::json;
 
-use sfab_core::storage::{Bucket, Condition, MemoryStore, Metadata, Store};
+use sfab_core::storage::{
+    Bucket, Condition, Listed, MemoryStore, Metadata, Object, Store, StoreError,
+};
 use sfab_core::world::{self, Rebuilt};
 
 const B: Bucket = Bucket::Identities;
@@ -315,4 +317,56 @@ fn an_empty_list_still_has_its_first_page() {
     let first: serde_json::Value = serde_json::from_slice(&pages["world/x/list/1.json"]).unwrap();
     assert_eq!(first, json!({"items": [], "next": null}));
     assert_eq!(pages.len(), 1);
+}
+
+/// A store that deletes each key right after reading it, as a takedown racing the daily job
+/// would.
+struct DeletesAfterRead(MemoryStore);
+
+impl Store for DeletesAfterRead {
+    async fn get(&self, bucket: Bucket, key: &str) -> Result<Option<Object>, StoreError> {
+        let found = self.0.get(bucket, key).await?;
+        self.0.delete(bucket, key).await?;
+        Ok(found)
+    }
+
+    async fn put(
+        &self,
+        bucket: Bucket,
+        key: &str,
+        body: Vec<u8>,
+        metadata: Metadata,
+        condition: Condition,
+    ) -> Result<(), StoreError> {
+        self.0.put(bucket, key, body, metadata, condition).await
+    }
+
+    async fn delete(&self, bucket: Bucket, key: &str) -> Result<(), StoreError> {
+        self.0.delete(bucket, key).await
+    }
+
+    async fn list(&self, bucket: Bucket, prefix: &str) -> Result<Vec<String>, StoreError> {
+        self.0.list(bucket, prefix).await
+    }
+
+    async fn list_sized(&self, bucket: Bucket, prefix: &str) -> Result<Vec<Listed>, StoreError> {
+        self.0.list_sized(bucket, prefix).await
+    }
+}
+
+#[tokio::test]
+async fn a_write_after_a_read_does_not_bring_back_a_key_deleted_in_between() {
+    let store = DeletesAfterRead(MemoryStore::new());
+    put(&store.0, "world/agents/a.json", "old").await;
+    let wrote = world::write_if_changed(&store, "world/agents/a.json", b"new".to_vec(), true).await;
+    assert!(wrote.is_err(), "the write must lose to the delete");
+    assert_eq!(store.0.object(B, "world/agents/a.json"), None);
+}
+
+#[tokio::test]
+async fn a_known_key_gone_by_the_read_is_written_only_if_still_absent() {
+    let store = MemoryStore::new();
+    let wrote = world::write_if_changed(&store, "world/agents/a.json", b"new".to_vec(), true).await;
+    assert_eq!(wrote, Ok(true));
+    assert_eq!(store.object(B, "world/agents/a.json").unwrap().body, b"new");
 }
