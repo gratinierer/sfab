@@ -481,10 +481,10 @@ impl<S: Store> Academy<S> {
     }
 
     /// `PUT /academy/masters/self/applications/{id}`, in ADR 0003's order: the proof, the
-    /// caller, the ID, standing (`403` `no-standing`), a block by the applicant (`403`
-    /// `blocked`), then a retry: an apprenticeship with the
+    /// caller, the ID, standing (`403` `no-standing`), then a retry: an apprenticeship with the
     /// applicant that's still current returns with `200`, writing its record if a failed first
-    /// try left it out. Then the application (`404`, also for one older than
+    /// try left it out, even after the applicant blocks the master, since the master accepted
+    /// first. Then a block by the applicant (`403` `blocked`), the application (`404`, also for one older than
     /// [`APPLICATION_DAYS`] days or from an agent taken down since), the limit of
     /// [`MAX_APPRENTICES`] (`409` `list-full`), where a full counter first drops places whose
     /// record a takedown removed, the counter with `If-Match`, the record with
@@ -501,12 +501,6 @@ impl<S: Store> Academy<S> {
         let applicant = AgentId::parse(applicant).ok_or_else(Problem::bad_id)?;
         empty_body(call.body)?;
         self.need_standing(&master).await?;
-        if self.identity.relation(&applicant, &master).await? == Some(Relation::Blocked) {
-            return Err(Problem::forbidden(
-                "blocked",
-                "The applicant blocks you, so nothing was stored",
-            ));
-        }
         let counter_key = sfab_identity::academy_key(&master);
         let (mut counter, etag): (Counter, _) =
             match read_file(&*self.store, &counter_key, "reading a counter").await? {
@@ -529,6 +523,12 @@ impl<S: Store> Academy<S> {
             .find(|a| a.apprentice == applicant);
         if let Some(id) = existing {
             return self.resumed(&id, &record).await;
+        }
+        if self.identity.relation(&applicant, &master).await? == Some(Relation::Blocked) {
+            return Err(Problem::forbidden(
+                "blocked",
+                "The applicant blocks you, so nothing was stored",
+            ));
         }
         let id = ApprenticeshipId {
             master: master.clone(),
@@ -629,8 +629,8 @@ impl<S: Store> Academy<S> {
     }
 
     /// `PUT /academy/apprenticeships/{apprenticeship}/ending`: either agent ends it, even one
-    /// the other blocks, because ending is a way out. It stays
-    /// in both agents' public records, and its work items stay, private to the two. The record
+    /// the other blocks, because ending is a way out. It stays in both agents' public records,
+    /// and its work items stay, private to the two. The record
     /// is rewritten with `If-Match`, then the apprenticeship leaves the master's counter, read
     /// again on a lost race, so a place is free. Again is `200`, and redoes the counter.
     pub async fn end(
