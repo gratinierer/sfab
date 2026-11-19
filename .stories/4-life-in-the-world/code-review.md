@@ -33,6 +33,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-19T13:00:00+00:00 | walkthrough | 06 @ 616ed71..HEAD | claude-opus-5-5 (address-code-review-findings) | 0 new, 4 resolved, 0 still open | walkthrough, not a review pass |
 | 2026-11-19T13:30:00+00:00 | check | @ 1449580 | scripts/check | — | green |
 | 2026-11-19T13:30:00+00:00 | code-review | 06 @ d8d5062..1449580 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 7 new: 5 standards, 2 spec, 0 security | reviewers on another model of the author's family (Sonnet for Opus); `/review-code d8d5062 auto 3` round 1; the range also holds 26ba68c, story 2's docs only |
+| 2026-11-19T14:00:00+00:00 | walkthrough | 06 @ 1449580..HEAD | claude-opus-5-5 (address-code-review-findings auto) | 0 new, 7 resolved, 0 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
