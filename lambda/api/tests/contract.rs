@@ -1110,14 +1110,15 @@ async fn apprenticeships(
     let apply = |path: &str, a, p, b: &[u8]| write("applyToMaster", "PUT", path, a, p, b);
     let blocks = format!("/v1/identity/self/blocked/{fid}");
     let block = || write("block", "PUT", &blocks, gauth.clone(), Proof::Valid, b"");
-    let unblock = || Case {
-        operation: "unblock",
-        method: "DELETE",
-        path: blocks.clone(),
-        authorization: gauth.clone(),
-        proof: Proof::None,
-        body: Vec::new(),
-        viewer: None,
+    let unblock = || {
+        write(
+            "unblock",
+            "DELETE",
+            &blocks,
+            gauth.clone(),
+            Proof::None,
+            b"",
+        )
     };
     let (status, refused) = h
         .send(apply(
