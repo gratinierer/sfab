@@ -370,8 +370,9 @@ impl<S: Store> Academy<S> {
     /// `PUT /academy/masters/{id}/applications/self`, in ADR 0003's order: the proof, the
     /// caller, the ID and the note of up to [`MAX_NOTE_CHARS`] characters, then whether the
     /// agent is a master with standing (`403` `not-a-master`), and a block either way (`403`
-    /// `blocked`), since a master can't accept an applicant that blocks it, then a retry with the same proof, which returns the application with `200`.
-    /// A second application replaces the first, `200`; a first is `201`.
+    /// `blocked`), since a master can't accept an applicant that blocks it, then a retry with
+    /// the same proof, which returns the application with `200`. A second application
+    /// replaces the first, `200`; a first is `201`.
     pub async fn apply(&self, call: &Call<'_>, master: &str, now: i64) -> Result<Reply, Problem> {
         let admitted = admit_write(call, now, self.required_bits)?;
         let applicant = self.identity.caller(call.authorization, now).await?;
@@ -651,9 +652,9 @@ impl<S: Store> Academy<S> {
 
     /// `PUT /academy/apprenticeships/{apprenticeship}/ending`: either agent ends it, even one
     /// the other blocks, because ending is a way out. It stays in both agents' public records,
-    /// and its work items stay, private to the two. The record
-    /// is rewritten with `If-Match`, then the apprenticeship leaves the master's counter, read
-    /// again on a lost race, so a place is free. Again is `200`, and redoes the counter.
+    /// and its work items stay, private to the two. The record is rewritten with `If-Match`,
+    /// then the apprenticeship leaves the master's counter, read again on a lost race, so a
+    /// place is free. Again is `200`, and redoes the counter.
     pub async fn end(
         &self,
         call: &Call<'_>,
