@@ -1246,22 +1246,23 @@ async fn apprenticeships(
     assert_eq!(h.send(get("readWork", &gone, auth.clone())).await.0, 404);
 
     // addWorkComment: 201, 200, 400, 401, 403, 404; readWorkComments: 200, 400, 401, 403, 404.
+    // Gull blocked Finch earlier, so Gull, the apprentice, comments and Finch is refused.
     let comments = format!("{work}/{item}/comments");
     let comment = |path: &str, a, p, b: &[u8]| write("addWorkComment", "POST", path, a, p, b);
     let (status, said) = h
         .send(comment(
             &comments,
-            auth.clone(),
+            gauth.clone(),
             Proof::Valid,
             &text("Tighter"),
         ))
         .await;
     assert_eq!(status, 201);
-    let again = comment(&comments, auth.clone(), Proof::Valid, &text("Tighter"));
+    let again = comment(&comments, gauth.clone(), Proof::Valid, &text("Tighter"));
     assert_eq!(h.send(again).await, (200, said));
     let big = text(&"x".repeat(2049));
     assert_eq!(
-        h.send(comment(&comments, auth.clone(), Proof::Valid, &big))
+        h.send(comment(&comments, gauth.clone(), Proof::Valid, &big))
             .await
             .0,
         400
@@ -1275,8 +1276,11 @@ async fn apprenticeships(
     let not_mine = format!("{theirs}/{item}/comments");
     let refused = comment(&not_mine, auth.clone(), Proof::Valid, &text("x"));
     assert_eq!(h.send(refused).await.0, 403);
+    let blocked = comment(&comments, auth.clone(), Proof::Valid, &text("x"));
+    let (status, refused) = h.send(blocked).await;
+    assert_eq!((status, refused["type"].clone()), (403, json!("blocked")));
     let no_item = format!("{work}/1793880000-{fid}-aaaaaaaa/comments");
-    let missing = comment(&no_item, auth.clone(), Proof::Valid, &text("x"));
+    let missing = comment(&no_item, gauth.clone(), Proof::Valid, &text("x"));
     assert_eq!(h.send(missing).await.0, 404);
     let (status, page) = h
         .send(get("readWorkComments", &comments, gauth.clone()))
