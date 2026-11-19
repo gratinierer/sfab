@@ -174,8 +174,8 @@ pub async fn built_at<S: Store>(store: &S, key: &str) -> Result<Option<String>, 
     }
 }
 
-/// A JSON file the daily job listed, or `None` when it's gone since or doesn't parse, which is
-/// logged and skipped so one bad file can't stop the run.
+/// A JSON file, such as one the daily job listed, or `None` when it's gone or doesn't parse,
+/// which is logged and read as missing, so one bad file can't stop a run or fail a read.
 pub async fn read_json<S: Store, T: DeserializeOwned>(
     store: &S,
     key: &str,
