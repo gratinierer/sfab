@@ -26,6 +26,8 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-19T10:20:00+00:00 | check | @ 4455f8a | scripts/check | — | green |
 | 2026-11-19T10:20:00+00:00 | code-review | 01, 02, 03, 04, 05, 06, 07, 08, 09 @ b8ce046..4455f8a | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 5 new: 2 standards, 2 spec, 1 security | reviewers on another model of the author's family (Sonnet for Opus); `/review-code b8ce046 auto 4` round 1 |
 | 2026-11-19T10:40:00+00:00 | walkthrough | 01, 02, 03, 04, 05, 06, 07, 08, 09 @ 830ed65..HEAD | claude-opus-5-5 (address-code-review-findings auto) | 0 new, 4 resolved, 1 still open | auto walkthrough, not a review pass; C39 needs the user |
+| 2026-11-19T10:55:00+00:00 | check | @ dc9baca | scripts/check | — | green (loop check of round 1's fixes) |
+| 2026-11-19T10:55:00+00:00 | code-review | 01, 02, 03, 04, 05, 06, 07, 08, 09 @ 4455f8a..dc9baca | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 0 new: 0 standards, 0 spec, 0 security | reviewers on another model of the author's family (Sonnet for Opus); `/review-code b8ce046 auto 4` round 2 |
 
 ## Findings
 
