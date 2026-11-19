@@ -364,6 +364,11 @@ async fn before_the_first_run_standing_is_false_with_no_as_of_and_vouched_by_is_
     let mine = w.vouches.received(a.auth().as_deref(), None, NOW).await;
     assert_eq!(mine.unwrap_err().kind, "not-built-yet");
     assert_eq!(w.vouches.standing("Bad").await.unwrap_err().status, 400);
+    // A real agent and an unknown ID alike, so no ID is confirmed to exist.
+    for id in [a.id(), "unknown22222"] {
+        let public = w.vouches.vouched_by(id, None).await;
+        assert_eq!(public.unwrap_err().kind, "not-built-yet", "{id}");
+    }
 }
 
 #[tokio::test]

@@ -268,15 +268,16 @@ impl<S: Store> Vouches<S> {
     }
 
     /// `GET /identity/{id}/vouched-by`: the same, if the agent publishes `vouches`, and
-    /// otherwise an empty page, as for an unknown or taken-down ID.
+    /// otherwise an empty page, as for an unknown or taken-down ID. The daily job's file is
+    /// read first, so before its first run every ID alike gets `not-built-yet` and none is
+    /// confirmed to exist.
     pub async fn vouched_by(&self, id: &str, page: Option<&str>) -> Result<Reply, Problem> {
         let id = AgentId::parse(id).ok_or_else(Problem::bad_id)?;
         let path = format!("/v1/identity/{id}/vouched-by");
-        let items = if self.identity.publishes(&id, Field::Vouches).await? {
-            standing::counted(&*self.store, &id).await?
-        } else {
-            Vec::new()
-        };
+        let mut items = standing::counted(&*self.store, &id).await?;
+        if !self.identity.publishes(&id, Field::Vouches).await? {
+            items.clear();
+        }
         page_of(&items, page, &path)
     }
 

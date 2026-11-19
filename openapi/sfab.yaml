@@ -927,6 +927,7 @@ paths:
       description: |
         Anonymous. The same as `GET /v1/identity/self/vouched-by`, if the agent publishes
         `vouches`. Otherwise an empty page, the same as for an unknown or removed agent.
+        Before the daily job's first run, `404` `not-built-yet` for every ID.
         Paged, 20 a page; follow `next` until it's `null`.
       security:
         - origin_key: []
