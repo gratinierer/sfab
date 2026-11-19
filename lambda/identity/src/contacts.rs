@@ -108,13 +108,8 @@ pub async fn blocked_by<S: Store>(store: &S, id: &AgentId) -> Result<BTreeSet<St
     if !listed.contains(&key) {
         return Ok(BTreeSet::new());
     }
-    let Some(object) = store.get(Bucket::Identities, &key).await? else {
-        return Ok(BTreeSet::new());
-    };
-    let contacts: Contacts = serde_json::from_slice(&object.body)
-        .inspect_err(|_| {
-            tracing::error!("contacts in storage don't parse; read as blocking nobody")
-        })
+    let contacts: Contacts = sfab_core::world::read_json(store, &key)
+        .await?
         .unwrap_or_default();
     Ok(contacts.blocked.into_iter().map(|e| e.id).collect())
 }
