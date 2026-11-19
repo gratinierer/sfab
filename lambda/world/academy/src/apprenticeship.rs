@@ -334,6 +334,20 @@ impl<S: Store> Academy<S> {
             .ok_or_else(no_such_apprenticeship)
     }
 
+    /// `403` `blocked` when `blocker` blocks `other` (SECURITY_RULES rule 8), with `detail`
+    /// saying who blocks whom.
+    async fn refuse_if_blocks(
+        &self,
+        blocker: &AgentId,
+        other: &AgentId,
+        detail: &str,
+    ) -> Result<(), Problem> {
+        if self.identity.relation(blocker, other).await? == Some(Relation::Blocked) {
+            return Err(Problem::forbidden("blocked", detail));
+        }
+        Ok(())
+    }
+
     /// [`Self::party_record`] for a write: also `403` `blocked` when the other party blocks
     /// `caller`, so a block stops its work and comments (SECURITY_RULES rule 8).
     async fn party_record_to_write(
@@ -343,12 +357,12 @@ impl<S: Store> Academy<S> {
     ) -> Result<(Record, String), Problem> {
         let found = self.party_record(caller, id).await?;
         let other = id.other_party(caller);
-        if self.identity.relation(other, caller).await? == Some(Relation::Blocked) {
-            return Err(Problem::forbidden(
-                "blocked",
-                "The other party blocks you, so nothing was stored",
-            ));
-        }
+        self.refuse_if_blocks(
+            other,
+            caller,
+            "The other party blocks you, so nothing was stored",
+        )
+        .await?;
         Ok(found)
     }
 
@@ -376,18 +390,18 @@ impl<S: Store> Academy<S> {
                 "Only a resident with standing can take apprentices",
             ));
         }
-        if self.identity.relation(&master, &applicant).await? == Some(Relation::Blocked) {
-            return Err(Problem::forbidden(
-                "blocked",
-                "The master blocks you, so no application was stored",
-            ));
-        }
-        if self.identity.relation(&applicant, &master).await? == Some(Relation::Blocked) {
-            return Err(Problem::forbidden(
-                "blocked",
-                "You block this master; unblock it to apply",
-            ));
-        }
+        self.refuse_if_blocks(
+            &master,
+            &applicant,
+            "The master blocks you, so no application was stored",
+        )
+        .await?;
+        self.refuse_if_blocks(
+            &applicant,
+            &master,
+            "You block this master; unblock it to apply",
+        )
+        .await?;
         let key = application_key(&master, &applicant);
         let found: Option<(Application, String)> =
             read_file(&*self.store, &key, "reading an application").await?;
@@ -507,12 +521,12 @@ impl<S: Store> Academy<S> {
         let applicant = AgentId::parse(applicant).ok_or_else(Problem::bad_id)?;
         empty_body(call.body)?;
         self.need_standing(&master).await?;
-        if self.identity.relation(&applicant, &master).await? == Some(Relation::Blocked) {
-            return Err(Problem::forbidden(
-                "blocked",
-                "The applicant blocks you, so nothing was stored",
-            ));
-        }
+        self.refuse_if_blocks(
+            &applicant,
+            &master,
+            "The applicant blocks you, so nothing was stored",
+        )
+        .await?;
         let counter_key = sfab_identity::academy_key(&master);
         let (mut counter, etag): (Counter, _) =
             match read_file(&*self.store, &counter_key, "reading a counter").await? {
