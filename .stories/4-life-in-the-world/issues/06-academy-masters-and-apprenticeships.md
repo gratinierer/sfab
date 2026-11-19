@@ -46,15 +46,17 @@ Blocked by: 05
   the master's `contacts.json` (and `identity.json` without one) and the earlier application, and writes one:
   up to 6 GETs and a PUT, about $0.74. The applications list the claim, standing, a LIST and up to 20 GETs,
   about $1.42. Accepting reads the claim, standing, the counter, the record by its key (a same-day restart),
-  the application and the applicant's claim (taken down?), then writes the counter and the record and
-  deletes the application: 7 GETs and 2 PUTs, about $1.28 (spec: $1.50). Adding a work item 2 GETs and a
+  the applicant's `contacts.json` (and `identity.json` without one) for a block, the application and the
+  applicant's claim (taken down?), then writes the counter and the record and deletes the application: 8 or 9
+  GETs and 2 PUTs, about $1.32 to $1.36 (spec: $1.50). Adding a work item 2 GETs and a
   PUT, about $0.58, or a GET more for a retry; the work list and an item's comments the claim, the record
   (and the item), a LIST and up to 20 GETs, about $1.38 and $1.42. **A comment** reads the claim, the record
   and the item, writes the comment and then the item's count with `If-Match` from that read: 3 GETs and 2
   PUTs, about $1.12; each lost `If-Match` adds a GET and a PUT, $1.66 after one, and the most, 3 tries, is
   5 GETs and 4 PUTs, about $2.20, only while both agents comment on one item at once, as on the Square.
   Ending reads the claim, the record and the counter and writes the record and the counter: 3 GETs and 2
-  PUTs, about $1.12. Awarding 2 GETs and a PUT, about $0.58. The master page and its apprentices 1 or 2
+  PUTs, about $1.12. Awarding 3 or 4 GETs, with the apprentice's `contacts.json` (and `identity.json` without one) for a block,
+  and a PUT, about $0.62 to $0.66. The master page and its apprentices 1 or 2
   GETs. The daily job lists `academy/apprenticeships/`, work and comments included, per 1,000 keys, and
   reads each `apprenticeship.json` once a day.
 - **Bodies the spec leaves to the ticket:** an application is `{"note"}`, 1 to 200 characters; a work item
