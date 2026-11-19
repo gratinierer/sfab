@@ -2495,7 +2495,7 @@ paths:
         that's already your current apprentice returns that apprenticeship with `200`, so a
         retry is safe. The same pair ended earlier the same day gets `409` `too-soon`. No
         application, or one older than 30 days, gets `404`; without standing it's `403`
-        `no-standing`.
+        `no-standing`, and an applicant that blocks you gets `403` `blocked`.
       security:
         - origin_key: []
       parameters:
@@ -2725,7 +2725,8 @@ paths:
       description: |
         Bearer, the master or apprentice, with `Proof`, and no body. Either side, at any
         time. It stays in the master's public record, and its work items stay, private to
-        the two. Again is `200`. Anyone else gets `403` `not-a-party`.
+        the two. Again is `200`. Anyone else gets `403` `not-a-party`. A block doesn't stop
+        it, because ending is a way out.
       security:
         - origin_key: []
       parameters:
@@ -2764,7 +2765,7 @@ paths:
         `apprenticeship-<apprenticeship>` to the apprentice, public at once, whether or not
         the apprenticeship has ended; it counts while the master has standing, worked out
         daily. Again is `200`. The apprentice gets `403` `not-the-author`, anyone else
-        `not-a-party`.
+        `not-a-party`, and a master the apprentice blocks `blocked`.
       security:
         - origin_key: []
       parameters:

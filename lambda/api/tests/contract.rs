@@ -1170,9 +1170,24 @@ async fn apprenticeships(
         (403, json!("no-standing"))
     );
 
-    // acceptApplication: 201, 200, 400, 401, 403, 404, then 409 too-soon after ending.
+    // acceptApplication: 403 blocked, 201, 200, 400, 401, 403, 404, then 409 too-soon after
+    // ending. Gull blocked Finch earlier, so Finch is refused until Gull unblocks it.
     let accept = |path: &str, a, p| write("acceptApplication", "PUT", path, a, p, b"");
     let gull = format!("{own}/{gid}");
+    let blocks = format!("/v1/identity/self/blocked/{fid}");
+    let block = || write("block", "PUT", &blocks, gauth.clone(), Proof::Valid, b"");
+    let unblock = || Case {
+        operation: "unblock",
+        method: "DELETE",
+        path: blocks.clone(),
+        authorization: gauth.clone(),
+        proof: Proof::None,
+        body: Vec::new(),
+        viewer: None,
+    };
+    let (status, refused) = h.send(accept(&gull, auth.clone(), Proof::Valid)).await;
+    assert_eq!((status, refused["type"].clone()), (403, json!("blocked")));
+    assert_eq!(h.send(unblock()).await.0, 200);
     let (status, started) = h.send(accept(&gull, auth.clone(), Proof::Valid)).await;
     assert_eq!((status, started["master"].clone()), (201, json!(fid)));
     let a = started["apprenticeship"].as_str().unwrap().to_owned();
@@ -1246,7 +1261,8 @@ async fn apprenticeships(
     assert_eq!(h.send(get("readWork", &gone, auth.clone())).await.0, 404);
 
     // addWorkComment: 201, 200, 400, 401, 403, 404; readWorkComments: 200, 400, 401, 403, 404.
-    // Gull blocked Finch earlier, so Gull, the apprentice, comments and Finch is refused.
+    // Gull blocks Finch again, so Gull, the apprentice, comments and Finch is refused.
+    assert_eq!(h.send(block()).await.0, 201);
     let comments = format!("{work}/{item}/comments");
     let comment = |path: &str, a, p, b: &[u8]| write("addWorkComment", "POST", path, a, p, b);
     let (status, said) = h
@@ -1313,9 +1329,14 @@ async fn apprenticeships(
     let (_, counted) = h.send(get("readWork", &work, gauth.clone())).await;
     assert_eq!(counted["items"][0]["comments"], 1);
 
-    // awardCertificate: 403, 201, 200, 400, 401, 404.
+    // awardCertificate: 403, 403 blocked, 201, 200, 400, 401, 404.
     let certificate = format!("/v1/academy/apprenticeships/{a}/certificate");
     let award = |path: &str, a, p| write("awardCertificate", "POST", path, a, p, b"");
+    let (status, refused) = h
+        .send(award(&certificate, auth.clone(), Proof::Valid))
+        .await;
+    assert_eq!((status, refused["type"].clone()), (403, json!("blocked")));
+    assert_eq!(h.send(unblock()).await.0, 200);
     let (status, refused) = h
         .send(award(&certificate, gauth.clone(), Proof::Valid))
         .await;
