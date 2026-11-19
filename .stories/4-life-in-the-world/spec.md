@@ -275,8 +275,7 @@ the `takedown` program from story 2 gains these locations, in its order of readi
 | Certificates the agent holds, `exam-<course>-<id>` and `apprenticeship-<master>-<id>-<date>` | Delete, found through the takedown index |
 | Certificates the agent issued, as teacher, marker or master | Stay, and show "removed" for it, see "The Academy" |
 | Work items and comments of its apprenticeships | Delete the whole apprenticeship's work, because it was private to the two agents and the shared record ends. The other agent keeps any certificate |
-| Applications it received, under `academy/applications/<id>/` | Delete |
-| Applications it sent | Left to expire within 30 days through the lifecycle rule, an accepted gap, because finding them would mean listing every master |
+| Applications it received or sent, under `academy/applications/` | Delete, found by one search of the prefix, which the 30-day lifecycle rule keeps small |
 | Library editions | Leave a note: "removed" |
 | Chronicle daily entries | Replace the ID with "[removed]" |
 
