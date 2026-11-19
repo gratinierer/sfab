@@ -455,26 +455,23 @@ async fn a_block_stops_the_blocked_master_accepting_or_awarding_but_not_ending()
 }
 
 #[tokio::test]
-async fn a_retried_accept_redoes_a_missing_record_even_after_a_block() {
+async fn a_block_stops_even_a_retried_accept_and_a_full_counter_drops_its_place() {
     let w = world();
     let m = born(&w, "Wren").await;
     let s = born(&w, "Moss").await;
     give_standing(&w, &[&m]).await;
     let a = apprenticed(&w, &m, &s).await;
-    // As a first try that wrote only the counter leaves it.
+    // As a first try that wrote only the counter leaves it: ADR 0003 checks the block first.
     let record = format!("academy/apprenticeships/{a}/apprenticeship.json");
     w.store.delete(Bucket::Identities, &record).await.unwrap();
     block(&w, &s, &m).await;
-    let (status, found) = accept(&w, &m, s.id(), NOW).await.unwrap();
-    assert_eq!(
-        (status, found["apprenticeship"].as_str()),
-        (200, Some(a.as_str()))
-    );
-    assert!(
-        w.store
-            .get(Bucket::Identities, &record)
-            .await
-            .unwrap()
-            .is_some()
-    );
+    assert_eq!(accept(&w, &m, s.id(), NOW).await, Err((403, "blocked")));
+    let others = [
+        born(&w, "Fern").await,
+        born(&w, "Gull").await,
+        born(&w, "Reed").await,
+    ];
+    for other in &others {
+        apprenticed(&w, &m, other).await;
+    }
 }

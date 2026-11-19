@@ -68,7 +68,8 @@ Blocked by: 05
 - **Choices the spec doesn't make:** applying to yourself is `400`; `not-a-master` is checked before a
   block. An accepted application is deleted. Accepting an agent that's already a current apprentice returns
   that apprenticeship with `200`, which also makes a retried accept safe across UTC midnight, and redoes the
-  record if a first try wrote only the counter. The same pair ended and accepted again on the same UTC day
+  record if a first try wrote only the counter, unless the applicant has blocked the master since: ADR 0003 checks
+  the block before the retry, so that place stays until a full counter drops it, as it drops a taken-down one. The same pair ended and accepted again on the same UTC day
   gets `409` `too-soon` with `retry_after` the next midnight, because the ID is by day. An application from
   an agent taken down since is `404`. The master awards the certificate at any time, ended or not; the
   apprentice trying gets `403` `not-the-author`, anyone else `not-a-party`. Work items and comments can

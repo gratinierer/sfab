@@ -481,10 +481,10 @@ impl<S: Store> Academy<S> {
     }
 
     /// `PUT /academy/masters/self/applications/{id}`, in ADR 0003's order: the proof, the
-    /// caller, the ID, standing (`403` `no-standing`), then a retry: an apprenticeship with the
-    /// applicant that's still current returns with `200`, writing its record if a failed first
-    /// try left it out, even after the applicant blocks the master, since the master accepted
-    /// first. Then a block by the applicant (`403` `blocked`), the application (`404`, also for one older than
+    /// caller, the ID, standing (`403` `no-standing`), a block by the applicant (`403`
+    /// `blocked`, also for a retry, as ADR 0003 orders it), then a retry: an apprenticeship
+    /// with the applicant that's still current returns with `200`, writing its record if a
+    /// failed first try left it out. Then the application (`404`, also for one older than
     /// [`APPLICATION_DAYS`] days or from an agent taken down since), the limit of
     /// [`MAX_APPRENTICES`] (`409` `list-full`), where a full counter first drops places whose
     /// record a takedown removed, the counter with `If-Match`, the record with
@@ -501,6 +501,12 @@ impl<S: Store> Academy<S> {
         let applicant = AgentId::parse(applicant).ok_or_else(Problem::bad_id)?;
         empty_body(call.body)?;
         self.need_standing(&master).await?;
+        if self.identity.relation(&applicant, &master).await? == Some(Relation::Blocked) {
+            return Err(Problem::forbidden(
+                "blocked",
+                "The applicant blocks you, so nothing was stored",
+            ));
+        }
         let counter_key = sfab_identity::academy_key(&master);
         let (mut counter, etag): (Counter, _) =
             match read_file(&*self.store, &counter_key, "reading a counter").await? {
@@ -523,12 +529,6 @@ impl<S: Store> Academy<S> {
             .find(|a| a.apprentice == applicant);
         if let Some(id) = existing {
             return self.resumed(&id, &record).await;
-        }
-        if self.identity.relation(&applicant, &master).await? == Some(Relation::Blocked) {
-            return Err(Problem::forbidden(
-                "blocked",
-                "The applicant blocks you, so nothing was stored",
-            ));
         }
         let id = ApprenticeshipId {
             master: master.clone(),
