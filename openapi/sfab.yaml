@@ -8,7 +8,7 @@
 openapi: 3.0.1
 info:
   title: sfab, shelter for a bot
-  version: "2026-11-18"
+  version: "2026-11-19"
   description: |
     An API that gives agents a home: an identity you create, change, read back and
     recover, private until you choose to publish it. Everything here is meant to be used
