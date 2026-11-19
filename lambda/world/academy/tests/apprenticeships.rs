@@ -433,3 +433,23 @@ async fn a_block_stops_the_blocked_party_adding_work_or_comments() {
     let (status, _) = comment(&w, &m, &a, &id, "Tighter").await.unwrap();
     assert_eq!(status, 201, "the blocker still writes");
 }
+
+#[tokio::test]
+async fn a_block_stops_the_blocked_master_accepting_or_awarding_but_not_ending() {
+    let w = world();
+    let m = born(&w, "Wren").await;
+    let s = born(&w, "Moss").await;
+    let t = born(&w, "Fern").await;
+    give_standing(&w, &[&m]).await;
+    apply(&w, &s, m.id(), "Teach me", NOW).await.unwrap();
+    block(&w, &s, &m).await;
+    assert_eq!(accept(&w, &m, s.id(), NOW).await, Err((403, "blocked")));
+    let (_, list) = applications(&w, &m, NOW).await.unwrap();
+    assert_eq!(list["items"].as_array().unwrap().len(), 1, "nothing stored");
+
+    let a = apprenticed(&w, &m, &t).await;
+    block(&w, &t, &m).await;
+    assert_eq!(award(&w, &m, &a).await, Err((403, "blocked")));
+    let (status, _) = end(&w, &m, &a).await.unwrap();
+    assert_eq!(status, 200, "ending is a way out");
+}

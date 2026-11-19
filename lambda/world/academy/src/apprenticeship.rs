@@ -481,7 +481,8 @@ impl<S: Store> Academy<S> {
     }
 
     /// `PUT /academy/masters/self/applications/{id}`, in ADR 0003's order: the proof, the
-    /// caller, the ID, standing (`403` `no-standing`), then a retry: an apprenticeship with the
+    /// caller, the ID, standing (`403` `no-standing`), a block by the applicant (`403`
+    /// `blocked`), then a retry: an apprenticeship with the
     /// applicant that's still current returns with `200`, writing its record if a failed first
     /// try left it out. Then the application (`404`, also for one older than
     /// [`APPLICATION_DAYS`] days or from an agent taken down since), the limit of
@@ -500,6 +501,12 @@ impl<S: Store> Academy<S> {
         let applicant = AgentId::parse(applicant).ok_or_else(Problem::bad_id)?;
         empty_body(call.body)?;
         self.need_standing(&master).await?;
+        if self.identity.relation(&applicant, &master).await? == Some(Relation::Blocked) {
+            return Err(Problem::forbidden(
+                "blocked",
+                "The applicant blocks you, so nothing was stored",
+            ));
+        }
         let counter_key = sfab_identity::academy_key(&master);
         let (mut counter, etag): (Counter, _) =
             match read_file(&*self.store, &counter_key, "reading a counter").await? {
@@ -621,7 +628,8 @@ impl<S: Store> Academy<S> {
         Ok(Reply::ok(found.shown(id)))
     }
 
-    /// `PUT /academy/apprenticeships/{apprenticeship}/ending`: either agent ends it. It stays
+    /// `PUT /academy/apprenticeships/{apprenticeship}/ending`: either agent ends it, even one
+    /// the other blocks, because ending is a way out. It stays
     /// in both agents' public records, and its work items stay, private to the two. The record
     /// is rewritten with `If-Match`, then the apprenticeship leaves the master's counter, read
     /// again on a lost race, so a place is free. Again is `200`, and redoes the counter.
@@ -672,8 +680,8 @@ impl<S: Store> Academy<S> {
 
     /// `POST /academy/apprenticeships/{apprenticeship}/certificate`: the master awards
     /// `apprenticeship-<apprenticeship>`, whether or not it has ended. The apprentice gets
-    /// `403` `not-the-author`, anyone else `not-a-party`. `201`, or `200` with the certificate
-    /// already awarded.
+    /// `403` `not-the-author`, anyone else `not-a-party`, and a master the apprentice blocks
+    /// `blocked`. `201`, or `200` with the certificate already awarded.
     pub async fn award(
         &self,
         call: &Call<'_>,
@@ -690,7 +698,7 @@ impl<S: Store> Academy<S> {
                 "Only the master awards the certificate",
             ));
         }
-        let (record, _) = self.party_record(&caller, &id).await?;
+        let (record, _) = self.party_record_to_write(&caller, &id).await?;
         let certificate = id.certificate();
         let key = certificates::key_of(&certificate);
         let file =
