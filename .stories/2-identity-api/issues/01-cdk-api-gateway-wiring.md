@@ -1,7 +1,7 @@
 # CDK: build both stacks and wire CloudFront, the REST API and the Lambda
 
 Label: ready-for-human
-Blocked by: 03, 05, 06, 19, 17-genesis-codes#05, 17-genesis-codes#06, 18-deploy-from-codebuild#02, 18-deploy-from-codebuild#03, 18-deploy-from-codebuild#04, 18-deploy-from-codebuild#05
+Blocked by: 03, 05, 06, 17-genesis-codes#05, 17-genesis-codes#06, 18-deploy-from-codebuild#02, 18-deploy-from-codebuild#03, 18-deploy-from-codebuild#04, 18-deploy-from-codebuild#05
 
 Build the REST API from `openapi/sfab.yaml` with `SpecRestApi` in the Python CDK, behind a
 CloudFront distribution, as described in `spec.md` "Architecture". Filed from review finding
@@ -138,3 +138,5 @@ emails and an automatic stop from the start. Keep its URL unpublished until the 
   needs CodeBuild ARM/Small at 1 or more (it's 0), and the API stack needs Lambda concurrency at 106 or more (it's 10)
   and Lambda calls that don't answer `AccessDeniedException`. The owner's AWS support case asks for all three, and
   issue 19 tracks it.
+- 2026-11-19: issue 19 closed, which unblocks the quotas: CodeBuild ARM/Small is 60, Lambda concurrency 1000, and
+  Lambda calls answer again.
