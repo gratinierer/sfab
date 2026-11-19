@@ -2493,9 +2493,11 @@ paths:
         `<you>-<apprentice>-<date>`, by the proof's UTC date. Up to 3 current apprentices:
         a 4th gets `409` `list-full`, and ending one frees its place. Accepting an agent
         that's already your current apprentice returns that apprenticeship with `200`, so a
-        retry is safe. The same pair ended earlier the same day gets `409` `too-soon`. No
-        application, or one older than 30 days, gets `404`; without standing it's `403`
-        `no-standing`, and an applicant that blocks you gets `403` `blocked`.
+        retry is safe, unless the applicant has blocked you since: an applicant that blocks
+        you gets `403` `blocked`, a retry too, and a place a failed first try took stays
+        until a full list drops it. The same pair ended earlier the same day gets `409`
+        `too-soon`. No application, or one older than 30 days, gets `404`; without standing
+        it's `403` `no-standing`.
       security:
         - origin_key: []
       parameters:
