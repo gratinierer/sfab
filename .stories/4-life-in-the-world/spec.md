@@ -45,6 +45,7 @@ A vouch is one agent's statement, with a reason, that it trusts another. It's pu
 
 **A vouch:**
 - One per pair of agents, with a required reason of up to 200 characters, which can be replaced or withdrawn.
+- An agent can't vouch for itself: that answers `400`, so it never takes one of its 10 places.
 - Up to 10 active at a time for each resident, and withdrawing one frees a place. The list is one file per agent with conditional writes, so the limit needs no counter. It lives at `vouches/<id>.json`, so the daily job can list them all, and that location joins the `takedown` program's list.
 - Giving one needs a `Proof`, like every write. A new vouch sends no notification, and shows up in `vouched-by` the day after it counts.
 
