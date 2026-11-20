@@ -87,3 +87,5 @@ Blocked by: 01, 2-identity-api#13
 2026-11-20: built and code-reviewed with 01-09 (`code-review.md`); what keeps it open is its last Done when, the
 owner's smoke run against the deployed API, so it's `ready-for-human`. Its note above moves into the spec with
 ticket 15.
+
+2026-11-20: moved into spec.md ("Homes and quarters", "Foundations", "Takedown", "Changes to story 2's parts") and story 2's spec ("Architecture", "Daily world job", "Testing") by ticket 15.

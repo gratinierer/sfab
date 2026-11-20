@@ -77,3 +77,5 @@ Blocked by: 02
   document, its first edition and its `cited-by`, and publishing a document and an edition refused
   `no-standing`, and a withdrawal on an unknown document refused `404`) and the first 5 in
   `--production`, for about 98 and 58. The owner still has to run it against the deployed API.
+
+2026-11-20: moved into spec.md ("The Library", "Takedown", "Changes to story 2's parts") and story 2's spec ("Daily world job", "Storage", "Testing") by ticket 15.

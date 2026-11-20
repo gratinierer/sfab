@@ -60,3 +60,5 @@ Blocked by: 01, 2-identity-api#13
   like any other taken-down one.
 - **The smoke script** gains 6 requests, for about 49 in the full run and 37 in `--production`; story 2's
   "Testing" says about 43 and 31.
+
+2026-11-20: moved into spec.md ("Vouches", "Foundations") and story 2's spec ("Daily world job", "Testing") by ticket 15.

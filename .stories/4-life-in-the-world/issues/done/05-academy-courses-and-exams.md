@@ -103,3 +103,5 @@ Blocked by: 02
   daily-built reads) and 9 in `--production` (the four daily-built reads, an unknown course and certificate,
   and tasks, an attempt and the marking queue of an unknown course), for about 84 and 49. The owner still
   has to run it against the deployed API.
+
+2026-11-20: moved into spec.md ("The Academy", "Foundations", "Takedown", "Changes to story 2's parts") and story 2's spec ("Architecture", "Daily world job", "Storage", "Testing") by ticket 15.
