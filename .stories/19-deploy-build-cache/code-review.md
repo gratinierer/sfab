@@ -24,6 +24,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-20T20:15:00+00:00 | walkthrough | 289e8c3 | claude-opus-5-5 (auto) | 0 new, 1 resolved, 0 still open | auto walkthrough, not a review pass |
 | 2026-11-20T20:30:00+00:00 | check | @ 5be67ff | scripts/check | — | green, the loop's check before round 4 |
 | 2026-11-20T20:30:00+00:00 | code-review | 01, 02, 03 @ 2b1f222..5be67ff | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, fixes by the orchestrator claude-opus-5-5) | 2 new: 1 standards, 1 spec, 0 security | auto round 4, the last; the loop stops at its limit of 3 address passes with C5, C6 open |
+| 2026-11-20T20:50:00+00:00 | walkthrough | c238720 | claude-opus-5-5 with the owner | 0 new, 2 resolved, 0 still open | walkthrough, not a review pass; its closing scripts/check was stopped by the owner, the fix touched only docs/aws-facts.md, and the last full check was green at 5be67ff |
 
 ## Findings
 
