@@ -47,10 +47,15 @@ Write the tests first.
 ## Done when
 
 - `scripts/check` passes, and still runs generate, build, audit and test, in that order.
-- Tests cover `scripts/build`'s arguments (none, `--require-secret`, an unknown one refused) and assert that
-  `scripts/deploy` calls `scripts/build` with the plan's mode, and never `scripts/check`, `scripts/audit`,
-  `cargo test` or pytest. Use the stubbing seam story 18 settled for `scripts/check` tests
-  (`.stories/done/18-deploy-from-codebuild/review.md` R31, R33), or say in a comment here why none fits.
+- No test runs `scripts/build`, `scripts/check` or `scripts/deploy`, and no environment variable changes which steps
+  they run, as story 18 settled (`.stories/done/18-deploy-from-codebuild/review.md` R31, R34): they stay thin
+  wrappers, and the decisions stay in `cdk/deploy_plan.py`, tested in-process.
+- Text-level tests, in the style of `test_the_buildspec_in_the_repo_runs_scripts_deploy_with_deploy_stacks`
+  (`cdk/tests/test_deployer_stack.py:82-86`), read the scripts' source and assert that `scripts/deploy` calls
+  `scripts/build` and never `scripts/check`, `scripts/audit`, `cargo test` or `pytest`, and that `scripts/check`
+  calls `scripts/build` before the audit and the tests.
+- `scripts/build`'s arguments are checked by hand once (none, `--require-secret`, an unknown one refused), with the
+  results in a comment here.
 - `buildspec.yml` installs no `cargo-audit`, and the tool-versions tests pass.
 - `scripts/build` fails when any one of the data files above doesn't parse. Check each by hand once (break it,
   run `scripts/build`, restore it) and list the results in a comment here.
