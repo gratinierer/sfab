@@ -38,6 +38,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-19T14:20:00+00:00 | code-review | 06 @ 1449580..183080e | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 0 new: 0 standards, 0 spec, 0 security | reviewers on another model of the author's family (Sonnet for Opus); `/review-code d8d5062 auto 3` round 2; the standards reviewer named two very weak smells (`refuse_if_blocks`' argument shape, its `other` parameter) and advised leaving them, so none is recorded |
 | 2026-11-20T15:30:00+00:00 | check | @ 7dd2fab | scripts/check | — | green (baseline at 86cd1f9, handed over by `/implement-story 4`; only tickets 13 and 15 merged since, each checked green before its merge) |
 | 2026-11-20T15:30:00+00:00 | code-review | 03, 11, 13, 15 @ 183080e..7dd2fab | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 3 new: 2 standards, 1 spec, 0 security | reviewers on another model of the author's family (Sonnet for Opus); `/review-code 183080e auto 3` round 1, caller mode from `/implement-story 4`, `(#4)` commits only; 11 added for `07683fc` (`world/founders.yaml`), which its Comments leave for a code review |
+| 2026-11-20T16:00:00+00:00 | walkthrough | 03, 11, 13, 15 @ 7dd2fab..HEAD | claude-opus-5-5 (address-code-review-findings auto) | 0 new, 3 resolved, 0 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
