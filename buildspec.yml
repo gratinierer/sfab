@@ -16,9 +16,11 @@ phases:
         set -a; . ./tool-versions.env; set +a
         python3 -m pip install --quiet "uv==${UV_VERSION}"
         # cargo-lambda finds zig through `python3 -m ziglang`, so both go in one virtual
-        # environment whose python3 comes first on PATH, as in CI.
+        # environment whose python3 comes first on PATH, as in CI. uv goes in it too: the
+        # pip-installed uv above is a pyenv shim, which fails under cdk/, whose
+        # .python-version names a Python pyenv doesn't have.
         uv venv /opt/sfab-tools
-        uv pip install --python /opt/sfab-tools/bin/python \
+        uv pip install --python /opt/sfab-tools/bin/python "uv==${UV_VERSION}" \
           "cargo-lambda==${CARGO_LAMBDA_VERSION}" "ziglang==${ZIGLANG_VERSION}"
         npm install --global --no-fund --no-audit "aws-cdk@${CDK_CLI_VERSION}"
         # rustup only installs the toolchain lambda/rust-toolchain.toml pins.
