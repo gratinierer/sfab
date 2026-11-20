@@ -22,6 +22,9 @@ deploy. This story makes three changes:
    Saving the cache at the end works ("Cache uploaded successfully (size: 145.66 MiB)"), since that needs only
    `s3:PutObject`. So each build saves a cache the next one can't read.
 
+   Once `cargo-audit` leaves (2), the cache holds the cargo registry, git db and uv downloads only, which saves
+   seconds per build. It's still worth one grant: the cache paths are there, and they've never worked.
+
 2. **The deploy only builds and deploys.** `scripts/deploy` runs all of `scripts/check`: generate, build, audit and
    test. So the build installs `cargo-audit`, and runs `cargo test --workspace` and pytest before `cdk deploy`. With
    the cache failing, `cargo install cargo-audit` compiled from source on every build: 4 min 09 s of that build's
@@ -71,6 +74,10 @@ After this story the build restores its cache, installs no `cargo-audit`, runs o
   when the repo goes public (`.stories/12-public-repo/`), when Actions minutes on standard runners are free.
 - **Requiring green CI before a deploy.** With CI manual, there's no run to require. That comes with the public
   repo too.
+- **Caching `lambda/target`.** The release Lambda compile is the long step, but `lambda/target` isn't cached (CI's
+  `ci.yml` does cache it). Its `aarch64-unknown-linux-gnu` part is 1.4 GB locally (2026-11-20), moved both ways on
+  every build, and with fat LTO a cached `target/` saves the dependency compiles, not the final link. That waits
+  until a build on ARM/Medium (issue 03) is timed, to compare the compile with the transfer.
 - **Other ways to shorten the install**, such as a custom build image. Without `cargo-audit` the install takes about
   20 s.
 - **The failure of that same build's BUILD phase**: `scripts/deploy` exited at once without output. That build ran
