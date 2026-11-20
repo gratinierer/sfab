@@ -83,8 +83,9 @@ Write the tests first.
 - `scripts/build`'s arguments are checked by hand once (none, `--require-secret`, an unknown one refused), with the
   results in a comment here.
 - `buildspec.yml` installs no `cargo-audit`, and the tool-versions tests pass.
-- `scripts/build` fails when a test in `cdk/tests/test_openapi.py` fails. Check it by hand once (break
-  `openapi/sfab.yaml`, run `scripts/build`, restore it) and note the result in a comment here.
+- `scripts/build` fails when a test in `cdk/tests/test_openapi.py` fails. Check it by hand once (break a rule only
+  that file checks, such as dropping a `maxLength` from `openapi/sfab.yaml`, so generate still passes; run
+  `scripts/build`, see the `pytest` step fail it, restore the file) and note the result in a comment here.
 - The deploy's build or synth fails when either federation file doesn't parse. Check each by hand once (break it,
   run `scripts/build` and a synth, restore it) and list the results in a comment here.
 - On the owner's next build with issue 03 on `production` (one build job on ARM/Small), or started with
