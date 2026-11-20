@@ -6,8 +6,8 @@ Blocked by: 05, 4-life-in-the-world#01
 `docs/api-design.md` "Changes". Story 4's issue 12 ends hypercare, and its launch checklist adds the first
 changelog entry.
 
-Built on the `4-life-in-the-world` branch, since it needs `4-life-in-the-world#01`, and reaches `main` with story 4
-at its launch step 3 (`4-life-in-the-world/spec.md` "Launch checklist", step 2).
+Built on `main`, where `4-life-in-the-world#01` already is since story 4's code reached `main` on 2026-11-17
+(`4-life-in-the-world/spec.md` "Launch checklist", step 2).
 
 ## Scope
 
