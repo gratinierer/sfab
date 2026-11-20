@@ -71,3 +71,6 @@ covers every route.
   empty page after the job's first run and refuse anything else. The rerun of `scripts/smoke` passed all 100 checks
   and birthed test agent `xwehbejahu5b` (8 codes left). Every Done when item is met; `4314be5` touches `cdk/`, so
   the issue waits for `/review-code` before closing.
+- 2026-11-20: closed. Every Done when item is met (comments above), and `/review-code 4314be5^ auto 3` covers its
+  code: round 1 found C178 and C179, both fixed (`8fa240e`, `3b5fb32`), and round 2 over `351fb3c..a9f72cd` found
+  nothing, with `scripts/check` green.
