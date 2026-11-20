@@ -27,14 +27,14 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | Pro costs $15 per month, and Business $200 | docs | [plans] | 2026-10-30 |
 | Creating a subscription fails with `ValidationException` if an associated resource uses features outside the plan's tier | docs | [plan-api] | 2026-11-01 |
 | CloudFormation can't change a plan's tier, and creates paid plans in `PENDING_APPROVAL` | docs | [plan-cfn] | 2026-11-01 |
-| A CloudFront plan's `ResourceArns` must hold one distribution and one WAF web ACL, and may add a hosted zone; `PlanTier` is `FREE` and `UsageLevel` `DEFAULT` | docs | [plan-cfn] | 2026-11-07 |
+| A CloudFront plan's `ResourceArns` must hold one distribution and one WAF web ACL, and may add a hosted zone; `PlanTier` is `FREE` and `UsageLevel` `DEFAULT` | docs, tested | [plan-cfn]; `SfabApi`'s `FlatRatePlan` (`AWS::PricingPlanManager::Subscription`) reached `CREATE_COMPLETE` on 2026-11-20 with the distribution, the web ACL and the hosted zone in `ResourceArns` | 2026-11-20 |
 | Cancelling or downgrading a paid plan takes effect at the end of the month, while a downgrade's features go at once | docs | [plan-api] | 2026-11-01 |
 | Free Tier accounts can't use flat-rate plans | docs | [plans] | 2026-10-30 |
 | Each plan covers one distribution with up to one apex domain, and an account can have 3 Free plans | docs | [plans] | 2026-11-01 |
 | Free allows 5 cache behaviors | docs | [plans] | 2026-11-01 |
 | A plan can include a hosted zone, and past its allowance AWS might move the zone back to pay-as-you-go | docs | [plan-cfn], [plans] | 2026-11-01 |
 | Free covers the zone's fee, 50 records, unlimited alias queries and 1 million other queries a month | docs | [plans], the reviewer's reading | 2026-11-01 |
-| Two plans can share one apex domain, such as `<domain>` and `api.<domain>` | memory | Not stated by AWS; the first deploy proves it | 2026-11-01 |
+| Two plans can share one apex domain, such as `<domain>` and `api.<domain>` | tested | Not stated by AWS; the first deploy proves it; 2026-11-20: `api.<domain>` (`EJS6XV549SRKF`) and `<domain>` (`E2J9VHRZ3JKB1J`) each on its own Free plan, both working, which the owner confirmed in the console | 2026-11-20 |
 | `CachingOptimized` leaves query strings out of its cache key, with a 24-hour default TTL | docs | [cache-policies], the reviewer's reading | 2026-11-01 |
 | A private S3 origin doesn't add `index.html` to a folder path | memory | | 2026-11-01 |
 | `BucketDeployment` sets each object's content type by guessing from its extension, so an extensionless file gets S3's default `binary/octet-stream` | memory | Why story `10-website` sets the catalog's type in CloudFront | 2026-11-04 |
@@ -43,14 +43,14 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | A CloudFront Function on viewer response can set `Content-Type` and add a `Link` header | memory | Ticket 03 of story `10-website` proves it on a deploy | 2026-11-04 |
 | `S3BucketOrigin.with_origin_access_control` gives a private bucket an origin access control and the bucket policy that lets only that distribution read it | memory | `cdk/website_stack.py` relies on it; issue 12 of story `2-identity-api` proves it on a deploy | 2026-11-07 |
 | A `cloudfront-js-2.0` viewer-request function can rewrite `request.uri` before the origin sees it, or answer with its own response, such as a `301` | memory | `cdk/website_stack.py`'s `folder_pages` function relies on it; issue 12 of story `2-identity-api` proves it on a deploy | 2026-11-07 |
-| `CachingDisabled` is accepted on Free | memory | Not stated by AWS; issue 01 of story `2-identity-api` proves it | 2026-11-01 |
-| `HTTPS_ONLY` answers `http://` with `403` | docs | [https-viewers], the reviewer's reading; issue 01 of story `2-identity-api` proves it | 2026-11-01 |
+| `CachingDisabled` is accepted on Free | tested | Not stated by AWS; issue 01 of story `2-identity-api` proves it; 2026-11-20: the API distribution deployed with it on its Free plan, and authenticated reads through CloudFront passed in the smoke run | 2026-11-20 |
+| `HTTPS_ONLY` answers `http://` with `403` | docs, tested | [https-viewers], the reviewer's reading; issue 01 of story `2-identity-api` proves it; 2026-11-20: `http://api.<domain>/v1/world/constitution` answered `403` with `X-Cache: Error from cloudfront`, from CloudFront rather than the origin | 2026-11-20 |
 | Port 80 can't be closed on a distribution | memory | | 2026-11-01 |
 | A new account may need Support verification before creating CloudFront resources | forum | re:Post search summaries | 2026-11-01 |
 | The managed origin request policy `AllViewerExceptHostHeader` (`b689b0a8-53d0-40ab-baf2-68738e2966ac`) forwards every viewer header except `Host`, and adds CloudFront's headers for protocol, HTTP version, TLS version, device type and viewer location | docs | [orp-managed] | 2026-11-08 |
 | `CloudFront-Viewer-Address` is a viewer location header holding the viewer's IP address and source port, such as `198.51.100.10:46532`, and can be added in an origin request policy but not a cache policy | docs | [cf-headers] | 2026-11-08 |
-| So `AllViewerExceptHostHeader` forwards `CloudFront-Viewer-Address` to the origin | docs | [orp-managed] and [cf-headers] together, the reviewer's reading: the policy page says "all … viewer location headers" without naming each one. Issue 01 of story `2-identity-api` proves it, by a birth whose IP record matches the caller's address | 2026-11-08 |
-| A `CloudFront-Viewer-Address` header the viewer sends is replaced by CloudFront's own value, so a client can't set it | memory | AWS doesn't say. Its list of request headers CloudFront removes or replaces omits it ([cf-custom-origin]). Story 17's IP rule relies on it; issue 01 of story `2-identity-api` proves it, by a birth that sends its own header | 2026-11-08 |
+| So `AllViewerExceptHostHeader` forwards `CloudFront-Viewer-Address` to the origin | docs, tested | [orp-managed] and [cf-headers] together, the reviewer's reading: the policy page says "all … viewer location headers" without naming each one. Issue 01 of story `2-identity-api` proves it, by a birth whose IP record matches the caller's address; 2026-11-20: a `birth` through CloudFront with an ordinary code wrote `genesis/ips/<HMAC>` of the caller's real IPv4, so the origin received the viewer address | 2026-11-20 |
+| A `CloudFront-Viewer-Address` header the viewer sends is replaced by CloudFront's own value, so a client can't set it | tested | AWS doesn't say. Its list of request headers CloudFront removes or replaces omits it ([cf-custom-origin]). Story 17's IP rule relies on it; issue 01 of story `2-identity-api` proves it, by a birth that sends its own header; 2026-11-20: a `birth` sending `CloudFront-Viewer-Address`, `X-Forwarded-For`, `X-Real-IP` and `Forwarded` naming `203.0.113.77` got `409 too-soon` from the caller's real address's record, and no record for the forged address was written | 2026-11-20 |
 | CloudFront appends the connecting address to a viewer's `X-Forwarded-For` rather than replacing it, so its leading entries are the viewer's to choose | docs | [cf-custom-origin] "Client IP addresses"; why story 17 reads `CloudFront-Viewer-Address` instead | 2026-11-08 |
 
 ## WAF
@@ -58,7 +58,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | Fact | Status | Source | Checked |
 |---|---|---|---|
 | Rate rules take up to several minutes to react, usually under 30 seconds | docs | [waf-rate] | 2026-11-01 |
-| With no custom response configured, a WAF block, by a rule or by a default action of Block, is a plain `403` that isn't `problem+json` | memory | `cdk/smoke.py` and `cdk/waf_check.py` read it as "blocked"; issue 01 of story `2-identity-api` proves it on the first deploy | 2026-11-07 |
+| With no custom response configured, a WAF block, by a rule or by a default action of Block, is a plain `403` that isn't `problem+json` | tested (rule) | `cdk/smoke.py` and `cdk/waf_check.py` read it as "blocked"; issue 01 of story `2-identity-api` proves it on the first deploy; 2026-11-20: `scripts/waf-check` got a plain, non-`problem+json` `403` from the rate rule. A default action of Block is proven by `2-identity-api#10`'s kill switch drill | 2026-11-20 |
 | The lowest rate limit is 10 | docs | Reviewer's reading of the WAF docs | 2026-11-01 |
 | A custom response's body is text, HTML or JSON, and a custom header can't set `content-type` | docs | Earlier review, R18 | 2026-10-30 |
 | WAF samples return each header's name and value for 3 hours | docs | Earlier review, R50 | 2026-10-30 |
@@ -173,7 +173,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | A budget can have up to ten notifications, each with one SNS subscriber and up to 10 email subscribers. Corrected from five: the `Notification` page now says ten, while spec.md "How the budgets measure spend" still gives five as a reason for three budgets | docs | [budgets-notification] | 2026-11-07 |
 | CloudFormation's schema for `AWS::Budgets::Budget` refuses a notification `Threshold` below 0.1, though the Budgets API allows 0, so the check budget alerts at 1% of $1 rather than at an absolute $0.01 | docs | CDK 2.275.0's synth validation against the resource schema (rule F3034); [budgets-notification] | 2026-11-07 |
 | `ConfirmSubscription` with `AuthenticateOnUnsubscribe` true disallows unauthenticated unsubscribes | docs | [sns-confirm] | 2026-11-01 |
-| Each SNS email has an unsubscribe link needing no login, and the subscription attribute `ConfirmationWasAuthenticated` shows how it was confirmed | memory | Issue 01 of story `2-identity-api` confirms it | 2026-11-01 |
+| Each SNS email has an unsubscribe link needing no login, and the subscription attribute `ConfirmationWasAuthenticated` shows how it was confirmed | tested | Issue 01 of story `2-identity-api` confirms it; 2026-11-20: the alerts subscription, confirmed with `--authenticate-on-unsubscribe true`, shows `ConfirmationWasAuthenticated` `true` | 2026-11-20 |
 | Domain charges appear under the service name "Amazon Registrar" | tested | Cost Explorer, the first domain purchase (story 2, issue 03) | 2026-11-15 |
 | The VAT on a domain charge appears separately, under the service "Tax", so the stop budget's "Amazon Registrar" exclusion doesn't cover it. The owner accepts that | tested | Cost Explorer, the first domain purchase | 2026-11-15 |
 | Updating a budget replaces all of it, so a filter must be sent again | memory | | 2026-11-01 |

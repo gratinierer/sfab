@@ -140,3 +140,25 @@ emails and an automatic stop from the start. Keep its URL unpublished until the 
   issue 19 tracks it.
 - 2026-11-19: issue 19 closed, which unblocks the quotas: CodeBuild ARM/Small is 60, Lambda concurrency 1000, and
   Lambda calls answer again.
+- 2026-11-20: first deploy done ("First deploy" steps 8-11, from `b46e588` while story 4's founders gate blocked
+  `production`, see `4-life-in-the-world` ticket 11), then `production` builds `41dbb6a3` and `aca6660e` from
+  `3522f41`. Done when, item by item:
+  - **Every route reaches the API Lambda, and a real `birth` through CloudFront:** the smoke run (issue 09) passed
+    every route; the first-birth code's `birth` answered `201` (agent `fddilt7jnfjt`).
+  - **Story 17's IP proofs:** that birth wrote `genesis/ips/<HMAC>` of the caller's real IPv4 (the only IP record), and
+    a second birth with an ordinary code, sending `CloudFront-Viewer-Address`, `X-Forwarded-For`, `X-Real-IP` and
+    `Forwarded` naming `203.0.113.77`, got `409 too-soon` from the real address's record, with no record written
+    for the forged one. Recorded in `docs/aws-facts.md`.
+  - **The first build from `production`:** build `41dbb6a3`, with no override, deployed all four stacks.
+  - **On the first deploy through CloudFront:** authenticated reads (`Authorization`) reached the origin in the smoke
+    run; `CachingDisabled` and `AllViewerExceptHostHeader` were accepted on Free; the plan subscribed through
+    `AWS::PricingPlanManager::Subscription` with the distribution, web ACL and hosted zone in `ResourceArns`; the
+    rate rule's block is a plain `403` (issue 09's WAF check); the CloudFront Function's `404` points to
+    `https://api.<domain>/v1/openapi.yaml`; `http://` gets CloudFront's `403` (`X-Cache: Error from cloudfront`);
+    the alerts subscription shows `ConfirmationWasAuthenticated` `true`; the owner confirmed the Free plan in the
+    console.
+  - **The import proofs:** done on 2026-11-16 (comments above).
+  - **CDK assertion tests:** pass in `scripts/check`.
+  - **Still open:** an edit to `sfab.yaml` reaching the `v1` stage on the next build (`4-life-in-the-world#13`'s
+    world description edits it), and WAF's plain `403` when its default action is Block, which issue 10's kill switch
+    drill shows.
