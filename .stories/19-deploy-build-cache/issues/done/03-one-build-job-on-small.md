@@ -1,7 +1,5 @@
 # Build the Lambdas one job at a time on ARM/Small
 
-Label: ready-for-agent
-
 `spec.md` "Goal" 3 and "Scope".
 
 ## Scope

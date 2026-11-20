@@ -1,7 +1,5 @@
 # Grant the build role s3:ListBucket on the cache bucket
 
-Label: ready-for-agent
-
 `spec.md` "Goal" 1 and "Scope".
 
 ## Scope

@@ -1,7 +1,5 @@
 # The deploy runs scripts/build, not scripts/check
 
-Label: ready-for-agent
-
 `spec.md` "Goal" 2 and "Scope".
 
 ## Scope
