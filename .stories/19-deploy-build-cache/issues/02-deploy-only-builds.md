@@ -44,6 +44,10 @@ Label: ready-for-agent
   pytest: `(cd cdk && SFAB_CONFIG=tests/fixtures/sfab.config.test.toml .venv/bin/python -m pytest -q
   tests/test_openapi.py)`. It takes about 3 s and needs no Rust. `scripts/check` then runs the whole suite as today,
   that file included.
+  `test_openapi.py` reads route tables from three stories' specs (`SPECS`, :19-23: `2-identity-api`,
+  `4-life-in-the-world`, `17-genesis-codes`), so closing one, which moves it to `.stories/done/`, would break the
+  deploy. Make `SPECS` find each spec in `.stories/` or `.stories/done/`, and fail with the story's name when it's in
+  neither.
 - **`docs/federation.md:57`** says "Run `scripts/check`, which refuses an invalid or repeated domain, commit, and
   deploy." Make it say what refuses a bad domain after this change.
 - **`buildspec.yml`** drops the `cargo install cargo-audit` block and the `/root/.cargo/bin/cargo-audit` cache path.
