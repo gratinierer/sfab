@@ -758,13 +758,12 @@ def _vouches(s: _Session, credential: str) -> None:
         s.check("read own vouched-by", own, 404, problem="not-built-yet")
     else:
         s.check("read own vouched-by", own, 200, verify=_has(next=None))
-    public = s.api("GET", f"/v1/identity/{agent}/vouched-by")
-    if public.status == 404:
-        s.check("vouched-by while unpublished", public, 404, problem="not-built-yet")
-    else:
-        s.check(
-            "vouched-by while unpublished", public, 200, verify=_has(items=[], next=None)
-        )
+    _built_or_not(
+        s,
+        "vouched-by while unpublished",
+        f"/v1/identity/{agent}/vouched-by",
+        _has(items=[], next=None),
+    )
     s.check(
         "standing",
         s.api("GET", f"/v1/identity/{agent}/standing"),
