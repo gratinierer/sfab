@@ -18,13 +18,15 @@ Label: ready-for-agent
   asserts `BUILD_GENERAL1_SMALL`. Write the test first.
 - `BUILD_TIMEOUT_MINUTES` (`cdk/deployer_stack.py:38`) is 60. A one-job build is expected to take 20-30 minutes, so it
   stays, unless the owner's build below takes more than 45 minutes: then say so in a comment here, and ask.
-- `docs/aws-facts.md`: add a dated row for the memory failure and the measurement in Comments, `tested` for the
-  failure (build `e8caf7db`) and the local peaks as measured, with their caveats. Rows :127-:129 stay ARM/Small.
+- `docs/aws-facts.md`: add two dated rows. One, `tested`: ARM/Small runs out of memory building the Lambdas with
+  cargo's default jobs (build `e8caf7db`). Two, `memory` until the owner's build below: one build job fits
+  ARM/Small, citing the local measurement in Comments and its caveats as the source. Set it to `tested`, with the
+  build's id, once that build gets through `cargo lambda build`. Rows :127-:129 stay ARM/Small.
 
 ## Done when
 
 - `scripts/check` passes, with the test asserting `CARGO_BUILD_JOBS` is `1` in the buildspec.
-- `docs/aws-facts.md` has the memory row.
+- `docs/aws-facts.md` has both memory rows, the second still `memory` until the owner's build.
 - The owner has moved `production` to a commit with the buildspec change (CodeBuild reads `buildspec.yml` from
   `production`, `cdk/deployer_stack.py:101-103`, so no `SfabDeployer` deploy is needed), and a build started with no
   `--compute-type-override` gets through `cargo lambda build` on ARM/Small. Record its BUILD phase time here. If it
