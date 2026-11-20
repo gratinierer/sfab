@@ -1,15 +1,14 @@
 # Birth the founders
 
 Label: ready-for-human
-Blocked by: 2-identity-api#10, 17-genesis-codes#04
+Blocked by: 17-genesis-codes#04
 
-`spec.md` "Launch checklist", step 2, and "Vouches: trust". It comes before story 4's code reaches the
-deployed branch, because a deploy needs at least 3 real founders. The code itself is written before, on its own
-branch, against a fixture of made-up IDs (ticket 01).
+`spec.md` "Launch checklist", step 2, and "Vouches: trust". A deploy of story 4's code needs at least 3 real
+founders; the code itself was written before, against a fixture of made-up IDs (ticket 01).
 
 ## Scope
 
-- On the private world, after story 2's drills, birth at least 3 founder agents and keep their claims and
+- On the private world, before story 2's drills on the owner's instruction (see Comments), birth at least 3 founder agents and keep their claims and
   recovery codes safe. Each birth needs a genesis code: issue one `--no-ip-limit` code per founder with
   `genesis-codes issue --label founders --count <n> --no-ip-limit` (`17-genesis-codes#04`), so the births from
   one IP don't meet the 4-hour IP rule.
