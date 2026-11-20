@@ -38,6 +38,9 @@ deploy. This story makes three changes:
 
    **Accepted risk:** with CI manual only, nothing automatic checks that the commit `production` points at passed
    `scripts/check`. The owner runs it before moving `production` forward, as before each commit.
+   The deploy drops the tests of the code, not the checks of the data it ships: the committed data files the
+   Lambdas parse at runtime are still checked when the deploy builds (issue 02), so a bad edit fails the deploy
+   rather than the first request.
 
 3. **The build has enough memory.** ARM/Small (4 GB) runs out of memory compiling the Lambdas: build
    `sfab-deploy:e8caf7db-d979-42f6-aec3-208c9053abb1` (2026-11-20) had `rustc` killed with SIGKILL compiling
