@@ -1,4 +1,4 @@
-# A working deploy build: its cache restores, it only builds and deploys, and it runs on ARM/Medium
+# A working deploy build: its cache restores, it only builds and deploys, and it fits ARM/Small
 
 GitHub issue: [gratinierer/sfab#19](https://github.com/gratinierer/sfab/issues/19)
 Authored: 2026-11-20 by claude-opus-5-5
@@ -47,14 +47,18 @@ deploy. This story makes three changes:
    rather than the first request. So is the API Gateway definition `openapi/sfab.yaml`, whose checks live only in
    `cdk/tests/test_openapi.py`: the deploy's build runs that one test file (about 3 s), and no other test.
 
-3. **The build has enough memory.** ARM/Small (4 GB) runs out of memory compiling the Lambdas: build
+3. **The build fits in memory.** ARM/Small (4 GB) runs out of memory compiling the Lambdas: build
    `sfab-deploy:e8caf7db-d979-42f6-aec3-208c9053abb1` (2026-11-20) had `rustc` killed with SIGKILL compiling
    `aws-sdk-lambda` under `cargo lambda`'s release settings. Story 2's first deploy ran on ARM/Medium (8 GB) with
    `--compute-type-override BUILD_GENERAL1_MEDIUM`. Dropping the audit and tests (2) doesn't help, because the
-   failure is in the Lambda build, which the deploy keeps.
+   failure is in the Lambda build, which the deploy keeps. A local measurement (issue 03, Comments) puts the peak at
+   about 3.9 GB with 2 jobs, when two big AWS SDK crates compile at once, and 2.3 GB with one job, which takes about
+   twice as long. The build stays on ARM/Small, whose minutes the free tier covers, and compiles one crate at a time:
+   a deploy of about 20-30 minutes, against about 12 on ARM/Medium at $0.0070 a minute, which the free tier doesn't
+   cover (owner, 2026-11-20, R8).
 
 After this story the build restores its cache, installs no `cargo-audit`, runs only generate, build and the OpenAPI tests before
-`cdk deploy` (and none of them for `SfabDeployer` alone with no config), and runs on ARM/Medium.
+`cdk deploy` (and none of them for `SfabDeployer` alone with no config), and fits ARM/Small by compiling one crate at a time.
 
 ## Scope
 
@@ -68,8 +72,8 @@ After this story the build restores its cache, installs no `cargo-audit`, runs o
   CodeBuild and on a machine alike. `buildspec.yml` no longer installs or caches `cargo-audit`. CI is unchanged: it
   runs `scripts/check`. The two federation files, which only `cargo test` checks today, still fail the deploy if
   they don't parse, `scripts/build` runs `cdk/tests/test_openapi.py` and no other test, and `docs/federation.md` and story 2's spec ("Delivery", "Build and deploy") follow.
-- **ARM/Medium** (issue 03). `cdk/deployer_stack.py`'s `compute_type` becomes `BUILD_GENERAL1_MEDIUM`, and story 2's
-  "Prerequisites" and `docs/aws-facts.md` name the ARM/Medium quota instead of ARM/Small's.
+- **One build job on ARM/Small** (issue 03). `buildspec.yml` sets `CARGO_BUILD_JOBS=1`, the compute type stays
+  `BUILD_GENERAL1_SMALL`, and `docs/aws-facts.md` records the memory failure and the measurement.
 
 ## Out of scope
 
@@ -80,7 +84,7 @@ After this story the build restores its cache, installs no `cargo-audit`, runs o
 - **Caching `lambda/target`.** The release Lambda compile is the long step, but `lambda/target` isn't cached (CI's
   `ci.yml` does cache it). Its `aarch64-unknown-linux-gnu` part is 1.4 GB locally (2026-11-20), moved both ways on
   every build, and with fat LTO a cached `target/` saves the dependency compiles, not the final link. That waits
-  until a build on ARM/Medium (issue 03) is timed, to compare the compile with the transfer.
+  until a one-job build on ARM/Small (issue 03) is timed, to compare the compile with the transfer.
 - **Other ways to shorten the install**, such as a custom build image. Without `cargo-audit` the install takes about
   20 s.
 - **The failure of that same build's BUILD phase**: `scripts/deploy` exited at once without output. That build ran
