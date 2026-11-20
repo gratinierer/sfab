@@ -22,6 +22,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-20T20:10:00+00:00 | check | @ 2b1f222 | scripts/check | — | green, the loop's check of the round 2 fix |
 | 2026-11-20T20:10:00+00:00 | code-review | 01, 02, 03 @ afa2e4a..2b1f222 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, fixes by the orchestrator claude-opus-5-5) | 1 new: 0 standards, 1 spec, 0 security | auto round 3, fix commits only; the standards reviewer raised the same point as a weak judgement call, recorded once |
 | 2026-11-20T20:15:00+00:00 | walkthrough | 289e8c3 | claude-opus-5-5 (auto) | 0 new, 1 resolved, 0 still open | auto walkthrough, not a review pass |
+| 2026-11-20T20:30:00+00:00 | check | @ 5be67ff | scripts/check | — | green, the loop's check before round 4 |
 | 2026-11-20T20:30:00+00:00 | code-review | 01, 02, 03 @ 2b1f222..5be67ff | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, fixes by the orchestrator claude-opus-5-5) | 2 new: 1 standards, 1 spec, 0 security | auto round 4, the last; the loop stops at its limit of 3 address passes with C5, C6 open |
 
 ## Findings
