@@ -18,6 +18,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-20T19:35:00+00:00 | walkthrough | 6ca30ab | claude-opus-5-5 (auto) | 0 new, 2 resolved, 0 still open | auto walkthrough, not a review pass |
 | 2026-11-20T19:50:00+00:00 | check | @ afa2e4a | scripts/check | — | green, the loop's check of the round 1 fixes |
 | 2026-11-20T19:50:00+00:00 | code-review | 01, 02, 03 @ a4bda63..afa2e4a | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, fixes by the orchestrator claude-opus-5-5) | 1 new: 1 standards, 0 spec, 0 security | auto round 2, fix commits only; same-family reviewers |
+| 2026-11-20T19:55:00+00:00 | walkthrough | 72ef9aa | claude-opus-5-5 (auto) | 0 new, 1 resolved, 0 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
