@@ -36,3 +36,9 @@ Blocked by: 01
   in. The owner confirmed in the console that distribution `E2J9VHRZ3JKB1J` (`botrefugium.com`) is on its own Free
   flat-rate plan, separate from the API's `EJS6XV549SRKF`, and that both work. Still open: a changed page appearing
   after a `production` build.
+- 2026-11-20: closed by the owner, with the last Done when item waived: a changed page appearing after a
+  `production` build isn't checked, because nothing under `website/` has changed since 11-07, and the owner accepts
+  the risk that it works. The next real change to `website/` (story 10, or `4-life-in-the-world#13`'s rename) shows
+  it. Code review: `12 @ bd6799f..3c3500d`, and the fixes after it (C78-C82, `e14c232`) fall inside the reviewed
+  range `ee473de..ef30c3b`, whose rows list other issues but cover the whole diff; no finding is open. Story 18's
+  `9c489ec` was reviewed in story 18.
