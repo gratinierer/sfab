@@ -23,7 +23,8 @@ Label: ready-for-agent
 
 - `scripts/check` passes, with the test asserting `CARGO_BUILD_JOBS` is `1` in the buildspec.
 - `docs/aws-facts.md` has the memory row.
-- The owner has deployed `SfabDeployer` from a machine (`scripts/deploy SfabDeployer`), and a build started with no
+- The owner has moved `production` to a commit with the buildspec change (CodeBuild reads `buildspec.yml` from
+  `production`, `cdk/deployer_stack.py:101-103`, so no `SfabDeployer` deploy is needed), and a build started with no
   `--compute-type-override` gets through `cargo lambda build` on ARM/Small. Record its BUILD phase time here. If it
   still runs out of memory, the fallback is ARM/Medium at $0.0070 a minute (Comments), which the owner decides.
   This needs the owner's deploy, so if the agent can't check it, it leaves a comment here saying so.

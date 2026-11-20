@@ -83,7 +83,7 @@ Write the tests first.
   `openapi/sfab.yaml`, run `scripts/build`, restore it) and note the result in a comment here.
 - The deploy's build or synth fails when either federation file doesn't parse. Check each by hand once (break it,
   run `scripts/build` and a synth, restore it) and list the results in a comment here.
-- On the owner's next build with issue 03 deployed (one build job on ARM/Small), or started with
+- On the owner's next build with issue 03 on `production` (one build job on ARM/Small), or started with
   `--compute-type-override BUILD_GENERAL1_MEDIUM`, since today's ARM/Small build runs out of memory in
   `cargo lambda build`, the BUILD phase log shows the generate and build steps and then `cdk deploy`, with no
   audit and no test output other than `tests/test_openapi.py`'s. This needs the owner's build, so when the agent can't check it, it leaves a comment
