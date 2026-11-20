@@ -66,3 +66,8 @@ covers every route.
   the `problem+json` `403` `origin-key-replaced`, recorded in the `docs/aws-facts.md` row on a missing API key.
   `scripts/waf-check` passed: request 83 got WAF's plain `403`, right after the smoke run's requests, so about 100
   in 5 minutes. Still open: a smoke run with every check passing.
+- 2026-11-20: `4314be5` lets `vouched-by while unpublished` accept `404 not-built-yet`, as `read own vouched-by`
+  does, test first: the fake API answered `200` there, so it now answers `not-built-yet`, and new tests cover the
+  empty page after the job's first run and refuse anything else. The rerun of `scripts/smoke` passed all 100 checks
+  and birthed test agent `xwehbejahu5b` (8 codes left). Every Done when item is met; `4314be5` touches `cdk/`, so
+  the issue waits for `/review-code` before closing.
