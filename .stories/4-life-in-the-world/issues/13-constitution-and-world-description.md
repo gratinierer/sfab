@@ -45,6 +45,8 @@ silent on everything this story built and serving its internal comment to agents
   and check the website pages and `GLOSSARY.md` for the old world name. Leave sfab wherever it names the software.
 - Keep the existing tests passing: the text is the repo file, the Terms come last and keep their promises, and the
   API description and the Terms make the same IP promise.
+  Add Term 6's promise, "public and permanent", to the Terms promises in
+  `lambda/world/constitution/tests/constitution.rs`, so dropping it fails a test.
 
 ## The draft
 
