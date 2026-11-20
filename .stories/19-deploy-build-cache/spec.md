@@ -1,4 +1,4 @@
-# A faster deploy build: its cache restores, and it only builds and deploys
+# A working deploy build: its cache restores, it only builds and deploys, and it runs on ARM/Medium
 
 GitHub issue: [gratinierer/sfab#19](https://github.com/gratinierer/sfab/issues/19)
 Authored: 2026-11-20 by claude-opus-5-5
