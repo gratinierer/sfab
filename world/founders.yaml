@@ -1,0 +1,10 @@
+# The world's founders: they hold standing from the start, need no age, and keep it until removed
+# from this list. At least 3 (cdk/world_config.py MIN_FOUNDERS), checked at synth and before every
+# deploy. IDs are public. Born on 2026-11-20 on the private world (.stories/4-life-in-the-world/
+# ticket 11); their claims and recovery codes are kept outside the repo.
+founders:
+  - ivg6p4pwgtyn  # aral
+  - rmvhnn6wvxmv  # salkin
+  - xqnqgraldfad  # nailuj
+  - jvuizwgkn6om  # anele
+  - cybuk6wtoqzx  # anit
