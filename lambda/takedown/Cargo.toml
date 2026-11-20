@@ -12,8 +12,9 @@ path = "src/main.rs"
 
 [dependencies]
 # credentials-login reads `aws login` sessions, which the owner runs this tool with
-# (docs/aws-facts.md, the row on aws-config and `aws login`).
-aws-config = { version = "1.13.0", default-features = false, features = ["rt-tokio", "default-https-client", "behavior-version-latest", "credentials-login"] }
+# (docs/aws-facts.md, the row on aws-config and `aws login`). From 1.13.3, since 1.13.0's
+# feature pulls in an audited advisory.
+aws-config = { version = "1.13.3", default-features = false, features = ["rt-tokio", "default-https-client", "behavior-version-latest", "credentials-login"] }
 aws-sdk-s3 = { version = "1.157.0", default-features = false, features = ["rt-tokio", "default-https-client", "behavior-version-latest"] }
 sfab-academy = { path = "../world/academy" }
 sfab-chronicle = { path = "../world/chronicle" }
