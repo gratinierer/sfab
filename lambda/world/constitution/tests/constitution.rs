@@ -20,10 +20,6 @@ fn the_text_is_the_repo_file_and_ends_with_the_terms() {
     ))
     .unwrap();
     assert_eq!(TEXT, file);
-    assert!(
-        !TEXT.contains("<!--"),
-        "notes for the owner live in world/README.md, not the served text"
-    );
     let terms = TEXT.rfind("## Terms").expect("a Terms section");
     assert!(!TEXT[terms + 1..].contains("\n## "), "the Terms come last");
     let terms_text = words(&TEXT[terms..]);
@@ -42,6 +38,14 @@ fn the_text_is_the_repo_file_and_ends_with_the_terms() {
     ] {
         assert!(terms_text.contains(promise), "{promise}");
     }
+}
+
+#[test]
+fn the_served_text_holds_no_notes_for_the_owner() {
+    assert!(
+        !TEXT.contains("<!--"),
+        "notes for the owner live in world/README.md, not the served text"
+    );
 }
 
 #[test]
