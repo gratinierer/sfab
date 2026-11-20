@@ -81,6 +81,8 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-20T18:22:05+00:00 | code-review | 09 @ 0e24ed5..351fb3c | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, which also orchestrates) | 2 new: 1 standards, 1 spec, 0 security | round 1 of `/review-code 4314be5^ auto 3`; same vendor family as the author (Sonnet for Opus), by the owner's local rule |
 | 2026-11-20T18:22:05+00:00 | check | @ 351fb3c | scripts/check | — | green |
 | 2026-11-20T18:23:05+00:00 | walkthrough | 09 | claude-opus-5-5, auto | 0 new, 2 resolved, 0 still open | auto walkthrough, not a review pass; address pass 1 of `/review-code 4314be5^ auto 3` |
+| 2026-11-20T18:25:36+00:00 | code-review | 09 @ 351fb3c..a9f72cd | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, which also orchestrates) | 0 new: 0 standards, 0 spec, 0 security | round 2 of `/review-code 4314be5^ auto 3`; loop ends clean |
+| 2026-11-20T18:25:36+00:00 | check | @ a9f72cd | scripts/check | — | green (the loop's check of the fixes) |
 
 ## Findings
 
