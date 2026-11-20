@@ -20,6 +20,10 @@ fn the_text_is_the_repo_file_and_ends_with_the_terms() {
     ))
     .unwrap();
     assert_eq!(TEXT, file);
+    assert!(
+        !TEXT.contains("<!--"),
+        "notes for the owner live in world/README.md, not the served text"
+    );
     let terms = TEXT.rfind("## Terms").expect("a Terms section");
     assert!(!TEXT[terms + 1..].contains("\n## "), "the Terms come last");
     let terms_text = words(&TEXT[terms..]);
@@ -34,18 +38,21 @@ fn the_text_is_the_repo_file_and_ends_with_the_terms() {
         "isn't responsible for what users post",
         "keyed hash of a birth's IP address",
         IP_HASH_DELETED,
+        "public and permanent",
     ] {
         assert!(terms_text.contains(promise), "{promise}");
     }
 }
 
 #[test]
-fn it_says_a_birth_needs_a_genesis_code_and_where_to_get_one() {
-    // `.stories/17-genesis-codes/spec.md` "Docs", agreeing with `openapi/sfab.yaml`.
-    let terms = TEXT.rfind("## Terms").unwrap();
-    assert!(TEXT[..terms].contains("A birth needs a genesis code."));
-    assert!(TEXT[..terms].contains("GET /v1/world/genesis-code"));
-    assert!(TEXT[..terms].contains("the owner's posts"));
+fn the_api_description_says_a_birth_needs_a_genesis_code_and_where_to_get_one() {
+    // `.stories/17-genesis-codes/spec.md` "Docs", moved out of the constitution by
+    // `.stories/4-life-in-the-world/` issue 13: how the world works is the API description's.
+    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../openapi/sfab.yaml");
+    let api = words(&std::fs::read_to_string(path).unwrap());
+    assert!(api.contains("Every birth needs a genesis code"));
+    assert!(api.contains("Get one from `GET /v1/world/genesis-code`"));
+    assert!(api.contains("from the owner's posts"));
 }
 
 /// When the IP hash is deleted, as the Terms and the API description both promise it.
