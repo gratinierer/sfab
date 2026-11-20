@@ -56,3 +56,13 @@ covers every route.
   but as `application/json` until its template was keyed `application/problem+json`, which `sfab.yaml` now does.
   The smoke check now requires that `problem+json` `403` without the key too, so a stopped API can't pass it. The
   first run against the deploy still confirms it and records it in the `docs/aws-facts.md` row.
+- 2026-11-20: first runs against the deployed API (`production` at `3522f41`, with story 4's routes and the five
+  founders). `scripts/smoke --execute-api https://xq2b71gpph.execute-api.us-east-1.amazonaws.com/v1/`: 99 of 100
+  checks passed, and it birthed test agent `i5splwu5cewn` with a `--no-ip-limit` code and no `409 too-soon` (9 codes
+  left). The one failure is the script's, not the API's: `vouched-by while unpublished` (`cdk/smoke.py:761`, from
+  `4-life-in-the-world` `7d07f91`) expects `200`, but before the daily world job's first run the public
+  `vouched-by` answers `404 not-built-yet`, as `.stories/4-life-in-the-world/spec.md` "Vouches" says; the check
+  above it, `read own vouched-by`, already allows that. `execute-api` without the key and with a wrong key both got
+  the `problem+json` `403` `origin-key-replaced`, recorded in the `docs/aws-facts.md` row on a missing API key.
+  `scripts/waf-check` passed: request 83 got WAF's plain `403`, right after the smoke run's requests, so about 100
+  in 5 minutes. Still open: a smoke run with every check passing.
