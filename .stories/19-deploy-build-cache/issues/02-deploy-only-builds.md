@@ -6,7 +6,8 @@ Label: ready-for-agent
 
 ## Scope
 
-- **New `scripts/build [--require-secret]`**: the first three steps of today's `scripts/check`, moved unchanged:
+- **New `scripts/build [--require-secret]`**: the first three steps of today's `scripts/check`, moved unchanged,
+  plus the OpenAPI tests between generate and the Lambda build (below):
   the Python environment (`cdk/.venv`), generate (`generate_public_openapi.py`, `generate_website.py`, passing
   `--require-secret` through), and `cargo lambda build --release --arm64 --locked`. It refuses any other argument,
   as `scripts/check` does today. Its header comment says it makes what `cdk deploy` needs.
@@ -40,8 +41,9 @@ Label: ready-for-agent
   `parse_world`, `parse_worlds` and `valid_domain` into Python, where they can drift from the Rust.
 - **The deploy still checks the API definition.** `openapi/sfab.yaml` is the API Gateway definition
   (`cdk/stacks.py`), and its route, length, validator and gateway-response checks live only in
-  `cdk/tests/test_openapi.py`. `scripts/build` runs that file alone, after generate, the way `scripts/check` runs
-  pytest: `(cd cdk && SFAB_CONFIG=tests/fixtures/sfab.config.test.toml .venv/bin/python -m pytest -q
+  `cdk/tests/test_openapi.py`. `scripts/build` runs that file alone, after generate and before
+  `cargo lambda build`, so a bad definition fails in seconds rather than after the compile, the way `scripts/check`
+  runs pytest: `(cd cdk && SFAB_CONFIG=tests/fixtures/sfab.config.test.toml .venv/bin/python -m pytest -q
   tests/test_openapi.py)`. It takes about 3 s and needs no Rust. `scripts/check` then runs the whole suite as today,
   that file included.
   `test_openapi.py` reads route tables from three stories' specs (`SPECS`, :19-23: `2-identity-api`,
