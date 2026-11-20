@@ -64,12 +64,12 @@ def test_the_project_builds_production_of_this_repo_through_the_connection(deplo
     assert "Triggers" not in props
 
 
-def test_the_project_runs_on_the_arm_small_image_and_deploys_all_by_default(deployer):
+def test_the_project_runs_the_arm_image_on_medium_and_deploys_all_by_default(deployer):
     _, project = only(deployer, "AWS::CodeBuild::Project")
 
     assert project["Properties"]["Environment"] == {
         "Type": "ARM_CONTAINER",
-        "ComputeType": "BUILD_GENERAL1_SMALL",
+        "ComputeType": "BUILD_GENERAL1_MEDIUM",
         "Image": "aws/codebuild/amazonlinux-aarch64-standard:3.0",
         "ImagePullCredentialsType": "CODEBUILD",
         "PrivilegedMode": False,

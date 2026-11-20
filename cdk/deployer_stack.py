@@ -26,7 +26,7 @@ REPOSITORY = "gratinierer/sfab"
 BRANCH = "production"
 # In the repo root; it installs the tools tool-versions.env pins and runs scripts/deploy.
 BUILDSPEC = "buildspec.yml"
-# The Arm small image (docs/aws-facts.md, "CodeBuild").
+# The Arm image (docs/aws-facts.md, "CodeBuild").
 IMAGE = "aws/codebuild/amazonlinux-aarch64-standard:3.0"
 DEPLOY_STACKS_DEFAULT = "--all"
 # The roles `cdk bootstrap` creates that the CDK CLI assumes, named
@@ -104,7 +104,9 @@ class DeployerStack(cdk.Stack):
             artifacts=codebuild.CfnProject.ArtifactsProperty(type="NO_ARTIFACTS"),
             environment=codebuild.CfnProject.EnvironmentProperty(
                 type="ARM_CONTAINER",
-                compute_type="BUILD_GENERAL1_SMALL",
+                # ARM/Medium, 4 vCPU and 8 GB: cargo's default jobs fit, where ARM/Small's 4 GB
+                # needed one job and twice the time (docs/aws-facts.md, "CodeBuild").
+                compute_type="BUILD_GENERAL1_MEDIUM",
                 image=IMAGE,
                 image_pull_credentials_type="CODEBUILD",
                 privileged_mode=False,

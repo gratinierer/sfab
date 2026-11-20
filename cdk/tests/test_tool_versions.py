@@ -71,9 +71,10 @@ def test_the_buildspec_installs_and_caches_no_cargo_audit():
     assert "cargo-audit" not in BUILDSPEC.read_text()
 
 
-def test_the_buildspec_compiles_one_crate_at_a_time_in_every_phase():
-    # ARM/Small's 4 GB fits one job, not two (.stories/19-deploy-build-cache/spec.md Goal 3).
+def test_the_buildspec_leaves_cargo_its_default_jobs():
+    # ARM/Medium's 8 GB fits one job per vCPU (docs/aws-facts.md, "CodeBuild"), so nothing caps
+    # them, as story 19 had to on ARM/Small.
     env = yaml.safe_load(BUILDSPEC.read_text())["env"]
 
     assert env["shell"] == "bash"
-    assert env["variables"]["CARGO_BUILD_JOBS"] == "1"
+    assert "CARGO_BUILD_JOBS" not in env.get("variables", {})

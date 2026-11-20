@@ -1026,9 +1026,10 @@ Story 17 is part of this first deploy (`.stories/17-genesis-codes/` intro), so s
 - A Lambda concurrency quota of at least 106 on that account: the stacks reserve 6 (the API Lambda's 5 and the
   daily world job's 1), and AWS requires 100 units to stay unreserved, so a new account with a lower quota needs an increase, or the deploy
   fails.
-- A CodeBuild quota of at least 1 concurrently running build for the Arm small image on that account, checked in
-  Service Quotas (`L-5ED1D25B`). AWS documents a default of 1, but forum reports say a new account can start at 0,
-  in which case every build fails to start until an increase is granted (`docs/aws-facts.md`).
+- A CodeBuild quota of at least 1 concurrently running build for ARM/Medium on that account, checked in Service
+  Quotas (`L-DF544FF3`), since the deploy build runs on ARM/Medium. A new account can start some quotas at 0, as
+  this one did for ARM/Small (`L-5ED1D25B`), in which case every build fails to start until an increase is granted
+  (`docs/aws-facts.md`).
 
 ## Open questions
 
