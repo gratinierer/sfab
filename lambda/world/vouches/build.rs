@@ -1,7 +1,8 @@
 //! Picks the founders file to compile in: the fixture of made-up IDs with the `fixture-founders`
 //! feature, which tests turn on through their dev-dependencies, so tests never run on real IDs
-//! (spec "Vouches: trust"); otherwise `world/founders.yaml` once ticket 11 of
-//! `.stories/4-life-in-the-world/` commits it, and until then the fixture, so the branch builds.
+//! (spec "Vouches: trust"); otherwise `world/founders.yaml`, which ticket 11 of
+//! `.stories/4-life-in-the-world/` committed, or the fixture when it's missing, as in a fork
+//! before its own founders are born, so the code still builds.
 //! `cdk/deploy_plan.py` refuses a deploy without the real file or with a fixture ID in it, so the
 //! fixture never reaches a deployed world.
 

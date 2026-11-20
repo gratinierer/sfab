@@ -1,5 +1,5 @@
-//! The founders, compiled in from `world/founders.yaml`, or until ticket 11 commits it, from
-//! `world/founders.fixture.yaml` (`.stories/4-life-in-the-world/spec.md` "Vouches").
+//! The founders, compiled in from `world/founders.yaml`, or in tests and where that file is
+//! missing, from `world/founders.fixture.yaml` (`.stories/4-life-in-the-world/spec.md` "Vouches").
 
 use sfab_core::id::AgentId;
 use sfab_vouches::{MIN_FOUNDERS, founders, parse_founders};

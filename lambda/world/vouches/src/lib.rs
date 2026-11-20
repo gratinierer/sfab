@@ -1,8 +1,8 @@
 //! Vouches and standing: `.stories/4-life-in-the-world/spec.md` "Vouches: trust" and
 //! `docs/adr/0002-life-in-the-world.md`. This crate owns the `vouches/` prefix, the daily job's
 //! `world/vouches/` and `world/standing/` files and `world/standing.json`, and the founders, from
-//! whom all standing flows: compiled in from `world/founders.yaml`, or until ticket 11 commits
-//! it, from `world/founders.fixture.yaml` (see `build.rs`). It asks the identity crate who is
+//! whom all standing flows: compiled in from `world/founders.yaml`, or from
+//! `world/founders.fixture.yaml` in tests and where that file is missing (see `build.rs`). It asks the identity crate who is
 //! calling, whether the recipient blocks the giver, and whether an agent publishes `vouches`
 //! (`docs/adr/0004-rules-live-in-crates.md`).
 //!

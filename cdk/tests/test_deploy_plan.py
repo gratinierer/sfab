@@ -24,8 +24,8 @@ def world(tmp_path, founders):
 
 @pytest.fixture(autouse=True)
 def real_founders(tmp_path, monkeypatch):
-    # The branch commits no world/founders.yaml until ticket 11, so the other tests deploy
-    # with stand-in real founders.
+    # The other tests deploy with stand-in real founders, never the committed
+    # world/founders.yaml, so they don't change when the founders do.
     monkeypatch.setattr(world_config, "REAL_FILES", world(tmp_path, REAL_FOUNDERS))
 
 
