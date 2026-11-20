@@ -13,10 +13,14 @@ Label: ready-for-agent
 - **`scripts/check [--require-secret]`** runs `scripts/build` with the same argument, then "Audit dependencies"
   and "Test", in today's order. Its behaviour doesn't change. Its header comment says the deploy runs only
   `scripts/build`.
-- **`scripts/deploy`** runs `scripts/build --require-secret` in the `require-secret` mode and `scripts/build` in
-  the `fallback` mode, where it ran `scripts/check`. Its header comment drops "then runs every check, audits
-  included" and says the audit and tests are left to `scripts/check`, CI and Dependabot. `cdk/deploy_plan.py`'s
-  mode names stay; rewrite its comments and docstrings that name `scripts/check` as the deploy's step.
+- **`scripts/deploy`** runs `scripts/build --require-secret` in the `require-secret` mode, where it ran
+  `scripts/check --require-secret`. In the `fallback` mode (`SfabDeployer` alone, with no loadable config) it runs no
+  `scripts/build`: it syncs the venv and runs `cdk deploy SfabDeployer`, and the app synthesizes only `SfabDeployer`,
+  because the Lambda builds and pages are missing (`cdk/app.py:5-8`). The fixture's pages were there for the tests,
+  which the deploy no longer runs. Its header comment drops "then runs every check, audits included" and says the
+  audit and tests are left to `scripts/check`, CI and Dependabot. `cdk/deploy_plan.py`'s mode names stay; rewrite
+  what names `scripts/check` as the deploy's step: its docstring (:12-14), `Plan`'s docstring (:38), the comment at
+  :86-87, and `scripts/deploy`'s comments (:8-9, :18).
 - **The deploy still refuses bad data.** The Lambdas compile in committed data files with `include_str!` and parse
   them at runtime, and today only `cargo test` checks that they parse: `federation/world.yaml` and
   `federation/worlds.yaml` (`lambda/world/federation/src/directory.rs:18,22`), `world/quarters.yaml` (`homes`),
@@ -52,7 +56,7 @@ Write the tests first.
   wrappers, and the decisions stay in `cdk/deploy_plan.py`, tested in-process.
 - Text-level tests, in the style of `test_the_buildspec_in_the_repo_runs_scripts_deploy_with_deploy_stacks`
   (`cdk/tests/test_deployer_stack.py:82-86`), read the scripts' source and assert that `scripts/deploy` calls
-  `scripts/build` and never `scripts/check`, `scripts/audit`, `cargo test` or `pytest`, and that `scripts/check`
+  `scripts/build` in the `require-secret` branch only, and never `scripts/check`, `scripts/audit`, `cargo test` or `pytest`, and that `scripts/check`
   calls `scripts/build` before the audit and the tests.
 - `scripts/build`'s arguments are checked by hand once (none, `--require-secret`, an unknown one refused), with the
   results in a comment here.
