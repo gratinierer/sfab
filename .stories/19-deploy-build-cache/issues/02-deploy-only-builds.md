@@ -21,15 +21,18 @@ Label: ready-for-agent
   audit and tests are left to `scripts/check`, CI and Dependabot. `cdk/deploy_plan.py`'s mode names stay; rewrite
   what names `scripts/check` as the deploy's step: its docstring (:12-14), `Plan`'s docstring (:38), the comment at
   :86-87, and `scripts/deploy`'s comments (:8-9, :18).
-- **The deploy still refuses bad data.** The Lambdas compile in committed data files with `include_str!` and parse
-  them at runtime, and today only `cargo test` checks that they parse: `federation/world.yaml` and
-  `federation/worlds.yaml` (`lambda/world/federation/src/directory.rs:18,22`), `world/quarters.yaml` (`homes`),
-  `world/shelves.yaml` (`library`), the founders file `SFAB_FOUNDERS_FILE` names (`vouches`), the OpenAPI document
-  (`lambda/api/src/lib.rs:31`) and the constitution text (`constitution`). Recheck that list with
-  `grep -rn include_str! lambda --include=*.rs`. `scripts/build` must fail on a file that doesn't parse, with the same
-  checks the tests make, so a bad edit fails the deploy instead of panicking on the first request. How is the
-  implementer's choice, recorded in a comment here with the reason: for example a `build.rs` per crate, or
-  `scripts/build` running only those parse tests (`cargo test -p <crate> <filter>`), not the whole suite.
+- **The deploy still refuses bad data.** The Lambdas compile in committed data files with `include_str!`
+  (`grep -rn include_str! lambda --include=*.rs`). Most keep a check the deploy still runs: `world/founders.yaml`,
+  `world/quarters.yaml` and `world/shelves.yaml` are checked at synth by `cdk/world_config.py`, which `cdk/app.py`
+  runs on every deploy (`homes/src/lib.rs:62`, `library/src/lib.rs:75`, `vouches/src/lib.rs:63`: "checked at synth
+  and by its test"); the `vouches` tests read the fixture, not the real founders file (the `fixture-founders`
+  feature); and the OpenAPI document (`lambda/api/src/lib.rs:1264`) and the constitution are served as text, not
+  parsed. Only `federation/world.yaml` and `federation/worlds.yaml` (`lambda/world/federation/src/directory.rs:18,22`,
+  parsed at :34-36) are checked by nothing but `cargo test` (`the_committed_directory_files_parse`). The deploy must
+  fail on either one that doesn't parse, with the checks that test makes, so a bad edit fails the deploy instead of
+  panicking on the first request. How is the implementer's choice, recorded in a comment here with the reason: for
+  example a check at synth beside `world_config.py`'s, a `build.rs` in the federation crate, or `scripts/build`
+  running only that test (`cargo test -p <crate> the_committed_directory_files_parse`).
 - **`docs/federation.md:57`** says "Run `scripts/check`, which refuses an invalid or repeated domain, commit, and
   deploy." Make it say what refuses a bad domain after this change.
 - **`buildspec.yml`** drops the `cargo install cargo-audit` block and the `/root/.cargo/bin/cargo-audit` cache path.
@@ -61,8 +64,8 @@ Write the tests first.
 - `scripts/build`'s arguments are checked by hand once (none, `--require-secret`, an unknown one refused), with the
   results in a comment here.
 - `buildspec.yml` installs no `cargo-audit`, and the tool-versions tests pass.
-- `scripts/build` fails when any one of the data files above doesn't parse. Check each by hand once (break it,
-  run `scripts/build`, restore it) and list the results in a comment here.
+- The deploy's build or synth fails when either federation file doesn't parse. Check each by hand once (break it,
+  run `scripts/build` and a synth, restore it) and list the results in a comment here.
 - On the owner's next build, the BUILD phase log shows the generate and build steps and then `cdk deploy`, with no
   audit and no test output. This needs the owner's build, so when the agent can't check it, it leaves a comment
   here saying so.
