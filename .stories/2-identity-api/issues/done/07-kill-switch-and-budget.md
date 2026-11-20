@@ -26,3 +26,8 @@ base stack, from issue 01.
 ## Comments
 
 - 2026-11-08: relabelled `ready-for-human` (review finding R183): the kill switch (`cdk/kill_switch.py`, `lambda/killswitch/`), the budgets and `docs/restart-after-a-stop.md` are built and code-reviewed (`code-review.md`, 2026-11-08); what remains is the owner's deploy.
+- 2026-11-20: closed. Both Done when items are met: the kill switch's unit tests and CDK assertion tests passed in
+  `scripts/check` on `3522f41`, and the owner's first deploy brought it with the API stack (`SfabApi`, first from
+  `b46e588`, then from `production` in build `sfab-deploy:41dbb6a3-c8c5-4da1-a76c-60e84a022a94`). Code review covers
+  its last code commit, `6428761`, in the 2026-11-08 rounds ending at `ef30c3b`, with no finding open; the later
+  `ee85ba7` changed only `docs/restart-after-a-stop.md` and was reviewed in story 18. The drills are issue 10's.
