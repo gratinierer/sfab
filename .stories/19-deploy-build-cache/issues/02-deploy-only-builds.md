@@ -12,7 +12,8 @@ Label: ready-for-agent
   `--require-secret` through), and `cargo lambda build --release --arm64 --locked`. It refuses any other argument,
   as `scripts/check` does today. Its header comment says it makes what `cdk deploy` needs.
 - **`scripts/check [--require-secret]`** runs `scripts/build` with the same argument, then "Audit dependencies"
-  and "Test", in today's order. Its behaviour doesn't change. Its header comment says the deploy runs only
+  and "Test", in today's order. It runs the same checks as today, with `tests/test_openapi.py` also run early by `scripts/build` and again in the
+  full suite. Its header comment says the deploy runs only
   `scripts/build`.
 - **`scripts/deploy`** runs `scripts/build --require-secret` in the `require-secret` mode, where it ran
   `scripts/check --require-secret`. In the `fallback` mode (`SfabDeployer` alone, with no loadable config) it runs no

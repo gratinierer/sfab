@@ -68,7 +68,8 @@ After this story the build restores its cache, installs no `cargo-audit`, runs o
   corrected, since the build above shows its list isn't enough.
 - **The deploy only builds and deploys** (issue 02). The first steps of `scripts/check` (Python environment,
   generate, build the Lambdas) move into a new `scripts/build`. `scripts/check` runs it, then the audit and the
-  tests, so it does exactly what it does today. `scripts/deploy` runs `scripts/build` instead of `scripts/check`, on
+  tests, so it runs the same checks as today, with `test_openapi.py` also run early, between generate and the
+  Lambda build. `scripts/deploy` runs `scripts/build` instead of `scripts/check`, on
   CodeBuild and on a machine alike. `buildspec.yml` no longer installs or caches `cargo-audit`. CI is unchanged: it
   runs `scripts/check`. The two federation files, which only `cargo test` checks today, still fail the deploy if
   they don't parse, `scripts/build` runs `cdk/tests/test_openapi.py` and no other test, and `docs/federation.md` and story 2's spec ("Delivery", "Build and deploy") follow.
