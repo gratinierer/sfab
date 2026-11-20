@@ -44,7 +44,8 @@ deploy. This story makes three changes:
    The deploy drops the tests of the code, not the checks of the data it ships: the committed data files the
    Lambdas parse at runtime are still checked: the world files at synth, as today, and the federation files, which
    only `cargo test` checks today, by the deploy's build or synth (issue 02), so a bad edit fails the deploy
-   rather than the first request.
+   rather than the first request. So is the API Gateway definition `openapi/sfab.yaml`, whose checks live only in
+   `cdk/tests/test_openapi.py`: the deploy's build runs that one test file (about 3 s), and no other test.
 
 3. **The build has enough memory.** ARM/Small (4 GB) runs out of memory compiling the Lambdas: build
    `sfab-deploy:e8caf7db-d979-42f6-aec3-208c9053abb1` (2026-11-20) had `rustc` killed with SIGKILL compiling
@@ -52,8 +53,8 @@ deploy. This story makes three changes:
    `--compute-type-override BUILD_GENERAL1_MEDIUM`. Dropping the audit and tests (2) doesn't help, because the
    failure is in the Lambda build, which the deploy keeps.
 
-After this story the build restores its cache, installs no `cargo-audit`, runs only generate and build before
-`cdk deploy` (and neither for `SfabDeployer` alone with no config), and runs on ARM/Medium.
+After this story the build restores its cache, installs no `cargo-audit`, runs only generate, build and the OpenAPI tests before
+`cdk deploy` (and none of them for `SfabDeployer` alone with no config), and runs on ARM/Medium.
 
 ## Scope
 
@@ -66,7 +67,7 @@ After this story the build restores its cache, installs no `cargo-audit`, runs o
   tests, so it does exactly what it does today. `scripts/deploy` runs `scripts/build` instead of `scripts/check`, on
   CodeBuild and on a machine alike. `buildspec.yml` no longer installs or caches `cargo-audit`. CI is unchanged: it
   runs `scripts/check`. The two federation files, which only `cargo test` checks today, still fail the deploy if
-  they don't parse, and `docs/federation.md` and story 2's spec ("Delivery", "Build and deploy") follow.
+  they don't parse, `scripts/build` runs `cdk/tests/test_openapi.py` and no other test, and `docs/federation.md` and story 2's spec ("Delivery", "Build and deploy") follow.
 - **ARM/Medium** (issue 03). `cdk/deployer_stack.py`'s `compute_type` becomes `BUILD_GENERAL1_MEDIUM`, and story 2's
   "Prerequisites" and `docs/aws-facts.md` name the ARM/Medium quota instead of ARM/Small's.
 

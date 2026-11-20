@@ -38,6 +38,12 @@ Label: ready-for-agent
   (`cargo test -p sfab-federation --test directory the_committed_directory_files_parse`; without `--test directory`
   it also builds the `daily` and `requests` tests), or a check at synth beside `world_config.py`'s, which would copy
   `parse_world`, `parse_worlds` and `valid_domain` into Python, where they can drift from the Rust.
+- **The deploy still checks the API definition.** `openapi/sfab.yaml` is the API Gateway definition
+  (`cdk/stacks.py`), and its route, length, validator and gateway-response checks live only in
+  `cdk/tests/test_openapi.py`. `scripts/build` runs that file alone, after generate, the way `scripts/check` runs
+  pytest: `(cd cdk && SFAB_CONFIG=tests/fixtures/sfab.config.test.toml .venv/bin/python -m pytest -q
+  tests/test_openapi.py)`. It takes about 3 s and needs no Rust. `scripts/check` then runs the whole suite as today,
+  that file included.
 - **`docs/federation.md:57`** says "Run `scripts/check`, which refuses an invalid or repeated domain, commit, and
   deploy." Make it say what refuses a bad domain after this change.
 - **`buildspec.yml`** drops the `cargo install cargo-audit` block and the `/root/.cargo/bin/cargo-audit` cache path.
@@ -66,15 +72,17 @@ Write the tests first.
   wrappers, and the decisions stay in `cdk/deploy_plan.py`, tested in-process.
 - Text-level tests, in the style of `test_the_buildspec_in_the_repo_runs_scripts_deploy_with_deploy_stacks`
   (`cdk/tests/test_deployer_stack.py:82-86`), read the scripts' source and assert that `scripts/deploy` calls
-  `scripts/build` in the `require-secret` branch only, and never `scripts/check`, `scripts/audit`, `cargo test` or `pytest`, and that `scripts/check`
+  `scripts/build` in the `require-secret` branch only, and never `scripts/check`, `scripts/audit`, `cargo test`, or `pytest` on anything but `tests/test_openapi.py`, and that `scripts/check`
   calls `scripts/build` before the audit and the tests. They read command lines only, skipping comments, since the
   scripts' header comments name `scripts/check` and the audit.
 - `scripts/build`'s arguments are checked by hand once (none, `--require-secret`, an unknown one refused), with the
   results in a comment here.
 - `buildspec.yml` installs no `cargo-audit`, and the tool-versions tests pass.
+- `scripts/build` fails when a test in `cdk/tests/test_openapi.py` fails. Check it by hand once (break
+  `openapi/sfab.yaml`, run `scripts/build`, restore it) and note the result in a comment here.
 - The deploy's build or synth fails when either federation file doesn't parse. Check each by hand once (break it,
   run `scripts/build` and a synth, restore it) and list the results in a comment here.
 - On the owner's next build on ARM/Medium (issue 03 deployed, or started with
   `--compute-type-override BUILD_GENERAL1_MEDIUM`: ARM/Small runs out of memory in `cargo lambda build`), the BUILD phase log shows the generate and build steps and then `cdk deploy`, with no
-  audit and no test output. This needs the owner's build, so when the agent can't check it, it leaves a comment
+  audit and no test output other than `tests/test_openapi.py`'s. This needs the owner's build, so when the agent can't check it, it leaves a comment
   here saying so.
