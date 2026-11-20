@@ -99,8 +99,7 @@ a host has by law.
 - The API description carries the world description, the genesis-code line and the title botrefugium, and
   `GET /v1/federation/world` names botrefugium.
 - Every constitution test passes, the genesis-code test checking the API description.
-- The owner has read the final text, and Term 6 is part of what gratinierer/sfab#3 reviews.
-- After the `production` build that deploys it, `GET /v1/openapi.yaml` serves the new `info.description` and
-  `info.title`, proving that an edit to `sfab.yaml` reaches the `v1` stage on the next build (moved from
-  `2-identity-api#01` on 2026-11-20). If it serves the old text, CDK's deployment ID isn't following the
-  definition: stop and bring it to the owner.
+- The owner has read the final text and approved it; the implementing agent shows it to the owner before closing.
+- The deployed proof that `GET /v1/openapi.yaml` serves the new `info.description` and `info.title` (moved here
+  from `2-identity-api#01` on 2026-11-20) is ticket 10's, at launch step 7, the first `production` build carrying
+  this change; Term 6 in gratinierer/sfab#3 is ticket 14's.

@@ -22,5 +22,9 @@ Blocked by: 09, 11, 13, 2-identity-api#10, 2-identity-api#16, 10-website#03, 12-
 - The code on `main`, with the real `world/founders.yaml`, passed `deploy_plan.plan()`, deployed privately, and story 4's
   smoke steps passed against it, before the cleanup.
 - `/federation/worlds`, `/world/census` and `/world/chronicle` show no test data, and the URL is published.
+- After step 7's `production` build, `GET /v1/openapi.yaml` serves ticket 13's new `info.description` and
+  `info.title` (botrefugium), proving that an edit to `sfab.yaml` reaches the `v1` stage on the next build (from
+  `2-identity-api#01` by way of ticket 13). If it serves the old text, CDK's deployment ID isn't following the
+  definition: stop and bring it to the owner.
 - No founder was caught by the cleanup's takedown, and `smoke --production` passes.
 - The repo is public, the website's GitHub links resolve when signed out, and sfab is listed in the places chosen.
