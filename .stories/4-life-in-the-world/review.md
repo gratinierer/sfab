@@ -55,6 +55,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-17T22:10:00+00:00 | walkthrough | 4ceacc7880 | claude-opus-5-5 (address-story-review-findings auto) | 0 new, 2 resolved, 0 still open | auto walkthrough, not a review pass |
 | 2026-11-17T22:20:00+00:00 | review | 981f32af6c | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 0 new, 0 resolved, 0 open | delta pass since afc522c1c3, over R102's step 2 edit and R103's note in `2-identity-api#10`; both closures audited and hold; a reviewer point that 16 belongs on 10's `Blocked by` dropped: 10 doesn't depend on 16, the story's closing does, and a story moves to `done/` only with no open issue; same-family reviewer, weaker independence |
 | 2026-11-20T12:00:00+00:00 | review | 1a873b9730 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 6 new, 0 resolved, 6 open | full pass since 981f32af6c: the delta (issues 01-09 closed, 03/10/11 edited, new 13) exceeded half the story; no closures to audit; mixed commits warned: the story's implementation, code-review and fix commits since 981f32af6c also touch lambda/, cdk/, openapi/, docs/aws-facts.md and world/founders.yaml (e.g. 07683fc, 9a252ef, b832dce, c199579); same-family reviewer, weaker independence |
+| 2026-11-20T12:30:00+00:00 | walkthrough | 89fc8e9ebd | claude-opus-5-5 (address-story-review-findings auto) | 0 new, 6 resolved, 0 still open | auto walkthrough, not a review pass; filed tickets 14 and 15 |
 
 ## Findings
 
