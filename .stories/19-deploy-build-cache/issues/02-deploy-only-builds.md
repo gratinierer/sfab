@@ -42,8 +42,10 @@ Label: ready-for-agent
   Its header comment says it runs `scripts/deploy`, which builds and deploys without the audit or tests, and that
   it installs every pin except `CARGO_AUDIT_VERSION`, which only CI uses. `tool-versions.env`'s header comment says
   the same.
-- **`cdk/tests/test_tool_versions.py`**: `test_the_buildspec_loads_the_pins_and_uses_every_one` (:62) expects every
+- **`cdk/tests/test_tool_versions.py`**: `test_the_buildspec_loads_the_pins_and_uses_every_one` (:61) expects every
   pin except `CARGO_AUDIT_VERSION`, and a new test asserts the buildspec doesn't mention `cargo-audit`.
+  `test_tool_versions_pins_every_tool_ci_and_the_build_install` (:29-36) stays as it is: `tool-versions.env` keeps
+  `CARGO_AUDIT_VERSION` for CI.
 - **`.github/workflows/ci.yml`** keeps running `scripts/check` with `cargo-audit` installed. Only its header
   comment changes: the deploy script runs `scripts/build`, not every step.
 - **`.stories/2-identity-api/spec.md` "Delivery"** (:879-886) says `scripts/check` runs before each commit and
