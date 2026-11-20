@@ -34,8 +34,10 @@ Label: ready-for-agent
   parsed at :34-36) are checked by nothing but `cargo test` (`the_committed_directory_files_parse`). The deploy must
   fail on either one that doesn't parse, with the checks that test makes, so a bad edit fails the deploy instead of
   panicking on the first request. How is the implementer's choice, recorded in a comment here with the reason: for
-  example a check at synth beside `world_config.py`'s, a `build.rs` in the federation crate, or `scripts/build`
-  running only that test (`cargo test -p <crate> the_committed_directory_files_parse`).
+  example a `build.rs` in the federation crate, `scripts/build` running only that test
+  (`cargo test -p sfab-federation --test directory the_committed_directory_files_parse`; without `--test directory`
+  it also builds the `daily` and `requests` tests), or a check at synth beside `world_config.py`'s, which would copy
+  `parse_world`, `parse_worlds` and `valid_domain` into Python, where they can drift from the Rust.
 - **`docs/federation.md:57`** says "Run `scripts/check`, which refuses an invalid or repeated domain, commit, and
   deploy." Make it say what refuses a bad domain after this change.
 - **`buildspec.yml`** drops the `cargo install cargo-audit` block and the `/root/.cargo/bin/cargo-audit` cache path.
