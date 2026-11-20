@@ -20,7 +20,10 @@ Label: ready-for-agent
   which the deploy no longer runs. Its header comment drops "then runs every check, audits included" and says the
   audit and tests are left to `scripts/check`, CI and Dependabot. `cdk/deploy_plan.py`'s mode names stay; rewrite
   what names `scripts/check` as the deploy's step: its docstring (:12-14), `Plan`'s docstring (:38), the comment at
-  :86-87, and `scripts/deploy`'s comments (:8-9, :18).
+  :86-87, and `scripts/deploy`'s comments (:8-9, :18). Also what says `scripts/check` builds before a synth or
+  deploy: `cdk/app.py:28` and its user-facing messages at :61 and :68 ("Run scripts/check, ..."), which name
+  `scripts/build` instead, `cdk/stacks.py:43`, the comment at `cdk/tests/test_app.py:54`, and the test name
+  `..._the_check_falls_back` at `cdk/tests/test_deploy_plan.py:64`.
 - **The deploy still refuses bad data.** The Lambdas compile in committed data files with `include_str!`
   (`grep -rn include_str! lambda --include=*.rs`). Most keep a check the deploy still runs: `world/founders.yaml`,
   `world/quarters.yaml` and `world/shelves.yaml` are checked at synth by `cdk/world_config.py`, which `cdk/app.py`
