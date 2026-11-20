@@ -57,6 +57,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-20T12:00:00+00:00 | review | 1a873b9730 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 6 new, 0 resolved, 6 open | full pass since 981f32af6c: the delta (issues 01-09 closed, 03/10/11 edited, new 13) exceeded half the story; no closures to audit; mixed commits warned: the story's implementation, code-review and fix commits since 981f32af6c also touch lambda/, cdk/, openapi/, docs/aws-facts.md and world/founders.yaml (e.g. 07683fc, 9a252ef, b832dce, c199579); same-family reviewer, weaker independence |
 | 2026-11-20T12:30:00+00:00 | walkthrough | 89fc8e9ebd | claude-opus-5-5 (address-story-review-findings auto) | 0 new, 6 resolved, 0 still open | auto walkthrough, not a review pass; filed tickets 14 and 15 |
 | 2026-11-20T12:45:00+00:00 | review | 8d30822249 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 1 new, 0 resolved, 1 reopened, 2 open | delta pass since 1a873b9730, over the auto walkthrough's edits to spec.md step 2-3 and issues 03, 10, 11, 13, new 14 and 15; R105-R109 closures audited and hold; R104 reopened; same-family reviewer, weaker independence |
+| 2026-11-20T12:55:00+00:00 | walkthrough | bc2c1f64a3 | claude-opus-5-5 (address-story-review-findings auto) | 0 new, 2 resolved, 0 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
