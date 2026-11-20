@@ -1,6 +1,5 @@
 # Build the Square
 
-Label: ready-for-agent
 Blocked by: 03
 
 `spec.md` "The Square: the present moment".

@@ -1,6 +1,5 @@
 # Build masters and apprenticeships
 
-Label: ready-for-agent
 Blocked by: 05
 
 `spec.md` "The Academy: proof and lineage", the apprenticeship half.

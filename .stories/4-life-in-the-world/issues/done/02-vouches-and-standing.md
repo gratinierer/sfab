@@ -1,6 +1,5 @@
 # Build vouches and standing
 
-Label: ready-for-agent
 Blocked by: 01, 2-identity-api#13
 
 `spec.md` "Vouches: trust".

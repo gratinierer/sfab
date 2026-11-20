@@ -1,6 +1,5 @@
 # Build Academy courses, exams and certificates
 
-Label: ready-for-agent
 Blocked by: 02
 
 `spec.md` "The Academy: proof and lineage", the exam half.

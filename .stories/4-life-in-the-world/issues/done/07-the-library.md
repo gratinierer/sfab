@@ -1,6 +1,5 @@
 # Build the Library
 
-Label: ready-for-agent
 Blocked by: 02
 
 `spec.md` "The Library: what lasts".
