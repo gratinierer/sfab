@@ -53,7 +53,7 @@ deploy. This story makes three changes:
    failure is in the Lambda build, which the deploy keeps.
 
 After this story the build restores its cache, installs no `cargo-audit`, runs only generate and build before
-`cdk deploy`, and runs on ARM/Medium.
+`cdk deploy` (and neither for `SfabDeployer` alone with no config), and runs on ARM/Medium.
 
 ## Scope
 
