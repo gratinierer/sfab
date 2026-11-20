@@ -39,4 +39,7 @@ step "Test the API definition (openapi/sfab.yaml)"
 (cd cdk && SFAB_CONFIG=tests/fixtures/sfab.config.test.toml .venv/bin/python -m pytest -q tests/test_openapi.py)
 
 step "Build the Lambdas (arm64)"
-(cd lambda && cargo lambda build --release --arm64 --locked)
+# Only the three the stacks deploy (cdk/app.py LAMBDAS): cargo unifies features across one build,
+# and the owner's tools turn on aws-config's credentials-login, which the Lambdas don't need
+# (.stories/2-identity-api/issues/20-owner-tools-use-aws-login.md).
+(cd lambda && cargo lambda build --release --arm64 --locked --package sfab-api --package sfab-killswitch --package sfab-job)

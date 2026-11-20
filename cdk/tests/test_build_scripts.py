@@ -5,7 +5,9 @@ R31, R34). Only command lines count, since the header comments name scripts/chec
 """
 
 import re
+import tomllib
 
+import app
 import sfab_config
 
 SCRIPTS = sfab_config.REPO_ROOT / "scripts"
@@ -37,6 +39,22 @@ def test_build_runs_one_pytest_on_test_openapi_before_the_lambda_build_and_no_au
     assert indexes(lines, "generate_website.py")[0] < pytest_lines[0]
     assert indexes(lines, "cargo test") == []
     assert indexes(lines, "scripts/audit") == []
+
+
+def test_build_compiles_only_the_lambdas_the_stacks_deploy():
+    """The owner's tools (`genesis-codes`, `takedown`) build with features the Lambdas don't
+    need, such as `aws-config`'s `credentials-login`, and cargo unifies features across one
+    build: so the deploy's build names each deployed Lambda's package and nothing else
+    (`.stories/2-identity-api/issues/20-owner-tools-use-aws-login.md`)."""
+    lines = command_lines("build")
+    (build,) = [lines[i] for i in indexes(lines, "cargo lambda build")]
+    packages = re.findall(r"--package ([\w-]+)", build)
+    lambda_dir = sfab_config.REPO_ROOT / "lambda"
+    expected = [
+        tomllib.loads((lambda_dir / name / "Cargo.toml").read_text())["package"]["name"]
+        for name in app.LAMBDAS
+    ]
+    assert packages == expected
 
 
 def test_check_runs_build_with_its_argument_before_the_audit_and_the_tests():

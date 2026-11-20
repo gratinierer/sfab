@@ -33,3 +33,17 @@ Until this is fixed, the workaround is to export the session's credentials first
 
 - 2026-11-20: found during the first deploy. Issue 10's takedown drill and story 4's launch cleanup run `takedown`
   several times, so this matters before then, but the workaround keeps it from blocking either.
+- 2026-11-20 (claude-opus-5-5, implementing): `credentials-login` is on `aws-config` in `genesis-codes` and `takedown`
+  only. Two things beyond the scope as written:
+  - **`scripts/build` builds only the three Lambdas the stacks deploy** (`--package sfab-api --package
+    sfab-killswitch --package sfab-job`, matching `cdk/app.py` `LAMBDAS`), because cargo unifies features across one
+    build: building the whole workspace would have turned the feature on in the Lambdas too. A test in
+    `cdk/tests/test_build_scripts.py` ties the packages to `LAMBDAS`. The deploy build also stops compiling two
+    binaries it never used.
+  - **`aws-config` moves from 1.13.0 to 1.13.3 in `Cargo.lock`**, for every crate: with 1.13.0 the feature brought
+    `p256` 0.13 and `crypto-bigint` 0.5.5, which `scripts/audit` refused (RUSTSEC-2026-0387, timing variability in
+    constant-time operations). 1.13.3 uses `p256` 0.14 and `crypto-bigint` 0.7.11. The bump moves the shared
+    `aws-smithy-*` patch versions for the Lambdas too.
+  - Checked: `scripts/check` green (audit clean, 418 tests). With this container's `aws login` session and no exported
+    keys, `genesis-codes status` reached S3. A `takedown` dry run wasn't run here (the session's permission check
+    refused it), so the owner's run of one is still open, as Done when says.
