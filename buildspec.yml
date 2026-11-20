@@ -9,6 +9,11 @@ version: 0.2
 
 env:
   shell: bash
+  variables:
+    # One crate at a time: two big AWS SDK crates compiling at once pass ARM/Small's 4 GB, and
+    # rustc gets SIGKILLed (.stories/19-deploy-build-cache/spec.md Goal 3, docs/aws-facts.md).
+    # Every phase gets it; only the build phase compiles. scripts/check and CI keep cargo's default.
+    CARGO_BUILD_JOBS: "1"
 
 phases:
   install:

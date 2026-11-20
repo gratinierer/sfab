@@ -69,3 +69,11 @@ def test_the_buildspec_loads_the_pins_and_uses_every_one_but_cargo_audit_s():
 def test_the_buildspec_installs_and_caches_no_cargo_audit():
     # The deploy doesn't audit; CI and scripts/check do (.stories/19-deploy-build-cache/spec.md).
     assert "cargo-audit" not in BUILDSPEC.read_text()
+
+
+def test_the_buildspec_compiles_one_crate_at_a_time_in_every_phase():
+    # ARM/Small's 4 GB fits one job, not two (.stories/19-deploy-build-cache/spec.md Goal 3).
+    env = yaml.safe_load(BUILDSPEC.read_text())["env"]
+
+    assert env["shell"] == "bash"
+    assert env["variables"]["CARGO_BUILD_JOBS"] == "1"

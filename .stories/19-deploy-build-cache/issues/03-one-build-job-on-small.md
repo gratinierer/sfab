@@ -49,3 +49,7 @@ Label: ready-for-agent
   three Medium builds above took 11-12.5 minutes of BUILD phase; Medium costs $0.0070 a minute against Small's
   $0.0034 and isn't in the free tier (price list, 2026-11-20). The owner chose Small with one job, for the free
   minutes, accepting the longer build (2026-11-20, R8).
+- 2026-11-20: implemented (`buildspec.yml` sets `CARGO_BUILD_JOBS: "1"`, a buildspec test asserts it, and
+  `docs/aws-facts.md` has both rows, the second still `memory`). The last Done-when item is still open: the agent
+  can't move `production` or start a build, so the owner's build on ARM/Small, its BUILD phase time, and setting
+  the second row to `tested` with that build's id are the owner's.
