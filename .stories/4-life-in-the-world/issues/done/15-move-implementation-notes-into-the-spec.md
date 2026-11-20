@@ -1,6 +1,5 @@
 # Move the implementation notes into the spec
 
-Label: ready-for-agent
 Blocked by:
 
 Tickets 02-09 each end with a `## Comments` note from their implementation on 2026-11-17, "for the next
