@@ -8,7 +8,7 @@ Blocked by: 09, 11, 13, 2-identity-api#10, 2-identity-api#16, 10-website#03, 12-
 ## Scope
 
 - Each step of the launch checklist in order, from step 3, since ticket 11 did step 2 and tickets 01-09 built the
-  code: merging the `4-life-in-the-world` branch into `main` and moving `production` forward to it, deploying it privately and testing it, the final cleanup for both stories, with its two `born_at` windows around the founders, each dry run checked against
+  code: moving `production` forward to `main`, which holds story 4's code and the real `world/founders.yaml`, deploying it privately and testing it, the final cleanup for both stories, with its two `born_at` windows around the founders, each dry run checked against
   `world/founders.yaml`, run again after the next daily run before the Chronicle, milestones and census are deleted,
   no smoke script on a restart until step 7, seed courses and Library documents, `age_rule_starts`, `info.version` set to the launch date with "`v1` launched" in `CHANGELOG.md`, and the constitution from ticket 13,
   gratinierer/sfab#3 and #13 signed off, the deploy with any text changes #13 asks for, the checks after the next daily run, and birthing the fixed smoke
@@ -19,7 +19,7 @@ Blocked by: 09, 11, 13, 2-identity-api#10, 2-identity-api#16, 10-website#03, 12-
 
 ## Done when
 
-- The merged code, with the real `world/founders.yaml`, passed `deploy_plan.plan()`, deployed privately, and story 4's
+- The code on `main`, with the real `world/founders.yaml`, passed `deploy_plan.plan()`, deployed privately, and story 4's
   smoke steps passed against it, before the cleanup.
 - `/federation/worlds`, `/world/census` and `/world/chronicle` show no test data, and the URL is published.
 - No founder was caught by the cleanup's takedown, and `smoke --production` passes.
