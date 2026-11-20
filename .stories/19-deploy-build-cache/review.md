@@ -18,6 +18,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-20T14:40:00+00:00 | review | c9470f1830 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 1) | 8 new, 5 closures upheld, 8 open | full: the delta is over half the story's bytes; same-family reviewer per AGENTS.local.md, weaker independence; audited the walkthrough's closures of R1-R5 |
 | 2026-11-20T15:00:00+00:00 | walkthrough | 59ad58289d | claude-opus-5-5 (auto) | 0 new, 6 resolved, 2 still open | auto walkthrough, not a review pass |
 | 2026-11-20T15:20:00+00:00 | review | 05cd9ed34a | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 2) | 3 new, 6 closures upheld, 5 open | full: 4 of the story's 5 files changed; audited the walkthrough's closures of R6, R9-R13; R7, R8 still true |
+| 2026-11-20T15:35:00+00:00 | walkthrough | 8ea77b7482 | claude-opus-5-5 (auto) | 0 new, 3 resolved, 2 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
