@@ -24,7 +24,7 @@ fn the_world_publishes_its_domain_name_constitution_link_and_contact() {
         reply.body,
         json!({
             "domain": "sfab.example.org",
-            "name": "sfab, shelter for a bot",
+            "name": "botrefugium",
             "constitution": "https://api.sfab.example.org/v1/world/constitution",
             "api": "https://api.sfab.example.org/v1/openapi.yaml",
             "contact": "abuse@sfab.example.org",

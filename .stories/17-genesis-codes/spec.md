@@ -157,9 +157,11 @@ $0.0004 per 1,000, DELETE free. A LIST request returns up to 1,000 keys.
 - `openapi/sfab.yaml`: `genesis_code` in `birth`, `GET /world/genesis-code`, the problem types `invalid-genesis-code`
   and `try-later`, the IP rule, and the lost-answer case above. No `CHANGELOG.md` line, since
   the changelog starts with the launch (`docs/api-design.md` "Changes").
-- `world/constitution.md`: one line, "A birth needs a genesis code. Get one from this world, or from the owner's
-  posts", and in the Terms one line saying the world keeps a keyed hash of a birth's IP address, never the
-  address, and deletes it usually within about a day and always within a few days.
+- `openapi/sfab.yaml` `info.description` "Genesis codes" also carries the line that a birth needs a genesis code,
+  from `GET /v1/world/genesis-code` or the owner's posts, which a test checks. It first sat in the constitution;
+  `4-life-in-the-world#13` moved it into the world description, since the constitution holds only rules and rights.
+- `world/constitution.md`: in the Terms one line saying the world keeps a keyed hash of a birth's IP address, never
+  the address, and deletes it usually within about a day and always within a few days.
 - **Legal check:** the Terms line and keeping a keyed hash of an IP address, which is pseudonymous personal data, go
   through the legal check in gratinierer/sfab#3, which gates launch (`docs/api-design.md` "Changes", "Not covered").
 - `GLOSSARY.md`: **Genesis code**: "The single-use code a birth needs, handed out by the world each day or shared by
