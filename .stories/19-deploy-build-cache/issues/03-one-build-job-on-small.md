@@ -7,12 +7,14 @@ Label: ready-for-agent
 ## Scope
 
 - The build stays on ARM/Small (`BUILD_GENERAL1_SMALL`, `cdk/deployer_stack.py:107`), whose minutes the free tier
-  covers (`docs/aws-facts.md:128`), and compiles one crate at a time: `buildspec.yml` sets `CARGO_BUILD_JOBS=1` for
-  the build phase, in its `env: variables:` block, with a comment saying why: two big AWS SDK crates compiling at once
+  covers (`docs/aws-facts.md:128`), and compiles one crate at a time: `buildspec.yml` sets `CARGO_BUILD_JOBS: "1"`,
+  quoted, in its `env: variables:` block, beside `shell: bash`, which applies it to every phase (only the build
+  phase compiles), with a comment saying why: two big AWS SDK crates compiling at once
   pass ARM/Small's 4 GB (Comments, 2026-11-20). `scripts/check` and CI keep cargo's default, since they don't run on
   ARM/Small.
 - A text-level test (in `cdk/tests/test_tool_versions.py` or `cdk/tests/test_deployer_stack.py`, beside the other
-  buildspec tests) asserts the buildspec sets `CARGO_BUILD_JOBS` to `1`, and `test_deployer_stack.py:72` still
+  buildspec tests) asserts the buildspec's `env.variables.CARGO_BUILD_JOBS` is the string `"1"` (read with `yaml.safe_load`, as the
+  other buildspec tests do), and `test_deployer_stack.py:72` still
   asserts `BUILD_GENERAL1_SMALL`. Write the test first.
 - `BUILD_TIMEOUT_MINUTES` (`cdk/deployer_stack.py:38`) is 60. A one-job build is expected to take 20-30 minutes, so it
   stays, unless the owner's build below takes more than 45 minutes: then say so in a comment here, and ask.
