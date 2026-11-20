@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Makes what `cdk deploy` needs: the Python environment, the generated public API description and
+# website pages, and the arm64 Lambda builds. Between them it runs cdk/tests/test_openapi.py, the
+# only check of openapi/sfab.yaml, the API Gateway definition, so a bad one fails in seconds; and
+# the Lambda build checks federation/world.yaml and federation/worlds.yaml
+# (lambda/world/federation/build.rs). scripts/deploy runs only this; scripts/check runs it, then
+# the audit and the tests. See .stories/19-deploy-build-cache/spec.md Goal 2.
+# Stops at the first failure.
+#   scripts/build [--require-secret]
+# The generate step reads the config from SFAB_CONFIG's fixture when it's set, as in CI, or else
+# from the secret sfab/config. When the secret doesn't load, as in an agent's container with no
+# AWS credentials, it falls back to the committed fixture with a message naming the problems,
+# unless --require-secret, which scripts/deploy passes so a deploy never publishes the fixture's
+# values. See sfab_config.load_for_check.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+require_secret=()
+case "${1:-}" in
+  "") ;;
+  --require-secret) require_secret=(--require-secret) ;;
+  *) echo "build: unknown argument $1; takes only --require-secret" >&2; exit 2 ;;
+esac
+
+step() { printf '\n==> %s\n' "$*"; }
+
+step "Python environment (cdk/.venv)"
+[ -d cdk/.venv ] || (cd cdk && uv venv -q .venv)
+uv pip sync -q --python cdk/.venv/bin/python --require-hashes cdk/requirements.txt
+
+step "Generate"
+# The public API description and the website pages, from the active config, so a deploy
+# publishes the real abuse_contact and API host.
+cdk/.venv/bin/python cdk/generate_public_openapi.py "${require_secret[@]}"
+cdk/.venv/bin/python cdk/generate_website.py "${require_secret[@]}"
+
+step "Test the API definition (openapi/sfab.yaml)"
+# Tests always use the committed fixture, never the owner's real config.
+(cd cdk && SFAB_CONFIG=tests/fixtures/sfab.config.test.toml .venv/bin/python -m pytest -q tests/test_openapi.py)
+
+step "Build the Lambdas (arm64)"
+(cd lambda && cargo lambda build --release --arm64 --locked)

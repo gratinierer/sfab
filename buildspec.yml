@@ -1,8 +1,10 @@
 # The deploy build, which the CodeBuild project sfab-deploy (cdk/deployer_stack.py) runs on the
 # protected production branch: .stories/18-deploy-from-codebuild/spec.md "A build".
-# It installs the tools tool-versions.env pins, the same CI installs, then runs scripts/deploy
-# with the stacks DEPLOY_STACKS names (--all unless a start-build overrides it). scripts/deploy
-# refuses anything but --all or the app's stack names, so the override can't carry CDK flags.
+# It installs the tools tool-versions.env pins, the same CI installs, except CARGO_AUDIT_VERSION,
+# which only CI uses, then runs scripts/deploy with the stacks DEPLOY_STACKS names (--all unless a
+# start-build overrides it). scripts/deploy builds and deploys, without the audit or the tests
+# (.stories/19-deploy-build-cache/spec.md Goal 2), and refuses anything but --all or the app's
+# stack names, so the override can't carry CDK flags.
 version: 0.2
 
 env:
@@ -30,9 +32,6 @@ phases:
         fi
         export PATH="$HOME/.cargo/bin:$PATH"
         (cd lambda && rustup toolchain install)
-        if ! cargo-audit --version 2>/dev/null | grep -q " ${CARGO_AUDIT_VERSION}$"; then
-          cargo install cargo-audit --version "${CARGO_AUDIT_VERSION}" --locked --force
-        fi
   build:
     commands:
       - |
@@ -47,5 +46,4 @@ cache:
     - /root/.cargo/registry/index/**/*
     - /root/.cargo/registry/cache/**/*
     - /root/.cargo/git/db/**/*
-    - /root/.cargo/bin/cargo-audit
     - /root/.cache/uv/**/*

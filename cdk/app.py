@@ -25,7 +25,7 @@ import sfab_config
 import stacks
 import world_config
 
-# What `cargo lambda build --release --arm64` writes, which scripts/check runs first.
+# What `cargo lambda build --release --arm64` writes, which scripts/build runs first.
 LAMBDA_BUILDS = sfab_config.REPO_ROOT / "lambda" / "target" / "lambda"
 LAMBDAS = ("api", "killswitch", "job")
 # Read only when SFAB_CONFIG is set, as in tests: a deploy refuses SFAB_CONFIG, so it can't be
@@ -58,14 +58,14 @@ def world_files(environ: Mapping[str, str]) -> world_config.Files:
 
 def missing_builds(lambda_builds: Path, website: Path) -> list[str]:
     missing = [
-        f"sfab build missing: {lambda_builds / name / 'bootstrap'}. Run scripts/check, "
+        f"sfab build missing: {lambda_builds / name / 'bootstrap'}. Run scripts/build, "
         "which builds the Lambdas, or scripts/deploy."
         for name in LAMBDAS
         if not (lambda_builds / name / "bootstrap").is_file()
     ]
     if not (website / "index.html").is_file():
         missing.append(
-            f"sfab build missing: {website / 'index.html'}. Run scripts/check, "
+            f"sfab build missing: {website / 'index.html'}. Run scripts/build, "
             "which generates the website pages, or scripts/deploy."
         )
     return missing

@@ -1,5 +1,6 @@
-# Runs scripts/check, the same steps the devcontainer and the deploy script run:
-# generate, build, audit, test. See .stories/2-identity-api/spec.md "Delivery".
+# Runs scripts/check, the same steps the devcontainer runs: generate, build, audit, test. The
+# deploy script runs only scripts/build, not every step. See .stories/2-identity-api/spec.md
+# "Delivery" and .stories/19-deploy-build-cache/spec.md.
 # Actions are pinned by full commit hash, and only GitHub's own are used.
 name: CI
 

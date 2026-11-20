@@ -16,11 +16,20 @@ import generate_public_openapi as gen
 import sfab_config
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sfab.config.test.toml"
-SPECS = [
-    sfab_config.REPO_ROOT / ".stories" / "2-identity-api" / "spec.md",
-    sfab_config.REPO_ROOT / ".stories" / "4-life-in-the-world" / "spec.md",
-    sfab_config.REPO_ROOT / ".stories" / "17-genesis-codes" / "spec.md",
-]
+STORIES = sfab_config.REPO_ROOT / ".stories"
+
+
+def story_spec(story: str, stories: Path = STORIES) -> Path:
+    """A story's spec.md, open or closed, since closing a story moves it to `done/`. scripts/build
+    runs this file on every deploy, so a closed story mustn't break it."""
+    for spec in (stories / story / "spec.md", stories / "done" / story / "spec.md"):
+        if spec.is_file():
+            return spec
+    raise FileNotFoundError(f"story {story}'s spec.md is in neither {stories} nor its done/")
+
+
+# The stories whose route tables these tests read.
+SPEC_STORIES = ("2-identity-api", "4-life-in-the-world", "17-genesis-codes")
 WRITES = ("POST", "PUT")
 _ROW = re.compile(r"^\| `(GET|POST|PUT|DELETE) (/[^`]+)` \| ([^|]+) \| ([^|]*) \|", re.M)
 
@@ -54,8 +63,8 @@ def public(public_text):
 def route_table() -> dict[str, tuple[str, str]]:
     """`<METHOD> <path>` -> (auth, does), from both stories' route tables."""
     rows = {}
-    for spec in SPECS:
-        for method, path, auth, does in _ROW.findall(spec.read_text()):
+    for story in SPEC_STORIES:
+        for method, path, auth, does in _ROW.findall(story_spec(story).read_text()):
             rows[f"{method} {path}"] = (auth.strip(), does.strip())
     return rows
 
@@ -92,6 +101,24 @@ def walk_schemas(doc: dict):
 
     yield from walk(doc.get("paths", {}), "#/paths")
     yield from walk(doc.get("components", {}), "#/components")
+
+
+# --- the stories whose route tables these tests read -----------------------------------
+
+
+def test_a_story_s_spec_is_found_open_or_closed(tmp_path):
+    (tmp_path / "2-open").mkdir()
+    (tmp_path / "2-open" / "spec.md").write_text("open")
+    (tmp_path / "done" / "3-closed").mkdir(parents=True)
+    (tmp_path / "done" / "3-closed" / "spec.md").write_text("closed")
+
+    assert story_spec("2-open", tmp_path).read_text() == "open"
+    assert story_spec("3-closed", tmp_path).read_text() == "closed"
+
+
+def test_a_story_s_spec_in_neither_place_fails_naming_the_story(tmp_path):
+    with pytest.raises(FileNotFoundError, match="4-gone"):
+        story_spec("4-gone", tmp_path)
 
 
 # --- the source document -------------------------------------------------------------

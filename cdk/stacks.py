@@ -40,7 +40,7 @@ from website_stack import WebsiteStack
 from world_job import WorldJob
 
 OPENAPI = sfab_config.REPO_ROOT / "openapi" / "sfab.yaml"
-# What generate_website.py writes, which scripts/check runs first.
+# What generate_website.py writes, which scripts/build runs first.
 WEBSITE_BUILD = sfab_config.REPO_ROOT / "build" / "website"
 
 # Budgets, in USD per month. Public settings, so they live here, reviewed, not in the config.

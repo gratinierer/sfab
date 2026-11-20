@@ -61,7 +61,7 @@ def test_the_plan_knows_every_stack_the_app_builds(built):
 NO_SECRET = ("ResourceNotFoundException", "Secrets Manager can't find the specified secret.")
 
 
-def test_the_deployer_alone_deploys_with_no_config_and_the_check_falls_back():
+def test_the_deployer_alone_deploys_with_no_config_and_nothing_is_built():
     found = deploy_plan.plan(
         ["SfabDeployer"], environ={}, aws=StubbedAws(secret_error=NO_SECRET, account=ACCOUNT)
     )

@@ -58,9 +58,14 @@ def test_ci_loads_the_pins_right_after_checkout_before_the_cache_reads_them():
         assert name in CI.read_text()
 
 
-def test_the_buildspec_loads_the_pins_and_uses_every_one():
+def test_the_buildspec_loads_the_pins_and_uses_every_one_but_cargo_audit_s():
     text = BUILDSPEC.read_text()
 
     assert "tool-versions.env" in text
-    for name in pins():
+    for name in set(pins()) - {"CARGO_AUDIT_VERSION"}:
         assert "${" + name + "}" in text or "$" + name in text, name
+
+
+def test_the_buildspec_installs_and_caches_no_cargo_audit():
+    # The deploy doesn't audit; CI and scripts/check do (.stories/19-deploy-build-cache/spec.md).
+    assert "cargo-audit" not in BUILDSPEC.read_text()

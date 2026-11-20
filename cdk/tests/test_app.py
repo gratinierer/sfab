@@ -51,7 +51,7 @@ def assert_only_the_deployer(result, tmp_path: Path, *named: str) -> None:
 
 
 def test_synth_builds_all_four_stacks_with_the_fixture(tmp_path):
-    # Needs the arm64 build and the website pages, which scripts/check makes before the tests.
+    # Needs the arm64 build and the website pages, which scripts/build makes before the tests.
     result = synth(FIXTURE, tmp_path)
 
     assert result.returncode == 0, result.stderr

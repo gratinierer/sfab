@@ -54,8 +54,9 @@ That proves nothing else, so your approval is the real gate.
      - domain: other.example.org
    ```
 
-   Run `scripts/check`, which refuses an invalid or repeated domain, commit, and deploy. The domain
-   appears in `GET /v1/federation/worlds`.
+   Run `scripts/check`, commit, and deploy. The Lambda build, which `scripts/check` and the
+   deploy's `scripts/build` both run, refuses an invalid or repeated domain
+   (`lambda/world/federation/build.rs`). The domain appears in `GET /v1/federation/worlds`.
 3. **Approve or reject, delete the stored request,** so it isn't emailed again:
 
    ```sh

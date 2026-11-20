@@ -1,30 +1,31 @@
 #!/usr/bin/env bash
-# Deploy sfab, in CodeBuild or from a machine: plans first, then runs every check, audits
-# included, and stops if any fails.
+# Deploy sfab, in CodeBuild or from a machine: plans first, then runs scripts/build, which makes
+# what cdk deploy needs, and stops if it fails. The audit and the tests are left to
+# scripts/check, CI and Dependabot (.stories/19-deploy-build-cache/spec.md Goal 2).
 #   scripts/deploy --all | <stack>...
 # cdk/deploy_plan.py makes every decision: it refuses a set SFAB_CONFIG, any argument but
 # --all or the app's stack names, a world/founders.yaml that's missing or holds the fixture's
 # made-up founders, a region other than us-east-1, and a config that doesn't
 # load from the secret sfab/config, except for `scripts/deploy SfabDeployer` alone, which
-# creates the secret: then scripts/check falls back to the fixture, and cdk/app.py synthesizes
-# only SfabDeployer. See .stories/18-deploy-from-codebuild/spec.md "A build" and "Synth without
-# the config".
+# creates the secret: then nothing is built, and cdk/app.py synthesizes only SfabDeployer, since
+# the Lambda builds and pages are missing. See .stories/18-deploy-from-codebuild/spec.md
+# "A build" and "Synth without the config".
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 [ -d cdk/.venv ] || (cd cdk && uv venv -q .venv)
 uv pip sync -q --python cdk/.venv/bin/python --require-hashes cdk/requirements.txt
 
-# The mode for scripts/check on the first line (require-secret, or fallback), then the
-# stacks, one per line.
+# The deploy's mode on the first line (require-secret, which builds, or fallback, which
+# doesn't), then the stacks, one per line.
 plan_output="$(cdk/.venv/bin/python cdk/deploy_plan.py "$@")"
 mapfile -t plan <<<"$plan_output"
 mode="${plan[0]}"
 stacks=("${plan[@]:1}")
 
 case "$mode" in
-  require-secret) scripts/check --require-secret ;;
-  fallback) scripts/check ;;
+  require-secret) scripts/build --require-secret ;;
+  fallback) ;;
   *) echo "deploy: unexpected plan mode $mode" >&2; exit 1 ;;
 esac
 

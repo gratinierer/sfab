@@ -459,7 +459,7 @@ services aren't affected. See `docs/adr/0001-initial-architecture.md`.
   binary at compile time, so the route needs no S3 read. The copy is generated and not committed.
 - **Build and deploy:** always deploy through `scripts/deploy`, which a CodeBuild build runs ("Delivery"). It
   generates the public copy and
-  the finished website pages, runs `cargo lambda build` for the arm64 binaries, with no Docker, and runs `cdk deploy`. The build fails if the public copy is missing, and CI runs the same steps. With `--all`
+  the finished website pages, runs `cargo lambda build` for the arm64 binaries, with no Docker, and runs `cdk deploy`. The build fails if the public copy is missing. Those steps are `scripts/build`, which the deploy runs, with the OpenAPI tests and no other test or audit; the audit and the tests run in `scripts/check` before a commit and in CI (`.stories/19-deploy-build-cache/`). With `--all`
   it deploys every stack, `SfabDeployer` included, and it can name single stacks for the first deploy. The Python CDK packages live
   in a virtual environment under `/cdk/`.
 - **Hosting:** a dedicated AWS account in `us-east-1`. The API Gateway endpoint type is
@@ -877,7 +877,8 @@ replaces the isolation that per-route IAM roles would have given.
   updates are off. **Dependabot's alert email is the alert,** because new advisories appear for code that
   doesn't change, and it keeps working in a quiet repo. On 2026-11-04 the owner set CI to manual runs only, to
   save Actions minutes, so it runs on neither a push nor a schedule, and `scripts/check` runs locally before each
-  commit and deploy. Its generate step reads the active config: `SFAB_CONFIG` when set, else the config secret
+  commit. A deploy runs only its first part, `scripts/build` (generate, the OpenAPI tests, build), and leaves the
+  audit and the tests to `scripts/check` and CI (`.stories/19-deploy-build-cache/`). Its generate step reads the active config: `SFAB_CONFIG` when set, else the config secret
   `sfab/config`, and where the secret doesn't load, such as an agent's container with no AWS credentials, it
   falls back to `cdk/tests/fixtures/sfab.config.test.toml`, as CI does. Through `scripts/deploy` the fixture never
   reaches AWS: it refuses `SFAB_CONFIG`, requires the secret to load before deploying any stack but `SfabDeployer`,

@@ -10,8 +10,9 @@ deploys no world code (`.stories/4-life-in-the-world/spec.md` "Launch checklist"
 deploy runs in us-east-1; and the
 config loads from the secret, unless the stacks are `SfabDeployer` alone, which creates the
 secret and so deploys without it ("Synth without the config"). On success it prints the mode
-scripts/check runs in (`require-secret`, or `fallback` for that one case, where scripts/check
-may use the fixture) and then the stacks for `cdk deploy`, one per line; on failure it prints
+(`require-secret`, where scripts/deploy runs scripts/build reading the secret, or `fallback`
+for that one case, where it builds nothing: `.stories/19-deploy-build-cache/spec.md` Goal 2)
+and then the stacks for `cdk deploy`, one per line; on failure it prints
 every problem to stderr and exits 1. scripts/deploy is a thin wrapper around it, so no
 environment variable changes which checks run.
 """
@@ -35,7 +36,7 @@ FALLBACK = "fallback"
 
 @dataclass(frozen=True)
 class Plan:
-    """The `cdk deploy` stack arguments, and whether scripts/check must read the secret;
+    """The `cdk deploy` stack arguments, and whether scripts/build runs, reading the secret;
     or, when `errors` isn't empty, why nothing may deploy."""
 
     stacks: list[str] = field(default_factory=list)
@@ -84,7 +85,7 @@ def plan(
         sfab_config.load(environ, aws)
     except sfab_config.ConfigError as e:
         # SfabDeployer creates the secret, so it deploys before the config exists, and
-        # scripts/check falls back to the fixture for the pages the tests need.
+        # scripts/deploy then builds nothing, and cdk/app.py synthesizes only SfabDeployer.
         if argv == [deployer_stack.STACK_NAME]:
             return Plan(stacks=list(argv), require_secret=False)
         return Plan(

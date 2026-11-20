@@ -96,3 +96,31 @@ Write the tests first.
   `cargo lambda build`, the BUILD phase log shows the generate and build steps and then `cdk deploy`, with no
   audit and no test output other than `tests/test_openapi.py`'s. This needs the owner's build, so when the agent can't check it, it leaves a comment
   here saying so.
+
+## Comments
+
+- 2026-11-20 (claude-opus-5-5, implementing): **The federation check is a `build.rs` in `sfab-federation`.**
+  `parse_world`, `parse_worlds` and `Approved` moved unchanged into `src/directory/files.rs`, which `build.rs`
+  includes with `#[path]` beside `src/domain.rs` (`valid_domain`), so the build applies the crate's own rules, with
+  no copy to drift. Every compile of the crate runs it, `scripts/build`'s `cargo lambda build` included, and it
+  costs only a host build of `saphyr`. Not the `cargo test` option, because this ticket's own text-level test says
+  `scripts/build` runs no `cargo test`, and it would add a debug compile of the crate to every deploy; not the synth
+  option, because it copies the rules into Python. The test's remaining assertion, that the committed list fits one
+  page (`next` is null), isn't a parse check: more worlds than a page wouldn't panic, so the build doesn't check it.
+- 2026-11-20 (claude-opus-5-5, implementing): by-hand checks, in the agent's container, which loads the secret
+  `sfab/config`:
+  - `scripts/build` with no argument: generate, the 28 tests of `tests/test_openapi.py`, the Lambda build; exit 0.
+    `scripts/build --require-secret`: the same, exit 0. `scripts/build --bogus`: `build: unknown argument --bogus;
+    takes only --require-secret`, exit 2. Like `scripts/check`, it reads only its first argument.
+  - `federation/world.yaml` with `name: ""`: `scripts/build` fails in `cargo lambda build`, exit 101, with
+    "federation/world.yaml doesn't parse: world.yaml's name must be 1 to 128 characters". A synth with the fixture
+    (`SFAB_CONFIG=tests/fixtures/sfab.config.test.toml .venv/bin/python app.py`) passes, exit 0: the synth doesn't
+    read the federation files, and the deploy stops at `scripts/build` before it.
+  - `federation/worlds.yaml` with `- domain: world.test`: `scripts/build` fails the same way, exit 101:
+    `federation/worlds.yaml doesn't parse: worlds.yaml: "world.test" isn't a valid domain`. The synth passes, exit 0.
+  - `openapi/sfab.yaml` without the `maxLength: 83` of the `Proof` header (:3703): generate passes, then the `pytest`
+    step fails `test_every_string_has_a_max_length` (1 failed, 27 passed) and `scripts/build` exits 1 before the
+    Lambda build.
+  Each file was restored with `git checkout`, and `git status` showed them unchanged.
+- 2026-11-20 (claude-opus-5-5, implementing): the last Done when item needs the owner's build on CodeBuild (issue 03
+  on `production`, or `--compute-type-override BUILD_GENERAL1_MEDIUM`). The agent can't start one, so it's left open.

@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
-# The steps CI and the deploy script both run, in this order:
-# generate, build, audit, test. See .stories/2-identity-api/spec.md "Delivery".
+# Every check, in this order: scripts/build (generate, the API definition's tests, build the
+# Lambdas), then audit and test. It runs before each commit and in CI; the deploy runs only
+# scripts/build. See .stories/2-identity-api/spec.md "Delivery" and
+# .stories/19-deploy-build-cache/spec.md Goal 2.
 # Stops at the first failure.
 #   scripts/check [--require-secret]
-# The generate step reads the config from SFAB_CONFIG's fixture when it's set, as in CI, or else
-# from the secret sfab/config. When the secret doesn't load, as in an agent's container with no
-# AWS credentials, it falls back to the committed fixture with a message naming the problems,
-# unless --require-secret, which scripts/deploy passes so a deploy never publishes the fixture's
-# values. See sfab_config.load_for_check.
+# --require-secret goes to scripts/build: the generate step then never falls back to the
+# committed fixture (see scripts/build).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -20,18 +19,7 @@ esac
 
 step() { printf '\n==> %s\n' "$*"; }
 
-step "Python environment (cdk/.venv)"
-[ -d cdk/.venv ] || (cd cdk && uv venv -q .venv)
-uv pip sync -q --python cdk/.venv/bin/python --require-hashes cdk/requirements.txt
-
-step "Generate"
-# The public API description and the website pages, from the active config, so a deploy
-# publishes the real abuse_contact and API host.
-cdk/.venv/bin/python cdk/generate_public_openapi.py "${require_secret[@]}"
-cdk/.venv/bin/python cdk/generate_website.py "${require_secret[@]}"
-
-step "Build the Lambdas (arm64)"
-(cd lambda && cargo lambda build --release --arm64 --locked)
+scripts/build "${require_secret[@]}"
 
 step "Audit dependencies"
 scripts/audit

@@ -3,6 +3,8 @@ name = "sfab-federation"
 version = "0.1.0"
 edition.workspace = true
 publish.workspace = true
+# Refuses to build with a federation file that doesn't parse: build.rs.
+build = "build.rs"
 
 # No HTTP client here: the routes never call out, and the daily world job brings the one
 # outbound check (`lambda/job/src/outbound.rs`) through `Fetch`.
@@ -14,6 +16,9 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 sfab-core = { path = "../../core" }
 tracing = "0.1.44"
+
+[build-dependencies]
+saphyr = "0.3.3"
 
 [dev-dependencies]
 tokio = { version = "1.52.3", features = ["macros", "rt"] }
