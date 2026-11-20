@@ -14,6 +14,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | Date | Kind | Reviewed | By | Findings | Notes |
 |---|---|---|---|---|---|
 | 2026-11-20T13:40:00+00:00 | review | 6c218cfeda | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 5 new, 5 open | full: first pass; same-family reviewer per AGENTS.local.md, weaker independence; covers issue 03, which another writer added before 6c218cf |
+| 2026-11-20T14:10:00+00:00 | walkthrough | 5289ccebb1 | claude-opus-5-5 with the owner | 0 new, 5 resolved, 0 still open | walkthrough, not a review pass |
 
 ## Findings
 
