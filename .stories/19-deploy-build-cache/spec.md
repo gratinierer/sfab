@@ -65,7 +65,8 @@ After this story the build restores its cache, installs no `cargo-audit`, runs o
   generate, build the Lambdas) move into a new `scripts/build`. `scripts/check` runs it, then the audit and the
   tests, so it does exactly what it does today. `scripts/deploy` runs `scripts/build` instead of `scripts/check`, on
   CodeBuild and on a machine alike. `buildspec.yml` no longer installs or caches `cargo-audit`. CI is unchanged: it
-  runs `scripts/check`.
+  runs `scripts/check`. The two federation files, which only `cargo test` checks today, still fail the deploy if
+  they don't parse, and `docs/federation.md` and story 2's spec ("Delivery", "Build and deploy") follow.
 - **ARM/Medium** (issue 03). `cdk/deployer_stack.py`'s `compute_type` becomes `BUILD_GENERAL1_MEDIUM`, and story 2's
   "Prerequisites" and `docs/aws-facts.md` name the ARM/Medium quota instead of ARM/Small's.
 
