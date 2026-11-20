@@ -35,7 +35,7 @@ silent on everything this story built and serving its internal comment to agents
 - Move the genesis-code line out of the constitution into the world description: a birth needs a genesis code,
   from `GET /v1/world/genesis-code` or the owner's posts. Change
   `it_says_a_birth_needs_a_genesis_code_and_where_to_get_one` (`lambda/world/constitution/tests/constitution.rs:43`)
-  to check the API description instead, and amend `.stories/done/17-genesis-codes/spec.md` "Docs", which asked for
+  to check the API description instead, and amend `.stories/17-genesis-codes/spec.md` "Docs", which asked for
   the line in the constitution, to point here.
 - Write the world description in `info.description`: the founders and standing through vouches, quarters, lanes and
   homes, the Square, the Academy, the Library, the Chronicle, genesis codes and federation, each in a few
