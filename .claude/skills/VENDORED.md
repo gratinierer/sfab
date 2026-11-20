@@ -14,6 +14,7 @@ skills from agentic_containers are the owner's.
 | `review-story` | gratinierer/agentic_containers, `.devcontainer/general_devcontainer/resources/ai/skills/review-story/` | `eaf96f3` | |
 | `codebase-design` | mattpocock/skills, `skills/engineering/codebase-design/` | `4ae2317` | `aa11a96c0845` |
 | `domain-modeling` | mattpocock/skills, `skills/engineering/domain-modeling/` | `4ae2317` | `b3eb40152b81` |
+| `grill-me` | mattpocock/skills, `skills/productivity/grill-me/` | `abeeaf9` | `ab1acb9fbd9e` |
 | `grill-with-docs` | mattpocock/skills, `skills/engineering/grill-with-docs/` | `4ae2317` | `35e62aa423aa` |
 | `grilling` | mattpocock/skills, `skills/productivity/grilling/` | `4ae2317` | `e40cc1d348f6` |
 | `improve-codebase-architecture` | mattpocock/skills, `skills/engineering/improve-codebase-architecture/` | `4ae2317` | `f768cb44209e` |
@@ -45,5 +46,8 @@ characters of each one's `computedHash` in the devcontainer's `skills-lock.json`
 
 A skill here calls only skills that are also here, so a dependency is vendored with the skill that needs it
 (`tdd` with `implement-story`, `decision-form` with the address skills and `github-pr-review`).
+
+`grill-me` was copied on 2026-11-20 from `/workspaces/.agents/skills/grill-me/`, unchanged. Like
+`grill-with-docs`, it only calls `grilling`, which is already here.
 
 Later changes made in this repo are recorded in git history.
