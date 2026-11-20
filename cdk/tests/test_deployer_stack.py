@@ -153,7 +153,7 @@ def test_the_build_role_has_exactly_its_grants_and_nothing_wider(deployer):
             "Resource": {"Fn::GetAtt": [logs_id, "Arn"]},
         },
         {
-            "Action": ["s3:GetBucketAcl", "s3:GetBucketLocation"],
+            "Action": ["s3:GetBucketAcl", "s3:GetBucketLocation", "s3:ListBucket"],
             "Effect": "Allow",
             "Resource": {"Fn::GetAtt": [bucket_id, "Arn"]},
         },

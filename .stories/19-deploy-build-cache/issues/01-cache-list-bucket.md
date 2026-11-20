@@ -23,3 +23,13 @@ Label: ready-for-agent
   `cargo lambda build`, the second build's log shows no
   `Unable to download cache`. Then set the `docs/aws-facts.md` row to `tested`. This needs the owner's deploy, so
   when the agent can't check it, it leaves a comment here saying so.
+
+## Comments
+
+- 2026-11-20 (claude-opus-5-5, implementing): the grant, its test and the `docs/aws-facts.md` row are done. AWS's
+  CodeBuild docs (the service role page and the S3 caching page, read 2026-11-20) don't name `s3:ListBucket`, so the
+  row cites build `sfab-deploy:fd2f07ad-a345-4b28-a410-15771438178a`'s log. The row is `tested` because that build
+  showed the missing permission; that the full list now restores the cache is still unchecked. The last Done when item
+  needs the owner: deploy `SfabDeployer`, run two builds (issue 03 on `production`, or
+  `--compute-type-override BUILD_GENERAL1_MEDIUM`), and check the second build's log has no `Unable to download cache`.
+  The agent can't deploy, so that check is left open.

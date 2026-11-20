@@ -150,8 +150,10 @@ class DeployerStack(cdk.Stack):
                 actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
                 resources=[self.log_group.log_group_arn],
             ),
+            # The S3 cache's permissions (docs/aws-facts.md, "CodeBuild and CodeConnections"); restoring the cache
+            # needs s3:ListBucket, which AWS's example leaves out.
             iam.PolicyStatement(
-                actions=["s3:GetBucketAcl", "s3:GetBucketLocation"],
+                actions=["s3:GetBucketAcl", "s3:GetBucketLocation", "s3:ListBucket"],
                 resources=[self.cache.bucket_arn],
             ),
             iam.PolicyStatement(
