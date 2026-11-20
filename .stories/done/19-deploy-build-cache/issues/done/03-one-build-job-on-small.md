@@ -51,3 +51,7 @@
   `docs/aws-facts.md` has both rows, the second still `memory`). The last Done-when item is still open: the agent
   can't move `production` or start a build, so the owner's build on ARM/Small, its BUILD phase time, and setting
   the second row to `tested` with that build's id are the owner's.
+- 2026-11-20 (owner's builds, run by claude-opus-5-5): on ARM/Small with one build job and no override, build
+  `sfab-deploy:41dbb6a3-c8c5-4da1-a76c-60e84a022a94` built the Lambdas with no SIGKILL and deployed all four stacks, its
+  BUILD phase in 1,190 s (under 45 minutes); `sfab-deploy:aca6660e-9b05-4c66-8473-f50675dea6eb` took 1,041 s. The
+  `docs/aws-facts.md` row is `tested`. Done when met.

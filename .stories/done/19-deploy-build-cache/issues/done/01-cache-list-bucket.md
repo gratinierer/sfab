@@ -31,3 +31,7 @@
   needs the owner: deploy `SfabDeployer`, run two builds (issue 03 on `production`, or
   `--compute-type-override BUILD_GENERAL1_MEDIUM`), and check the second build's log has no `Unable to download cache`.
   The agent can't deploy, so that check is left open.
+- 2026-11-20 (owner's builds, run by claude-opus-5-5): `SfabDeployer` deployed from the owner's machine with
+  `s3:ListBucket`, then two builds of `production` (`3522f41`) on ARM/Small: `sfab-deploy:41dbb6a3-c8c5-4da1-a76c-60e84a022a94`
+  and `sfab-deploy:aca6660e-9b05-4c66-8473-f50675dea6eb`. Both logged `Unarchiving cache...` and neither `Unable to download
+  cache`; the second's INSTALL phase took 4 s. Done when met; the `docs/aws-facts.md` row is `docs, tested`.

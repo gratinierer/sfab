@@ -122,3 +122,7 @@ Write the tests first.
   Each file was restored with `git checkout`, and `git status` showed them unchanged.
 - 2026-11-20 (claude-opus-5-5, implementing): the last Done when item needs the owner's build on CodeBuild (issue 03
   on `production`, or `--compute-type-override BUILD_GENERAL1_MEDIUM`). The agent can't start one, so it's left open.
+- 2026-11-20 (owner's builds, run by claude-opus-5-5): build `sfab-deploy:41dbb6a3-c8c5-4da1-a76c-60e84a022a94` (`--all`
+  from `production` at `3522f41`, ARM/Small, no override) ran Python environment, Generate, the API definition's
+  test (28 passed), Build the Lambdas and `cdk deploy`, with no `cargo-audit`, no `cargo test` and no other pytest
+  output. INSTALL took 19 s. Done when met.
