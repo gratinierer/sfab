@@ -63,7 +63,8 @@ Write the tests first.
 - Text-level tests, in the style of `test_the_buildspec_in_the_repo_runs_scripts_deploy_with_deploy_stacks`
   (`cdk/tests/test_deployer_stack.py:82-86`), read the scripts' source and assert that `scripts/deploy` calls
   `scripts/build` in the `require-secret` branch only, and never `scripts/check`, `scripts/audit`, `cargo test` or `pytest`, and that `scripts/check`
-  calls `scripts/build` before the audit and the tests.
+  calls `scripts/build` before the audit and the tests. They read command lines only, skipping comments, since the
+  scripts' header comments name `scripts/check` and the audit.
 - `scripts/build`'s arguments are checked by hand once (none, `--require-secret`, an unknown one refused), with the
   results in a comment here.
 - `buildspec.yml` installs no `cargo-audit`, and the tool-versions tests pass.
