@@ -47,3 +47,7 @@ Until this is fixed, the workaround is to export the session's credentials first
   - Checked: `scripts/check` green (audit clean, 418 tests). With this container's `aws login` session and no exported
     keys, `genesis-codes status` reached S3. A `takedown` dry run wasn't run here (the session's permission check
     refused it), so the owner's run of one is still open, as Done when says.
+- 2026-11-20: closed. The owner's `takedown id fddilt7jnfjt` dry run, with `aws login` credentials, reached S3 and
+  listed the test agent's `identity.json`, `vitals` and claim, removing nothing; with `genesis-codes status` above,
+  every Done when item is met. Code review: `/review-code ca1ac84^ auto 3` found C180 and C181, both fixed
+  (`0aa6e40`, `14f68fb`), and round 2 over `ca1ac84..c48c828` found nothing, with `scripts/check` green.
