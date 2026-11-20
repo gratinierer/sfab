@@ -25,6 +25,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-20T17:40:00+00:00 | review | c4d5828b98 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 1) | 5 new, 3 closures upheld, 5 open | full: every story file changed (R8 rewrote issue 03); audited the walkthrough's closures of R7, R8 and R9's supersession |
 | 2026-11-20T17:55:00+00:00 | walkthrough | 1ea0ec7c65 | claude-opus-5-5 (auto) | 0 new, 5 resolved, 0 still open | auto walkthrough, not a review pass |
 | 2026-11-20T18:10:00+00:00 | review | ff24fe2dab | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5, auto round 2) | 2 new, 5 closures upheld, 2 open | full: 3 of the story's 5 files changed; audited the walkthrough's closures of R17-R21; R22, R23 from the reviewer's suggestions |
+| 2026-11-20T18:15:00+00:00 | walkthrough | fc1f0cbbbb | claude-opus-5-5 (auto) | 0 new, 2 resolved, 0 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
