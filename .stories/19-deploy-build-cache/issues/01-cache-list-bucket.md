@@ -18,6 +18,7 @@ Label: ready-for-agent
 
 - `scripts/check` passes, with the test asserting `s3:ListBucket` on the cache bucket's ARN only.
 - `docs/aws-facts.md` :131 names `s3:ListBucket` and says where that comes from.
-- After the owner deploys `SfabDeployer` and runs two builds, the second build's log shows no
+- After the owner deploys `SfabDeployer` and runs two builds on ARM/Medium (issue 03 deployed, or started with
+  `--compute-type-override BUILD_GENERAL1_MEDIUM`: ARM/Small runs out of memory in `cargo lambda build`), the second build's log shows no
   `Unable to download cache`. Then set the `docs/aws-facts.md` row to `tested`. This needs the owner's deploy, so
   when the agent can't check it, it leaves a comment here saying so.

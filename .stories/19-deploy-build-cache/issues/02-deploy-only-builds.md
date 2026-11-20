@@ -70,6 +70,7 @@ Write the tests first.
 - `buildspec.yml` installs no `cargo-audit`, and the tool-versions tests pass.
 - The deploy's build or synth fails when either federation file doesn't parse. Check each by hand once (break it,
   run `scripts/build` and a synth, restore it) and list the results in a comment here.
-- On the owner's next build, the BUILD phase log shows the generate and build steps and then `cdk deploy`, with no
+- On the owner's next build on ARM/Medium (issue 03 deployed, or started with
+  `--compute-type-override BUILD_GENERAL1_MEDIUM`: ARM/Small runs out of memory in `cargo lambda build`), the BUILD phase log shows the generate and build steps and then `cdk deploy`, with no
   audit and no test output. This needs the owner's build, so when the agent can't check it, it leaves a comment
   here saying so.
