@@ -13,7 +13,9 @@ it, so it isn't on the `Blocked by` line.
 ## Scope
 
 - The kill switch drill, both ways in: the stop topic, and the daily limit lowered then restored.
-  Confirm the email reaches your phone.
+  Confirm the email reaches your phone. While the web ACL's default action is Block, a request gets WAF's plain
+  `403`, not `problem+json`, and the `docs/aws-facts.md` row on WAF blocks moves from `tested (rule)` to `tested`.
+  Moved from issue 01 on 2026-11-20.
 - The alarm check: force each alarm with `aws cloudwatch set-alarm-state`, and confirm its email arrives.
 - The warning alarm's metric: after the smoke run, the 50,000-call warning's metric, with the `ApiName`
   CDK gave it, shows those calls, as `aws cloudwatch describe-alarms` and `get-metric-statistics` can show,

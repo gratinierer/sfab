@@ -162,3 +162,7 @@ emails and an automatic stop from the start. Keep its URL unpublished until the 
   - **Still open:** an edit to `sfab.yaml` reaching the `v1` stage on the next build (`4-life-in-the-world#13`'s
     world description edits it), and WAF's plain `403` when its default action is Block, which issue 10's kill switch
     drill shows.
+- 2026-11-20: closed by the owner, with its two unproven items moved, not waived: an edit to `sfab.yaml` reaching the
+  `v1` stage goes to `4-life-in-the-world#13`'s Done when, since that ticket's deploy edits `sfab.yaml`, and WAF's
+  plain `403` with a default action of Block goes to issue 10's kill switch drill. Code review covers its code: the
+  last commits (`da06380`, `89efde9`, `2d393c3`, `5f900b0`) fall in reviewed ranges, with no finding open.
