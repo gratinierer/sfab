@@ -366,8 +366,9 @@ services aren't affected. See `docs/adr/0001-initial-architecture.md`.
 - **Request path:** CloudFront with WAF, then an API Gateway REST API, then one Rust Lambda
   on arm64 with an internal `axum` router, then S3. See `docs/adr/0001-initial-architecture.md`.
 - **API Lambda permissions:** read and write `identities/`, `messages/`, `vitals/` and `federation/pending/`,
-  and `.stories/17-genesis-codes/`'s `genesis/ips/` and `genesis/pool.json`, delete under `messages/` and
-  `genesis/codes/` only, read and write the claims bucket, and read `world/` and `genesis/codes/`, whose HEAD
+  `.stories/17-genesis-codes/`'s `genesis/ips/` and `genesis/pool.json`, and `.stories/4-life-in-the-world/`'s
+  `vouches/`, `places/`, `square/`, `academy/` and `library/`, delete under `messages/`, `genesis/codes/`, and story
+  4's `places/`, `square/` and `academy/` only, read and write the claims bucket, and read `world/` and `genesis/codes/`, whose HEAD
   needs `GetObject`. It never touches `federation/verified/`. It also has
   `s3:ListBucket` on both buckets, with no condition, because without it S3 answers a missing key with `403`
   rather than `404`. That lets it list key names anywhere in both buckets, but never read an object outside its
@@ -396,11 +397,15 @@ services aren't affected. See `docs/adr/0001-initial-architecture.md`.
     and that day's Chronicle entry is missing. Every step is safe to repeat, so a milestone can't fire twice,
     and a day's email isn't sent twice. The kill switch keeps Lambda's retries, because a stop must get through.
   - **Permissions:** list the claims bucket, list only `world/`, `federation/` and `genesis/` in the identities
-    bucket, so it reads only keys it has listed there, read `vitals/`, `vouches/`, `places/`, `square/`, `academy/`, `library/`,
-    `contacts.json` and `home.json`, read, write and delete in `world/`, `federation/` and
+    bucket, and story 4's `vouches/`, `vitals/`, `academy/`, `library/`, `places/` and `square/`, and each
+    `identities/*/home.json` and `contacts.json` by its full key, so it reads only keys it has listed there, since a
+    missing key under a prefix-conditioned `ListBucket` is a `403` (`docs/aws-facts.md`), read `vitals/`
+    (`born_at`), `vouches/`, `places/`, `academy/`, `library/`, `contacts.json` and `home.json`, but nothing under
+    `square/`, which it only lists, read, write and delete in `world/`, `federation/` and
     `.stories/17-genesis-codes/`'s `genesis/`, delete in `places/` for
     story 4's stale lane pointers, publish to the alerts topic, and make the
-    outbound check. It never reads `claim.json` or `identity.json`.
+    outbound check. It never reads `claim.json` or `identity.json`. Story 4's age rule reaches it as the
+    `AGE_RULE_STARTS` environment variable.
 - **Front door:** one CloudFront distribution on the Free flat-rate plan, with 1 million
   requests and 100 GB per month, no overage charges, and WAF included. It uses the managed
   `CachingDisabled` and `AllViewerExceptHostHeader` policies, so responses aren't cached and
@@ -486,7 +491,7 @@ blocked, default SSE-S3 encryption, versioning off, `RemovalPolicy.RETAIN` and
   | `federation/pending/<domain>.json` | Requests awaiting proof, expiring after 3 days |
   | `federation/verified/<domain>.json` | Requests awaiting the owner, expiring after 30 days |
   | `federation/emailed.json` | The last day the daily world job emailed verified requests |
-  | Story 4's prefixes | `vouches/`, `places/`, `square/`, `academy/` and `library/`, listed in `.stories/4-life-in-the-world/spec.md` "Foundations" |
+  | Story 4's prefixes | `vouches/`, `places/`, `square/`, `academy/` and `library/`, listed in `.stories/4-life-in-the-world/spec.md` "Foundations", with `square/` expiring after 7 days and `academy/applications/` after 30 (`AcademyApplications`). The API Lambda reads and writes them all and deletes under `places/`, `square/` and `academy/`; the daily job reads `vouches/`, `places/`, `academy/` and `library/`, only lists `square/`, and deletes under `places/` |
   | Story 17's prefix | `genesis/codes/`, `genesis/batches/`, `genesis/pool.json` and `genesis/ips/`, the last expiring after 1 day, listed in `.stories/17-genesis-codes/spec.md` "Storage" |
 
 - Claims bucket: `claims/<id>/claim.json` holds `claim_hash`, `recovery_hash` and
@@ -810,8 +815,8 @@ pass. It also reads the federation world
   `identity.json` with `404`. After a `reclaim`, the next request uses the new claim. The unit tests cover what it
   leaves out: a page past the last resident page and messages between friends. Before launch it births with the
   owner's `--no-ip-limit` genesis codes from the gitignored `smoke-genesis-codes.txt`, one per birth, and also
-  once with a code from `GET /world/genesis-code`, which both modes read (`17-genesis-codes#06`). It sends about 43
-  requests before launch and 31 with `--production`, one every 4 seconds, so it stays under the WAF limit of 100 per 5 minutes
+  once with a code from `GET /world/genesis-code`, which both modes read (`17-genesis-codes#06`). It sends about 101
+  requests before launch and 61 with `--production`, with story 4's routes, one every 4 seconds, so it stays under the WAF limit of 100 per 5 minutes
   whatever its length. It solves a `Proof` for each write. It treats WAF's plain `403` as "blocked, wait and rerun" rather than as
   a failure, and accepts the census and resident routes' `404`, and both `vouched-by` reads' `404` `not-built-yet`
   (`.stories/4-life-in-the-world/spec.md` "Vouches"), before the daily job's first run, and

@@ -76,3 +76,5 @@ Blocked by: 02, 03, 04, 05, 06, 07, 08, 2-identity-api#08
   marker and no wait. A removed course keeps its place among the teacher's 5, as a retired one
   does, and its certificates stay with their holders. The daily-built lists drop it at the next
   run.
+
+2026-11-20: moved into spec.md ("Takedown") by ticket 15.

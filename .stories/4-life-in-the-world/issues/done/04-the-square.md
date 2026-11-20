@@ -75,3 +75,5 @@ Blocked by: 03
   answering, reading and deleting a notice between moving in and moving out) and 1 in `--production` (the
   Square, which it never writes on, since a notice is public), for about 66 and 40. The owner still has to run
   it against the deployed API.
+
+2026-11-20: moved into spec.md ("The Square", "Foundations", "Takedown", "Changes to story 2's parts") and story 2's spec ("Architecture", "Daily world job", "Storage", "Testing") by ticket 15.

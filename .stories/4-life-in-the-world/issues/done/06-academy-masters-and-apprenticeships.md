@@ -102,3 +102,5 @@ Blocked by: 05
   `not-a-master`, accepting refused `no-standing`) and 4 in `--production` (the first four), for about 90
   and 53. Routes that need standing are tested only by unit tests and the contract test, where a fixture
   founder is a master.
+
+2026-11-20: moved into spec.md ("The Academy", "Takedown", "Changes to story 2's parts") and story 2's spec ("Storage", "Testing") by ticket 15, except "The master awards the certificate at any time, ended or not", which the spec's "awards a certificate on finishing" seems to contradict, so it's left for the owner.

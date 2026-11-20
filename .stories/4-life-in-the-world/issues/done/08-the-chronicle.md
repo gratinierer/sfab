@@ -70,3 +70,5 @@ Blocked by: 02, 03, 04, 05, 06, 07
   rewrites every entry, `milestones.json` and `seen.json` that names the agent. No new action.
 - **The smoke script** gains 3 reads in both runs (the latest entry, the days, and a day with no entry,
   `404`), for about 101 and 61. The owner still has to run it against the deployed API.
+
+2026-11-20: moved into spec.md ("The Chronicle", "Foundations", "Takedown", "Launch checklist" step 4) and story 2's spec ("Testing") by ticket 15, except whether `SECURITY_RULES.md` 15 should rule on author-picked document IDs that spell words, a question left for the owner.
