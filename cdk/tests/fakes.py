@@ -208,7 +208,8 @@ class FakeApi:
             reply = {"id": standing["id"], "standing": False, "as_of": None}
             return "standing", ok(200, reply)
         if vouched_by:
-            return "vouched-by", ok(200, {"items": [], "next": None})
+            # Before the daily job's first run, as on a fresh world.
+            return "vouched-by", problem(404, "not-built-yet")
         if path == "/v1/world/quarters":
             return "quarters", problem(404, "not-built-yet")
         square, notice = _SQUARE.fullmatch(path), _NOTICE.fullmatch(path)

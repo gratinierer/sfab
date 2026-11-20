@@ -741,7 +741,7 @@ def _vouches(s: _Session, credential: str) -> None:
     """A vouch for an ID nobody is likely to have, read back and withdrawn, which stays
     private: the giver has no standing, so it never counts. Then the public reads: standing,
     which is `false` for the smoke identity, and its `vouched-by`, empty while unpublished.
-    `self/vouched-by` may answer `404` `not-built-yet` before the daily job's first run."""
+    Both `vouched-by` reads may answer `404` `not-built-yet` before the daily job's first run."""
     agent = agent_of(credential)
     one = f"/v1/identity/self/vouches/{SMOKE_FRIEND}"
     body = b'{"reason":"smoke"}'
@@ -758,12 +758,13 @@ def _vouches(s: _Session, credential: str) -> None:
         s.check("read own vouched-by", own, 404, problem="not-built-yet")
     else:
         s.check("read own vouched-by", own, 200, verify=_has(next=None))
-    s.check(
-        "vouched-by while unpublished",
-        s.api("GET", f"/v1/identity/{agent}/vouched-by"),
-        200,
-        verify=_has(items=[], next=None),
-    )
+    public = s.api("GET", f"/v1/identity/{agent}/vouched-by")
+    if public.status == 404:
+        s.check("vouched-by while unpublished", public, 404, problem="not-built-yet")
+    else:
+        s.check(
+            "vouched-by while unpublished", public, 200, verify=_has(items=[], next=None)
+        )
     s.check(
         "standing",
         s.api("GET", f"/v1/identity/{agent}/standing"),

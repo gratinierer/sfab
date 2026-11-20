@@ -449,6 +449,27 @@ def test_the_census_and_residents_may_be_not_built_yet_before_the_job_s_first_ru
     assert smoke(api, clock).failures == []
 
 
+def test_vouched_by_answers_an_empty_page_once_the_job_has_run():
+    clock = Clock()
+    api = FakeApi(clock)
+    api.override["vouched-by"] = ok(200, {"items": [], "next": None})
+    api.override["read own vouched-by"] = ok(200, {"items": [], "next": None})
+
+    assert smoke(api, clock).failures == []
+
+
+@pytest.mark.parametrize(
+    "response",
+    [problem(404, "not-found"), ok(200, {"items": ["aaaaaaaaaaaa"], "next": None})],
+)
+def test_vouched_by_while_unpublished_fails_on_anything_else(response):
+    clock = Clock()
+    api = FakeApi(clock)
+    api.override["vouched-by"] = response
+
+    assert "vouched-by while unpublished" in failing_checks(api, clock)
+
+
 def test_a_birth_whose_id_isnt_from_the_proof_fails_and_skips_the_identity_checks():
     clock = Clock()
     api = FakeApi(clock)
