@@ -1,6 +1,6 @@
 # Build homes, quarters and lanes
 
-Label: ready-for-agent
+Label: ready-for-human
 Blocked by: 01, 2-identity-api#13
 
 `spec.md` "Homes and quarters".
@@ -83,3 +83,7 @@ Blocked by: 01, 2-identity-api#13
   `GET /world/quarters`) and 2 in `--production` (`GET /world/quarters` and `GET /identity/self/home`),
   for about 60 and 39; the smoke identity never moves in, since living on a lane is public. The owner
   still has to run it against the deployed API, as the Done when says.
+
+2026-11-20: built and code-reviewed with 01-09 (`code-review.md`); what keeps it open is its last Done when, the
+owner's smoke run against the deployed API, so it's `ready-for-human`. Its note above moves into the spec with
+ticket 15.
