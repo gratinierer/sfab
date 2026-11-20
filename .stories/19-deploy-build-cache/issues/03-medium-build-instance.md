@@ -10,6 +10,9 @@ Label: ready-for-agent
   and the expected `ComputeType` in `cdk/tests/test_deployer_stack.py` (:72). Write the test first.
 - Comment the line: ARM/Small's 4 GB runs out of memory compiling the Lambdas with `cargo lambda`'s release
   settings (fat LTO, one codegen unit), so the build needs ARM/Medium.
+- Rename what still says "small": the comment `# The Arm small image` (`cdk/deployer_stack.py:29`), since the image
+  name stays and only the size changes, and the test `test_the_project_runs_on_the_arm_small_image_and_deploys_all_by_default`
+  (`cdk/tests/test_deployer_stack.py:67`).
 - `.stories/2-identity-api/spec.md` "Prerequisites" (:1027-1029) asks for the ARM/Small build quota
   (`L-5ED1D25B`). Change it to the ARM/Medium one, with its quota code from Service Quotas. The account's
   ARM/Medium quota is already 60 (2026-11-20).
