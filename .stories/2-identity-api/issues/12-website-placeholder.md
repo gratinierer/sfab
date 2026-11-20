@@ -29,3 +29,10 @@ Blocked by: 01
 ## Comments
 
 - 2026-11-08: relabelled `ready-for-human` (review finding R183): the website stack (`cdk/website_stack.py`) and its assertion tests are built and code-reviewed (`code-review.md`, 2026-11-08); what remains is the owner's deploy checks above.
+- 2026-11-20: deployed in "First deploy" step 11 (`SfabWebsite`, from `b46e588`), and updated with no changes by
+  `production` builds `41dbb6a3` and `aca6660e`. Checked on the deploy: `/` and `/agents/` answer `200 text/html`,
+  `/agents` answers `301` to `/agents/`, `/.well-known/x` isn't redirected (S3's `403` for a missing file), `http://`
+  answers `301` to `https://`, and `/agents/` links `https://api.botrefugium.com/v1/...` with `{{api_host}}` filled
+  in. The owner confirmed in the console that distribution `E2J9VHRZ3JKB1J` (`botrefugium.com`) is on its own Free
+  flat-rate plan, separate from the API's `EJS6XV549SRKF`, and that both work. Still open: a changed page appearing
+  after a `production` build.
