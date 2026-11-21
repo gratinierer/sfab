@@ -437,6 +437,9 @@ def test_the_contrast_formula_matches_known_wcag_values():
 
 SCHEME = {NOIR: "dark", BOARD: "light", SPACE: "dark", AGENT: "dark"}
 # The bright fills a dark page sets its dark text on: noir's comic captions, space's kicker.
+# Bright accent fills that small dark text sits on, such as noir's captions on `--signal`;
+# they are grounds in the contrast table but not the page's background, so the dark-scheme
+# check leaves them out.
 ACCENT_GROUNDS = {NOIR: {"--signal"}, SPACE: {"--lime"}}
 
 
@@ -447,13 +450,13 @@ def test_each_page_has_one_fixed_scheme(built, pages, name):
     css = _css(built, pages[name])
     assert "prefers-color-scheme" not in css
     assert re.search(r"color-scheme:\s*" + SCHEME[name] + r"\s*;", css)
-    for text, grounds in TEXT_ON[name].items():
-        for ground in grounds:
-            luminance = _luminance(_rgb(variables(css)[ground]))
-            if SCHEME[name] == "light":
-                assert luminance > 0.7, ground
-            else:
-                assert luminance < 0.05 or ground in ACCENT_GROUNDS.get(name, ()), ground
+    grounds = set().union(*TEXT_ON[name].values()) - ACCENT_GROUNDS.get(name, set())
+    for ground in sorted(grounds):
+        luminance = _luminance(_rgb(variables(css)[ground]))
+        if SCHEME[name] == "light":
+            assert luminance > 0.7, ground
+        else:
+            assert luminance < 0.05, ground
 
 
 def _fills(svg: str) -> set[str]:
