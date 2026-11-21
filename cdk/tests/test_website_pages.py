@@ -1,7 +1,7 @@
 """The website's pages, as the generate step builds them: the noir page at `/`, the board page
-at `/board/` and the agent version at `/agents/`, from .stories/10-website/spec.md "Design and
-content", "Mobile and access" and "Variants", which wins where they disagree, and its issues
-01, 04 and 05.
+at `/board/`, the space page at `/space/` and the agent version at `/agents/`, from
+.stories/10-website/spec.md "Design and content", "Mobile and access" and "Variants", which
+wins where they disagree, and its issues 01, 04, 05 and 06.
 
 Each page is parsed with the standard library's HTML parser, so these tests need no browser.
 """
@@ -17,13 +17,13 @@ import generate_website
 
 REPO_WEBSITE = Path(__file__).resolve().parents[2] / "website"
 
-PAGES = ("index.html", "board/index.html", "agents/index.html")
-NOIR, BOARD, AGENT = PAGES
+PAGES = ("index.html", "board/index.html", "space/index.html", "agents/index.html")
+NOIR, BOARD, SPACE, AGENT = PAGES
 # spec.md "Variants" (Sections): the human-side pages use noir's seven, the agent version
 # keeps its five, each in its own order.
 HUMAN_SECTIONS = ["world", "join", "identity", "constitution", "proof-of-work", "now-and-next", "open-source"]
 AGENT_SECTIONS = ["what", "join", "now-and-next", "proof-of-work", "open-source"]
-SECTIONS = {NOIR: HUMAN_SECTIONS, BOARD: HUMAN_SECTIONS, AGENT: AGENT_SECTIONS}
+SECTIONS = {NOIR: HUMAN_SECTIONS, BOARD: HUMAN_SECTIONS, SPACE: HUMAN_SECTIONS, AGENT: AGENT_SECTIONS}
 CONTACT = "abuse@example.test"
 
 
@@ -124,16 +124,18 @@ def test_each_version_has_the_five_sections_in_order_with_the_same_anchors(pages
     assert pages[name].section_ids() == SECTIONS[name]
 
 
+@pytest.mark.parametrize("name", [BOARD, SPACE])
 @pytest.mark.parametrize("section_id", HUMAN_SECTIONS)
-def test_board_carries_noirs_paragraphs_and_lists_word_for_word(pages, section_id):
+def test_board_and_space_carry_noirs_paragraphs_and_lists_word_for_word(pages, name, section_id):
     # spec.md "Variants" (Same content): noir's text is the source; only headings may differ.
     noir = pages[NOIR].paragraphs_and_lists(section_id)
     assert noir
-    assert pages[BOARD].paragraphs_and_lists(section_id) == noir
+    assert pages[name].paragraphs_and_lists(section_id) == noir
 
 
-def test_board_links_the_worked_example_on_noir(pages):
-    links = [href for _, _, hrefs in pages[BOARD].paragraphs_and_lists("proof-of-work") for href in hrefs]
+@pytest.mark.parametrize("name", [BOARD, SPACE])
+def test_board_and_space_link_the_worked_example_on_noir(pages, name):
+    links = [href for _, _, hrefs in pages[name].paragraphs_and_lists("proof-of-work") for href in hrefs]
     assert "/#proof-of-work" in links
 
 
@@ -183,6 +185,7 @@ def test_a_page_is_well_formed_html5_in_english_with_unique_ids(built, pages, na
     [
         (NOIR, "/", [("/agents/", "I'm an agent →")]),
         (BOARD, "/board/", [("/", "Human version"), ("/agents/", "I'm an agent →")]),
+        (SPACE, "/space/", [("/", "Human version"), ("/agents/", "I'm an agent →")]),
         (AGENT, "/agents/", [("/", "← human version")]),
     ],
 )
@@ -236,9 +239,9 @@ def stylesheets(page: Page) -> list[str]:
     return [link["href"] for link in page.all("link") if link.get("rel") == "stylesheet"]
 
 
-# spec.md "Variants" (JavaScript): board may load scripts from its own folder only; noir and
-# the agent version have none.
-SCRIPT_FOLDER = {BOARD: "/board/"}
+# spec.md "Variants" (JavaScript): board and space may load scripts from their own folder
+# only; noir and the agent version have none.
+SCRIPT_FOLDER = {BOARD: "/board/", SPACE: "/space/"}
 
 
 def scripts(page: Page) -> list[str]:
@@ -265,21 +268,30 @@ def test_a_page_has_scripts_only_from_its_own_folder_and_loads_only_files_from_i
         assert (built / url.lstrip("/")).is_file(), url
 
 
-# What board may load from the site root; everything else it uses lives in `/board/`
-# (issue 05 "Scope").
-SHARED = {"/shelter-icon.svg", "/shelter-wordmark.svg", "/fonts/silkscreen-latin-400-normal.woff2"}
+# What board and space may load from the site root; everything else each uses lives in its own
+# folder (issues 05 and 06 "Scope"). Space draws its name in a system font, so it needs neither
+# the wordmark nor Silkscreen.
+SHARED = {
+    BOARD: {"/shelter-icon.svg", "/shelter-wordmark.svg", "/fonts/silkscreen-latin-400-normal.woff2"},
+    SPACE: {"/shelter-icon.svg"},
+}
 
 
-def test_board_loads_nothing_from_the_site_root_but_the_icon_the_wordmark_and_the_font(built, pages):
-    page = pages[BOARD]
+@pytest.mark.parametrize("name", list(SHARED))
+def test_board_and_space_load_nothing_from_the_site_root_but_their_shared_files(built, pages, name):
+    page = pages[name]
     loaded = [link["href"] for link in page.all("link")] + [img["src"] for img in page.all("img")]
     loaded += scripts(page)
     for href in stylesheets(page):
         css = (built / href.lstrip("/")).read_text(encoding="utf-8")
         loaded += re.findall(r"url\(\s*['\"]?([^'\")]+)", css)
+    for _, attrs in page.elements:
+        loaded += re.findall(r"url\(\s*['\"]?([^'\")]+)", attrs.get("style", ""))
     assert loaded
+    folder = SCRIPT_FOLDER[name]
     for url in loaded:
-        assert url.startswith("/board/") or url in SHARED, url
+        assert url.startswith(folder) or url in SHARED[name], url
+        assert (built / url.lstrip("/")).is_file(), url
 
 
 @pytest.mark.parametrize("name", PAGES)
@@ -290,6 +302,14 @@ def test_a_stylesheet_imports_nothing_and_its_urls_are_files_of_the_site(built, 
         for url in re.findall(r"url\(\s*['\"]?([^'\")]+)", css):
             assert _is_local(url), (href, url)
             assert (built / url.lstrip("/")).is_file(), (href, url)
+
+
+def test_space_uses_a_rounded_display_font_from_the_readers_system(built, pages):
+    # spec.md "Variants" (Fonts): nothing downloaded.
+    css = _css(built, pages[SPACE])
+    assert "@font-face" not in css
+    display = variables(css)["--display"]
+    assert "Rounded" in display and display.rstrip().endswith("sans-serif")
 
 
 @pytest.mark.parametrize("name", [NOIR, BOARD])
@@ -313,6 +333,7 @@ AA_NORMAL_TEXT = 4.5
 OVERLAY_CAP = 0.08
 
 _NOIR_GROUNDS = ["--night", "--panel", "--edge"]
+_SPACE_GROUNDS = ["--card", "--space"]
 TEXT_ON = {
     "index.html": {
         "--ink": _NOIR_GROUNDS,
@@ -328,6 +349,18 @@ TEXT_ON = {
         "--fg-text": ["--bg"],
         "--fg-heading": ["--bg"],
         "--fg-link": ["--bg"],
+    },
+    SPACE: {
+        "--ink": _SPACE_GROUNDS,
+        "--muted": _SPACE_GROUNDS,
+        # Links.
+        "--cyan": _SPACE_GROUNDS,
+        # The cards' headings, each in its stop's ink (`--c`), and the footer's title.
+        "--pink": ["--card"],
+        "--lime": _SPACE_GROUNDS,
+        "--orange": ["--card"],
+        # The kicker above the title.
+        "--space": ["--lime"],
     },
     "agents/index.html": {
         "--fg-text": ["--bg"],
@@ -404,13 +437,15 @@ def test_the_contrast_formula_matches_known_wcag_values():
     assert contrast(grey, white) == pytest.approx(4.48, abs=0.01)
 
 
-SCHEME = {NOIR: "dark", BOARD: "light", AGENT: "dark"}
+SCHEME = {NOIR: "dark", BOARD: "light", SPACE: "dark", AGENT: "dark"}
+# The bright fills a dark page sets its dark text on: noir's comic captions, space's kicker.
+ACCENT_GROUNDS = {NOIR: {"--signal"}, SPACE: {"--lime"}}
 
 
 @pytest.mark.parametrize("name", PAGES)
 def test_each_page_has_one_fixed_scheme(built, pages, name):
-    # spec.md "Variants" (Colour schemes): noir dark, board light lilac, agent dark, none
-    # following the browser.
+    # spec.md "Variants" (Colour schemes): noir dark, board light lilac, space dark, agent
+    # dark, none following the browser.
     css = _css(built, pages[name])
     assert "prefers-color-scheme" not in css
     assert re.search(r"color-scheme:\s*" + SCHEME[name] + r"\s*;", css)
@@ -420,7 +455,7 @@ def test_each_page_has_one_fixed_scheme(built, pages, name):
             if SCHEME[name] == "light":
                 assert luminance > 0.7, ground
             else:
-                assert luminance < 0.05 or ground == "--signal", ground
+                assert luminance < 0.05 or ground in ACCENT_GROUNDS.get(name, ()), ground
 
 
 def _fills(svg: str) -> set[str]:
@@ -439,6 +474,54 @@ def test_the_svgs_behind_text_are_the_ones_the_contrast_test_knows(built, pages,
     assert urls == SVGS_UNDER_TEXT[name]
     for url in urls:
         assert _fills((built / url.lstrip("/")).read_text(encoding="utf-8")), url
+
+
+# Space's text sits on solid fills (spec.md "Variants" (Colour schemes)): the cards on
+# `--card`, the hero and the footer on `--space`, over the stars, the nebula and the
+# salminis' tile. Only the hero title is set over an SVG, the pink splat.
+SPACE_SOLID = {"hero": "--space", "card": "--card", "base": "--space"}
+SPACE_SVGS = {"/space/img/stars.svg", "/space/img/nebula.svg", "/space/img/salminis.svg", "/space/img/splat-pink.svg"}
+SPACE_TITLE_SVG = "/space/img/splat-pink.svg"
+AA_LARGE_TEXT = 3.0
+
+
+def _rule(css: str, selector: str) -> str:
+    """The declarations of every rule for exactly this selector."""
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    return " ".join(block for sel, block in _rules(css) if selector in [s.strip() for s in sel.split(",")])
+
+
+def test_space_text_sits_on_solid_fills(built, pages):
+    page, css = pages[SPACE], _css(built, pages[SPACE])
+    for cls, ground in SPACE_SOLID.items():
+        assert re.search(r"(?<![\w-])background\s*:\s*var\(" + ground + r"\)\s*;", _rule(css, "." + cls)), cls
+    backed = set()
+    for i, (_, attrs) in enumerate(page.elements):
+        if set(attrs.get("class", "").split()) & set(SPACE_SOLID):
+            backed |= {j for j, _, _ in page.inside(i)}
+    body = next(i for i, (tag, _) in enumerate(page.elements) if tag == "body")
+    for i, tag, _ in page.inside(body):
+        if tag in ("h1", "h2", "p", "li", "a") and page._text(i):
+            assert i in backed, (tag, page._text(i))
+
+
+def test_space_draws_only_the_svgs_the_contrast_test_knows(built, pages):
+    css = _css(built, pages[SPACE])
+    urls = {url for url in _css_urls(css) if url.endswith(".svg")}
+    assert urls == SPACE_SVGS
+    assert SPACE_TITLE_SVG in _rule(css, ".hero-title")
+
+
+def test_the_space_title_meets_wcag_aa_large_text_on_every_fill_of_its_splat(built, pages):
+    css = _css(built, pages[SPACE])
+    assert re.search(r"color\s*:\s*var\(--ink\)", _rule(css, ".hero-title a"))
+    # Large text: the title is bold and at least 2.5rem.
+    assert re.search(r"font-size\s*:\s*clamp\(2\.5rem,", _rule(css, ".hero-title"))
+    fills = _fills((built / SPACE_TITLE_SVG.lstrip("/")).read_text(encoding="utf-8"))
+    assert fills
+    ink = _rgb(variables(css)["--ink"])
+    for fill in fills:
+        assert contrast(ink, _rgb(fill)) >= AA_LARGE_TEXT, fill
 
 
 @pytest.mark.parametrize("name", list(SVGS_UNDER_TEXT))
@@ -495,9 +578,10 @@ def test_the_flash_counter_counts_falls_in_opacity():
     assert _flashes_per_second(flicker, 1) == 2
 
 
-def test_no_noir_animation_flashes_more_than_3_times_a_second(built, pages):
+@pytest.mark.parametrize("name", [NOIR, SPACE])
+def test_no_animation_flashes_more_than_3_times_a_second(built, pages, name):
     # WCAG 2.3.1, as spec.md "Variants" (Motion) says.
-    css = _css(built, pages["index.html"])
+    css = _css(built, pages[name])
     frames = _keyframes(css)
     animations = re.findall(r"(?<![\w-])animation\s*:\s*([^;]+);", css)
     assert animations
@@ -551,6 +635,57 @@ def test_board_hides_no_text_or_list_from_the_first_frame(built, pages):
     for selector, block in _rules(_css(built, pages[BOARD])):
         if re.search(r"(?<![\w-])(opacity|clip-path|visibility)\s*:|display\s*:\s*none", block):
             assert BOARD_DECORATION.search(selector), selector
+
+
+# What may move or hide on space: the splats, the planets, the salminis and their tile
+# (`body::before`), the ink trail and the cards' drips (`::before`, `::after`), never a card.
+SPACE_DECORATION = re.compile(r"::before|::after|\.splat\b|\.planet\b|\.salmini\b|\.shoal\b")
+# A script that only holds data, as salminis.js holds the shoal's species, adds no motion.
+DATA_SCRIPT = re.compile(r"(?://[^\n]*\n)*window\.[A-Z_]+ = {.*};\s*", re.S)
+
+
+def test_space_moves_only_decoration_and_only_under_the_reduced_motion_guard(built, pages):
+    guarded, rest = _media_blocks(_css(built, pages[SPACE]), "prefers-reduced-motion: no-preference")
+    assert guarded
+    assert not re.search(r"(?<![\w-])(animation|animation-name|transition)\s*:", rest)
+    # What space.js switches on, it switches on only for readers with no motion preference.
+    assert "space-js" not in rest and "landed" not in rest
+    for selector, block in _rules("".join(guarded)):
+        if re.search(r"(?<![\w-])(animation|animation-name|animation-duration|transition|transform)\s*:", block):
+            assert SPACE_DECORATION.search(selector), selector
+
+
+def test_every_space_script_returns_unless_the_reader_has_no_motion_preference(built, pages):
+    moving = 0
+    for src in scripts(pages[SPACE]):
+        js = (built / src.lstrip("/")).read_text(encoding="utf-8")
+        if DATA_SCRIPT.fullmatch(js):
+            assert "function" not in js, src
+            continue
+        moving += 1
+        body = js[js.index("(function () {") + len("(function () {"):]
+        first = next(line.strip() for line in body.splitlines() if line.strip() and not line.strip().startswith("//"))
+        assert SCRIPT_GUARD.fullmatch(first), (src, first)
+    assert moving == 2
+
+
+def test_space_hides_no_text_or_list_from_the_first_frame(built, pages):
+    # The cards show at once, not waiting for their splat (spec.md "Variants" (Motion)).
+    for selector, block in _rules(_css(built, pages[SPACE])):
+        if re.search(r"(?<![\w-])(opacity|clip-path|visibility)\s*:|display\s*:\s*none", block):
+            assert SPACE_DECORATION.search(selector), selector
+
+
+def test_space_moons_count_the_now_and_next_items(pages):
+    noir = pages[NOIR]
+    now = _items(noir, "now-and-next", "now")
+    total = now + _items(noir, "now-and-next", "next")
+    page = pages[SPACE]
+    (moons,) = [i for i, (_, attrs) in enumerate(page.elements) if attrs.get("class") == "moons"]
+    found = [attrs["class"].split() for _, _, attrs in page.inside(moons) if "moon" in attrs.get("class", "").split()]
+    assert (sum("painted" in m for m in found), len(found)) == (now, total)
+    label = f"{now} of {total} moons painted: {now} things are out now, {total - now} come next"
+    assert page.elements[moons][1]["aria-label"] == label
 
 
 def _board_parts(page: Page, cls: str) -> list[dict[str, str]]:
@@ -662,8 +797,21 @@ def test_every_text_colour_meets_wcag_aa_plain_and_under_the_full_overlay(built,
 
 
 # 360 px less the 1rem gutters on each side.
+PHONE_WIDTH_PX = 360
 PHONE_CONTENT_PX = 328
 REM_PX = 16
+
+
+def _max_width_blocks(css: str) -> list[tuple[float, str]]:
+    """Each `@media (max-width: <n>rem) { ... }` as (n, body), by matching braces."""
+    found = []
+    for match in re.finditer(r"@media\s*\(\s*max-width\s*:\s*([\d.]+)rem\s*\)\s*{", css):
+        depth, i = 1, match.end()
+        while depth:
+            depth += {"{": 1, "}": -1}.get(css[i], 0)
+            i += 1
+        found.append((float(match.group(1)), css[match.end() : i - 1]))
+    return found
 
 
 @pytest.mark.parametrize("name", PAGES)
@@ -672,12 +820,31 @@ def test_the_layout_is_one_column_that_fits_a_360_px_phone(built, pages, name):
     assert not re.search(r"(?<![\w-])(columns|column-count|float)\s*:", css)
     # A grid may lay panels side by side on wider screens, as long as two of its smallest
     # columns can't fit a phone (spec.md "Variants" (Layout)).
+    # Or it may set fixed columns that a `max-width` query of at least 360 px sets back to one
+    # (space's two columns).
+    collapsed = set()
+    for width, body in _max_width_blocks(css):
+        if width * REM_PX >= PHONE_WIDTH_PX:
+            collapsed |= {sel for sel, block in _rules(body)
+                          if re.search(r"grid-template-columns\s*:\s*1fr\s*;", block)}
+    for selector, block in _rules(css):
+        fixed = re.search(r"(?<![\w-])grid-template-columns\s*:\s*((?:[\d.]+fr\s*){2,});", block)
+        if fixed:
+            assert selector in collapsed, selector
+            css = css.replace(fixed.group(0), "")
     for value in re.findall(r"(?<![\w-])grid-template-columns\s*:\s*([^;]+);", css):
+        if value.strip() == "1fr":
+            continue
         smallest = re.fullmatch(r"repeat\(\s*auto-(?:fit|fill)\s*,\s*minmax\(\s*([\d.]+)rem\s*,\s*1fr\s*\)\s*\)", value.strip())
         assert smallest, value
         assert 2 * float(smallest.group(1)) * REM_PX > PHONE_CONTENT_PX, value
     for prop, px in re.findall(r"(?<![\w-])((?:min-)?width)\s*:\s*(\d+)px", css):
         assert int(px) <= PHONE_CONTENT_PX, f"{prop}: {px}px"
+
+
+# A variable a page sets per element in a `style` attribute, standing for one of its text
+# colours, and the ground that text sits on: space's `--c`, each stop's ink on its card.
+PER_ELEMENT = {SPACE: {"--c": "--card"}}
 
 
 @pytest.mark.parametrize("name", PAGES)
@@ -687,7 +854,18 @@ def test_text_colours_are_only_set_through_the_checked_variables(built, pages, n
     css = _css(built, pages[name])
     for value in re.findall(r"(?<![\w-])color\s*:\s*([^;]+);", css):
         used = re.fullmatch(r"var\((--[\w-]+)\)", value.strip())
-        assert used and used.group(1) in TEXT_ON[name], value
+        assert used and (used.group(1) in TEXT_ON[name] or used.group(1) in PER_ELEMENT.get(name, {})), value
+
+
+@pytest.mark.parametrize("name", list(PER_ELEMENT))
+def test_a_per_element_text_colour_names_a_checked_variable(pages, name):
+    for variable, ground in PER_ELEMENT[name].items():
+        values = [m for _, attrs in pages[name].elements
+                  for m in re.findall(re.escape(variable) + r"\s*:\s*([^;]+)", attrs.get("style", ""))]
+        assert values, variable
+        for value in values:
+            used = re.fullmatch(r"var\((--[\w-]+)\)", value.strip())
+            assert used and ground in TEXT_ON[name].get(used.group(1), []), value
 
 
 @pytest.mark.parametrize("name", PAGES)
