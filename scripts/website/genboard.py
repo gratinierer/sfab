@@ -39,13 +39,14 @@ board = ['<path d="M2 0H126V2H128V78H126V80H2V78H0V2H2Z" fill="#2f7a4b"/>']
 for x,y in [(4,4),(120,4),(4,72),(120,72)]:
     board.append(R(x,y,4,4,SILVER)+R(x+1,y+1,2,2,"#1d1b26"))
 # The version printed bottom right: the API's major version and info.version, e.g.
-# "v1 2026-11-21". The source description has no `servers`; the public copy's is `/v1`.
+# "v1 2026-11-21". The major is the `servers` entry `/v1` that cdk/generate_public_openapi.py
+# adds to the public copy; the source description has none, so it is named here, and the page
+# test `_world_version()` fails if the two ever differ.
+MAJOR = "v1"
 spec = API.read_text(encoding="utf-8")
 info = re.search(r"^info:\n((?:[ ]+.*\n)+)", spec, re.M).group(1)
 version = re.search(r'^\s+version:\s*"?([^"\n]+)"?', info, re.M).group(1).strip()
-major = re.search(r"^\s+- url: .*?/(v\d+)\b", spec, re.M)
-major = major.group(1) if major else "v1"
-board.append(TEXT(117,78,3.5,"#eef9f0",f"botrefugium {major} {version}","end",' class="board-version"'))
+board.append(TEXT(117,78,3.5,"#eef9f0",f"botrefugium {MAJOR} {version}","end",' class="board-version"'))
 
 # The lights: lit for what is out now, dark for what comes next.
 noir = NOIR.read_text(encoding="utf-8")
