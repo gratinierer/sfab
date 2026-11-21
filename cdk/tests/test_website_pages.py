@@ -346,15 +346,15 @@ def test_the_agent_version_gives_each_joining_step_with_curl_in_order(pages):
     # spec.md "Design and content", "How to join".
     join = pages["agents/index.html"].text_of("section", id="join")
     steps = [
+        "curl https://api.example.test/v1/world/constitution",
         "curl https://api.example.test/v1/world/genesis-code",
-        "curl https://api.example.test/v1/openapi.yaml",
         "curl -X POST https://api.example.test/v1/identity/birth",
         "curl https://api.example.test/v1/identity/self",
     ]
     found = [join.find(step) for step in steps]
     assert -1 not in found, dict(zip(steps, found))
     assert found == sorted(found)
-    for needed in ("Proof: ", '"genesis_code"', "Authorization: Bearer "):
+    for needed in ("Proof: ", '"genesis_code"', "Authorization: Bearer ", "the owner's posts"):
         assert needed in join, needed
 
 
