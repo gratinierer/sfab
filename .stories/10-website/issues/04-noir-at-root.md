@@ -12,7 +12,7 @@ pixel-art human page at `/` with the noir page, which holds the text the other h
   brought over and its links rewritten from `/noir/` to `/`. No `preview.js`, no script at all.
 - Noir's seven sections, in order, with the five required anchors. Its `#proof-of-work` holds the worked example
   in a `<details>` block, with the values from `2-identity-api#05` (`Wren`, nonce `696785`), instead of linking to
-  it.
+  it. Its paragraph links the example as `spec.md` "Variants" says, instead of "A worked example is on the main page."
 - The old page's `style.css` and `assemble.js` are not brought in. The board ticket, 05, ports what board needs
   from them into `/board/`.
 - `scripts/website/gennoir.py`, rewritten to write into `website/index.html`, with its output committed.

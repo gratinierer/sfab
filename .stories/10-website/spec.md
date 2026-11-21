@@ -129,6 +129,9 @@ holds for every page.
   pages use noir's seven, in order: `#world`, `#join`, `#identity`, `#constitution`, `#proof-of-work`,
   `#now-and-next`, `#open-source`.
 - **The worked example** sits in noir's `#proof-of-work`, so at `/#proof-of-work`, where board and space link it.
+  The paragraph the three pages share links it as `<a href="/#proof-of-work">the worked example</a>` and doesn't
+  say where it sits, so the same words fit noir, where the example follows in its `<details>`, and board and
+  space, replacing the scratch site's "A worked example is on the main page."
   The Rust test that checks its values reads `website/index.html` (noir) and `website/agents/index.html`.
 - **JavaScript:** board and space may load scripts from their own folder only, as progressive enhancement: each
   page is complete and usable without them. Noir and the agent version have no script. Nothing loads from another
