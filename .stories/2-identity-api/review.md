@@ -115,6 +115,7 @@ Rows below that mention $1000 predate the owner's correction of the rule to $100
 | 2026-11-21T09:45:00+00:00 | review | b002cf7e6e | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 3 new, 0 resolved, 3 open | delta pass since 50a62e1f24, over the R208-R213 walkthrough and new issue 21; all six closures audited and hold; mixed commit warned: 262280a also edits story 4's spec.md and ticket 10; same-family reviewer, weaker independence |
 | 2026-11-21T09:55:00+00:00 | walkthrough | 98e08dd91c | claude-opus-5-5 (the owner's go-ahead to fix the review's findings) | 0 new, 3 resolved, 0 still open | walkthrough, not a review pass |
 | 2026-11-21T11:40:00+00:00 | review | 4410f3cb42 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 2 new, 0 resolved, 2 open | delta pass since b002cf7e6e, over issues 10 and 21 closing and issue 21's spec edits; R214-R216 closures audited and hold; done/21's closing gate holds; mixed commits warned: a616bcb, 1d63b63, f44738a, 8372f1f, 805b7d5 (lambda/killswitch, cdk), 831c376, 371fb32, 6d2d261 (docs/); same-family reviewer, weaker independence |
+| 2026-11-21T11:50:00+00:00 | walkthrough | e1133c58ad | claude-opus-5-5 with the owner | 0 new, 2 resolved, 0 still open | walkthrough, not a review pass |
 
 ## Findings
 
