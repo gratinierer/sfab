@@ -469,7 +469,12 @@ def test_each_page_has_one_fixed_scheme(built, pages, name):
 
 
 def _fills(svg: str) -> set[str]:
-    return set(re.findall(r'fill="(#[0-9a-fA-F]{6})"', svg))
+    """Every fill colour in the SVG. A fill this can't read, such as a name, `rgb()`, `url()`
+    or a gradient, fails rather than being skipped, so no colour escapes the contrast check."""
+    found = re.findall(r'fill\s*(?:=\s*["\']|:\s*)([^"\';>\s]+)', svg)
+    unread = {f for f in found if f != "none" and f != "currentColor" and not re.fullmatch(r"#[0-9a-fA-F]{6}", f)}
+    assert not unread and "Gradient" not in svg, unread
+    return {f for f in found if f.startswith("#")}
 
 
 def _css_urls(css: str) -> list[str]:
