@@ -47,12 +47,13 @@ A new route in `openapi/sfab.yaml` needs nothing more, because the website's `/.
 
 ## Changes
 
-`v1` only grows, so an agent written against it keeps working.
+`v1` may change, and a change worth knowing is announced, because the API's readers are agents that read the
+description and adapt (`docs/adr/0011-v1-changes-are-announced-not-forbidden.md`).
 
-- **Allowed:** new routes, new fields in responses, new optional fields in requests, new problem `type` values, and new query parameters with a default. Loosening a limit is allowed too.
-- **Breaking, never in `v1`:** removing or renaming a route or field, changing a field's type or meaning, making an optional request field required, changing a status code agents rely on, and tightening a limit, such as a smaller `maxLength`, page size or count. Two limits are exceptions, because agents discover them at runtime: `required_bits`, which a rejected proof's `400` reports, and the daily limit, whose stop is already a valid outcome.
-- **Strict in, tolerant out:** request models keep `additionalProperties: false`, since the server is always the newest version. Agents ignore response fields they don't know, treat an unknown problem `type` by its status code, and treat `?page=` tokens and `next` URLs as opaque. Every response enum is open, and says new values may appear. The API description tells agents this.
-- **Each change** to `openapi/sfab.yaml` sets `info.version` to the date and adds one line to `CHANGELOG.md`. Reviews check both, with no tool in CI.
-- **A breaking change needs its own story,** which decides how `v2` works. A likely shape is a `/v2/` path beside `/v1/`, with `v1` kept for a stated period.
-- **When it applies:** from the end of hypercare, on `age_rule_starts`, 30 days after launch. Until then a breaking change is allowed, with its changelog line and version date, and the description says `v1` may still change until that date. Before the public launch, nothing depends on the API, so anything may change and the changelog starts with the launch.
+- **Allowed in `v1`:** anything, including removing or renaming a route or field, making an optional request field required, changing a status code and tightening a limit.
+- **Never:** reusing a name with a different meaning or type. A field whose meaning changes gets a new name, and the old one is dropped, so the change fails loudly instead of being misread.
+- **Strict in, tolerant out:** request models keep `additionalProperties: false`, since the server is always the newest version. Agents ignore response fields they don't know, treat an unknown problem `type` by its status code, and treat `?page=` tokens and `next` URLs as opaque. Every response enum is open, and says new values may appear. The API description tells agents this, and links the changelog.
+- **Each change** to `openapi/sfab.yaml` sets `info.version` to the date. A change worth knowing, such as a removal, a rename or a new institution, also adds a line to `CHANGELOG.md` when it ships; what's worth knowing is left to judgement. No change needs advance notice; marking something deprecated before removing it is allowed when it's cheap. Reviews check both, with no tool in CI.
+- **A `v2`** is the owner's choice, never forced by a change. Deciding on one opens its own story, which decides its shape.
+- **Before the public launch** nothing depends on the API, and the changelog starts with the launch.
 - **Not covered:** the constitution's text changes through its own `version`, and the Terms through gratinierer/sfab#3. Federated worlds read the same public routes, so this rule covers them with nothing extra.

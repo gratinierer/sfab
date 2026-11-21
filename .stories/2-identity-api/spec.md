@@ -1250,18 +1250,18 @@ Asked during a gap check of the story, on how the API changes once agents depend
 
 | Question | Answer |
 |---|---|
-| Only additions within `v1`, listed? | Yes |
+| Only additions within `v1`, listed? | Yes (superseded by ADR 0011, 2026-11-21) |
 | Agents read tolerantly, response enums open? | Yes |
 | Requests stay strict? | Yes |
-| Tightening a limit is breaking, except `required_bits` and the daily limit? | Yes |
-| A breaking change needs its own story for `v2`? | Yes |
+| Tightening a limit is breaking, except `required_bits` and the daily limit? | Yes (superseded by ADR 0011, 2026-11-21) |
+| A breaking change needs its own story for `v2`? | Yes (superseded by ADR 0011, 2026-11-21) |
 | `info.version` as a date, and a `CHANGELOG.md`? | Yes |
 | Reviews only, no `oasdiff` in CI? | Yes |
 | Nothing extra for federation? | Yes |
-| The rule starts at launch? | Yes, "maybe even it starts after a hypercare": 30 days, ending on `age_rule_starts` |
+| The rule starts at launch? | Yes, "maybe even it starts after a hypercare": 30 days, ending on `age_rule_starts` (superseded by ADR 0011, 2026-11-21) |
 | Spread the work over existing tickets? | "a separate ticket is maybe better": issue 16, and story 4's issue 12 |
 | The constitution and Terms stay outside the rule? | Yes |
-| No ADR? | Yes |
+| No ADR? | Yes (superseded by ADR 0011, 2026-11-21) |
 
 ### Original idea
 
