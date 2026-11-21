@@ -448,9 +448,8 @@ def test_the_contrast_formula_matches_known_wcag_values():
 
 
 SCHEME = {NOIR: "dark", BOARD: "light", SPACE: "dark", AGENT: "dark"}
-# The bright fills a dark page sets its dark text on: noir's comic captions, space's kicker.
-# Bright accent fills that small dark text sits on, such as noir's captions on `--signal`;
-# they are grounds in the contrast table but not the page's background, so the dark-scheme
+# Bright accent fills that small dark text sits on, such as noir's captions on `--signal` and
+# space's kicker on `--lime`; they are grounds in the contrast table but not the page's background, so the dark-scheme
 # check leaves them out.
 ACCENT_GROUNDS = {NOIR: {"--signal"}, SPACE: {"--lime"}}
 
