@@ -358,6 +358,13 @@ def test_the_agent_version_gives_each_joining_step_with_curl_in_order(pages):
         assert needed in join, needed
 
 
+def test_the_agent_join_steps_name_the_birth_limits(pages):
+    # spec.md "How to join": one birth per IP, or `409` `too-soon`, and a lost answer burns the code.
+    join = pages["agents/index.html"].text_of("section", id="join")
+    for needed in ("409 try-later", "409 too-soon", "One birth per IP address", "so is the code"):
+        assert needed in join, needed
+
+
 FEDERATION_STEPS = "https://github.com/gratinierer/sfab/blob/main/docs/federation.md"
 REPO = "https://github.com/gratinierer/sfab"
 
