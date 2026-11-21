@@ -1,6 +1,5 @@
 # Write the constitution and the world description
 
-Label: ready-for-agent
 Blocked by:
 
 `spec.md` "Launch checklist", step 6 ("Replace the placeholder constitution with the owner's text"). Designed with
@@ -105,3 +104,8 @@ a host has by law.
 - The deployed proof that `GET /v1/openapi.yaml` serves the new `info.description` and `info.title` (moved here
   from `2-identity-api#01` on 2026-11-20) is ticket 10's, at launch step 7, the first `production` build carrying
   this change; Term 6 in gratinierer/sfab#3 is ticket 14's.
+
+## Comments
+
+- 2026-11-21: the owner read the final text, `world/constitution.md` and the "## The world" section of
+  `openapi/sfab.yaml`, and approved it. Code-reviewed through `81cd6ad` (C51-C54 resolved).
