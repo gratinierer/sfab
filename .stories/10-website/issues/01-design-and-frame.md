@@ -29,3 +29,20 @@ Blocked by: 2-identity-api#12
   background and against that background under the full 8 % overlay.
 - The switch link and a `<details>` block work by keyboard, and the pages read well at 360 px wide.
 - On a deploy: both versions and the favicon appear at `<domain_name>`.
+
+## Comments
+
+- 2026-11-21 (claude-opus-5-5, implementing): the font is `@fontsource/silkscreen@5.3.0` from the npm registry
+  (`npm pack`, tarball shasum `418edaecef16338e086d7374d3209f297f130b3b`): `files/silkscreen-latin-400-normal.woff2`
+  (sha256 `e6c72ea4702249202bcdd79d3343057e4e25ef1f04e3fcffd8602ab53b40b4cc`) as
+  `website/fonts/silkscreen-latin-400-normal.woff2`, and the package's `LICENSE`, the SIL Open Font License 1.1 for
+  Silkscreen, as `website/fonts/OFL.txt`.
+- 2026-11-21 (claude-opus-5-5, implementing): `cdk/tests/test_website_pages.py` checks the built pages in
+  `scripts/check`: sections and anchors, header, favicon, title and description, `alt`, `<details>`, no `<script>`
+  or `on*` handler, every loaded file local, well-formed nesting, one column within 360 px, and WCAG AA (4.5:1 for every
+  `--fg-*` colour) in both versions and both human schemes, plain and with `--bg` blended with the overlay's
+  `--scan` and `--grain` at `--overlay-max` (0.08). The lowest ratio is the agent version's rust under the grain,
+  5.07:1. The built pages passed `html-validate@11.21.1` (`html-validate:recommended`) and the W3C Nu validator
+  with no errors or warnings, run once by hand; neither is in `scripts/check`, which would add a Node or Java
+  dependency. Left: keyboard use of the switch link and `<details>` and the 360 px reading in a real browser, and the
+  deploy check.
