@@ -15,6 +15,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 |---|---|---|---|---|---|
 | 2026-11-21T15:26:02Z | check | @ 6ae7677 | scripts/check | — | green, the baseline from `/implement-story 10` |
 | 2026-11-21T15:26:02Z | code-review | 01, 02, 03 @ 6ae7677..35ed5ff | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 6 new: 4 standards, 2 spec, 0 security | auto round 1, caller mode from `/implement-story 10`, commit filter `(#10)`. Same vendor family, so weaker independence |
+| 2026-11-21T15:28:19Z | walkthrough | 01, 02, 03 @ 35ed5ff..HEAD | claude-opus-5-5, auto | 0 new, 6 resolved, 0 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
