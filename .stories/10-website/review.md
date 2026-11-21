@@ -35,6 +35,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-21T17:15:00+00:00 | review | b39d7eba34 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 2 new, 0 resolved, 4 still open | delta over 845c14defe (spec.md, 04-06); all 6 closures held; auto round 3; same-family reviewer, per AGENTS.local.md |
 | 2026-11-21T17:20:00+00:00 | walkthrough | working tree | claude-opus-5-5, auto | 0 new, 2 resolved, 2 still open | auto walkthrough, not a review pass; R22 and R26 need the owner, skipped as still waiting |
 | 2026-11-21T17:30:00+00:00 | review | f7568e10c0 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 0 new, 0 resolved, 2 still open | delta over b39d7eba34 (04, 05); R37 and R38 closures held; auto round 4, loop stopped: R22 and R26 need the owner; same-family reviewer, per AGENTS.local.md |
+| 2026-11-21T17:45:00+00:00 | walkthrough | working tree | claude-opus-5-5, with the owner deciding each finding | 0 new, 2 resolved, 0 still open | walkthrough, not a review pass; R22 relaxed to noir's seven anchors, R26 kept readable from the first frame |
 
 ## Findings
 
