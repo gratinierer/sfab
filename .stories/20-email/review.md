@@ -20,6 +20,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-21T11:12:30Z | review | 1eb4210373c2 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 2 new, 5 closures audited and held, 1 still open | full: every story file changed since 5cadeed; auto round 2. A third candidate, story 10's spec line 8 still naming `.stories/2-identity-api/`, is outside this story and left for story 10's next review |
 | 2026-11-21T11:13:10Z | walkthrough | R11, R13-R14 | claude-opus-5-5 (auto) | 0 new, 2 resolved, 1 still open | auto walkthrough, not a review pass: R13 and R14 fixed, R11 still needs the user |
 | 2026-11-21T11:13:53Z | review | c1181cba2694 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 0 new, 2 closures audited and held, 1 still open | delta: only 02 changed since 1eb4210373c2; auto round 3 |
+| 2026-11-21T11:14:05Z | walkthrough | R11 | claude-opus-5-5 (auto) | 0 new, 0 resolved, 1 still open | auto walkthrough, not a review pass: no progress, R11 needs the user; the loop stops |
 
 ## Findings
 
