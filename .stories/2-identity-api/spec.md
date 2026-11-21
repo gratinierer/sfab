@@ -1047,15 +1047,16 @@ These could not be confirmed from AWS documentation:
   requests. That matches AWS's
   [former pricing page](https://web.archive.org/web/20211202141251/https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-pricing.html),
   and adds the disabled endpoint it didn't cover. The design stands.
-- Whether the managed `CachingDisabled` and `AllViewerExceptHostHeader` policies work on the
+- **Answered 2026-11-20:** yes, `issues/done/01-cdk-api-gateway-wiring.md` proved on the first deploy that
+  `CachingDisabled` and `AllViewerExceptHostHeader` are accepted on the Free flat-rate plan. The question was
+  whether the managed `CachingDisabled` and `AllViewerExceptHostHeader` policies work on the
   Free plan. AWS's preconfigured API Gateway origin uses them, and the plan only excludes
-  "custom caching rules", so this is very likely. `issues/01-cdk-api-gateway-wiring.md` proves
-  it on the first deploy. Pro is no fallback for this, because custom caching rules start at
-  Business, so a rejection goes back to the owner.
-- Whether `<domain_name>` and `api.<domain_name>` can be on two separate plans, with the hosted zone
+  "custom caching rules", so this was very likely.
+- **Answered 2026-11-20:** yes, the owner confirmed in the console that the website's distribution is on its own
+  Free plan, separate from the API's, and both work (`issues/done/12-website-placeholder.md`). The question was
+  whether `<domain_name>` and `api.<domain_name>` can be on two separate plans, with the hosted zone
   attached to one of them. AWS says each plan has up to one apex domain, but not whether two plans can
-  share one. If they can't, the website's
-  design has to change, and that goes back to the owner.
+  share one.
 
 ## Deferred
 
