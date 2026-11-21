@@ -139,8 +139,11 @@ holds for every page.
   page is complete and usable without them. Noir and the agent version have no script. Nothing loads from another
   server.
 - **Motion:** noir, board and space may move, only under `prefers-reduced-motion: no-preference`, with nothing
-  flashing more than 3 times a second (WCAG 2.3.1) and the content readable from the first frame. The agent
-  version stays still.
+  flashing more than 3 times a second (WCAG 2.3.1) and the content readable from the first frame: motion is
+  decoration only, so no text or list starts hidden, faded or half built. Space's splats and shoal and board's
+  frame borders and bots may animate; space's cards and board's frame contents show at once. The guard is a CSS
+  `@media (prefers-reduced-motion: no-preference)` or a script that returns before it adds any motion when the
+  reader asks for reduced motion. The agent version stays still.
 - **Layout:** each page is one column on a 360 px phone, with no horizontal scrolling. Wider screens may lay
   panels in a grid, such as noir's `auto-fit` panels and space's two columns, as long as it collapses to one
   column at 360 px.

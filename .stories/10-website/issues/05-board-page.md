@@ -18,7 +18,9 @@ Blocked by: 04
   `#now-and-next` and the pin header `#open-source`. `data-part` on `.part`, `.trace` and `.part-info`,
   `board.js`'s selectors and hash, and `genboard.py`'s trace keys and `data-all` move to those ids, and the
   `.part-info` blocks follow noir's order.
-- Light lilac as its one fixed scheme. Scroll assembly only under `prefers-reduced-motion: no-preference`.
+- Light lilac as its one fixed scheme. Scroll assembly only under `prefers-reduced-motion: no-preference`, and
+  `assemble.js` builds only each frame's border and bots: its content shows at once, as `spec.md` "Variants"
+  (Motion) says.
 - Its `#proof-of-work` links to `/#proof-of-work` for the worked example.
 - `scripts/website/genboard.py`, with its output committed, reading `openapi/sfab.yaml` relative to the repo
   instead of `/workspaces/sfa/`, and taking its lit and total LEDs from the "now" and "next" `<li>` items, `ul.now li` and `ul.next li`, in
@@ -34,6 +36,7 @@ Blocked by: 04
 ## Done when
 
 - The page tests pass for `/board/`: no script outside `/board/`, the seven anchors in order, WCAG AA contrast
-  against its lilac scheme, and motion only under the reduced-motion guard.
+  against its lilac scheme, and motion only under the reduced-motion guard, CSS or
+  script, with no text or list hidden, faded or half built at any scroll position.
 - With scripts off, the page shows every block. With them on, `/board/` opens on `#world` and `/board/#join` on
   `#join`, and a click or Enter on a part updates the URL with that section's id.
