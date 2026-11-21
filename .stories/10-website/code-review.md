@@ -26,6 +26,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-21T15:37:12Z | code-review | 01, 02, 03 @ 9365532..a86acbc | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 2 new: 1 standards, 1 spec, 0 security | auto round 4, the C10 fix, commit filter `(#10)`; the loop stopped at its limit of 3 address passes. Same vendor family, so weaker independence |
 | 2026-11-21T19:30:00Z | check | @ 0e7d105 | scripts/check | — | green at baseline 131dc2e (from implement-story), and each implementer's check green on its merged tip |
 | 2026-11-21T19:30:00Z | code-review | 01, 02, 03, 04, 05, 06, 07 @ a86acbc..0e7d105 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 12 new: 6 standards, 6 spec, 0 security | auto round 1 from implement-story, commit filter `(#10)`; same-family reviewers, per AGENTS.local.md; C11 and C12 still open from the earlier run |
+| 2026-11-21T20:30:00Z | walkthrough | 01, 02, 03, 04, 05, 06, 07 @ 0e7d105..HEAD | claude-opus-5-5, auto | 0 new, 11 resolved, 3 still open | auto walkthrough, not a review pass; C17, C19 and C22 need the owner |
 
 ## Findings
 
