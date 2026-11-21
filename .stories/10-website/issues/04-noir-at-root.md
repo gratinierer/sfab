@@ -13,8 +13,11 @@ pixel-art human page at `/` with the noir page, which holds the text the other h
 - Noir's seven sections, in order, with the five required anchors. Its `#proof-of-work` holds the worked example
   in a `<details>` block, with the values from `2-identity-api#05` (`Wren`, nonce `696785`), instead of linking to
   it. Its paragraph links the example as `spec.md` "Variants" says, instead of "A worked example is on the main page."
-- The old page's `style.css` and `assemble.js` are not brought in. The board ticket, 05, ports what board needs
-  from them into `/board/`.
+- `website/style.css`, the old page's stylesheet, is deleted, and so are the tests and test helpers that only
+  checked it. `assemble.js` is not brought in. The board ticket, 05,
+  ports what board needs from the scratch site's copies into `/board/`.
+- `scripts/website/genbot.py`, with only the sets the site uses (`-noir` here, the light lilac set in 05), its
+  preview-only sets (`-dark`, `-cream`, `bot-tile-many*`) dropped.
 - A page test checks that noir's `hud-meter` ("2 of 8 features are live") matches the "now" and "now plus next"
   item counts in its `#now-and-next`, so the owner's hand edits there keep the meter true.
 - `scripts/website/gennoir.py`, rewritten to write into `website/index.html`, with its output committed.
