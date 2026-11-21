@@ -27,7 +27,8 @@ Blocked by: 01
 ## Done when
 
 - A mail from an outside account to `watchdog@` arrives, and one to an address that doesn't exist bounces.
-- A reply sent as `watchdog@` arrives at an outside account with DKIM, SPF and DMARC all `pass` in its headers.
+- A reply sent as `watchdog@` arrives at an outside account with DKIM and DMARC `pass` in its headers. SPF is
+  noted but not required, because iCloud may send with its own envelope sender, and DMARC passes on DKIM alone.
 - `docs/aws-facts.md` or this ticket's comments record which record values iCloud really asked for.
 
 ## Comments
@@ -38,4 +39,5 @@ Blocked by: 01
 - 2026-11-21: step 1 and 2 done. iCloud showed both `MX` records at priority 10, the `apple-domain=` TXT, the SPF
   TXT `v=spf1 include:icloud.com ~all` and the CNAME `sig1._domainkey` →
   `sig1.dkim.<domain_name>.at.icloudmailadmin.com.`, matching `spec.md` "Design". The token goes into
-  `sfab/config` only, never into the repo.
+  `sfab/config` only, never into the repo. It's 16 letters and digits, so it fits ticket 01's
+  `[A-Za-z0-9]{8,64}`.
