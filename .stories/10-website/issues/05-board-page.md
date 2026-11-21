@@ -13,6 +13,11 @@ Blocked by: 04
 - The info blocks take noir's seven section ids, in noir's order, with noir's paragraphs and lists word for word.
   Only the headings keep their themed prefixes. `board.js` writes those ids into the URL instead of part names,
   and with no hash it shows `#world`. Without the script every block is listed.
+- Each part keeps the section its scratch heading names: the processor (`cpu`) `#world`, the port `#join`, the
+  memory chips `#identity`, the capacitor `#constitution`, the crystal `#proof-of-work`, the lights (`leds`)
+  `#now-and-next` and the pin header `#open-source`. `data-part` on `.part`, `.trace` and `.part-info`,
+  `board.js`'s selectors and hash, and `genboard.py`'s trace keys and `data-all` move to those ids, and the
+  `.part-info` blocks follow noir's order.
 - Light lilac as its one fixed scheme. Scroll assembly only under `prefers-reduced-motion: no-preference`.
 - Its `#proof-of-work` links to `/#proof-of-work` for the worked example.
 - `scripts/website/genboard.py`, with its output committed.
