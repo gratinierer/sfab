@@ -27,6 +27,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-04T14:41:23+00:00 | walkthrough | working tree | claude-opus-5-5, auto | 0 new, 2 resolved, 0 still open | auto walkthrough, not a review pass |
 | 2026-11-04T14:53:44+00:00 | review | 2fd24a4 | claude-fable-5-1 (dispatched; stories authored by claude-opus-5-5) | 0 new, 0 resolved, 0 still open | full pass over b49f618..2fd24a4, stories 2, 4 and 10 together; R18 and R19 held; nothing new |
 | 2026-11-08T21:48:20+00:00 | review | 1867cea | claude-fable-5-1 (dispatched; story authored by claude-opus-5-5) | 2 new, 0 resolved, 2 still open | after 9ab8345 (`17-genesis-codes#05`) added the genesis code to spec.md's worked example and agent steps; no closures since 2fd24a4 to audit |
+| 2026-11-21T14:50:42+00:00 | walkthrough | working tree | claude-opus-5-5, with the owner deciding each finding | 0 new, 2 resolved, 0 still open | walkthrough, not a review pass; R20 and R21 fixed in ticket 02 and spec.md |
 
 ## Findings
 
