@@ -113,6 +113,7 @@ Rows below that mention $1000 predate the owner's correction of the rule to $100
 | 2026-11-21T10:00:00+00:00 | review | 50a62e1f24 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 6 new, 0 resolved, 6 open | full pass since bb9598ae29: the delta (issues 01, 07, 09, 12, 18, 19 closed, done/20 new, 10 and 16 edited, spec.md edited by story 4's ticket 15 and by ADR 0011) exceeded half the story's bytes; no closures to audit; mixed commits warned: bf54245 (docs/adr/0011, docs/api-design.md), 321d95f, b1b4e48, 6ba4008, 4ceacc7 (story 4's files), b822929, 4eb0668, ca1ac84, 14f68fb, 0aa6e40, 698fafd, 0e24ed5, 8fa240e, bef7632, 5f1505e (code, cdk, buildspec, docs/aws-facts.md); same-family reviewer, weaker independence |
 | 2026-11-21T11:00:00+00:00 | walkthrough | 87c235b96f | claude-opus-5-5 with the owner | 0 new, 6 resolved, 0 still open | walkthrough, not a review pass; R210 also edited story 4's spec.md step 8 and ticket 10 |
 | 2026-11-21T09:45:00+00:00 | review | b002cf7e6e | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 3 new, 0 resolved, 3 open | delta pass since 50a62e1f24, over the R208-R213 walkthrough and new issue 21; all six closures audited and hold; mixed commit warned: 262280a also edits story 4's spec.md and ticket 10; same-family reviewer, weaker independence |
+| 2026-11-21T09:55:00+00:00 | walkthrough | 98e08dd91c | claude-opus-5-5 (the owner's go-ahead to fix the review's findings) | 0 new, 3 resolved, 0 still open | walkthrough, not a review pass |
 
 ## Findings
 
