@@ -62,6 +62,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-20T13:10:00+00:00 | walkthrough | 5f768416d4 | claude-opus-5-5 (address-story-review-findings auto) | 0 new, 1 resolved, 0 still open | auto walkthrough, not a review pass |
 | 2026-11-20T13:15:00+00:00 | review | b774ffbae5 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 0 new, 0 resolved, 0 open | delta pass since 065296435c, over R111's one-line fix to step 7; R111 closure audited and holds; same-family reviewer, weaker independence |
 | 2026-11-21T10:10:00+00:00 | review | 50a62e1f24 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 3 new, 0 resolved, 3 open | full pass since b774ffbae5: 14 of 19 files changed (ticket 15's spec moves, tickets 12, 13, 15 closed, C51-C54); no closures to audit; mixed commits warned: e64bf14, d20c00b, d89fc86 (lambda/, cdk/tests/), 36bb009 (openapi/sfab.yaml), 321d95f (story 2's spec); a reviewer point that ticket 03's "moves with ticket 15" line is stale dropped, since the dated line under it says it moved; same-family reviewer, weaker independence |
+| 2026-11-21T10:40:00+00:00 | walkthrough | f5cb47bcfc | claude-opus-5-5 with the owner | 0 new, 3 resolved, 0 still open | walkthrough, not a review pass |
 
 ## Findings
 
