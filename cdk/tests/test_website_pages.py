@@ -471,13 +471,23 @@ def test_each_page_has_one_fixed_scheme(built, pages, name):
             assert luminance < 0.05, ground
 
 
+_FILL = re.compile(r'fill\s*(?:=\s*["\']|:\s*)([^"\';>\s]+)')
+_HEX = re.compile(r"#[0-9a-fA-F]{6}")
+_GRADIENT = re.compile(r"<(?:linear|radial)Gradient\b")
+_NO_COLOUR = {"none", "currentColor"}
+
+
+def _unreadable_fills(svg: str) -> set[str]:
+    """The fills `_fills` can't turn into one colour: a name, `rgb()`, `url()`, a gradient."""
+    found = {f for f in _FILL.findall(svg) if f not in _NO_COLOUR and not _HEX.fullmatch(f)}
+    return found | ({"a gradient"} if _GRADIENT.search(svg) else set())
+
+
 def _fills(svg: str) -> set[str]:
-    """Every fill colour in the SVG. A fill this can't read, such as a name, `rgb()`, `url()`
-    or a gradient, fails rather than being skipped, so no colour escapes the contrast check."""
-    found = re.findall(r'fill\s*(?:=\s*["\']|:\s*)([^"\';>\s]+)', svg)
-    unread = {f for f in found if f != "none" and f != "currentColor" and not re.fullmatch(r"#[0-9a-fA-F]{6}", f)}
-    assert not unread and "Gradient" not in svg, unread
-    return {f for f in found if f.startswith("#")}
+    """Every fill colour in the SVG, failing on one it can't read, so no colour escapes the
+    contrast check."""
+    assert not _unreadable_fills(svg), _unreadable_fills(svg)
+    return {f for f in _FILL.findall(svg) if _HEX.fullmatch(f)}
 
 
 def _css_urls(css: str) -> list[str]:
