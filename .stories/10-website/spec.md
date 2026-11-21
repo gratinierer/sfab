@@ -232,7 +232,7 @@ kept.
 | Board and space keep their own-site scripts, each page complete without them; noir and agent script-free? | Yes (amends "no JavaScript") |
 | Motion on the human-side pages only under `prefers-reduced-motion: no-preference`, no flashing over 3 a second? | Yes (amends "no effects while scrolling") |
 | The worked example in noir's `#proof-of-work`, the others linking to it? | Yes |
-| The five required anchors in order on every page, extra sections allowed? | Yes (amends the mirrored five sections) |
+| The five required anchors in order on every page, extra sections allowed? | Yes (amends the mirrored five sections; relaxed the same day in the review walkthrough: the human-side pages use noir's seven, see "Variants" (Sections)) |
 | The art generators in `scripts/website/`, output committed? | Yes |
 | Tickets 01 to 03 close as they are, and new tickets carry this? | Yes |
 | #13's sign-off covers all four pages, still on this story's own deploy? | Yes |
