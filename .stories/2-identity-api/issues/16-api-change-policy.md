@@ -20,12 +20,10 @@ and `next` URLs as opaque), "New values may appear" on `Problem.type`, and `info
 - Rewrite `## Compatibility` for ADR 0011: drop "`v1` only grows", say that `v1` may change, that a name never
   comes back with a different meaning, and that when `info.version` changes the changelog lists anything worth
   knowing, linking `CHANGELOG.md` in the public repo (`gratinierer/sfab`, public from story 4's launch step 8).
-- The open-values note on every response enum that later issues add, enforced by the contract test below.
 - `CHANGELOG.md` at the repo root, with a heading and no entries, which the launch fills.
 
 ## Done when
 
-- A contract test fails on a response enum without the open-values note.
 - The public description carries the tolerant-reading text, says `v1` may change, and links the changelog; no text
   says `v1` only grows.
 
@@ -33,3 +31,6 @@ and `next` URLs as opaque), "New values may appear" on `Problem.type`, and `info
 
 - 2026-11-21: the owner dropped "`v1` only grows" and hypercare (ADR 0011), so the hypercare sentence and its date
   from `age_rule_starts` left this ticket.
+- 2026-11-21: the open-values contract test left this ticket, on the owner's choice (R209): response value
+  lists are prose, not `enum:`, so a test had nothing to find; `## Compatibility` says every response enum is open,
+  and reviews check the per-field note, as `docs/api-design.md` "Changes" says.
