@@ -16,6 +16,7 @@ Blocked by: 04
 - Light lilac as its one fixed scheme. Scroll assembly only under `prefers-reduced-motion: no-preference`.
 - Its `#proof-of-work` links to `/#proof-of-work` for the worked example.
 - `scripts/website/genboard.py`, with its output committed.
+- The section helpers from 04 find this page's sections by `id`.
 - The page tests allow scripts on board, but only from `/board/`.
 
 ## Done when

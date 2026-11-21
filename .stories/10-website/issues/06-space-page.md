@@ -14,6 +14,7 @@ Blocked by: 04
   `prefers-reduced-motion: no-preference`; without the scripts, or with reduced motion, the page shows its still
   tile and every section.
 - Its `#proof-of-work` links to `/#proof-of-work` for the worked example.
+- The section helpers from 04 find this page's sections by `id`.
 - `scripts/website/genspace.py`, with its output committed.
 
 ## Done when

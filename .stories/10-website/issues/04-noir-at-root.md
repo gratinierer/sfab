@@ -16,6 +16,11 @@ pixel-art human page at `/` with the noir page, which holds the text the other h
 - The old page's `style.css` and `assemble.js` are not brought in. The board ticket, 05, ports what board needs
   from them into `/board/`.
 - `scripts/website/gennoir.py`, rewritten to write into `website/index.html`, with its output committed.
+- The tests find sections by `id`, not by element: noir's are `<details class="panel">`, board's `.part-info`
+  blocks (05) and space's `section.stop` (06). `test_each_version_has_the_five_sections_in_order_with_the_same_anchors`
+  reads each page's section ids that way, and `lambda/core/tests/worked_example.rs` slices noir's
+  `#proof-of-work` panel by its id and finds the example as the one `<details>` nested in it, instead of
+  `find("<section id=\"proof-of-work\"")` and one `<details>` per section.
 - `cdk/tests/test_website_pages.py` follows the amended rules for `/`: one fixed dark scheme, motion only under
   `prefers-reduced-motion: no-preference`, a link home named botrefugium in the header, and the five anchors in
   order with extras allowed.
