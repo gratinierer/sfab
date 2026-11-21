@@ -1,4 +1,8 @@
-"""Pixel-art helpers the website's art generators share (gennoir.py, genboard.py)."""
+"""Pixel-art helpers the website's art generators share (gennoir.py, genboard.py).
+
+The generators draw the noir and board pages' art (.stories/10-website/ issues 04 and 05,
+spec.md "Variants", "Art generators").
+"""
 
 
 def rect(x, y, w, h, fill, extra=""):
