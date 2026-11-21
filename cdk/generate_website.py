@@ -34,7 +34,8 @@ _TEXT_NAMES = {"api-catalog"}
 
 # The placeholder syntax, spelled once: `_marker` writes one, `_PLACEHOLDER` finds leftovers.
 _OPEN, _CLOSE = "{{", "}}"
-_PLACEHOLDER = re.compile(re.escape(_OPEN) + r".*?" + re.escape(_CLOSE))
+# DOTALL, so a placeholder split across lines is still a leftover.
+_PLACEHOLDER = re.compile(re.escape(_OPEN) + r".*?" + re.escape(_CLOSE), re.DOTALL)
 
 
 def _marker(name: str) -> str:

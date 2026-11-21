@@ -95,6 +95,15 @@ def test_an_unknown_placeholder_in_a_page_fails(tmp_path):
         generate_website.generate(source, tmp_path / "out", api_host="api.example.test", site_host="example.test", contact="abuse@example.test")
 
 
+def test_a_placeholder_split_across_lines_fails(tmp_path):
+    source = tmp_path / "website"
+    source.mkdir()
+    (source / "index.html").write_text("{{api_\nhost}}", encoding="utf-8")
+
+    with pytest.raises(generate_website.GenerateError, match=r"index\.html"):
+        generate_website.generate(source, tmp_path / "out", api_host="api.example.test", site_host="example.test", contact="abuse@example.test")
+
+
 def test_the_placeholder_pages_link_the_constitution_and_api_description(tmp_path):
     out = tmp_path / "out"
     generate_website.generate(REPO_WEBSITE, out, api_host="api.example.test", site_host="example.test", contact="abuse@example.test")
