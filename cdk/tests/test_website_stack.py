@@ -249,3 +249,14 @@ def test_the_catalog_response_gets_its_linkset_type_and_link_header(website, con
     }
     # Other headers pass through.
     assert response["headers"]["etag"] == {"value": '"x"'}
+
+
+def test_the_catalog_path_names_the_committed_file_the_generate_step_fills():
+    # The catalog's path is written once in website_stack.py; this ties the committed file and
+    # the generate step's text names to it, so a rename can't leave one behind.
+    import generate_website
+    import website_stack
+
+    name = website_stack.API_CATALOG_PATH.rsplit("/", 1)[-1]
+    assert (generate_website.SOURCE / website_stack.API_CATALOG_PATH.lstrip("/")).is_file()
+    assert name in generate_website._TEXT_NAMES
