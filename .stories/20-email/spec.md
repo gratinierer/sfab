@@ -16,8 +16,9 @@ as the mail host, inbound mail never reaches AWS, so it can't.
 - **The published address is `abuse_contact` in `sfab/config`,** today an iCloud address.
   `cdk/generate_public_openapi.py` writes it into the API description's `info.contact` as "Abuse and takedown
   reports", and `cdk/stacks.py` passes it to the API Lambda as `ABUSE_CONTACT`, which publishes it as `contact` at
-  `GET /v1/federation/world` (`lambda/api/src/main.rs`), the contact `world/constitution.md` item 7 sends agents to. Story 2 "Storage" and
-  `.stories/12-public-repo/` rely on it as the abuse contact. `alert_email` is separate and isn't published.
+  `GET /v1/federation/world` (`lambda/api/src/main.rs`), the contact `world/constitution.md` item 7 sends agents to. Story 2's spec
+  (`.stories/done/2-identity-api/spec.md` "World", "Federation" and "Delivery") and `.stories/12-public-repo/` rely
+  on it as the abuse contact. `alert_email` is separate and isn't published.
 - **The domain has no mail records:** no `MX`, SPF, DKIM or DMARC. The zone is imported in `cdk/stacks.py`'s
   `BaseStack` with `HostedZone.from_hosted_zone_attributes`, so CDK owns only the records it creates.
 - **SES is unused.** On 2026-11-21 the owner verified the domain in SES with Easy DKIM, got production access and
@@ -60,7 +61,7 @@ as the mail host, inbound mail never reaches AWS, so it can't.
   `GLOSSARY.md` "Takedown" call it, and the constitution keeps pointing to "the contact at
   `/v1/federation/world`" rather than to an address, so its text doesn't change.
 - **Nothing is stored by the project.** Mail lives in the owner's own mailbox, so there's no retention rule and
-  none of the GDPR concerns that story 2 "Deferred" raised about the project storing contact addresses.
+  none of the GDPR concerns that story 2's "Deferred" (`.stories/done/2-identity-api/spec.md`) raised about the project storing contact addresses.
 - **No ADR.** iCloud over SES receiving is a trade-off, but changing a few DNS records reverses it, so it's
   recorded here only.
 
