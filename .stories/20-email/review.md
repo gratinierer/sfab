@@ -16,6 +16,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-21T10:50:39Z | review | 741d12bcb06a | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 6 new | full: first review. Same vendor family, so weaker independence. A seventh candidate (02's comments record steps done while it's blocked by 01) dropped: its own evidence says the `Blocked by` is right |
 | 2026-11-21T11:05:00Z | walkthrough | 6 findings | claude-opus-5-5 with the owner | 0 new, 4 resolved, 1 waived, 0 still open | walkthrough, not a review pass: R1, R3, R5, R6 fixed (R6 moved the website work to story 10), R4 waived by the owner; R2 was resolved before it |
 | 2026-11-21T11:07:41Z | review | 5cadeed822f0 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 6 new, 6 closures audited and held | full: every story file changed since 741d12bcb06a; auto round 1. Same vendor family, so weaker independence. HEAD moved to 5cadeed822f0 (another session closed story 2) while the pass ran, and the reviewer saw that tree |
+| 2026-11-21T11:10:41Z | walkthrough | R7-R12 | claude-opus-5-5 (auto) | 0 new, 5 resolved, 1 still open | auto walkthrough, not a review pass: R7-R10 and R12 fixed, R11 needs the user |
 
 ## Findings
 
