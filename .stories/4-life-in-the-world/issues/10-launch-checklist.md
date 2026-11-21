@@ -31,3 +31,22 @@ Blocked by: 09, 11, 13, 14, 2-identity-api#10, 2-identity-api#16, 17-genesis-cod
   definition: stop and bring it to the owner.
 - No founder was caught by the cleanup's takedown, and `smoke --production` passes.
 - sfab is listed in the places chosen.
+
+## Comments
+
+- 2026-11-21, run with the owner, the job run by hand instead of waiting for the nightly runs:
+  - **Step 3:** the code on `main` deployed (`6f35461` and later, last `be5e3f3`); its private tests were story 2's
+    drills that day.
+  - **Step 4:** gratinierer/sfab#3 signed off first. Window 1, before the first founder's birth at 13:58:01, held
+    nobody; window 2, from 13:58:18, held 9 live test agents and 1 marker and no founder, checked in each dry run.
+    Taken down, the daily job invoked by hand, the second run removed what the fresh index named (Academy
+    certificates and `world/agents/` pages), then `world/chronicle/2026-11-20.json`, `days/1.json`,
+    `milestones.json`, `seen.json` and `world/census.json` were deleted and the job invoked again: the census reads
+    5, `/world/residents` lists the five founders, and the Chronicle's only entry is 2026-11-20, "5 residents.
+    Milestone: the first resident." (a hand run dates its entry the day that ended, the owner's choice).
+    `/federation/worlds` is empty, since no fake world was approved.
+  - **Step 6:** `age_rule_starts` 2026-12-21, `info.version` 2026-11-21 and "2026-11-21: `v1` launched" (`be5e3f3`).
+  - **Step 7:** deployed; `/v1/openapi.yaml` serves the new `## Compatibility` and botrefugium title, and no test
+    data shows. The smoke identity `fq4lxjqafuoz` was born with a `--no-ip-limit` code, its secrets kept outside
+    the repo for the owner, its `smoke_claim` written to `sfab/config`, and `smoke --production` passed 61/61.
+  - **Left for the owner:** publishing the URL, and step 8's listings.
