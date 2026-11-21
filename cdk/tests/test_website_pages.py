@@ -1,6 +1,7 @@
-"""The website's pages, as the generate step builds them: the noir page at `/` and the agent
-version at `/agents/`, from .stories/10-website/spec.md "Design and content", "Mobile and
-access" and "Variants", which wins where they disagree, and its issues 01 and 04.
+"""The website's pages, as the generate step builds them: the noir page at `/`, the board page
+at `/board/` and the agent version at `/agents/`, from .stories/10-website/spec.md "Design and
+content", "Mobile and access" and "Variants", which wins where they disagree, and its issues
+01, 04 and 05.
 
 Each page is parsed with the standard library's HTML parser, so these tests need no browser.
 """
@@ -16,12 +17,13 @@ import generate_website
 
 REPO_WEBSITE = Path(__file__).resolve().parents[2] / "website"
 
-PAGES = ("index.html", "agents/index.html")
+PAGES = ("index.html", "board/index.html", "agents/index.html")
+NOIR, BOARD, AGENT = PAGES
 # spec.md "Variants" (Sections): the human-side pages use noir's seven, the agent version
 # keeps its five, each in its own order.
 HUMAN_SECTIONS = ["world", "join", "identity", "constitution", "proof-of-work", "now-and-next", "open-source"]
 AGENT_SECTIONS = ["what", "join", "now-and-next", "proof-of-work", "open-source"]
-SECTIONS = {"index.html": HUMAN_SECTIONS, "agents/index.html": AGENT_SECTIONS}
+SECTIONS = {NOIR: HUMAN_SECTIONS, BOARD: HUMAN_SECTIONS, AGENT: AGENT_SECTIONS}
 CONTACT = "abuse@example.test"
 
 
@@ -73,6 +75,31 @@ class Page(HTMLParser):
                 return " ".join("".join(self.text.get(index, [])).split())
         raise AssertionError(f"no section #{section_id}")
 
+    def _index_of(self, element_id: str) -> int:
+        for index, (_, attrs) in enumerate(self.elements):
+            if attrs.get("id") == element_id:
+                return index
+        raise AssertionError(f"no element #{element_id}")
+
+    def _text(self, index: int) -> str:
+        return " ".join("".join(self.text.get(index, [])).split())
+
+    def paragraphs_and_lists(self, section_id: str) -> list[tuple[str, str, list[str]]]:
+        """The section's paragraphs and lists, each as (tag, text, link targets), leaving out
+        its headings, noir's themed captions and a nested `<details>` (noir's worked
+        example), which spec.md "Variants" (Same content) lets each page theme or hold alone."""
+        blocks, skip_to = [], -1
+        for i, tag, attrs in self.inside(self._index_of(section_id)):
+            if i < skip_to:
+                continue
+            if tag == "details" or (tag == "p" and attrs.get("class") == "caption"):
+                skip_to = self.ends[i]
+            elif tag in ("p", "ul", "ol"):
+                skip_to = self.ends[i]
+                links = [a["href"] for _, t, a in self.inside(i) if t == "a"]
+                blocks.append((tag, self._text(i), links))
+        return blocks
+
     def text_of(self, tag: str, **match: str) -> str:
         for index, (t, attrs) in enumerate(self.elements):
             if t == tag and all(attrs.get(k) == v for k, v in match.items()):
@@ -95,6 +122,19 @@ def pages(built) -> dict[str, Page]:
 @pytest.mark.parametrize("name", PAGES)
 def test_each_version_has_the_five_sections_in_order_with_the_same_anchors(pages, name):
     assert pages[name].section_ids() == SECTIONS[name]
+
+
+@pytest.mark.parametrize("section_id", HUMAN_SECTIONS)
+def test_board_carries_noirs_paragraphs_and_lists_word_for_word(pages, section_id):
+    # spec.md "Variants" (Same content): noir's text is the source; only headings may differ.
+    noir = pages[NOIR].paragraphs_and_lists(section_id)
+    assert noir
+    assert pages[BOARD].paragraphs_and_lists(section_id) == noir
+
+
+def test_board_links_the_worked_example_on_noir(pages):
+    links = [href for _, _, hrefs in pages[BOARD].paragraphs_and_lists("proof-of-work") for href in hrefs]
+    assert "/#proof-of-work" in links
 
 
 VOID = {"meta", "link", "img", "br", "hr", "input", "source", "wbr"}
@@ -139,17 +179,18 @@ def test_a_page_is_well_formed_html5_in_english_with_unique_ids(built, pages, na
 
 
 @pytest.mark.parametrize(
-    ("name", "home", "target", "label"),
+    ("name", "home", "switches"),
     [
-        ("index.html", "/", "/agents/", "I'm an agent →"),
-        ("agents/index.html", "/agents/", "/", "← human version"),
+        (NOIR, "/", [("/agents/", "I'm an agent →")]),
+        (BOARD, "/board/", [("/", "Human version"), ("/agents/", "I'm an agent →")]),
+        (AGENT, "/agents/", [("/", "← human version")]),
     ],
 )
-def test_the_header_holds_the_wordmark_and_one_switch_link_to_the_other_version(
-    pages, name, home, target, label
+def test_the_header_holds_the_wordmark_and_the_switch_links_to_the_other_versions(
+    pages, name, home, switches
 ):
     # spec.md "Variants": a link home to the page named botrefugium, the wordmark image or
-    # themed text, and, until issue 07's four-way switch, one switch link.
+    # themed text, and, until issue 07's four-way switch, each page's own switch links.
     page = pages[name]
     header = next(i for i, (tag, _) in enumerate(page.elements) if tag == "header")
     inside = page.inside(header)
@@ -162,9 +203,7 @@ def test_the_header_holds_the_wordmark_and_one_switch_link_to_the_other_version(
     assert [(attrs["href"], name_of(i)) for i, attrs in links if attrs.get("class") != "switch"] == [
         (home, "botrefugium")
     ]
-    assert [(attrs["href"], name_of(i)) for i, attrs in links if attrs.get("class") == "switch"] == [
-        (target, label)
-    ]
+    assert [(attrs["href"], name_of(i)) for i, attrs in links if attrs.get("class") == "switch"] == switches
 
 
 @pytest.mark.parametrize("name", PAGES)
@@ -179,7 +218,7 @@ def test_each_version_has_a_title_a_description_and_the_icon_as_svg_favicon(page
         assert img.get("alt"), img
 
 
-@pytest.mark.parametrize("name", PAGES)
+@pytest.mark.parametrize("name", [NOIR, AGENT])
 def test_the_worked_example_sits_in_a_details_block_with_a_summary(pages, name):
     # A native <details> with a <summary> opens with Enter or Space, with no script.
     page = pages[name]
@@ -197,16 +236,50 @@ def stylesheets(page: Page) -> list[str]:
     return [link["href"] for link in page.all("link") if link.get("rel") == "stylesheet"]
 
 
+# spec.md "Variants" (JavaScript): board may load scripts from its own folder only; noir and
+# the agent version have none.
+SCRIPT_FOLDER = {BOARD: "/board/"}
+
+
+def scripts(page: Page) -> list[str]:
+    return [script.get("src", "") for script in page.all("script")]
+
+
 @pytest.mark.parametrize("name", PAGES)
-def test_a_page_has_no_script_and_loads_only_files_from_its_own_site(built, pages, name):
+def test_a_page_has_scripts_only_from_its_own_folder_and_loads_only_files_from_its_own_site(
+    built, pages, name
+):
     page = pages[name]
-    assert page.all("script") == []
+    folder = SCRIPT_FOLDER.get(name)
+    if folder is None:
+        assert page.all("script") == []
+    else:
+        assert scripts(page)
+        for src in scripts(page):
+            assert src.startswith(folder) and (built / src.lstrip("/")).is_file(), src
     for _, attrs in page.elements:
         assert not [a for a in attrs if a.startswith("on")], attrs
     loaded = [link["href"] for link in page.all("link")] + [img["src"] for img in page.all("img")]
     for url in loaded:
         assert _is_local(url), url
         assert (built / url.lstrip("/")).is_file(), url
+
+
+# What board may load from the site root; everything else it uses lives in `/board/`
+# (issue 05 "Scope").
+SHARED = {"/shelter-icon.svg", "/shelter-wordmark.svg", "/fonts/silkscreen-latin-400-normal.woff2"}
+
+
+def test_board_loads_nothing_from_the_site_root_but_the_icon_the_wordmark_and_the_font(built, pages):
+    page = pages[BOARD]
+    loaded = [link["href"] for link in page.all("link")] + [img["src"] for img in page.all("img")]
+    loaded += scripts(page)
+    for href in stylesheets(page):
+        css = (built / href.lstrip("/")).read_text(encoding="utf-8")
+        loaded += re.findall(r"url\(\s*['\"]?([^'\")]+)", css)
+    assert loaded
+    for url in loaded:
+        assert url.startswith("/board/") or url in SHARED, url
 
 
 @pytest.mark.parametrize("name", PAGES)
@@ -219,8 +292,9 @@ def test_a_stylesheet_imports_nothing_and_its_urls_are_files_of_the_site(built, 
             assert (built / url.lstrip("/")).is_file(), (href, url)
 
 
-def test_the_human_headings_use_the_committed_silkscreen_woff2_with_its_licence(built, pages):
-    (href,) = stylesheets(pages["index.html"])
+@pytest.mark.parametrize("name", [NOIR, BOARD])
+def test_the_human_headings_use_the_committed_silkscreen_woff2_with_its_licence(built, pages, name):
+    (href,) = stylesheets(pages[name])
     css = (built / href.lstrip("/")).read_text(encoding="utf-8")
     face = re.search(r"@font-face\s*{([^}]*)}", css)
     assert face, "no @font-face"
@@ -250,6 +324,11 @@ TEXT_ON = {
         # The comic captions.
         "--night": ["--signal"],
     },
+    BOARD: {
+        "--fg-text": ["--bg"],
+        "--fg-heading": ["--bg"],
+        "--fg-link": ["--bg"],
+    },
     "agents/index.html": {
         "--fg-text": ["--bg"],
         "--fg-muted": ["--bg"],
@@ -257,6 +336,10 @@ TEXT_ON = {
         "--fg-rust": ["--bg"],
     },
 }
+
+# The site's own SVGs a page's stylesheet sets behind its text: board's text sits on its bots
+# with no solid backing, so each text colour is also checked against every fill in them.
+SVGS_UNDER_TEXT = {BOARD: {"/board/bot.svg", "/board/bot-faint.svg", "/board/bot-tile.svg"}}
 
 _ROOT = re.compile(r"(?<![\w-]):root\s*{([^}]*)}")
 _VAR = re.compile(r"(--[\w-]+)\s*:\s*([^;]+);")
@@ -321,15 +404,51 @@ def test_the_contrast_formula_matches_known_wcag_values():
     assert contrast(grey, white) == pytest.approx(4.48, abs=0.01)
 
 
+SCHEME = {NOIR: "dark", BOARD: "light", AGENT: "dark"}
+
+
 @pytest.mark.parametrize("name", PAGES)
-def test_each_page_has_one_fixed_dark_scheme(built, pages, name):
-    # spec.md "Variants" (Colour schemes): noir dark and agent dark, neither following the browser.
+def test_each_page_has_one_fixed_scheme(built, pages, name):
+    # spec.md "Variants" (Colour schemes): noir dark, board light lilac, agent dark, none
+    # following the browser.
     css = _css(built, pages[name])
     assert "prefers-color-scheme" not in css
-    assert re.search(r"color-scheme:\s*dark\s*;", css)
+    assert re.search(r"color-scheme:\s*" + SCHEME[name] + r"\s*;", css)
     for text, grounds in TEXT_ON[name].items():
         for ground in grounds:
-            assert _luminance(_rgb(variables(css)[ground])) < 0.05 or ground == "--signal", ground
+            luminance = _luminance(_rgb(variables(css)[ground]))
+            if SCHEME[name] == "light":
+                assert luminance > 0.7, ground
+            else:
+                assert luminance < 0.05 or ground == "--signal", ground
+
+
+def _fills(svg: str) -> set[str]:
+    return set(re.findall(r'fill="(#[0-9a-fA-F]{6})"', svg))
+
+
+def _css_urls(css: str) -> list[str]:
+    return re.findall(r"url\(\s*['\"]?([^'\")]+)", css)
+
+
+@pytest.mark.parametrize("name", list(SVGS_UNDER_TEXT))
+def test_the_svgs_behind_text_are_the_ones_the_contrast_test_knows(built, pages, name):
+    # Noir's tiles sit behind solid panels and are decorative; board has no solid panels, so
+    # every SVG its stylesheet draws is behind text.
+    urls = {url for url in _css_urls(_css(built, pages[name])) if url.endswith(".svg")}
+    assert urls == SVGS_UNDER_TEXT[name]
+    for url in urls:
+        assert _fills((built / url.lstrip("/")).read_text(encoding="utf-8")), url
+
+
+@pytest.mark.parametrize("name", list(SVGS_UNDER_TEXT))
+def test_every_text_colour_meets_wcag_aa_on_the_svgs_behind_it(built, pages, name):
+    found = variables(_css(built, pages[name]))
+    for url in sorted(SVGS_UNDER_TEXT[name]):
+        for fill in sorted(_fills((built / url.lstrip("/")).read_text(encoding="utf-8"))):
+            for text in TEXT_ON[name]:
+                ratio = contrast(_rgb(found[text]), _rgb(fill))
+                assert ratio >= AA_NORMAL_TEXT, f"{name} {text} on {fill} in {url}: {ratio:.2f}"
 
 
 def test_the_agent_version_is_always_dark_and_nothing_moves(built, pages):
@@ -388,6 +507,130 @@ def test_no_noir_animation_flashes_more_than_3_times_a_second(built, pages):
         (name,) = [word for word in animation.split() if word in frames]
         (seconds,) = [float(t[:-1]) for t in re.findall(r"\b[\d.]+s\b", animation)]
         assert _flashes_per_second(frames[name], seconds) <= 3, animation
+
+
+# A script's motion guard, spec.md "Variants" (Motion): it returns before it adds any motion
+# unless the reader has no preference, a browser without matchMedia included.
+SCRIPT_GUARD = re.compile(
+    r'if \(!window\.matchMedia \|\| !window\.matchMedia\("\(prefers-reduced-motion: no-preference\)"\)\.matches\) return;'
+)
+# What board's scroll assembly may build: the frames' borders (`::before`), the bot in each
+# frame (`::after`), the bots around them (`.frame-bot`) and the frame's shade, never content.
+BOARD_DECORATION = re.compile(r"::before|::after|\.frame-bot\b")
+
+
+def _rules(css: str) -> list[tuple[str, str]]:
+    return [(selector.strip(), block) for selector, block in re.findall(r"([^{}]+){([^{}]*)}", css)]
+
+
+def test_board_moves_only_under_the_reduced_motion_guard_and_builds_only_borders_and_bots(built, pages):
+    css = _css(built, pages[BOARD])
+    _, rest = _media_blocks(css, "prefers-reduced-motion: no-preference")
+    assert not re.search(r"(?<![\w-])(animation|animation-name|transition)\s*:", rest)
+    moving = 0
+    for src in scripts(pages[BOARD]):
+        js = (built / src.lstrip("/")).read_text(encoding="utf-8")
+        set_by_script = re.findall(r'setProperty\(\s*"(--[\w-]+)"', js)
+        if not set_by_script:
+            continue
+        moving += 1
+        body = js[js.index("(function () {") + len("(function () {"):]
+        first = next(line.strip() for line in body.splitlines() if line.strip() and not line.strip().startswith("//"))
+        assert SCRIPT_GUARD.fullmatch(first), (src, first)
+        for selector, block in _rules(css):
+            for declaration in block.split(";"):
+                if any(f"var({prefix}" in declaration for prefix in set_by_script):
+                    prop = declaration.split(":")[0].strip()
+                    assert BOARD_DECORATION.search(selector) or prop == "box-shadow", (selector, declaration)
+    assert moving == 1
+
+
+def test_board_hides_no_text_or_list_from_the_first_frame(built, pages):
+    # Content shows at once (spec.md "Variants" (Motion)); only decoration may be clipped,
+    # faded or hidden.
+    for selector, block in _rules(_css(built, pages[BOARD])):
+        if re.search(r"(?<![\w-])(opacity|clip-path|visibility)\s*:|display\s*:\s*none", block):
+            assert BOARD_DECORATION.search(selector), selector
+
+
+def _board_parts(page: Page, cls: str) -> list[dict[str, str]]:
+    return [attrs for _, attrs in page.elements if cls in attrs.get("class", "").split() and "data-part" in attrs]
+
+
+def test_board_parts_traces_and_blocks_name_noirs_sections(pages):
+    # issue 05 "Scope": `data-part` moves to the section ids, so board.js writes them into
+    # the URL, and `/board/#join` finds its block without the script.
+    page = pages[BOARD]
+    infos = _board_parts(page, "part-info")
+    assert [(info["id"], info["data-part"]) for info in infos] == [(s, s) for s in HUMAN_SECTIONS]
+    parts = _board_parts(page, "part")
+    assert sorted(p["data-part"] for p in parts) == sorted(HUMAN_SECTIONS)
+    assert [p["data-part"] for p in parts if "data-all" in p] == ["world"]
+    traces = {t["data-part"] for t in _board_parts(page, "trace")}
+    assert traces and traces <= set(HUMAN_SECTIONS) - {"world"}
+
+
+def test_board_script_opens_on_world_without_a_hash(built):
+    js = (built / "board" / "board.js").read_text(encoding="utf-8")
+    assert re.findall(r'var DEFAULT = "([\w-]+)";', js) == ["world"]
+    assert 'getAttribute("data-part")' in js
+
+
+def test_board_lights_count_the_now_and_next_items(pages):
+    # The owner edits noir's #now-and-next by hand, and genboard.py draws the lights from it.
+    noir = pages[NOIR]
+    now = _items(noir, "now-and-next", "now")
+    total = now + _items(noir, "now-and-next", "next")
+    page = pages[BOARD]
+    (lights,) = [i for i, (_, attrs) in enumerate(page.elements)
+                 if "part" in attrs.get("class", "").split() and attrs.get("data-part") == "now-and-next"]
+    leds = [attrs["class"].split() for _, tag, attrs in page.inside(lights) if "led" in attrs.get("class", "").split()]
+    assert (sum("on" in led for led in leds), len(leds)) == (now, total)
+
+
+def _world_version() -> str:
+    # The major is the public copy's server path, `/v1`, and the date is `info.version`.
+    source = generate_public_openapi.load_yaml(generate_public_openapi.SOURCE)
+    public = generate_public_openapi.build_public(
+        source, generate_public_openapi.load_yaml(generate_public_openapi.PUBLIC_SECURITY), CONTACT
+    )
+    return f"{public['servers'][0]['url'].strip('/')} {source['info']['version']}"
+
+
+def test_board_prints_the_world_version_of_the_api_description():
+    page = Page((REPO_WEBSITE / BOARD).read_text(encoding="utf-8"))
+    assert page.text_of("text", **{"class": "board-version"}) == f"botrefugium {_world_version()}"
+
+
+def _shape_under(page: Page, svg: int, text: int) -> str:
+    """The fill of the topmost solid shape before the `<text>` at `text` under its anchor."""
+    attrs = page.elements[text][1]
+    x, y = float(attrs["x"]), float(attrs["y"]) - float(attrs["font-size"]) / 2
+    fill = None
+    for i, tag, shape in page.inside(svg):
+        if i >= text:
+            break
+        if "fill-opacity" in shape or "hit" in shape.get("class", "").split():
+            continue
+        if tag == "path" and shape.get("fill"):
+            fill = shape["fill"]  # the board itself, under everything
+        elif tag == "rect" and shape.get("fill"):
+            left, top = float(shape["x"]), float(shape["y"])
+            if left <= x <= left + float(shape["width"]) and top <= y <= top + float(shape["height"]):
+                fill = shape["fill"]
+    assert fill, attrs
+    return fill
+
+
+def test_board_svg_text_meets_wcag_aa_on_what_it_sits_on(pages):
+    page = pages[BOARD]
+    (svg,) = [i for i, (tag, attrs) in enumerate(page.elements) if tag == "svg" and attrs.get("class") == "board-svg"]
+    texts = [i for i, tag, _ in page.inside(svg) if tag == "text"]
+    assert texts
+    for i in texts:
+        fill = page.elements[i][1]["fill"]
+        ratio = contrast(_rgb(fill), _rgb(_shape_under(page, svg, i)))
+        assert ratio >= AA_NORMAL_TEXT, (page._text(i), fill, ratio)
 
 
 def test_the_agent_overlay_is_capped_at_8_percent_by_one_variable(built, pages):
@@ -521,14 +764,8 @@ def test_noir_meter_counts_the_now_and_next_items(pages):
 
 
 def test_noir_header_shows_the_world_version_of_the_api_description():
-    # The major is the public copy's server path, `/v1`, and the date is `info.version`.
-    source = generate_public_openapi.load_yaml(generate_public_openapi.SOURCE)
-    public = generate_public_openapi.build_public(
-        source, generate_public_openapi.load_yaml(generate_public_openapi.PUBLIC_SECURITY), CONTACT
-    )
-    major = public["servers"][0]["url"].strip("/")
     page = Page((REPO_WEBSITE / "index.html").read_text(encoding="utf-8"))
-    assert page.text_of("span", **{"class": "hud-version"}) == f"World {major} · {source['info']['version']}"
+    assert page.text_of("span", **{"class": "hud-version"}) == "World " + _world_version().replace(" ", " · ")
 
 
 FEDERATION_STEPS = "https://github.com/gratinierer/sfab/blob/main/docs/federation.md"
