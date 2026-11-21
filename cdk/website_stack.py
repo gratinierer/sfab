@@ -7,6 +7,7 @@ See .stories/2-identity-api/spec.md "Architecture" (website) and .stories/10-web
 from __future__ import annotations
 
 import json
+import string
 from pathlib import Path
 
 import aws_cdk as cdk
@@ -61,17 +62,23 @@ API_CATALOG_PATH = "/.well-known/api-catalog"
 API_CATALOG_TYPE = 'application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"'
 
 
+# The function's JavaScript, with its two values filled in as JSON strings.
+_API_CATALOG_FUNCTION = string.Template("""function handler(event) {
+  var response = event.response;
+  response.headers['content-type'] = { value: $content_type };
+  response.headers['link'] = { value: $link };
+  return response;
+}
+""")
+
+
 def api_catalog_function_code(domain_name: str) -> str:
     """The viewer-response function for the catalog, with its own URL written in from the
     config, so `website/`'s placeholders never reach it."""
     link = f'<https://{domain_name}{API_CATALOG_PATH}>; rel="api-catalog"'
-    return f"""function handler(event) {{
-  var response = event.response;
-  response.headers['content-type'] = {{ value: {json.dumps(API_CATALOG_TYPE)} }};
-  response.headers['link'] = {{ value: {json.dumps(link)} }};
-  return response;
-}}
-"""
+    return _API_CATALOG_FUNCTION.substitute(
+        content_type=json.dumps(API_CATALOG_TYPE), link=json.dumps(link)
+    )
 
 
 class WebsiteStack(cdk.Stack):
