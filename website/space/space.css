@@ -99,12 +99,18 @@ button:focus-visible {
   border-radius: 0 0 48px 64px / 0 0 40px 56px;
 }
 
-.hero-nav {
+/* The four-way switch; the current page's link is bold, without an underline. */
+.switch {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.5rem 1.25rem;
   margin: 0 0 2rem;
+}
+
+.switch [aria-current="page"] {
+  font-weight: 700;
+  text-decoration: none;
 }
 
 .hero-kicker {

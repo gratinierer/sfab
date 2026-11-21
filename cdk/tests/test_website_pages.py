@@ -1,7 +1,7 @@
 """The website's pages, as the generate step builds them: the noir page at `/`, the board page
 at `/board/`, the space page at `/space/` and the agent version at `/agents/`, from
 .stories/10-website/spec.md "Design and content", "Mobile and access" and "Variants", which
-wins where they disagree, and its issues 01, 04, 05 and 06.
+wins where they disagree, and its issues 01, 04, 05, 06 and 07.
 
 Each page is parsed with the standard library's HTML parser, so these tests need no browser.
 """
@@ -180,33 +180,31 @@ def test_a_page_is_well_formed_html5_in_english_with_unique_ids(built, pages, na
     assert len(page.all("title")) == 1
 
 
-@pytest.mark.parametrize(
-    ("name", "home", "switches"),
-    [
-        (NOIR, "/", [("/agents/", "I'm an agent →")]),
-        (BOARD, "/board/", [("/", "Human version"), ("/agents/", "I'm an agent →")]),
-        (SPACE, "/space/", [("/", "Human version"), ("/agents/", "I'm an agent →")]),
-        (AGENT, "/agents/", [("/", "← human version")]),
-    ],
-)
-def test_the_header_holds_the_wordmark_and_the_switch_links_to_the_other_versions(
-    pages, name, home, switches
-):
+# spec.md "Variants" (Four pages, one switch): the same four links, in this order, on every page.
+SWITCH = [("/", "I'm human"), ("/board/", "I'm nerd"), ("/space/", "I'm 11"), ("/agents/", "I'm agent")]
+HOME = {NOIR: "/", BOARD: "/board/", SPACE: "/space/", AGENT: "/agents/"}
+
+
+@pytest.mark.parametrize("name", PAGES)
+def test_the_header_holds_a_link_home_and_the_four_way_switch_marking_the_current_page(pages, name):
     # spec.md "Variants": a link home to the page named botrefugium, the wordmark image or
-    # themed text, and, until issue 07's four-way switch, each page's own switch links.
+    # themed text, and the switch of four links, the current one marked aria-current="page".
     page = pages[name]
     header = next(i for i, (tag, _) in enumerate(page.elements) if tag == "header")
     inside = page.inside(header)
-    links = [(i, attrs) for i, tag, attrs in inside if tag == "a"]
+    (switch,) = [i for i, tag, attrs in inside if tag == "nav" and attrs.get("class") == "switch"]
+    in_switch = {i for i, _, _ in page.inside(switch)}
 
     def name_of(i: int) -> str:
         images = [attrs.get("alt", "") for _, tag, attrs in page.inside(i) if tag == "img"]
         return " ".join(("".join(page.text.get(i, [])) + " ".join(images)).split())
 
-    assert [(attrs["href"], name_of(i)) for i, attrs in links if attrs.get("class") != "switch"] == [
-        (home, "botrefugium")
-    ]
-    assert [(attrs["href"], name_of(i)) for i, attrs in links if attrs.get("class") == "switch"] == switches
+    links = [(i, attrs) for i, tag, attrs in inside if tag == "a"]
+    assert [(attrs["href"], name_of(i)) for i, attrs in links if i not in in_switch] == [(HOME[name], "botrefugium")]
+    assert [(attrs["href"], name_of(i)) for i, attrs in links if i in in_switch] == SWITCH
+    current = [attrs["href"] for _, attrs in page.elements if "aria-current" in attrs]
+    assert current == [HOME[name]]
+    assert [attrs["aria-current"] for _, attrs in page.elements if "aria-current" in attrs] == ["page"]
 
 
 @pytest.mark.parametrize("name", PAGES)

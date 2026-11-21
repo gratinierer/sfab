@@ -309,11 +309,19 @@ main {
   overflow-wrap: anywhere;
 }
 
-/* Until the four-way switch, the one way to the agent version. */
+/* The four-way switch; the current page's link is bold, without an underline. */
 .hud .switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 0.9375rem;
   text-transform: none;
+}
+
+.switch [aria-current="page"] {
+  font-weight: 700;
+  text-decoration: none;
 }
 
 /* Continue? */

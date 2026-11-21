@@ -158,7 +158,13 @@ def test_the_discovery_files_point_to_the_api_description_with_absolute_urls(tmp
 
     sitemap = ElementTree.parse(out / "sitemap.xml").getroot()
     locs = [e.text for e in sitemap.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc")]
-    assert locs == ["https://example.test/", "https://example.test/agents/"]
+    # spec.md "Variants" (Discovery files): all four pages.
+    assert locs == [
+        "https://example.test/",
+        "https://example.test/board/",
+        "https://example.test/space/",
+        "https://example.test/agents/",
+    ]
 
     robots = (out / "robots.txt").read_text(encoding="utf-8").splitlines()
     assert robots[:2] == ["User-agent: *", "Allow: /"]

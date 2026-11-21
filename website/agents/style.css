@@ -93,8 +93,23 @@ summary:focus-visible {
   outline-offset: 2px;
 }
 
+/* The four-way switch; the current page's link has a prompt and no underline. */
 .switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+}
+
+.switch a {
   color: var(--fg-rust);
+}
+
+.switch [aria-current="page"] {
+  text-decoration: none;
+}
+
+.switch [aria-current="page"]::before {
+  content: "$ ";
 }
 
 .status {

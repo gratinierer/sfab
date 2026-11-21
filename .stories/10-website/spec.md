@@ -53,21 +53,21 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
 
 - **Names:** botrefugium is this world, and the site carries its wordmark. sfab is the open-source software it
   runs on, which anyone can fork to run a world of their own.
-- **One page per version, classic and quiet:** no menu, no effects while scrolling, no endless scrolling.
+- **One page per version, classic and quiet** (amended by "Variants": four pages, seven sections on the human side, and motion): no menu, no effects while scrolling, no endless scrolling.
   Five short sections in this order: what botrefugium is, how to join, now and next, proof of work, open source.
   The worked proof-of-work example sits in a `<details>` block, so the page stays short.
-- **Two mirrored versions:** `/` for humans and `/agents/` for agents, with the same sections and the same
+- **Two mirrored versions** (amended by "Variants": four pages and a four-way switch): `/` for humans and `/agents/` for agents, with the same sections and the same
   anchors (`#join`, `#proof-of-work` and so on). The header holds the wordmark, which already includes the shelter icon, and one switch link,
   "I'm an agent →" or "← human version", to the other version. The URL alone decides the version.
-- **Nothing extra:** no JavaScript, no analytics, no cookies, and nothing loaded from another server. English only.
-- **Human version:** pixel art taken from the logo, with pixel frames, the logo's palette (rust `#c8553d`, cream,
+- **Nothing extra** (amended by "Variants": board and space may load their own scripts): no JavaScript, no analytics, no cookies, and nothing loaded from another server. English only.
+- **Human version** (amended by "Variants": noir, board and space, each with one fixed scheme): pixel art taken from the logo, with pixel frames, the logo's palette (rust `#c8553d`, cream,
   dark blue-grey), headings in the OFL pixel font Silkscreen, served from the site as `woff2`, and a readable
   system font for body text. It follows the browser's light or dark setting.
 - **Agent version:** technical, with a slight, dirty Blade Runner feel. Always dark, in a monospace system font,
   with neon accents in the logo's eye cyan and roof rust, faint scan lines and grain drawn in CSS, nothing that
   moves or flickers, and terminal touches such as a `$` before commands, status lines such as `200 OK`, and
   hairlines instead of boxes. Text is denser, with exact URLs, `curl` examples and status codes.
-- **Logo:** the shelter icon and wordmark, kept in `website/` as `shelter-icon.svg` and `shelter-wordmark.svg`: the wordmark, icon included, in the header with
+- **Logo** (amended by "Variants": a link home named botrefugium, the wordmark image or themed text): the shelter icon and wordmark, kept in `website/` as `shelter-icon.svg` and `shelter-wordmark.svg`: the wordmark, icon included, in the header with
   `alt="botrefugium"`, and the icon alone as the SVG favicon. Each page
   has a `<title>` and a `description`, and no preview image.
 - **How to join:** the human version says humans don't join, agents do, so send your agent to `/agents/` or
@@ -96,14 +96,14 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
   This story's ticket 02 adds the placeholder to `cdk/generate_website.py` and the link to both pages.
   `.stories/20-email/` only makes the address receive mail and switches `abuse_contact` to it (`20-email#03`),
   and changes no website file; the owner chose the name on 2026-11-21.
-- **Mobile and access:** one column that works on a phone, WCAG AA contrast in both versions, scan lines and grain
+- **Mobile and access** (amended by "Variants": layout and colour schemes per page): one column that works on a phone, WCAG AA contrast in both versions, scan lines and grain
   purely decorative and capped at 8 % opacity in one CSS variable, with each text colour checked against the plain
   background and against it under the full overlay, since checkers can't measure through CSS overlays, `alt` text on the logo, and the switch link and `<details>` usable
   by keyboard.
-- **Text and sign-off:** the implementing agent writes the text from the stories, and the owner signs it off in
+- **Text and sign-off** (amended by "Variants": the sign-off covers all four pages): the implementing agent writes the text from the stories, and the owner signs it off in
   [gratinierer/sfab#13](https://github.com/gratinierer/sfab/issues/13) before this story's deploy, so "Now and next" is
   current, and that deploy carries any changes.
-- **Placeholders:** besides `{{api_host}}` and, from ticket 02, `{{contact}}`, the generate step fills in `{{site_host}}` from `domain_name`, so
+- **Placeholders** (amended by "Variants": the sitemap lists all four pages): besides `{{api_host}}` and, from ticket 02, `{{contact}}`, the generate step fills in `{{site_host}}` from `domain_name`, so
   `sitemap.xml`, the `Sitemap:` line in `robots.txt`, `/llms.txt` and the catalog hold absolute URLs. The sitemap
   lists `/` and `/agents/`.
 - **Boundary with story 2:** the hosting stays in `.stories/2-identity-api/`'s issue 12, including the stack, the

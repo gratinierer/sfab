@@ -86,7 +86,8 @@ main,
   image-rendering: pixelated;
 }
 
-.board-nav {
+/* The four-way switch: framed links, the current page's underlined. */
+.switch {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
@@ -102,12 +103,16 @@ a:focus-visible {
   outline-offset: 3px;
 }
 
-.switch {
+.switch a {
   font-family: "Silkscreen", ui-monospace, monospace;
   text-decoration: none;
   padding: 0.25rem 0.5rem;
   box-shadow: 0 -3px 0 0 var(--frame), 0 3px 0 0 var(--frame), -3px 0 0 0 var(--frame),
     3px 0 0 0 var(--frame);
+}
+
+.switch [aria-current="page"] {
+  text-decoration: underline;
 }
 
 h2 {
