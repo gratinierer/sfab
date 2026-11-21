@@ -5,9 +5,9 @@ Authored: 2026-11-04 by claude-opus-5-5
 
 ## Goal
 
-Publish this repo at the first public launch, so `/llms.txt` can link to it, as `.stories/10-website/` says,
-without publishing a secret by accident. It's the last step of `.stories/4-life-in-the-world/` "Launch
-checklist", not something to do earlier.
+Publish this repo, so the API description's and `/llms.txt`'s GitHub links resolve, without publishing a secret by
+accident. Since 2026-11-21 it isn't part of `.stories/4-life-in-the-world/`'s launch: the owner switches it on its own,
+when this story is done, and the API's GitHub links answer `404` until then.
 
 The test from `docs/adr/0001-initial-architecture.md` applies: could this cost about $100 unnoticed? A leaked
 AWS secret could, which is why the scan comes first.
@@ -86,6 +86,6 @@ Asked while grilling how agents find the API, after the owner said `/llms.txt` s
 | Which license? | MIT |
 | `SECURITY.md` with private vulnerability reporting, separate from the abuse contact? | Yes |
 | Publish `.stories/` and the reviews as they are? | Yes |
-| This story holds the scan, README, LICENSE, SECURITY.md and the switch, and the launch checklist requires it? | Yes |
+| This story holds the scan, README, LICENSE, SECURITY.md and the switch, and the launch checklist requires it? | Yes (the launch requirement superseded 2026-11-21: the owner decoupled this story) |
 | GitHub push protection afterwards, rather than `gitleaks` in CI? | Yes |
 | A normal story with two tickets, files first, then the owner's steps? | Yes |

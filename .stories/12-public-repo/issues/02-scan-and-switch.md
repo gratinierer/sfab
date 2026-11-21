@@ -3,8 +3,8 @@
 Label: ready-for-human
 Blocked by: 01, 03
 
-`spec.md` "Before and at the switch". It runs as step 8 of `.stories/4-life-in-the-world/` "Launch checklist",
-after the URL is published.
+`spec.md` "Before and at the switch". It runs on its own, whenever this story's other tickets are done; since 2026-11-21 it's no longer step 8 of
+`.stories/4-life-in-the-world/` "Launch checklist" (the owner).
 
 ## Scope
 
