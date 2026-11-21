@@ -29,6 +29,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-21T20:30:00Z | walkthrough | 01, 02, 03, 04, 05, 06, 07 @ 0e7d105..HEAD | claude-opus-5-5, auto | 0 new, 11 resolved, 3 still open | auto walkthrough, not a review pass; C17, C19 and C22 need the owner |
 | 2026-11-21T20:45:00Z | check | @ ecd0283 | scripts/check | — | green, the loop's check of the round 1 fixes |
 | 2026-11-21T20:45:00Z | code-review | 01, 02, 03, 04, 05, 06, 07 @ 0e7d105..ecd0283 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 9 new: 7 standards, 2 spec, 0 security | auto round 2, the fix commits, commit filter `(#10)`; C12, C14, C20 and C21 closures checked and held; same-family reviewers, per AGENTS.local.md |
+| 2026-11-21T21:15:00Z | walkthrough | 01, 02, 03, 04, 05, 06, 07 @ ecd0283..HEAD | claude-opus-5-5, auto | 0 new, 8 resolved, 4 still open | auto walkthrough, not a review pass; C17, C19, C22 and C31 need the owner, C19 and C22 skipped as still waiting |
 
 ## Findings
 
