@@ -11,7 +11,11 @@ Blocked by: 01
    shows.
 2. Compare them with `spec.md` "Design"'s table. If any differs, fix the table and ticket 01's code before going
    on.
-3. Once ticket 01 is on the `production` branch, put the `apple-domain=` value, without its prefix, into
+3. Check the hosted zone holds none of the records 01 creates: no `MX` or `TXT` on the apex, and no
+   `sig1._domainkey` or `_dmarc` record (`aws route53 list-resource-record-sets --hosted-zone-id <hosted_zone_id>`).
+   CloudFormation fails `SfabBase`'s update on a record that already exists, so if one is there, stop and decide
+   whether to delete it or keep it, rather than deploying. On 2026-11-21 there were none.
+   Once ticket 01 is on the `production` branch, put the `apple-domain=` value, without its prefix, into
    `sfab/config` as `icloud_domain_verification`, and start the `sfab-deploy` build (ADR 0009). Not before: until
    01's code is deployed, the loader refuses the key as unknown and the build fails.
 4. Let iCloud verify the domain.
