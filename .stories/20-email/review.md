@@ -18,6 +18,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-21T11:07:41Z | review | 5cadeed822f0 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 6 new, 6 closures audited and held | full: every story file changed since 741d12bcb06a; auto round 1. Same vendor family, so weaker independence. HEAD moved to 5cadeed822f0 (another session closed story 2) while the pass ran, and the reviewer saw that tree |
 | 2026-11-21T11:10:41Z | walkthrough | R7-R12 | claude-opus-5-5 (auto) | 0 new, 5 resolved, 1 still open | auto walkthrough, not a review pass: R7-R10 and R12 fixed, R11 needs the user |
 | 2026-11-21T11:12:30Z | review | 1eb4210373c2 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 2 new, 5 closures audited and held, 1 still open | full: every story file changed since 5cadeed; auto round 2. A third candidate, story 10's spec line 8 still naming `.stories/2-identity-api/`, is outside this story and left for story 10's next review |
+| 2026-11-21T11:13:10Z | walkthrough | R11, R13-R14 | claude-opus-5-5 (auto) | 0 new, 2 resolved, 1 still open | auto walkthrough, not a review pass: R13 and R14 fixed, R11 still needs the user |
 
 ## Findings
 
