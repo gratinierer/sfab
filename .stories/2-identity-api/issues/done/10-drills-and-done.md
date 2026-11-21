@@ -42,7 +42,9 @@ it, so it isn't on the `Blocked by` line.
 
 ## Done when
 
-- All of the above have passed, and any problem found has a ticket or a fix.
+- All of the above have passed, and any problem found has a ticket or a fix. (2026-11-21: all passed but the stop budget's own email, its figure
+  against the first real bill and an approved world appearing after a deploy, which the owner left out; see
+  Comments.)
 - The one public launch stays separate, and waits for `.stories/4-life-in-the-world/` and gratinierer/sfab#3.
 
 ## Comments
@@ -80,3 +82,5 @@ it, so it isn't on the `Blocked by` line.
   - **Smoke script:** five full runs, all 101/101 but one, whose `GET /world/residents` met the stage redeploy
     seconds after a restart and passed on the rerun.
   - **Registrant email:** verified (`GetContactReachabilityStatus` `DONE`).
+- 2026-11-21: closed without a code-review row on the owner's ruling (R217): the drill commits `499b0b5` and
+  `1410d51` cancel out, `git diff 499b0b5^ 1410d51` being empty.
