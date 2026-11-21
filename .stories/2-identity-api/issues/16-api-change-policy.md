@@ -24,8 +24,10 @@ and `next` URLs as opaque), "New values may appear" on `Problem.type`, and `info
 
 ## Done when
 
-- The public description carries the tolerant-reading text, says `v1` may change, and links the changelog; no text
-  says `v1` only grows.
+- `CHANGELOG.md` exists at the repo root, with a heading and no entries.
+- The public description carries the tolerant-reading text, says `v1` may change, and links
+  `https://github.com/gratinierer/sfab/blob/main/CHANGELOG.md`; no text says `v1` only grows. The link resolves only
+  once the repo is public, and story 4's launch step 8 checks it.
 
 ## Comments
 

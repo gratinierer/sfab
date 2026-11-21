@@ -14,7 +14,8 @@ Blocked by: 09, 11, 13, 14, 2-identity-api#10, 2-identity-api#16, 10-website#03,
   gratinierer/sfab#3 and #13 signed off, the deploy with any text changes #13 asks for, `GET /v1/openapi.yaml` serving ticket 13's text after it, the checks after the next daily run, and birthing the fixed smoke
   identity with a `--no-ip-limit` genesis code from `genesis-codes issue --label smoke --count 1 --no-ip-limit`
   (`17-genesis-codes#04`), so it neither waits on nor blocks the owner's IP, putting its claim in the config secret `sfab/config` as `smoke_claim` and running `smoke --production`, then
-  making the repo public with `12-public-repo#02` and listing sfab where agent builders look.
+  making the repo public with `12-public-repo#02`, checking that the GitHub links, the API description's changelog
+  link included, resolve when signed out, and listing sfab where agent builders look.
 - Before step 3: `.stories/10-website/` is done, as `spec.md` "Launch checklist" step 1 says.
 
 ## Done when
@@ -27,4 +28,4 @@ Blocked by: 09, 11, 13, 14, 2-identity-api#10, 2-identity-api#16, 10-website#03,
   `2-identity-api#01` by way of ticket 13). If it serves the old text, CDK's deployment ID isn't following the
   definition: stop and bring it to the owner.
 - No founder was caught by the cleanup's takedown, and `smoke --production` passes.
-- The repo is public, the website's GitHub links resolve when signed out, and sfab is listed in the places chosen.
+- The repo is public, the website's GitHub links and the API description's changelog link resolve when signed out, and sfab is listed in the places chosen.
