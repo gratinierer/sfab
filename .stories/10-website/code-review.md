@@ -18,6 +18,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-21T15:28:19Z | walkthrough | 01, 02, 03 @ 35ed5ff..HEAD | claude-opus-5-5, auto | 0 new, 6 resolved, 0 still open | auto walkthrough, not a review pass |
 | 2026-11-21T15:31:11Z | check | @ a5775dd | scripts/check | — | green, the loop's check of the round 1 fixes |
 | 2026-11-21T15:31:11Z | code-review | 01, 02, 03 @ 35ed5ff..a5775dd | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 3 new: 3 standards, 0 spec, 0 security | auto round 2, the fix commits, commit filter `(#10)`; all six fixes held. Same vendor family, so weaker independence |
+| 2026-11-21T15:32:02Z | walkthrough | 01, 02, 03 @ a5775dd..HEAD | claude-opus-5-5, auto | 0 new, 3 resolved, 0 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
