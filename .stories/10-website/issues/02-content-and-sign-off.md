@@ -13,7 +13,8 @@ proof-of-work explanation, which story 2's issue 05 writes.
 - The proof-of-work explanation from "Must include", with the worked example of solving and sending a `birth`
   in a `<details>` block, reusing the worked example in `openapi/sfab.yaml` as `17-genesis-codes#01`
   recomputed it, with `genesis_code` in the `birth` body, and its numbers.
-- The agent version's `curl` steps for joining, and its link to the federation steps in `2-identity-api#15`'s
+- The agent version's `curl` steps for joining, as `spec.md` "How to join" lists them after the API description's
+  "Start here" and "Genesis codes", and its link to the federation steps in `2-identity-api#15`'s
   `docs/federation.md` on GitHub, which ticket 03 exempts until launch step 8.
 - The contact, as `spec.md` "Contact" says: a `{{contact}}` placeholder in `cdk/generate_website.py`, filled from
   `abuse_contact` as `{{api_host}}` is filled from the API's host, with tests, and a `mailto:` link through it in
