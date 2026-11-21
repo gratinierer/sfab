@@ -14,6 +14,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | Date | Kind | Reviewed | By | Findings | Notes |
 |---|---|---|---|---|---|
 | 2026-11-21T10:50:39Z | review | 741d12bcb06a | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5) | 6 new | full: first review. Same vendor family, so weaker independence. A seventh candidate (02's comments record steps done while it's blocked by 01) dropped: its own evidence says the `Blocked by` is right |
+| 2026-11-21T11:05:00Z | walkthrough | 6 findings | claude-opus-5-5 with the owner | 0 new, 4 resolved, 1 waived, 0 still open | walkthrough, not a review pass: R1, R3, R5, R6 fixed (R6 moved the website work to story 10), R4 waived by the owner; R2 was resolved before it |
 
 ## Findings
 
