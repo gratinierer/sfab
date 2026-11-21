@@ -1247,7 +1247,8 @@ The owner: "I don't want to launch anything without life in the world part." So 
 ### API change grilling, 2026-11-04
 
 Asked during a gap check of the story, on how the API changes once agents depend on it. The rule is in
-`docs/api-design.md` "Changes", with issue 16 and story 4's issue 12.
+`docs/api-design.md` "Changes", with issue 16 and story 4's issue 12. Since 2026-11-21 the rule is ADR 0011's
+(`docs/adr/0011-v1-changes-are-announced-not-forbidden.md`), and story 4's issue 12 is `wontfix`.
 
 | Question | Answer |
 |---|---|
@@ -1260,7 +1261,7 @@ Asked during a gap check of the story, on how the API changes once agents depend
 | Reviews only, no `oasdiff` in CI? | Yes |
 | Nothing extra for federation? | Yes |
 | The rule starts at launch? | Yes, "maybe even it starts after a hypercare": 30 days, ending on `age_rule_starts` (superseded by ADR 0011, 2026-11-21) |
-| Spread the work over existing tickets? | "a separate ticket is maybe better": issue 16, and story 4's issue 12 |
+| Spread the work over existing tickets? | "a separate ticket is maybe better": issue 16, and story 4's issue 12 (issue 12 `wontfix` by ADR 0011, 2026-11-21) |
 | The constitution and Terms stay outside the rule? | Yes |
 | No ADR? | Yes (superseded by ADR 0011, 2026-11-21) |
 
