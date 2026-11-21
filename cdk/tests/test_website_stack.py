@@ -251,12 +251,20 @@ def test_the_catalog_response_gets_its_linkset_type_and_link_header(website, con
     assert response["headers"]["etag"] == {"value": '"x"'}
 
 
-def test_the_catalog_path_names_the_committed_file_the_generate_step_fills():
-    # The catalog's path is written once in website_stack.py; this ties the committed file and
-    # the generate step's text names to it, so a rename can't leave one behind.
+def test_the_generate_step_fills_the_catalog_at_the_path_the_stack_serves(tmp_path):
+    # The catalog's path is written once in website_stack.py. Building the committed site shows
+    # the file is at that path and the generate step fills it, so a rename can't leave one behind.
     import generate_website
     import website_stack
 
-    name = website_stack.API_CATALOG_PATH.rsplit("/", 1)[-1]
-    assert (generate_website.SOURCE / website_stack.API_CATALOG_PATH.lstrip("/")).is_file()
-    assert name in generate_website._TEXT_NAMES
+    out = tmp_path / "out"
+    generate_website.generate(
+        generate_website.SOURCE,
+        out,
+        api_host="api.example.test",
+        site_host="example.test",
+        contact="watchdog@example.test",
+    )
+    catalog = json.loads((out / website_stack.API_CATALOG_PATH.lstrip("/")).read_text())
+    anchors = [entry["anchor"] for entry in catalog["linkset"]]
+    assert f"https://example.test{website_stack.API_CATALOG_PATH}" in anchors
