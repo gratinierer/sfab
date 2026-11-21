@@ -26,6 +26,11 @@ pixel-art human page at `/` with the noir page, which holds the text the other h
   reads each page's section ids that way, and `lambda/core/tests/worked_example.rs` slices noir's
   `#proof-of-work` panel by its id and finds the example as the one `<details>` nested in it, instead of
   `find("<section id=\"proof-of-work\"")` and one `<details>` per section.
+- `cdk/tests/test_website_pages.py` changes these tests: `test_the_header_holds_the_wordmark_and_one_switch_link_to_the_other_version`
+  takes a link home named botrefugium, the wordmark image or text, and until 07 noir keeps one switch link,
+  "I'm an agent →", in its header, so `/` is never without a way to the agent version;
+  `test_the_human_version_has_a_light_and_a_dark_scheme` gives way to one fixed scheme per page; and
+  `test_the_human_headings_use_the_committed_silkscreen...` checks noir, then board in 05, but not space.
 - `cdk/tests/test_website_pages.py` follows the amended rules for `/`: one fixed dark scheme, motion only under
   `prefers-reduced-motion: no-preference`, a link home named botrefugium in the header, and the five anchors in
   order with extras allowed.

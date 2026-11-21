@@ -9,7 +9,8 @@ Blocked by: 05, 06
 
 - Every page's header gets the same switch of four links: "I'm human" to `/`, "I'm nerd" to `/board/`,
   "I'm 11" to `/space/` and "I'm agent" to `/agents/`, the current one with `aria-current="page"`. It replaces the
-  single switch link and the scratch pages' footer links.
+  single switch link, noir's included, and the scratch pages' footer links, and the header test checks the four
+  links instead of one.
 - `website/sitemap.xml` lists `/`, `/board/`, `/space/` and `/agents/`. `website/llms.txt` is unchanged.
 - A test compares the paragraphs and lists of noir, board and space section by section and finds them identical.
 - `spec.md` "Design and content" bullets that "Variants" amends get a pointer to it, so a reader of either finds
