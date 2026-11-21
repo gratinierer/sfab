@@ -1,6 +1,5 @@
 # Let the owner's Rust tools use `aws login` credentials
 
-Label: ready-for-agent
 Blocked by:
 
 The owner runs `genesis-codes` and `takedown` from a machine signed in with `aws login`, as `spec.md` "Operations"
