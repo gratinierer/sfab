@@ -1,10 +1,12 @@
-"""Story 2's website stack: the placeholder pages at the apex domain.
+"""Story 2's website stack: the pages at the apex domain, with story 10's API catalog behaviour.
 
-See .stories/2-identity-api/spec.md "Architecture" (website).
+See .stories/2-identity-api/spec.md "Architecture" (website) and .stories/10-website/spec.md
+"Ways for agents to find the API".
 """
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import aws_cdk as cdk
@@ -47,6 +49,28 @@ VIEWER_FUNCTION = """function handler(event) {
     headers: { location: { value: uri + '/' } }
   };
 }
+"""
+
+# RFC 9727: the catalog is served as a linkset, with a `Link` to itself on every response,
+# HEAD included. The file has no extension, so S3 can't type it, and S3 sends no `Link`;
+# this sets both (.stories/10-website/spec.md "Ways for agents to find the API").
+# docs/aws-facts.md "CloudFront flat-rate plans": "A CloudFront Function on viewer response can
+# set `Content-Type` and add a `Link` header", and "`BucketDeployment` sets each object's
+# content type by guessing from its extension".
+API_CATALOG_PATH = "/.well-known/api-catalog"
+API_CATALOG_TYPE = 'application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"'
+
+
+def api_catalog_function_code(domain_name: str) -> str:
+    """The viewer-response function for the catalog, with its own URL written in from the
+    config, so `website/`'s placeholders never reach it."""
+    link = f'<https://{domain_name}{API_CATALOG_PATH}>; rel="api-catalog"'
+    return f"""function handler(event) {{
+  var response = event.response;
+  response.headers['content-type'] = {{ value: {json.dumps(API_CATALOG_TYPE)} }};
+  response.headers['link'] = {{ value: {json.dumps(link)} }};
+  return response;
+}}
 """
 
 
@@ -92,14 +116,37 @@ class WebsiteStack(cdk.Stack):
             comment="Adds index.html to a folder path and redirects /agents to /agents/",
         )
 
+        api_catalog = cloudfront.Function(
+            self,
+            "ApiCatalog",
+            runtime=cloudfront.FunctionRuntime.JS_2_0,
+            code=cloudfront.FunctionCode.from_inline(api_catalog_function_code(config.domain_name)),
+            comment="Sets the API catalog's linkset Content-Type and its RFC 9727 Link header",
+        )
+
+        pages = origins.S3BucketOrigin.with_origin_access_control(bucket)
         distribution = cloudfront.Distribution(
             self,
             "Distribution",
             domain_names=[config.domain_name],
             certificate=certificate,
             web_acl_id=web_acl.attr_arn,
+            # The managed CachingOptimized, since Free allows no custom cache policy
+            # (docs/aws-facts.md "Custom caching rules start at Business").
+            additional_behaviors={
+                API_CATALOG_PATH: cloudfront.BehaviorOptions(
+                    origin=pages,
+                    viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                    cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
+                    function_associations=[
+                        cloudfront.FunctionAssociation(
+                            function=api_catalog, event_type=cloudfront.FunctionEventType.VIEWER_RESPONSE
+                        )
+                    ],
+                )
+            },
             default_behavior=cloudfront.BehaviorOptions(
-                origin=origins.S3BucketOrigin.with_origin_access_control(bucket),
+                origin=pages,
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
                 function_associations=[
