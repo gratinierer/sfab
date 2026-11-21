@@ -11,7 +11,10 @@ silently drop the alerts.
 (`deploy_account()`). The fixture carries it, so tests never call STS.
 
 `smoke_claim` is optional and only checked to be a string here: only the smoke script's
-`--production` checks its form.
+`--production` checks its form. `icloud_domain_verification` is optional too: the token
+iCloud+ shows for the domain, without its `apple-domain=` prefix. When it's present it's
+checked like a required key, and `BaseStack` creates the domain's mail records from it; when
+it's missing, none (.stories/20-email/spec.md "Design").
 """
 
 from __future__ import annotations
@@ -43,6 +46,7 @@ class Config:
     origin_key: str
     ip_hash_key: str
     smoke_claim: str | None = None
+    icloud_domain_verification: str | None = None
 
     @property
     def api_host(self) -> str:
@@ -70,11 +74,15 @@ REQUIRED_KEYS = tuple(
 )
 # The fields with a default, such as `smoke_claim`, read only by the smoke script, which checks its form.
 OPTIONAL_KEYS = tuple(f.name for f in fields(Config) if has_default(f))
+# The optional keys that, when present, are checked like a required key.
+CHECKED_OPTIONAL_KEYS = ("icloud_domain_verification",)
 
 PLACEHOLDER = "CHANGE_ME"
 _ORIGIN_KEY = re.compile(r"[A-Za-z0-9]{20,128}")
 _IP_HASH_KEY = re.compile(r"[A-Za-z0-9]{32,128}")
 _ACCOUNT_ID = re.compile(r"[0-9]{12}")
+_ICLOUD_DOMAIN_VERIFICATION = re.compile(r"[A-Za-z0-9]{8,64}")
+APPLE_DOMAIN_PREFIX = "apple-domain="
 
 
 class ConfigError(Exception):
@@ -167,7 +175,8 @@ def parse(data: dict, source: str = "config", *, fixture: bool = False) -> dict[
         problems.append(f"unknown key(s), possibly misspelt: {', '.join(unknown)}")
 
     values: dict[str, str] = {}
-    for key in required:
+    checked = required + tuple(k for k in CHECKED_OPTIONAL_KEYS if k in data)
+    for key in checked:
         value = data.get(key)
         if value is None or (isinstance(value, str) and not value.strip()):
             problems.append(f"{key}: missing")
@@ -178,7 +187,7 @@ def parse(data: dict, source: str = "config", *, fixture: bool = False) -> dict[
         else:
             values[key] = value.strip()
     for key in OPTIONAL_KEYS:
-        if key in data:
+        if key in data and key not in CHECKED_OPTIONAL_KEYS:
             if isinstance(data[key], str):
                 values[key] = data[key]
             else:
@@ -190,6 +199,16 @@ def parse(data: dict, source: str = "config", *, fixture: bool = False) -> dict[
         problems.append("ip_hash_key: must be 32 to 128 letters and digits (A-Z, a-z, 0-9)")
     if "account_id" in values and not _ACCOUNT_ID.fullmatch(values["account_id"]):
         problems.append("account_id: must be 12 digits")
+    token = values.get("icloud_domain_verification")
+    if token is not None and token.startswith(APPLE_DOMAIN_PREFIX):
+        problems.append(
+            f"icloud_domain_verification: leave off the {APPLE_DOMAIN_PREFIX} prefix, "
+            "only the token after it"
+        )
+    elif token is not None and not _ICLOUD_DOMAIN_VERIFICATION.fullmatch(token):
+        problems.append(
+            "icloud_domain_verification: must be 8 to 64 letters and digits (A-Z, a-z, 0-9)"
+        )
 
     if problems:
         raise ConfigError(f"{source}:\n  " + "\n  ".join(problems))
