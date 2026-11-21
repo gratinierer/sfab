@@ -17,8 +17,8 @@ token, and nothing when it doesn't.
   `TXT`. When it's missing, none of them.
 - CDK tests for both cases, the fixture staying without the key, and one test that sets it.
 - Config tests for each refusal: empty, `CHANGE_ME`, the `apple-domain=` prefix, and a value outside the pattern.
-- `.stories/2-identity-api/spec.md` "Delivery"'s list of `sfab/config` keys gains the optional key, with a
-  pointer to this story.
+- `cdk/sfab_config.py`'s module docstring describes the new optional key next to `smoke_claim`, with a pointer
+  to this story. Story 2 is closed (`.stories/done/2-identity-api/`), so its "Delivery" key list stays as it is.
 
 ## Done when
 
