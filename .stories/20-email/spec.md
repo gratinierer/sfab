@@ -88,7 +88,7 @@ inbox such as `operator@botrefugium.com` to replace the published iCloud address
 | Q7 | A custom `MAIL FROM` domain, so SPF aligns too? | Not now | Yes; superseded by Q12 |
 | Q8 | Does the new contact get a `CHANGELOG.md` line? | Yes | No: the address goes on the website later |
 | Q9 | How does the owner read and reply as `operator@`: SES SMTP credentials, a reply script, iCloud+ custom domain, or another host? | iCloud+, if the owner has it | iCloud+. The owner asked whether SES is still needed: no, the project sends no mail of its own |
-| Q10 | Is the website change a ticket in story 10, blocked by this story? | Yes | No blocking: it's a later ticket in this story |
+| Q10 | Is the website change a ticket in story 10, blocked by this story? | Yes | No blocking: it's a later ticket in this story; superseded by Q23, which gives the website work to story 10 |
 | Q11 | `MAIL FROM` as `mail.<domain_name>`, falling back to SES's default? | Yes | Yes, all in CDK, with the hand-made setup reverted by hand; superseded by Q12 |
 | Q12 | Drop SES from the account and the story? | Yes | Yes, now: done on 2026-11-21, the identities and their DKIM CNAMEs |
 | Q13 | Which addresses within iCloud's limit, with no catch-all? | `operator@`, `dmarc@`, `abuse@`, `postmaster@` | No `postmaster@`, but `info@` |
@@ -96,7 +96,7 @@ inbox such as `operator@botrefugium.com` to replace the published iCloud address
 | Q15 | DNS records in `BaseStack`, with the iCloud token as a config key? | Yes | The owner asked whether the stacks hold personal data: no, the token is public in DNS and goes in the config because it differs per owner |
 | Q15b | Is `icloud_domain_verification` optional, creating no mail records when missing? | Yes | Yes |
 | Q16 | Delete the hand-made `_dmarc` record by hand before the first deploy? | Yes | Do it now: deleted on 2026-11-21 |
-| Q17 | One ticket switches `abuse_contact` and puts the address on `index.html`? | Yes | Yes |
+| Q17 | One ticket switches `abuse_contact` and puts the address on `index.html`? | Yes | Yes; superseded by Q23: 03 only switches `abuse_contact` |
 | Q18 | No retention rule, since mail lives in the owner's mailbox? | Yes | Yes |
 | Q19 | Spec only, no ADR? | Yes | Yes |
 | Q20 | Three tickets: records in CDK, iCloud setup, switch the contact? | Yes | Yes |
