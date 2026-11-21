@@ -98,15 +98,16 @@ class Page(HTMLParser):
     def _text(self, index: int) -> str:
         return " ".join("".join(self.text.get(index, [])).split())
 
-    def paragraphs_and_lists(self, section_id: str) -> list[tuple[str, str, list[str]]]:
+    def paragraphs_and_lists(self, section_id: str, noir: bool = False) -> list[tuple[str, str, list[str]]]:
         """The section's paragraphs and lists, each as (tag, text, link targets), leaving out
-        its headings, noir's themed captions and a nested `<details>` (noir's worked
-        example), which spec.md "Variants" (Same content) lets each page theme or hold alone."""
+        its headings. On noir, the source, it also leaves out the themed captions and the
+        nested `<details>` (the worked example), which spec.md "Variants" lets noir hold alone;
+        on any other page they count, so an extra one fails the comparison."""
         blocks, skip_to = [], -1
         for i, tag, attrs in self.inside(self._index_of(section_id)):
             if i < skip_to:
                 continue
-            if tag == "details" or (tag == "p" and attrs.get("class") == "caption"):
+            if noir and (tag == "details" or (tag == "p" and attrs.get("class") == "caption")):
                 skip_to = self.ends[i]
             elif tag in ("p", "ul", "ol"):
                 skip_to = self.ends[i]
@@ -142,7 +143,7 @@ def test_each_version_has_the_five_sections_in_order_with_the_same_anchors(pages
 @pytest.mark.parametrize("section_id", HUMAN_SECTIONS)
 def test_board_and_space_carry_noirs_paragraphs_and_lists_word_for_word(pages, name, section_id):
     # spec.md "Variants" (Same content): noir's text is the source; only headings may differ.
-    noir = pages[NOIR].paragraphs_and_lists(section_id)
+    noir = pages[NOIR].paragraphs_and_lists(section_id, noir=True)
     assert noir
     assert pages[name].paragraphs_and_lists(section_id) == noir
 
