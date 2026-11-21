@@ -194,6 +194,16 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | S3 Standard in `us-east-1` charges $0.005 per 1,000 PUT, COPY, POST or LIST requests and $0.0004 per 1,000 GET and all other requests, HEAD among them, and DELETE is free, as the cost tables in story `2-identity-api`'s spec.md "Messages" and "What it can cost" use | docs | AWS price list for `AmazonS3`, `us-east-1` ([s3-price-list]: "$0.004 per 10,000 GET and all other requests"); DELETE from [s3-pricing] | 2026-11-08 |
 | Lambda prices used in cost tables | memory | | 2026-11-01 |
 
+## SES
+
+Checked on 2026-11-21 before story `20-email` chose iCloud+ over SES. Nothing uses SES now, so these are for a
+later story that sends mail from the project.
+
+| Fact | Status | Source | Checked |
+|---|---|---|---|
+| A domain identity verifies from its three Easy DKIM CNAMEs alone, `<token>._domainkey.<domain>` to `<token>.dkim.amazonses.com`, with no TXT verification record | tested | 2026-11-21: `botrefugium.com` went from `PENDING` to `SUCCESS` for both the identity and DKIM after the owner published the three CNAMEs in Route 53 | 2026-11-21 |
+| Production access, out of the sandbox, can be granted to a new account on request | tested | 2026-11-21: `sesv2 get-account` showed `ProductionAccessEnabled: true`, review status `GRANTED`, and a mail to an unverified address was accepted | 2026-11-21 |
+
 [budgets-notification]: https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_Notification.html
 [s3-getobject]: https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html
 [s3-lifecycle]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html
