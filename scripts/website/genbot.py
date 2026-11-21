@@ -31,6 +31,24 @@ class BotSet:
     tile_fill: str
     faint: bool  # also write `bot-faint{suffix}.svg`
 
+    def write(self, website: Path) -> None:
+        """Write this set's bot, tile and, if `faint`, faint bot into its folder of `website`."""
+        out = website / self.folder
+        out.mkdir(exist_ok=True)
+        d = bot_path()
+        (out / f"bot{self.suffix}.svg").write_text(_one_bot(self.bot_fill, d), encoding="utf-8")
+        if self.faint:
+            (out / f"bot-faint{self.suffix}.svg").write_text(_one_bot(self.tile_fill, d), encoding="utf-8")
+        bots = "".join(
+            f'<path transform="translate({x} {y}) rotate({r} 5.5 6) scale({s})" d="{d}"/>'
+            for x, y, s, r in TILE_BOTS
+        )
+        (out / f"bot-tile{self.suffix}.svg").write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="200" viewBox="0 0 240 200" '
+            f'shape-rendering="crispEdges"><g fill="{self.tile_fill}">{bots}</g></svg>\n',
+            encoding="utf-8",
+        )
+
 
 SETS = [
     BotSet(folder="", suffix="-noir", bot_fill="#262d5e", tile_fill="#161b3c", faint=False),
@@ -68,28 +86,9 @@ def _one_bot(fill: str, d: str) -> str:
     )
 
 
-def write_set(out: Path, bots_set: BotSet) -> None:
-    d = bot_path()
-    suffix = bots_set.suffix
-    (out / f"bot{suffix}.svg").write_text(_one_bot(bots_set.bot_fill, d), encoding="utf-8")
-    if bots_set.faint:
-        (out / f"bot-faint{suffix}.svg").write_text(_one_bot(bots_set.tile_fill, d), encoding="utf-8")
-    bots = "".join(
-        f'<path transform="translate({x} {y}) rotate({r} 5.5 6) scale({s})" d="{d}"/>'
-        for x, y, s, r in TILE_BOTS
-    )
-    (out / f"bot-tile{suffix}.svg").write_text(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="200" viewBox="0 0 240 200" '
-        f'shape-rendering="crispEdges"><g fill="{bots_set.tile_fill}">{bots}</g></svg>\n',
-        encoding="utf-8",
-    )
-
-
 def main() -> None:
-    for bots_set in SETS:
-        out = WEBSITE / bots_set.folder
-        out.mkdir(exist_ok=True)
-        write_set(out, bots_set)
+    for bot_set in SETS:
+        bot_set.write(WEBSITE)
 
 
 if __name__ == "__main__":
