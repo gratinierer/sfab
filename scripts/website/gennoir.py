@@ -13,24 +13,24 @@ import random
 import re
 from pathlib import Path
 
-from pixel import grid_rects, rect as R
+from pixel import grid_rects, rect
 
 PAGE = Path(__file__).resolve().parents[2] / "website" / "index.html"
 
 # --- the city -------------------------------------------------------------------------
 W, H = 256, 112
 rng = random.Random(3)
-sky = [R(0,0,W,H,"#0b0d1a"), R(0,40,W,30,"#10132b"), R(0,70,W,42,"#161a3a")]
+sky = [rect(0,0,W,H,"#0b0d1a"), rect(0,40,W,30,"#10132b"), rect(0,70,W,42,"#161a3a")]
 for y in (39, 69):                       # dithered band edges
-    sky += [R(x, y, 1, 1, "#10132b" if y == 39 else "#161a3a") for x in range(0, W, 2)]
-stars = [R(rng.randrange(W), rng.randrange(36), 1, 1, "#e8ecff", f' fill-opacity="{rng.choice([0.4,0.7,1])}"') for _ in range(40)]
+    sky += [rect(x, y, 1, 1, "#10132b" if y == 39 else "#161a3a") for x in range(0, W, 2)]
+stars = [rect(rng.randrange(W), rng.randrange(36), 1, 1, "#e8ecff", f' fill-opacity="{rng.choice([0.4,0.7,1])}"') for _ in range(40)]
 moon = []
 for y in range(-8, 9):
     for x in range(-8, 9):
         if x*x + y*y <= 64:
-            moon.append(R(214+x, 20+y, 1, 1, "#f4e9b8"))
-moon += [R(210,17,2,2,"#e0d39a"), R(217,23,3,2,"#e0d39a"), R(215,15,1,1,"#e0d39a")]
-clouds = [R(150,26,40,3,"#1e2347"), R(158,23,22,3,"#1e2347"), R(30,14,34,3,"#1a1f40"), R(38,11,16,3,"#1a1f40")]
+            moon.append(rect(214+x, 20+y, 1, 1, "#f4e9b8"))
+moon += [rect(210,17,2,2,"#e0d39a"), rect(217,23,3,2,"#e0d39a"), rect(215,15,1,1,"#e0d39a")]
+clouds = [rect(150,26,40,3,"#1e2347"), rect(158,23,22,3,"#1e2347"), rect(30,14,34,3,"#1a1f40"), rect(38,11,16,3,"#1a1f40")]
 # The searchlight: a beam from a rooftop to the sky, the icon in a pale disc where it lands.
 beam = ('<g class="beam">'
         '<polygon points="62,74 66,74 128,16 104,10" fill="#ffd23f" fill-opacity="0.16"/>'
@@ -44,21 +44,21 @@ while x < W:
     h = rng.randint(28, 62)
     top = H - h
     colour = rng.choice(["#0f1226", "#13173a", "#0d1022"])
-    buildings.append(R(x, top, w, h, colour))
+    buildings.append(rect(x, top, w, h, colour))
     if rng.random() < 0.4:               # antenna
-        buildings.append(R(x + w // 2, top - 6, 1, 6, colour))
-        windows.append(R(x + w // 2, top - 7, 1, 1, "#ff5470", ' class="blink"'))
+        buildings.append(rect(x + w // 2, top - 6, 1, 6, colour))
+        windows.append(rect(x + w // 2, top - 7, 1, 1, "#ff5470", ' class="blink"'))
     for wy in range(top + 4, H - 4, 5):
         for wx in range(x + 3, x + w - 3, 4):
             r = rng.random()
             if r < 0.22:
-                windows.append(R(wx, wy, 2, 2, "#ffd23f"))
+                windows.append(rect(wx, wy, 2, 2, "#ffd23f"))
             elif r < 0.28:
-                windows.append(R(wx, wy, 2, 2, "#6ad0ff", ' class="flicker"' if rng.random() < 0.3 else ""))
+                windows.append(rect(wx, wy, 2, 2, "#6ad0ff", ' class="flicker"' if rng.random() < 0.3 else ""))
     x += w + rng.choice([0, 1, 2])
 # The searchlight's roof and the hero's roof, in front of the skyline.
-front = [R(52,74,22,38,"#090b17"), R(58,70,10,4,"#090b17"), R(60,72,6,2,"#ffd23f"),
-         R(150,82,40,30,"#090b17"), R(148,80,44,2,"#1e2347")]
+front = [rect(52,74,22,38,"#090b17"), rect(58,70,10,4,"#090b17"), rect(60,72,6,2,"#ffd23f"),
+         rect(150,82,40,30,"#090b17"), rect(148,80,44,2,"#1e2347")]
 HERO = """
 ......AA......
 .....BBBB.....
