@@ -91,9 +91,13 @@ fn both_website_pages_show_exactly_these_values() {
         let path = format!("{}/../../website/{page}", env!("CARGO_MANIFEST_DIR"));
         let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
         // The example sits in the proof-of-work section's <details> block.
+        // The Python page tests parse the section; here plain slicing is enough, so long as the
+        // section holds exactly one <details>, which this checks, so the slice can't take another.
         let start = text.find(r#"<section id="proof-of-work""#).expect("the section");
-        let details = &text[start..];
-        let details = &details[details.find("<details>").expect("<details>")..];
+        let section = &text[start..];
+        let section = &section[..section.find("</section>").expect("</section>")];
+        assert_eq!(section.matches("<details").count(), 1, "{page}: one <details> in the section");
+        let details = &section[section.find("<details>").expect("<details>")..];
         let details = &details[..details.find("</details>").expect("</details>")];
         for value in [
             format!("<code>{BODY}</code>"),
