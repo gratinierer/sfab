@@ -505,8 +505,9 @@ def test_wafs_plain_403_stops_the_run_as_blocked_not_failed():
 
 
 def test_a_plain_403_from_execute_api_without_the_key_fails():
-    """A disabled endpoint, as during a stop, answers a plain `403`, which mustn't pass for the
-    origin key's rejection (code review C95)."""
+    """A plain `403` from `execute-api` isn't the origin key's rejection, so it mustn't pass for it
+    (code review C95). A disabled endpoint answers with the gateway's `problem+json` instead
+    (`.stories/2-identity-api/` issue 21)."""
     clock = Clock()
     api = FakeApi(clock)
     api.override["execute-api no key"] = plain(403, b'{"message":"Forbidden"}')
