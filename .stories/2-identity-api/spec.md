@@ -946,7 +946,9 @@ replaces the isolation that per-route IAM roles would have given.
 - **Done** means deployed, the registrant email verified, smoke-tested, and with the kill switch drill
   and the alarm, budget, WAF, takedown, website, federation and census checks passed, the billing test in
   `issues/done/02-measure-rejected-request-billing.md` run and its result acted on, the lifecycle rules
-  confirmed on the deployed bucket. The cleanup and the public launch follow story 4's "Launch checklist". The public launch is a separate decision, and can't happen until
+  confirmed on the deployed bucket. On 2026-11-21 the owner left out three of these: the stop budget's own
+  alert email, its figure against the first real bill, and an approved world appearing after a deploy
+  (`issues/done/10-drills-and-done.md`). The cleanup and the public launch follow story 4's "Launch checklist". The public launch is a separate decision, and can't happen until
   `.stories/4-life-in-the-world/` is done and [gratinierer/sfab#3](https://github.com/gratinierer/sfab/issues/3) is closed, which now also covers
   the Terms and the public features.
 
