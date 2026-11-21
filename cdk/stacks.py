@@ -378,7 +378,9 @@ class BaseStack(cdk.Stack):
                 for n in (1, 2)
             ],
         )
-        # The verification and SPF values as one record set on the apex, as "Design" says.
+        # The verification and SPF values as one record set on the apex, as "Design" says:
+        # one record set per name and type (docs/aws-facts.md, "Route 53, Budgets and
+        # other services").
         route53.TxtRecord(
             self,
             "MailTxt",
