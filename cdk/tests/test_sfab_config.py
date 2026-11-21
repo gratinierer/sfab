@@ -4,6 +4,7 @@ Secrets Manager and STS are stubbed (`fake_aws.py`), so nothing here reaches AWS
 """
 
 import dataclasses
+import re
 import tomllib
 from pathlib import Path
 
@@ -146,6 +147,47 @@ def test_smoke_claim_passes_through_without_the_placeholder_checks():
 def test_smoke_claim_must_be_a_string():
     with pytest.raises(ConfigError, match="smoke_claim: must be a string"):
         from_secret(secret_data() | {"smoke_claim": 7})
+
+
+# The iCloud token: optional, but checked like a required key when present (story 20).
+
+ICLOUD_TOKEN = "AbCd1234EfGh5678"
+
+
+def test_icloud_domain_verification_is_none_when_missing():
+    assert from_secret(secret_data()).icloud_domain_verification is None
+
+
+def test_icloud_domain_verification_loads_stripped():
+    data = secret_data() | {"icloud_domain_verification": f"  {ICLOUD_TOKEN}\n"}
+    assert from_secret(data).icloud_domain_verification == ICLOUD_TOKEN
+
+
+@pytest.mark.parametrize(
+    ("value", "message"),
+    [
+        ("", "icloud_domain_verification: missing"),
+        ("   ", "icloud_domain_verification: missing"),
+        ("CHANGE_ME", "icloud_domain_verification: still CHANGE_ME"),
+        (
+            f"apple-domain={ICLOUD_TOKEN}",
+            "icloud_domain_verification: leave off the apple-domain= prefix",
+        ),
+        ("short", "icloud_domain_verification: must be 8 to 64 letters and digits"),
+        ("A" * 65, "icloud_domain_verification: must be 8 to 64 letters and digits"),
+        ("AbCd-1234-EfGh", "icloud_domain_verification: must be 8 to 64 letters and digits"),
+        (7, "icloud_domain_verification: must be a string"),
+    ],
+)
+def test_a_bad_icloud_domain_verification_is_refused(value, message):
+    with pytest.raises(ConfigError, match=re.escape(message)):
+        from_secret(secret_data() | {"icloud_domain_verification": value})
+
+
+def test_the_fixture_checks_icloud_domain_verification_too(tmp_path):
+    data = fixture_data() | {"icloud_domain_verification": "CHANGE_ME"}
+    with pytest.raises(ConfigError, match="icloud_domain_verification: still CHANGE_ME"):
+        sfab_config.load(environ=write(tmp_path, data), aws=NoAws())
 
 
 # The deploy's account.

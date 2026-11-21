@@ -191,6 +191,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | `GetObject` on a missing key returns `403` when `s3:ListBucket` is allowed only under a condition on `s3:prefix`, because the request has no prefix to match | memory | Why the daily world job lists `world/` first and reads only keys it listed (`lambda/world/census`), lists each `home.json` by its full key before reading it (`lambda/world/homes`), and lists `academy/` before reading a course or certificate (`lambda/world/academy`). 2026-11-21: the daily job's runs, which list first, pass, and their log shows no `403`, so the fact itself is still untested | 2026-11-07 |
 | A hosted zone costs about $0.50 per month without a plan | docs | The Route 53 pricing page, the reviewer's reading | 2026-11-01 |
 | Route 53 bills every query answered except alias records, at $0.40 per million up to a billion | docs | The Route 53 pricing page | 2026-11-01 |
+| With simple routing, a hosted zone holds one record set per name and type, with several values in it, so the apex `TXT` for iCloud verification and SPF is one record set | docs | [r53-simple] | 2026-11-21 |
 | S3 Standard in `us-east-1` charges $0.005 per 1,000 PUT, COPY, POST or LIST requests and $0.0004 per 1,000 GET and all other requests, HEAD among them, and DELETE is free, as the cost tables in story `2-identity-api`'s spec.md "Messages" and "What it can cost" use | docs | AWS price list for `AmazonS3`, `us-east-1` ([s3-price-list]: "$0.004 per 10,000 GET and all other requests"); DELETE from [s3-pricing] | 2026-11-08 |
 | Lambda prices used in cost tables | memory | | 2026-11-01 |
 
@@ -265,3 +266,4 @@ later story that sends mail from the project.
 [cdk-bootstrap]: https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping-env.html
 [cfn-dynref]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references.html
 [cfn-dynref-sm]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references-secretsmanager.html
+[r53-simple]: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy-simple.html

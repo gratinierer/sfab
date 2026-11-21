@@ -170,6 +170,41 @@ def test_genesis_ip_records_expire_after_1_day_and_nothing_else_under_genesis_do
     assert stacks.GENESIS_IP_WINDOW_HOURS < 24
 
 
+# The base stack: mail records (story 20 "Design")
+
+
+def test_without_the_icloud_token_the_base_stack_has_no_dns_records(base, config):
+    assert config.icloud_domain_verification is None, "the fixture stays without the key"
+    assert base.find_resources("AWS::Route53::RecordSet") == {}
+
+
+def test_with_the_icloud_token_the_base_stack_has_the_four_mail_record_sets(
+    config, tmp_path_factory
+):
+    mail = replace(config, icloud_domain_verification="AbCd1234EfGh5678")
+    base = Template.from_stack(build_with_stand_ins(cdk.App(), mail, tmp_path_factory).base)
+
+    records = [r["Properties"] for r in base.find_resources("AWS::Route53::RecordSet").values()]
+    assert {r["HostedZoneId"] for r in records} == {"Z00000000000000000000"}
+    found = sorted((r["Type"], r["Name"], sorted(r["ResourceRecords"])) for r in records)
+    assert found == [
+        ("CNAME", "sig1._domainkey.sfab-test.invalid.", [
+            "sig1.dkim.sfab-test.invalid.at.icloudmailadmin.com.",
+        ]),
+        ("MX", "sfab-test.invalid.", [
+            "10 mx01.mail.icloud.com.",
+            "10 mx02.mail.icloud.com.",
+        ]),
+        ("TXT", "_dmarc.sfab-test.invalid.", [
+            '"v=DMARC1; p=none; rua=mailto:dmarc@sfab-test.invalid"',
+        ]),
+        ("TXT", "sfab-test.invalid.", [
+            '"apple-domain=AbCd1234EfGh5678"',
+            '"v=spf1 include:icloud.com ~all"',
+        ]),
+    ]
+
+
 # The base stack: topics
 
 

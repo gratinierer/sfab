@@ -22,6 +22,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-21T11:13:53Z | review | c1181cba2694 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 0 new, 2 closures audited and held, 1 still open | delta: only 02 changed since 1eb4210373c2; auto round 3 |
 | 2026-11-21T11:14:05Z | walkthrough | R11 | claude-opus-5-5 (auto) | 0 new, 0 resolved, 1 still open | auto walkthrough, not a review pass: no progress, R11 needs the user; the loop stops |
 | 2026-11-21T11:18:16Z | walkthrough | R11 | claude-opus-5-5 with the owner | 0 new, 1 resolved, 0 still open | walkthrough, not a review pass: R11 fixed |
+| 2026-11-21T13:57:54Z | review | ab4557c3b347 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 0 new, 1 closure audited and held | delta: only spec.md and 02 changed since c1181cba2694; auto round 1. Mixed commit: 2a894be (R11's fix) also carries another session's staged move of `.stories/17-genesis-codes/` into `.stories/done/`, no content change |
 
 ## Findings
 

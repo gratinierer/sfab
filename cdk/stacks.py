@@ -202,6 +202,8 @@ class BaseStack(cdk.Stack):
             subject_alternative_names=[config.api_host],
             validation=acm.CertificateValidation.from_dns(self.hosted_zone),
         )
+        if config.icloud_domain_verification is not None:
+            self._mail_records(config.domain_name, config.icloud_domain_verification)
 
         # Inboxes can't grow forever: spec.md "Messages". Federation requests expire too:
         # spec.md "Federation", genesis IP records: story 17 "The IP rule", and everything on the
@@ -362,6 +364,42 @@ class BaseStack(cdk.Stack):
                 resources=[topic.topic_arn],
                 conditions={"StringEquals": {"aws:SourceAccount": self.account}},
             )
+        )
+
+    def _mail_records(self, domain: str, icloud_token: str) -> None:
+        """iCloud+ as the domain's mail host, and DMARC reports to `dmarc@`: the records
+        .stories/20-email/spec.md "Design" lists. Here, so a rolled-back API keeps the mail."""
+        route53.MxRecord(
+            self,
+            "MailMx",
+            zone=self.hosted_zone,
+            values=[
+                route53.MxRecordValue(host_name=f"mx0{n}.mail.icloud.com.", priority=10)
+                for n in (1, 2)
+            ],
+        )
+        # The verification and SPF values as one record set on the apex, as "Design" says:
+        # one record set per name and type (docs/aws-facts.md, "Route 53, Budgets and
+        # other services").
+        route53.TxtRecord(
+            self,
+            "MailTxt",
+            zone=self.hosted_zone,
+            values=[f"apple-domain={icloud_token}", "v=spf1 include:icloud.com ~all"],
+        )
+        route53.CnameRecord(
+            self,
+            "MailDkim",
+            zone=self.hosted_zone,
+            record_name="sig1._domainkey",
+            domain_name=f"sig1.dkim.{domain}.at.icloudmailadmin.com.",
+        )
+        route53.TxtRecord(
+            self,
+            "MailDmarc",
+            zone=self.hosted_zone,
+            record_name="_dmarc",
+            values=[f"v=DMARC1; p=none; rua=mailto:dmarc@{domain}"],
         )
 
     def _bucket(
