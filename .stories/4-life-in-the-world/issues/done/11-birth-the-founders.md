@@ -1,6 +1,5 @@
 # Birth the founders
 
-Label: ready-for-human
 Blocked by: 17-genesis-codes#04
 
 `spec.md` "Launch checklist", step 2, and "Vouches: trust". A deploy of story 4's code needs at least 3 real
@@ -33,3 +32,5 @@ founders; the code itself was written before, against a fixture of made-up IDs (
   the session's output. `world/founders.yaml` holds the five IDs, and `cdk/deploy_plan.py --all` passes with it.
   Waits for `/review-code` before moving to `done/`, since `world/founders.yaml` is outside `.stories/` and
   `docs/`.
+- 2026-11-21: closed with the owner's go-ahead: `code-review.md`'s row "03, 11, 13, 15 @ 183080e..7dd2fab" covers
+  `07683fc`, and C51 and C54 against it are resolved.
