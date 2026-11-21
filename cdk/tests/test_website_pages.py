@@ -58,13 +58,15 @@ class Page(HTMLParser):
         return [attrs for t, attrs in self.elements if t == tag]
 
     def find(self, tag: str | None = None, **attrs: str) -> int:
-        """The index of the first element with this tag, if given, and these attribute values;
-        a keyword's `_` stands for `-`, and `class_` for `class`."""
+        """The index of the one element with this tag, if given, and these attribute values,
+        failing on none or several; a keyword's `_` stands for `-`, and `class_` for `class`."""
         wanted = {k.rstrip("_").replace("_", "-"): v for k, v in attrs.items()}
-        return next(
+        found = [
             i for i, (t, a) in enumerate(self.elements)
             if (tag is None or t == tag) and all(a.get(k) == v for k, v in wanted.items())
-        )
+        ]
+        assert len(found) == 1, f"{len(found)} elements match <{tag or '*'}> {wanted}"
+        return found[0]
 
     def name_of(self, index: int) -> str:
         """The accessible name of the element at `index`: its text and its images' `alt`."""
