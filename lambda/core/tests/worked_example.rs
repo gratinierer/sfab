@@ -1,7 +1,7 @@
 //! The one worked proof-of-work example, written once: the API's own verifier must accept it
 //! and give exactly these values, and the public API description must show exactly them, so a
 //! wrong or drifted example fails CI. `.stories/10-website/` issue 02 extends this to both
-//! website pages.
+//! website pages, and issue 04 to the noir page at `/`.
 
 use sfab_core::id::Caller;
 use sfab_core::proof::{self, Request};
@@ -90,14 +90,15 @@ fn both_website_pages_show_exactly_these_values() {
     for page in ["index.html", "agents/index.html"] {
         let path = format!("{}/../../website/{page}", env!("CARGO_MANIFEST_DIR"));
         let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
-        // The example sits in the proof-of-work section's <details> block.
-        // The Python page tests parse the section; here plain slicing is enough, so long as the
-        // section holds exactly one <details>, which this checks, so the slice can't take another.
-        let start = text.find(r#"<section id="proof-of-work""#).expect("the section");
-        let section = &text[start..];
-        let section = &section[..section.find("</section>").expect("</section>")];
-        assert_eq!(section.matches("<details").count(), 1, "{page}: one <details> in the section");
-        let details = &section[section.find("<details>").expect("<details>")..];
+        // The example sits in a <details> block in the proof-of-work section, whatever element
+        // carries its id: noir's is itself a <details class="panel">, the agent version's a
+        // <section>. The Python page tests parse the pages; here plain slicing is enough, so long
+        // as the section holds exactly one nested <details>, which this checks, so the slice
+        // can't take another.
+        let section = element_with_id(&text, "proof-of-work");
+        let inner = &section[section.find('>').expect("the opening tag") + 1..];
+        assert_eq!(inner.matches("<details").count(), 1, "{page}: one <details> in the section");
+        let details = &inner[inner.find("<details").expect("<details")..];
         let details = &details[..details.find("</details>").expect("</details>")];
         for value in [
             format!("<code>{BODY}</code>"),
@@ -114,4 +115,46 @@ fn both_website_pages_show_exactly_these_values() {
             assert!(details.contains(&value), "{page} lacks {value:?}");
         }
     }
+}
+
+/// The element that carries `id`, from its opening tag to its matching closing tag, counting
+/// nested elements of the same name so an inner closing tag doesn't end it.
+fn element_with_id<'a>(text: &'a str, id: &str) -> &'a str {
+    let at = text
+        .find(&format!(r#" id="{id}""#))
+        .unwrap_or_else(|| panic!("no #{id}"));
+    let start = text[..at].rfind('<').expect("the opening tag");
+    let name: String = text[start + 1..]
+        .chars()
+        .take_while(|c| c.is_ascii_alphanumeric())
+        .collect();
+    let (open, close) = (format!("<{name}"), format!("</{name}>"));
+    let mut depth = 0;
+    let mut i = start;
+    loop {
+        let next_open = text[i..].find(&open).map(|n| i + n);
+        let next_close = text[i..].find(&close).map(|n| i + n).expect("a closing tag");
+        match next_open {
+            Some(o) if o < next_close => {
+                depth += 1;
+                i = o + open.len();
+            }
+            _ => {
+                depth -= 1;
+                i = next_close + close.len();
+                if depth == 0 {
+                    return &text[start..i];
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn an_element_is_sliced_to_its_matching_closing_tag() {
+    let text = r#"<p><details id="x"><summary>a</summary><details>b</details>c</details>d</p>"#;
+    assert_eq!(
+        element_with_id(text, "x"),
+        r#"<details id="x"><summary>a</summary><details>b</details>c</details>"#
+    );
 }

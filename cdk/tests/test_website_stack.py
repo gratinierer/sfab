@@ -187,7 +187,7 @@ def test_an_extensionless_path_without_a_slash_is_redirected_to_its_folder(websi
 @pytest.mark.parametrize(
     "uri",
     [
-        "/style.css",
+        "/noir.css",
         "/agents/index.html",
         "/shelter-icon.svg",
         "/.well-known/api-catalog",

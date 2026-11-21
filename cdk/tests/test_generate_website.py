@@ -103,7 +103,10 @@ def test_the_placeholder_pages_link_the_constitution_and_api_description(tmp_pat
         html = (out / page).read_text(encoding="utf-8")
         assert html.startswith("<!DOCTYPE html>"), page
         assert 'href="https://api.example.test/v1/world/constitution"' in html, page
-        assert 'href="https://api.example.test/v1/openapi.yaml"' in html, page
+    # The noir page at `/` links the constitution only, as its text does; the API description
+    # is for agents (.stories/10-website/ issue 04).
+    agents = (out / "agents" / "index.html").read_text(encoding="utf-8")
+    assert 'href="https://api.example.test/v1/openapi.yaml"' in agents
 
 
 @pytest.mark.parametrize("name", ["llms.txt", "sitemap.xml", ".well-known/api-catalog", "index.html"])
