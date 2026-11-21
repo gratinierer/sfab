@@ -58,7 +58,7 @@ When a fact is checked, update its row and date. When a deploy proves or disprov
 | Fact | Status | Source | Checked |
 |---|---|---|---|
 | Rate rules take up to several minutes to react, usually under 30 seconds | docs | [waf-rate] | 2026-11-01 |
-| With no custom response configured, a WAF block, by a rule or by a default action of Block, is a plain `403` that isn't `problem+json` | tested (rule) | `cdk/smoke.py` and `cdk/waf_check.py` read it as "blocked"; issue 01 of story `2-identity-api` proves it on the first deploy; 2026-11-20: `scripts/waf-check` got a plain, non-`problem+json` `403` from the rate rule. A default action of Block is proven by `2-identity-api#10`'s kill switch drill | 2026-11-20 |
+| With no custom response configured, a WAF block, by a rule or by a default action of Block, is a plain `403` that isn't `problem+json` | tested | `cdk/smoke.py` and `cdk/waf_check.py` read it as "blocked"; issue 01 of story `2-identity-api` proves it on the first deploy; 2026-11-20: `scripts/waf-check` got a plain, non-`problem+json` `403` from the rate rule. A default action of Block is proven by `2-identity-api#10`'s kill switch drill; 2026-11-21: a default action of Block, set by hand during `2-identity-api#10`'s kill switch drill after the kill switch's own WAF step failed (`2-identity-api#21`), answered `403` `text/html` through CloudFront | 2026-11-20 |
 | The lowest rate limit is 10 | docs | Reviewer's reading of the WAF docs | 2026-11-01 |
 | A custom response's body is text, HTML or JSON, and a custom header can't set `content-type` | docs | Earlier review, R18 | 2026-10-30 |
 | WAF samples return each header's name and value for 3 hours | docs | Earlier review, R50 | 2026-10-30 |
