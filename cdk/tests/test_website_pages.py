@@ -474,11 +474,12 @@ def test_each_page_has_one_fixed_scheme(built, pages, name):
 _FILL = re.compile(r'fill\s*(?:=\s*["\']|:\s*)([^"\';>\s]+)')
 _HEX = re.compile(r"#[0-9a-fA-F]{6}")
 _GRADIENT = re.compile(r"<(?:linear|radial)Gradient\b")
-_NO_COLOUR = {"none", "currentColor"}
+_NO_COLOUR = {"none"}
 
 
 def _unreadable_fills(svg: str) -> set[str]:
-    """The fills `_fills` can't turn into one colour: a name, `rgb()`, `url()`, a gradient."""
+    """The fills `_fills` can't turn into one colour: a name, `rgb()`, `url()`, `currentColor`
+    (whose colour the SVG file doesn't hold), a gradient."""
     found = {f for f in _FILL.findall(svg) if f not in _NO_COLOUR and not _HEX.fullmatch(f)}
     return found | ({"a gradient"} if _GRADIENT.search(svg) else set())
 
