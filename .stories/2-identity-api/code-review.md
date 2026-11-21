@@ -96,6 +96,8 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-21T11:10:00+00:00 | walkthrough | 21 @ 424d375..HEAD | claude-opus-5-5 (address-code-review-findings auto) | 0 new, 1 resolved, 0 still open | auto walkthrough, not a review pass |
 | 2026-11-21T11:20:00+00:00 | check | @ 48cdd11 | scripts/check | — | green (loop check of round 2's fix) |
 | 2026-11-21T11:20:00+00:00 | code-review | 21 @ 424d375..48cdd11 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, fixes by claude-opus-5-5) | 0 new: 0 standards, 0 spec, 0 security | reviewers on another model of the author's family (Sonnet for Opus); `/review-code f067c1b auto 2` round 3, over C187's fix, which holds; stop: clean. Dropped as nits: the new `memory` row overlaps the `LockToken` row's "replaces the whole web ACL", and the comment cites "the `UpdateWebACL` rows" rather than one |
+| 2026-11-21T12:00:00+00:00 | check | @ 358f025 | scripts/check | — | green |
+| 2026-11-21T12:00:00+00:00 | code-review | 16 @ 8ab9255..358f025 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 0 new: 0 standards, 0 spec, 0 security | reviewers on another model of the author's family (Sonnet for Opus); one pass over the ticket commit; judgement calls left as they are: the repo slug repeated in the test's `CHANGELOG_URL`, wording-level asserts on prose |
 
 ## Findings
 
