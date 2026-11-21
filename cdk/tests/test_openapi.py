@@ -128,6 +128,23 @@ def test_info_version_is_a_date(source):
     date.fromisoformat(source["info"]["version"])
 
 
+CHANGELOG_URL = "https://github.com/gratinierer/sfab/blob/main/CHANGELOG.md"
+
+
+def test_the_description_says_v1_may_change_and_links_the_changelog(source):
+    # docs/adr/0011-v1-changes-are-announced-not-forbidden.md, .stories/2-identity-api/ issue 16.
+    words = " ".join(source["info"]["description"].split())
+    assert "only grows" not in words
+    assert "`v1` may change" in words
+    assert CHANGELOG_URL in words
+    assert "Ignore response fields you don't know" in words
+
+
+def test_the_changelog_exists_with_a_heading():
+    changelog = sfab_config.REPO_ROOT / "CHANGELOG.md"
+    assert changelog.read_text(encoding="utf-8").startswith("# ")
+
+
 def test_every_string_has_a_max_length(source):
     missing = [p for p, s in walk_schemas(source) if s["type"] == "string" and "maxLength" not in s]
     assert not missing
