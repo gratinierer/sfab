@@ -139,6 +139,9 @@ holds for every page.
 - **Motion:** noir, board and space may move, only under `prefers-reduced-motion: no-preference`, with nothing
   flashing more than 3 times a second (WCAG 2.3.1) and the content readable from the first frame. The agent
   version stays still.
+- **Layout:** each page is one column on a 360 px phone, with no horizontal scrolling. Wider screens may lay
+  panels in a grid, such as noir's `auto-fit` panels and space's two columns, as long as it collapses to one
+  column at 360 px.
 - **Fonts:** noir and board keep Silkscreen headings from the committed `woff2`. Space uses its own rounded
   display font from the reader's system, with nothing downloaded. The agent version keeps its monospace.
 - **Colour schemes:** each page has one fixed scheme, and none follows the browser: noir dark, board light lilac,
