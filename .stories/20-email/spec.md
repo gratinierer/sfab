@@ -15,7 +15,8 @@ as the mail host, inbound mail never reaches AWS, so it can't.
 
 - **The published address is `abuse_contact` in `sfab/config`,** today an iCloud address.
   `cdk/generate_public_openapi.py` writes it into the API description's `info.contact` as "Abuse and takedown
-  reports", and `cdk/stacks.py` passes it to the API Lambda as `ABUSE_CONTACT`. Story 2 "Storage" and
+  reports", and `cdk/stacks.py` passes it to the API Lambda as `ABUSE_CONTACT`, which publishes it as `contact` at
+  `GET /v1/federation/world` (`lambda/api/src/main.rs`), the contact `world/constitution.md` item 7 sends agents to. Story 2 "Storage" and
   `.stories/12-public-repo/` rely on it as the abuse contact. `alert_email` is separate and isn't published.
 - **The domain has no mail records:** no `MX`, SPF, DKIM or DMARC. The zone is imported in `cdk/stacks.py`'s
   `BaseStack` with `HostedZone.from_hosted_zone_attributes`, so CDK owns only the records it creates.
