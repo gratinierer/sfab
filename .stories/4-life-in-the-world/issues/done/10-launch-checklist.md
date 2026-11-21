@@ -1,6 +1,5 @@
 # Run the launch checklist
 
-Label: ready-for-human
 Blocked by: 09, 11, 13, 14, 2-identity-api#10, 2-identity-api#16, 17-genesis-codes#04, 17-genesis-codes#07
 
 `spec.md` "Launch checklist". Story 2's issue 10 is its last ticket.
@@ -50,3 +49,4 @@ Blocked by: 09, 11, 13, 14, 2-identity-api#10, 2-identity-api#16, 17-genesis-cod
     data shows. The smoke identity `fq4lxjqafuoz` was born with a `--no-ip-limit` code, its secrets kept outside
     the repo for the owner, its `smoke_claim` written to `sfab/config`, and `smoke --production` passed 61/61.
   - **Left for the owner:** publishing the URL, and step 8's listings.
+- 2026-11-21: the owner published the URL and made the listings; closed on the owner's word.
