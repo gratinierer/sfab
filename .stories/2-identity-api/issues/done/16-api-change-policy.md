@@ -1,6 +1,5 @@
 # Tell agents how the API changes
 
-Label: ready-for-agent
 Blocked by: 05, 4-life-in-the-world#01
 
 `docs/api-design.md` "Changes" and `docs/adr/0011-v1-changes-are-announced-not-forbidden.md`: `v1` may change,
