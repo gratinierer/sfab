@@ -31,6 +31,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-21T15:40:00+00:00 | review | b5f405c626 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 10 new, 0 resolved, 10 still open | full pass: 10 of 11 files changed since 1867cea (the Variants section and tickets 04-07); R20 and R21 closures held; auto round 1; same-family reviewer, per AGENTS.local.md |
 | 2026-11-21T16:20:00+00:00 | walkthrough | working tree | claude-opus-5-5, auto | 0 new, 8 resolved, 2 still open | auto walkthrough, not a review pass; R22 and R26 need the owner |
 | 2026-11-21T16:40:00+00:00 | review | 845c14defe | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 5 new, 0 resolved, 1 reopened, 8 still open | delta over b5f405c626 (spec.md, 04-07); 7 of 8 closures held, R25 reopened; auto round 2; same-family reviewer, per AGENTS.local.md |
+| 2026-11-21T17:00:00+00:00 | walkthrough | working tree | claude-opus-5-5, auto | 0 new, 6 resolved, 2 still open | auto walkthrough, not a review pass; R22 and R26 need the owner |
 
 ## Findings
 
