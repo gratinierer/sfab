@@ -6,8 +6,8 @@ Blocked by: 02, 07, 08, 09, 11, 12, 14, 15, 17-genesis-codes#06
 The checks that "Done" requires in `spec.md` "Delivery", run by the owner on the deployed API, as
 described in "Testing".
 
-Story 2 closes only when issue 16 does too, and 16 is built on the `4-life-in-the-world` branch and reaches `main`
-with story 4 at its launch step 3 (`4-life-in-the-world/spec.md` "Launch checklist", step 2). The drills don't need
+Story 2 closes only when issue 16 does too. 16 is built on `main`, where story 4's code already is
+(`4-life-in-the-world/spec.md` "Launch checklist", step 2). The drills don't need
 it, so it isn't on the `Blocked by` line.
 
 ## Scope
