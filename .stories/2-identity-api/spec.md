@@ -831,7 +831,8 @@ Logs are the most likely place for a claim to leak.
      Then trigger the stop: publish a test message to the stop topic, or lower the daily limit below
      today's count and deploy.
   2. Confirm a request that worked just before step 1 now gets WAF's plain `403` through CloudFront, the API Lambda's and daily world job's reserved concurrency are 0, and after a short wait for the stage deployment, the same
-     keyed request gets `403`, which can now only come from the disabled endpoint.
+     keyed request gets `403`, which can now only come from the disabled endpoint, in the stage's `problem+json`
+     form `origin-key-replaced` (`docs/aws-facts.md`).
   3. Confirm the email reaches the owner's phone.
   4. Restore the limit, follow the restart list, and confirm the smoke script passes again.
 - A takedown check on the deployed API: the `takedown` program removes one test identity by ID that
