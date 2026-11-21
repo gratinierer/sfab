@@ -1091,8 +1091,9 @@ def _lists(agent: str):
 
 def _execute_api(s: _Session) -> None:
     """Straight to API Gateway, past CloudFront: without the origin key, and with a wrong one.
-    Both must get the problem+json `403` `origin-key-replaced` (code review C95). A plain `403`
-    means the endpoint is disabled, as during a stop, so it fails."""
+    Both must get the problem+json `403` `origin-key-replaced` (code review C95). A disabled
+    endpoint, as during a stop, answers the same way (`.stories/2-identity-api/` issue 21), so
+    these checks can't tell a stop; the run meets one as WAF's plain `403` instead."""
     url = s.target.execute_api_url.rstrip("/") + "/openapi.yaml"
     s.check(
         "execute-api without the origin key is rejected",

@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 
 use serde_json::json;
 
-use sfab_killswitch::{Controls, Event, Failure, Limits, Spend, Step, handle};
+use sfab_killswitch::{Controls, Event, Failure, Limits, Spend, Step, handle, kept_description};
 
 const LIMITS: Limits = Limits {
     daily_calls: 100_000,
@@ -288,4 +288,16 @@ async fn spend_under_the_budget_limit_keeps_the_api_running() {
 
     assert_eq!(aws.applied(), []);
     assert_eq!(aws.emails(), []);
+}
+
+#[test]
+fn an_empty_web_acl_description_is_left_out_of_the_update() {
+    // `.stories/2-identity-api/` issue 21: WAF rejects a `Description` of "", which is how
+    // `GetWebACL` returns an ACL with none, so the WAF step must not send it back.
+    assert_eq!(kept_description(Some(String::new())), None);
+    assert_eq!(kept_description(None), None);
+    assert_eq!(
+        kept_description(Some("the API's web ACL".to_owned())),
+        Some("the API's web ACL".to_owned())
+    );
 }

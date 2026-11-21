@@ -69,6 +69,13 @@ impl WebAclRef {
     }
 }
 
+/// The web ACL's description as the WAF step sends it back: `None` for none or an empty one,
+/// since `GetWebACL` returns an ACL with no description as `""`, which `UpdateWebACL` rejects
+/// (`.stories/2-identity-api/` issue 21).
+pub fn kept_description(description: Option<String>) -> Option<String> {
+    description.filter(|d| !d.is_empty())
+}
+
 /// Where the day's count starts: midnight UTC of the day holding `now`, both in Unix seconds.
 pub fn utc_midnight(now: i64) -> i64 {
     now - now.rem_euclid(86_400)

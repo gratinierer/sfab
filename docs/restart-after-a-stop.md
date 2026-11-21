@@ -80,14 +80,15 @@ aws apigateway create-deployment --rest-api-id "$REST_API_ID" --stage-name v1 \
 
 This comes last, so agents keep getting the plain `403` until everything behind it works.
 `update-web-acl` replaces the whole web ACL, so it sends back the rules and every setting it read that
-the kill switch also keeps (`Step::Waf` in `lambda/killswitch/src/main.rs`), which needs jq 1.6 or later for `IN`.
+the kill switch also keeps (`Step::Waf` in `lambda/killswitch/src/main.rs`), which needs jq 1.6 or later for `IN`. An empty `Description` is left out, because WAF rejects `""`, which
+is how `get-web-acl` returns an ACL with none (`.stories/2-identity-api/` issue 21).
 
 ```bash
 aws wafv2 get-web-acl --scope CLOUDFRONT --name "$WEB_ACL_NAME" --id "$WEB_ACL_ID" > web-acl.json
 jq '.LockToken as $lock | .WebACL
     | {Name, Id, Scope: "CLOUDFRONT", LockToken: $lock, DefaultAction: {Allow: {}},
        Rules, VisibilityConfig}
-      + with_entries(select(.value != null and (.key | IN("Description", "DataProtectionConfig",
+      + with_entries(select(.value != null and .value != "" and (.key | IN("Description", "DataProtectionConfig",
           "CustomResponseBodies", "CaptchaConfig", "ChallengeConfig", "TokenDomains",
           "AssociationConfig"))))' web-acl.json > web-acl-update.json
 aws wafv2 update-web-acl --cli-input-json file://web-acl-update.json

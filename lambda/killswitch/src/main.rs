@@ -9,7 +9,8 @@ use aws_sdk_cloudwatch::types::{Dimension, Metric, MetricDataQuery, MetricStat};
 use aws_sdk_wafv2::types::{BlockAction, DefaultAction, Scope};
 use lambda_runtime::{LambdaEvent, service_fn};
 use sfab_killswitch::{
-    COUNT_STATISTIC, Controls, Event, Failure, Limits, Spend, Step, WebAclRef, handle, utc_midnight,
+    COUNT_STATISTIC, Controls, Event, Failure, Limits, Spend, Step, WebAclRef, handle,
+    kept_description, utc_midnight,
 };
 
 /// The description the kill switch gives its stage deployment, which is how a later check knows
@@ -150,7 +151,7 @@ impl Controls for Aws {
                             .block(BlockAction::builder().build())
                             .build(),
                     )
-                    .set_description(acl.description)
+                    .set_description(kept_description(acl.description))
                     .set_rules(acl.rules)
                     .set_visibility_config(acl.visibility_config)
                     .set_data_protection_config(acl.data_protection_config)
