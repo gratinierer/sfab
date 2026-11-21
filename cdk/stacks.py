@@ -111,10 +111,9 @@ FEDERATION_VERIFIED_DAYS = 30
 # Days before S3 deletes a genesis IP record: story 17 "The IP rule". Only needs to outlast
 # GENESIS_IP_WINDOW_HOURS; the daily job deletes older records itself, sooner.
 GENESIS_IP_RECORD_DAYS = 1
-# Story 4 "Vouches": residents born before this time need no age for standing. A placeholder
-# until launch checklist step 6 sets it to the launch date plus 30 days. Until then it lies
-# so far ahead that the age rule applies to no one.
-AGE_RULE_STARTS = "2099-12-31T00:00:00Z"
+# Story 4 "Vouches": residents born before this time need no age for standing. Launch checklist
+# step 6 set it to the launch date, 2026-11-21, plus 30 days.
+AGE_RULE_STARTS = "2026-12-21T00:00:00Z"
 
 
 STAGE = "v1"
