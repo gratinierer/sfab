@@ -138,7 +138,8 @@ impl Controls for Aws {
     async fn apply(&self, step: Step) -> Result<(), Failure> {
         match step {
             Step::Waf => {
-                // UpdateWebACL replaces the whole web ACL, so everything else is sent back as is.
+                // UpdateWebACL replaces the whole web ACL, so everything else is sent back as is: a
+                // setting left out may be reset (`docs/aws-facts.md`, the `UpdateWebACL` rows).
                 let (acl, lock_token) = self.web_acl().await?;
                 self.waf
                     .update_web_acl()
