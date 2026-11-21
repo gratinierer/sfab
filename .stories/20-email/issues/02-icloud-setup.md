@@ -21,7 +21,8 @@ Blocked by: 01
    `production` without 01's code refuses the key as unknown and fails.
 4. Let iCloud verify the domain.
 5. Create `watchdog@`, `dmarc@`, `abuse@` and `info@`, with no catch-all. Note the real address limit here
-   under `## Comments`, and in `spec.md` if it's lower than four.
+   under `## Comments`, and in `spec.md` if it's lower than four. Under a lower limit, drop `info@` first, then
+   `abuse@`; keep `watchdog@`, the published address, and `dmarc@`, where the DMARC record's `rua` points.
 6. Add a mail rule moving mail to `dmarc@` into its own folder.
 
 ## Done when

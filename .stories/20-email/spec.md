@@ -35,7 +35,8 @@ as the mail host, inbound mail never reaches AWS, so it can't.
   mail to any other address bounces. Apple's main page allows 10 addresses per custom domain, and older pages say
   3; ticket 02 checks the real limit. `watchdog@` is the only address the project publishes. `abuse@` exists
   because mail and network operators send abuse reports there without looking anything up (RFC 2142), and
-  `info@` because people guess it; both land in the same iCloud inbox as `watchdog@`.
+  `info@` because people guess it; both land in the same iCloud inbox as `watchdog@`. If iCloud allows fewer than
+  four, `info@` goes first, then `abuse@`, while `watchdog@` and `dmarc@` always stay.
 - **DMARC:** `v=DMARC1; p=none; rua=mailto:dmarc@<domain_name>`. An iCloud mail rule moves the reports into their
   own folder. Reading them, by hand or with a report service, and tightening `p=none` are later choices.
 - **DNS records in CDK, in `BaseStack`,** which a rollback doesn't touch, so mail survives a failed deploy:
