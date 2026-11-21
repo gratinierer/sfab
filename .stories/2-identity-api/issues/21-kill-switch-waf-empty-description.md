@@ -17,8 +17,10 @@ The drill also showed that a disabled `execute-api` endpoint answers the keyed r
 
 ## Scope
 
-- `Step::Waf` sends `Description` only when it isn't empty, with a unit test on the request it builds, or on the
-  function that decides, for an ACL whose description is `""`.
+- `Step::Waf` sends `Description` only when it isn't empty. The decision is a pure function in
+  `lambda/killswitch/src/lib.rs`, such as `kept_description(Option<String>) -> Option<String>`, which
+  `Aws::apply` in `src/main.rs` calls, so `tests/killswitch.rs` can test it: `""` and `None` give `None`, any
+  other text comes back as is.
 - `docs/restart-after-a-stop.md` step 5's `jq` also drops an empty string, and nothing else in it changes.
 - `docs/aws-facts.md`: the `disableExecuteApiEndpoint` row says the disabled endpoint's `403` goes through the
   stage's gateway responses, as `problem+json`, `tested` on 2026-11-21; and a row for `UpdateWebACL` rejecting an
