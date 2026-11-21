@@ -25,7 +25,7 @@ from constructs import Construct
 
 # API Gateway calls per UTC day. More than this stops the API until the owner restarts it. A
 # public setting, so it lives here, reviewed, and changing it takes a commit and a deploy.
-DAILY_CALL_LIMIT = 100_000
+DAILY_CALL_LIMIT = 100
 # Emails the owner, and can never stop anything.
 DAILY_CALL_WARNING = 50_000
 # A WAF update and a stage deployment take seconds each; CDK's default of 3 is too short.
