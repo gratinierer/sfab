@@ -15,6 +15,8 @@ pixel-art human page at `/` with the noir page, which holds the text the other h
   it. Its paragraph links the example as `spec.md` "Variants" says, instead of "A worked example is on the main page."
 - The old page's `style.css` and `assemble.js` are not brought in. The board ticket, 05, ports what board needs
   from them into `/board/`.
+- A page test checks that noir's `hud-meter` ("2 of 8 features are live") matches the "now" and "now plus next"
+  item counts in its `#now-and-next`, so the owner's hand edits there keep the meter true.
 - `scripts/website/gennoir.py`, rewritten to write into `website/index.html`, with its output committed.
 - The tests find sections by `id`, not by element: noir's are `<details class="panel">`, board's `.part-info`
   blocks (05) and space's `section.stop` (06). `test_each_version_has_the_five_sections_in_order_with_the_same_anchors`

@@ -20,7 +20,12 @@ Blocked by: 04
   `.part-info` blocks follow noir's order.
 - Light lilac as its one fixed scheme. Scroll assembly only under `prefers-reduced-motion: no-preference`.
 - Its `#proof-of-work` links to `/#proof-of-work` for the worked example.
-- `scripts/website/genboard.py`, with its output committed.
+- `scripts/website/genboard.py`, with its output committed, reading `openapi/sfab.yaml` relative to the repo
+  instead of `/workspaces/sfa/`, and taking its lit and total LEDs from the "now" and "next" items in
+  `#now-and-next` instead of the fixed `N_LEDS, LIT = 8, 2`.
+- A page test checks that the API version printed on the board matches `info.version` in `openapi/sfab.yaml`,
+  and that the lit and total LEDs match the "now" and "now plus next" item counts, so a release or a launch
+  that isn't regenerated fails the check.
 - The section helpers from 04 find this page's sections by `id`.
 - The page tests allow scripts on board, but only from `/board/`.
 - The contrast test's table of text and background variable pairs, as `spec.md` "Variants" (Colour schemes)
