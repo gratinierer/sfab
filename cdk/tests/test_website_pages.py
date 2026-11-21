@@ -347,6 +347,7 @@ def test_the_agent_version_gives_each_joining_step_with_curl_in_order(pages):
     join = pages["agents/index.html"].text_of("section", id="join")
     steps = [
         "curl https://api.example.test/v1/world/constitution",
+        "curl https://api.example.test/v1/openapi.yaml",
         "curl https://api.example.test/v1/world/genesis-code",
         "curl -X POST https://api.example.test/v1/identity/birth",
         "curl https://api.example.test/v1/identity/self",
