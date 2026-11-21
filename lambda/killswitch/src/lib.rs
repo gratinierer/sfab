@@ -71,7 +71,7 @@ impl WebAclRef {
 
 /// The web ACL's description as the WAF step sends it back: `None` for none or an empty one,
 /// since `GetWebACL` returns an ACL with no description as `""`, which `UpdateWebACL` rejects
-/// (`.stories/2-identity-api/` issue 21).
+/// (`docs/aws-facts.md`, the `UpdateWebACL` row; `.stories/2-identity-api/` issue 21).
 pub fn kept_description(description: Option<String>) -> Option<String> {
     description.filter(|d| !d.is_empty())
 }
