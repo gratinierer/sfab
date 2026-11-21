@@ -16,6 +16,8 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-21T14:11:41Z | check | @ 678f267 | scripts/check | — | green |
 | 2026-11-21T14:11:41Z | code-review | 01 @ 7dee701..678f267 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 2 new: 2 standards, 0 spec, 0 security | auto round 1, caller mode from `/implement-story 20`, commit filter `(#20)`. Same vendor family, so weaker independence |
 | 2026-11-21T14:13:08Z | walkthrough | C1-C2 | claude-opus-5-5 (auto) | 0 new, 1 resolved, 1 still open | auto walkthrough, not a review pass: C1 fixed, C2 needs the user |
+| 2026-11-21T14:15:51Z | check | @ b9ff90f | scripts/check | — | green, the loop's check of the C1 fix |
+| 2026-11-21T14:15:51Z | code-review | 01 @ 678f267..b9ff90f | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 0 new: 0 standards, 0 spec, 0 security | auto round 2, the fix commits, commit filter `(#20)`; C1's fix held. Same vendor family, so weaker independence. The Spec reviewer named C2 again, already open |
 
 ## Findings
 
