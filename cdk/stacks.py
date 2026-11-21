@@ -112,9 +112,8 @@ FEDERATION_VERIFIED_DAYS = 30
 # GENESIS_IP_WINDOW_HOURS; the daily job deletes older records itself, sooner.
 GENESIS_IP_RECORD_DAYS = 1
 # Story 4 "Vouches": residents born before this time need no age for standing. A placeholder
-# until launch checklist step 6 sets it to the launch date plus 30 days, which also ends
-# hypercare (docs/api-design.md "Changes"). Until then it lies so far ahead that the age rule
-# applies to no one.
+# until launch checklist step 6 sets it to the launch date plus 30 days. Until then it lies
+# so far ahead that the age rule applies to no one.
 AGE_RULE_STARTS = "2099-12-31T00:00:00Z"
 
 
