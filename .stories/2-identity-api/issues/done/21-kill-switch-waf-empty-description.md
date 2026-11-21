@@ -1,6 +1,5 @@
 # Let the kill switch's WAF step update a web ACL with no description
 
-Label: ready-for-agent
 Blocked by:
 
 Found by issue 10's kill switch drill on 2026-11-21: publishing to the stop topic set both Lambdas' reserved
