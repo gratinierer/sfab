@@ -15,15 +15,27 @@ pages use: `-noir` for the noir page at `/`, and the green bots on light lilac i
 `website/board/` for the board page at `/board/`.
 """
 
+from dataclasses import dataclass
 from pathlib import Path
 
 WEBSITE = Path(__file__).resolve().parents[2] / "website"
 
-# (folder, suffix): (bot fill, tile fill, with the faint bot)
-SETS = {
-    ("", "-noir"): ("#262d5e", "#161b3c", False),
-    ("board", ""): ("#bfe3c6", "#c8e9cd", True),
-}
+
+@dataclass(frozen=True)
+class BotSet:
+    """One page's bots: the folder of `website/` and file suffix they go to, and their colours."""
+
+    folder: str
+    suffix: str
+    bot_fill: str
+    tile_fill: str
+    faint: bool  # also write `bot-faint{suffix}.svg`
+
+
+SETS = [
+    BotSet(folder="", suffix="-noir", bot_fill="#262d5e", tile_fill="#161b3c", faint=False),
+    BotSet(folder="board", suffix="", bot_fill="#bfe3c6", tile_fill="#c8e9cd", faint=True),
+]
 
 BOT = """\
 .....#.....
@@ -56,27 +68,28 @@ def _one_bot(fill: str, d: str) -> str:
     )
 
 
-def write_set(out: Path, suffix: str, bot_fill: str, tile_fill: str, faint: bool) -> None:
+def write_set(out: Path, bots_set: BotSet) -> None:
     d = bot_path()
-    (out / f"bot{suffix}.svg").write_text(_one_bot(bot_fill, d), encoding="utf-8")
-    if faint:
-        (out / f"bot-faint{suffix}.svg").write_text(_one_bot(tile_fill, d), encoding="utf-8")
+    suffix = bots_set.suffix
+    (out / f"bot{suffix}.svg").write_text(_one_bot(bots_set.bot_fill, d), encoding="utf-8")
+    if bots_set.faint:
+        (out / f"bot-faint{suffix}.svg").write_text(_one_bot(bots_set.tile_fill, d), encoding="utf-8")
     bots = "".join(
         f'<path transform="translate({x} {y}) rotate({r} 5.5 6) scale({s})" d="{d}"/>'
         for x, y, s, r in TILE_BOTS
     )
     (out / f"bot-tile{suffix}.svg").write_text(
         '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="200" viewBox="0 0 240 200" '
-        f'shape-rendering="crispEdges"><g fill="{tile_fill}">{bots}</g></svg>\n',
+        f'shape-rendering="crispEdges"><g fill="{bots_set.tile_fill}">{bots}</g></svg>\n',
         encoding="utf-8",
     )
 
 
 def main() -> None:
-    for (folder, suffix), (bot_fill, tile_fill, faint) in SETS.items():
-        out = WEBSITE / folder
+    for bots_set in SETS:
+        out = WEBSITE / bots_set.folder
         out.mkdir(exist_ok=True)
-        write_set(out, suffix, bot_fill, tile_fill, faint)
+        write_set(out, bots_set)
 
 
 if __name__ == "__main__":
