@@ -57,6 +57,20 @@ class Page(HTMLParser):
     def all(self, tag: str) -> list[dict[str, str]]:
         return [attrs for t, attrs in self.elements if t == tag]
 
+    def find(self, tag: str | None = None, **attrs: str) -> int:
+        """The index of the first element with this tag, if given, and these attribute values;
+        a keyword's `_` stands for `-`, and `class_` for `class`."""
+        wanted = {k.rstrip("_").replace("_", "-"): v for k, v in attrs.items()}
+        return next(
+            i for i, (t, a) in enumerate(self.elements)
+            if (tag is None or t == tag) and all(a.get(k) == v for k, v in wanted.items())
+        )
+
+    def name_of(self, index: int) -> str:
+        """The accessible name of the element at `index`: its text and its images' `alt`."""
+        images = [attrs.get("alt", "") for _, tag, attrs in self.inside(index) if tag == "img"]
+        return " ".join(("".join(self.text.get(index, [])) + " ".join(images)).split())
+
     def inside(self, index: int) -> list[tuple[int, str, dict[str, str]]]:
         """The elements nested in the element at `index`, each with its own index."""
         end = self.ends.get(index, len(self.elements))
@@ -190,18 +204,13 @@ def test_the_header_holds_a_link_home_and_the_four_way_switch_marking_the_curren
     # spec.md "Variants": a link home to the page named botrefugium, the wordmark image or
     # themed text, and the switch of four links, the current one marked aria-current="page".
     page = pages[name]
-    header = next(i for i, (tag, _) in enumerate(page.elements) if tag == "header")
-    inside = page.inside(header)
+    inside = page.inside(page.find("header"))
     (switch,) = [i for i, tag, attrs in inside if tag == "nav" and attrs.get("class") == "switch"]
     in_switch = {i for i, _, _ in page.inside(switch)}
 
-    def name_of(i: int) -> str:
-        images = [attrs.get("alt", "") for _, tag, attrs in page.inside(i) if tag == "img"]
-        return " ".join(("".join(page.text.get(i, [])) + " ".join(images)).split())
-
     links = [(i, attrs) for i, tag, attrs in inside if tag == "a"]
-    assert [(attrs["href"], name_of(i)) for i, attrs in links if i not in in_switch] == [(HOME[name], "botrefugium")]
-    assert [(attrs["href"], name_of(i)) for i, attrs in links if i in in_switch] == SWITCH
+    assert [(attrs["href"], page.name_of(i)) for i, attrs in links if i not in in_switch] == [(HOME[name], "botrefugium")]
+    assert [(attrs["href"], page.name_of(i)) for i, attrs in links if i in in_switch] == SWITCH
     current = [attrs["href"] for _, attrs in page.elements if "aria-current" in attrs]
     assert current == [HOME[name]]
     assert [attrs["aria-current"] for _, attrs in page.elements if "aria-current" in attrs] == ["page"]
@@ -500,7 +509,7 @@ def test_space_text_sits_on_solid_fills(built, pages):
     for i, (_, attrs) in enumerate(page.elements):
         if set(attrs.get("class", "").split()) & set(SPACE_SOLID):
             backed |= {j for j, _, _ in page.inside(i)}
-    body = next(i for i, (tag, _) in enumerate(page.elements) if tag == "body")
+    body = page.find("body")
     for i, tag, _ in page.inside(body):
         if tag in ("h1", "h2", "p", "li", "a") and page._text(i):
             assert i in backed, (tag, page._text(i))
@@ -682,7 +691,7 @@ def test_space_moons_count_the_now_and_next_items(pages):
     now = _items(noir, "now-and-next", "now")
     total = now + _items(noir, "now-and-next", "next")
     page = pages[SPACE]
-    (moons,) = [i for i, (_, attrs) in enumerate(page.elements) if attrs.get("class") == "moons"]
+    moons = page.find(class_="moons")
     found = [attrs["class"].split() for _, _, attrs in page.inside(moons) if "moon" in attrs.get("class", "").split()]
     assert (sum("painted" in m for m in found), len(found)) == (now, total)
     label = f"{now} of {total} moons painted: {now} things are out now, {total - now} come next"
@@ -760,7 +769,7 @@ def _shape_under(page: Page, svg: int, text: int) -> str:
 
 def test_board_svg_text_meets_wcag_aa_on_what_it_sits_on(pages):
     page = pages[BOARD]
-    (svg,) = [i for i, (tag, attrs) in enumerate(page.elements) if tag == "svg" and attrs.get("class") == "board-svg"]
+    svg = page.find("svg", class_="board-svg")
     texts = [i for i, tag, _ in page.inside(svg) if tag == "text"]
     assert texts
     for i in texts:
@@ -924,7 +933,7 @@ def test_the_agent_join_steps_name_the_birth_limits(pages):
 
 
 def _items(page: Page, section_id: str, list_class: str) -> int:
-    section = next(i for i, (_, attrs) in enumerate(page.elements) if attrs.get("id") == section_id)
+    section = page.find(id=section_id)
     lists = [i for i, tag, attrs in page.inside(section) if tag == "ul" and attrs.get("class") == list_class]
     assert len(lists) == 1, list_class
     return sum(1 for _, tag, _ in page.inside(lists[0]) if tag == "li")
@@ -935,7 +944,7 @@ def test_noir_meter_counts_the_now_and_next_items(pages):
     page = pages["index.html"]
     now = _items(page, "now-and-next", "now")
     total = now + _items(page, "now-and-next", "next")
-    meter = next(i for i, (_, attrs) in enumerate(page.elements) if attrs.get("class") == "hud-meter")
+    meter = page.find(class_="hud-meter")
     segments = [attrs["class"].split() for _, tag, attrs in page.inside(meter) if "seg" in attrs.get("class", "").split()]
     assert (sum("on" in s for s in segments), len(segments)) == (now, total)
     assert page.elements[meter][1]["aria-label"] == f"Now: {now} of {total} features are live"
