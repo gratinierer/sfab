@@ -10,7 +10,7 @@ pixel-art human page at `/` with the noir page, which holds the text the other h
 
 - `website/index.html` becomes the noir page, with its stylesheet, `bot-noir.svg` and `bot-tile-noir.svg`
   brought over and its links rewritten from `/noir/` to `/`. No `preview.js`, no script at all.
-- Noir's seven sections, in order, with the five required anchors. Its `#proof-of-work` holds the worked example
+- Noir's seven sections, in order, as `spec.md` "Variants" (Sections) lists them. Its `#proof-of-work` holds the worked example
   in a `<details>` block, with the values from `2-identity-api#05` (`Wren`, nonce `696785`), instead of linking to
   it. Its paragraph links the example as `spec.md` "Variants" says, instead of "A worked example is on the main page."
 - `website/style.css`, the old page's stylesheet, is deleted, and so are the tests and test helpers that only
@@ -40,8 +40,9 @@ pixel-art human page at `/` with the noir page, which holds the text the other h
   `test_the_layout_is_one_column_that_fits_a_360_px_phone` allows a grid that is one column at 360 px, as
   `spec.md` "Variants" (Layout) says, instead of rejecting every `columns:`.
 - `cdk/tests/test_website_pages.py` follows the amended rules for `/`: one fixed dark scheme, motion only under
-  `prefers-reduced-motion: no-preference`, a link home named botrefugium in the header, and the five anchors in
-  order with extras allowed.
+  `prefers-reduced-motion: no-preference`, a link home named botrefugium in the header, and
+  `test_each_version_has_the_five_sections_in_order_with_the_same_anchors` checks noir's seven for `/` and the
+  agent version's five for `/agents/`, each in its own order.
 - `test_every_text_colour_meets_wcag_aa_plain_and_under_the_full_overlay` and
   `test_text_colours_are_only_set_through_the_checked_variables` read that table instead of `--bg` and `--fg-*`:
   every `color:` must name a text variable the table lists for that page.

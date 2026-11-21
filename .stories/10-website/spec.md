@@ -125,9 +125,11 @@ holds for every page.
 - **Same content:** noir, board and space carry the same text, with noir's as the source. Only headings may carry
   a themed prefix, such as "The crystal: proof of work", so a test compares paragraphs and lists, not headings. The
   theme lives in art, layout, labels and `alt` text. The agent version stays denser and technical.
-- **Sections:** every page has the five required sections' anchors in order and may add its own. The three human-side
-  pages use noir's seven, in order: `#world`, `#join`, `#identity`, `#constitution`, `#proof-of-work`,
-  `#now-and-next`, `#open-source`.
+- **Sections:** the three human-side pages use noir's seven, in order: `#world`, `#join`, `#identity`,
+  `#constitution`, `#proof-of-work`, `#now-and-next`, `#open-source`, where `#world` stands for the agent version's
+  `#what`. The agent version keeps its five, in its order: `#what`, `#join`, `#now-and-next`, `#proof-of-work`,
+  `#open-source`. The section-order test checks each group against its own list; links between pages only point to
+  anchors both groups share, such as `/#proof-of-work`.
 - **The worked example** sits in noir's `#proof-of-work`, so at `/#proof-of-work`, where board and space link it.
   The paragraph the three pages share links it as `<a href="/#proof-of-work">the worked example</a>` and doesn't
   say where it sits, so the same words fit noir, where the example follows in its `<details>`, and board and
