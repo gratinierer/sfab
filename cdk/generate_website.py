@@ -32,7 +32,15 @@ OUTPUT = ROOT / "build" / "website"
 _TEXT_SUFFIXES = {".html", ".txt", ".xml"}
 _TEXT_NAMES = {"api-catalog"}
 
-_PLACEHOLDER = re.compile(r"\{\{[^}]*\}\}")
+# The placeholder syntax, spelled once: `_placeholder` writes it, `_PLACEHOLDER` finds leftovers.
+_OPEN, _CLOSE = "{{", "}}"
+_PLACEHOLDER = re.compile(re.escape(_OPEN) + r"[^}]*" + re.escape(_CLOSE))
+
+
+def _placeholder(name: str) -> str:
+    return _OPEN + name + _CLOSE
+
+
 # The contact goes into a `mailto:` link, so it must be one plain address: no scheme, no
 # space, nothing HTML or a URL would need escaped.
 _ADDRESS = re.compile(r"[A-Za-z0-9.+_-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
@@ -60,7 +68,7 @@ def generate(source: Path, out: Path, *, api_host: str, site_host: str, contact:
             continue
         page = path.read_text(encoding="utf-8")
         for name, value in values.items():
-            page = page.replace("{{" + name + "}}", value)
+            page = page.replace(_placeholder(name), value)
         # A placeholder left over would show visitors the raw text.
         unfilled = sorted(set(_PLACEHOLDER.findall(page)))
         if unfilled:
