@@ -1,7 +1,5 @@
 # Mail DNS records in CDK
 
-Label: ready-for-agent
-
 `spec.md` "Design". Creates the iCloud mail records and DMARC from CDK when the owner's config has the iCloud
 token, and nothing when it doesn't.
 
