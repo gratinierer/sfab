@@ -90,7 +90,7 @@ jq '.LockToken as $lock | .WebACL
        Rules, VisibilityConfig}
       + with_entries(select(.value != null and .value != "" and (.key | IN("Description", "DataProtectionConfig",
           "CustomResponseBodies", "CaptchaConfig", "ChallengeConfig", "TokenDomains",
-          "AssociationConfig"))))' web-acl.json > web-acl-update.json
+          "AssociationConfig", "OnSourceDDoSProtectionConfig"))))' web-acl.json > web-acl-update.json
 aws wafv2 update-web-acl --cli-input-json file://web-acl-update.json
 rm web-acl.json web-acl-update.json
 ```

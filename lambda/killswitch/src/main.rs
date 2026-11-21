@@ -160,6 +160,7 @@ impl Controls for Aws {
                     .set_challenge_config(acl.challenge_config)
                     .set_token_domains(acl.token_domains)
                     .set_association_config(acl.association_config)
+                    .set_on_source_d_do_s_protection_config(acl.on_source_d_do_s_protection_config)
                     .send()
                     .await
                     .map_err(|e| fail("wafv2 UpdateWebACL", e.into_service_error()))?;
