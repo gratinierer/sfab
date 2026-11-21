@@ -78,7 +78,7 @@ def test_the_kill_switch_gets_the_daily_limit_and_what_it_stops(api, base):
     api_id, _ = api_function(api)
     _, function = kill_switch(api)
     env = function["Properties"]["Environment"]["Variables"]
-    assert env["DAILY_CALL_LIMIT"] == "100"
+    assert env["DAILY_CALL_LIMIT"] == "100000"
     assert env["API_FUNCTION_NAME"] == {"Ref": api_id}
     assert env["WEB_ACL"] == {"Ref": next(iter(api.find_resources("AWS::WAFv2::WebACL")))}
     assert env["REST_API_ID"] == {"Ref": next(iter(api.find_resources("AWS::ApiGateway::RestApi")))}
