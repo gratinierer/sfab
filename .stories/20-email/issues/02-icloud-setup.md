@@ -15,9 +15,10 @@ Blocked by: 01
    `sig1._domainkey` or `_dmarc` record (`aws route53 list-resource-record-sets --hosted-zone-id <hosted_zone_id>`).
    CloudFormation fails `SfabBase`'s update on a record that already exists, so if one is there, stop and decide
    whether to delete it or keep it, rather than deploying. On 2026-11-21 there were none.
-   Once ticket 01 is on the `production` branch, put the `apple-domain=` value, without its prefix, into
+   Once ticket 01 is closed, move `production` forward to `main` (`docs/restart-after-a-stop.md` step 1: "commit
+   the change, move `production` forward to it", then start the build). Then put the `apple-domain=` value, without its prefix, into
    `sfab/config` as `icloud_domain_verification`, and start the `sfab-deploy` build (ADR 0009). Not before: until
-   01's code is deployed, the loader refuses the key as unknown and the build fails.
+   `production` holds 01's code, the build's loader refuses the key as unknown and the build fails.
 4. Let iCloud verify the domain.
 5. Create `watchdog@`, `dmarc@`, `abuse@` and `info@`, with no catch-all. Note the real address limit here
    under `## Comments`, and in `spec.md` if it's lower than four.
