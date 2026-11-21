@@ -32,12 +32,12 @@ OUTPUT = ROOT / "build" / "website"
 _TEXT_SUFFIXES = {".html", ".txt", ".xml"}
 _TEXT_NAMES = {"api-catalog"}
 
-# The placeholder syntax, spelled once: `_placeholder` writes it, `_PLACEHOLDER` finds leftovers.
+# The placeholder syntax, spelled once: `_marker` writes one, `_PLACEHOLDER` finds leftovers.
 _OPEN, _CLOSE = "{{", "}}"
-_PLACEHOLDER = re.compile(re.escape(_OPEN) + r"[^}]*" + re.escape(_CLOSE))
+_PLACEHOLDER = re.compile(re.escape(_OPEN) + r".*?" + re.escape(_CLOSE))
 
 
-def _placeholder(name: str) -> str:
+def _marker(name: str) -> str:
     return _OPEN + name + _CLOSE
 
 
@@ -68,7 +68,7 @@ def generate(source: Path, out: Path, *, api_host: str, site_host: str, contact:
             continue
         page = path.read_text(encoding="utf-8")
         for name, value in values.items():
-            page = page.replace(_placeholder(name), value)
+            page = page.replace(_marker(name), value)
         # A placeholder left over would show visitors the raw text.
         unfilled = sorted(set(_PLACEHOLDER.findall(page)))
         if unfilled:
