@@ -18,6 +18,8 @@ pixel-art human page at `/` with the noir page, which holds the text the other h
   ports what board needs from the scratch site's copies into `/board/`.
 - `scripts/website/genbot.py`, with only the sets the site uses (`-noir` here, the light lilac set in 05), its
   preview-only sets (`-dark`, `-cream`, `bot-tile-many*`) dropped.
+- In `#now-and-next`, "next" becomes a `<ul>` like "now", one `<li>` per coming story, with the same words, so
+  the meter, the board's LEDs and their tests count items instead of parsing a sentence.
 - A page test checks that noir's `hud-meter` ("2 of 8 features are live") matches the "now" and "now plus next"
   item counts in its `#now-and-next`, so the owner's hand edits there keep the meter true.
 - `scripts/website/gennoir.py`, rewritten to write into `website/index.html`, with its output committed.

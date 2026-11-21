@@ -21,8 +21,8 @@ Blocked by: 04
 - Light lilac as its one fixed scheme. Scroll assembly only under `prefers-reduced-motion: no-preference`.
 - Its `#proof-of-work` links to `/#proof-of-work` for the worked example.
 - `scripts/website/genboard.py`, with its output committed, reading `openapi/sfab.yaml` relative to the repo
-  instead of `/workspaces/sfa/`, and taking its lit and total LEDs from the "now" and "next" items in
-  `#now-and-next` instead of the fixed `N_LEDS, LIT = 8, 2`.
+  instead of `/workspaces/sfa/`, and taking its lit and total LEDs from the "now" and "next" `<li>` items in
+  noir's `#now-and-next` (04) instead of the fixed `N_LEDS, LIT = 8, 2`.
 - A page test checks that the API version printed on the board matches `info.version` in `openapi/sfab.yaml`,
   and that the lit and total LEDs match the "now" and "now plus next" item counts, so a release or a launch
   that isn't regenerated fails the check.
