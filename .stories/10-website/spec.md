@@ -110,6 +110,45 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
   CloudFront Function, the generate step and the main `BucketDeployment`. This story adds the content of
   `website/`, the `{{site_host}}` placeholder and the catalog's cache behaviour with its viewer-response function.
 
+## Variants
+
+Decided in the grilling of 2026-11-21, from the evolved site the owner built in `/workspaces/.scratch/website`.
+Where this section and "Design and content" disagree, this section wins. The rest of "Design and content" still
+holds for every page.
+
+- **Four pages, one switch:** `/` is the noir page ("I'm human"), `/board/` the circuit-board page ("I'm nerd"),
+  `/space/` the space page ("I'm 11"), and `/agents/` the agent version, unchanged ("I'm agent"). Every page's
+  header holds a link home to that page named botrefugium (the wordmark image or themed text) and the same switch
+  of four links with those labels, the current one marked `aria-current="page"`. The URL alone decides the page.
+  The old pixel-art page, the scratch site's dino page, its preview bar (`preview.js`, `preview.css`) and bot
+  images no page uses are not ported, and the root `style.css` goes with the old page.
+- **Same content:** noir, board and space carry the same text, with noir's as the source. Only headings may carry
+  a themed prefix, such as "The crystal: proof of work", so a test compares paragraphs and lists, not headings. The
+  theme lives in art, layout, labels and `alt` text. The agent version stays denser and technical.
+- **Sections:** every page has the five required sections' anchors in order and may add its own. The three human-side
+  pages use noir's seven, in order: `#world`, `#join`, `#identity`, `#constitution`, `#proof-of-work`,
+  `#now-and-next`, `#open-source`.
+- **The worked example** sits in noir's `#proof-of-work`, so at `/#proof-of-work`, where board and space link it.
+  The Rust test that checks its values reads `website/index.html` (noir) and `website/agents/index.html`.
+- **JavaScript:** board and space may load scripts from their own folder only, as progressive enhancement: each
+  page is complete and usable without them. Noir and the agent version have no script. Nothing loads from another
+  server.
+- **Motion:** noir, board and space may move, only under `prefers-reduced-motion: no-preference`, with nothing
+  flashing more than 3 times a second (WCAG 2.3.1) and the content readable from the first frame. The agent
+  version stays still.
+- **Colour schemes:** each page has one fixed scheme, and none follows the browser: noir dark, board light lilac,
+  space dark, agent dark. The WCAG AA contrast check runs against each page's own scheme, plain and under any
+  overlay.
+- **Board:** clicking a part shows its info. Its blocks use the seven section ids, in that order, and `board.js`
+  puts the id in the URL, so `/board/#join` works with or without the script; with no hash it shows `#world`.
+  Without the script every block is listed. What it took from the old page (rules from `style.css`, `assemble.js`,
+  the bot tiles) moves into `/board/`, so it's self-contained.
+- **Art generators:** `gennoir.py`, `genboard.py` and `genspace.py` come over to `scripts/website/`, outside
+  `website/`, so they never deploy. Their output is committed, and CI doesn't rerun them.
+- **Discovery files:** `sitemap.xml` lists `/`, `/board/`, `/space/` and `/agents/`. `/llms.txt` still points
+  agents only to `/agents/`.
+- **Sign-off:** gratinierer/sfab#13 covers all four pages, and this story still ships on its own deploy.
+
 ## Clarifications
 
 The owner, on 2026-11-02, during the walkthrough of story 2: "create a story for the website and there remark, that we need a good explanation for that proof of work and also on the api side". Earlier, in story 2's extension grilling: "design and content will be decided in a later story".
@@ -160,3 +199,29 @@ From the owner's notes: "a simple and clean website, more in a classic way but m
 | The hosting stays in story 2's issue 12? | Yes |
 | Title, description and favicon, no preview image? | Yes |
 | The world's contact, `watchdog@<domain_name>`, on both versions, through a `{{contact}}` placeholder? (2026-11-21, from story 20's grilling) | Yes; this story's ticket 02 adds both, and story 20 changes no website file (owner, 2026-11-21, on `20-email` R6) |
+
+### Variants grilling, 2026-11-21
+
+The owner: "/workspaces/.scratch/website contains evolved version of the website, port it to here", with default
+or "I'm human" becoming the noir variant, "I'm nerd" the board variant, "I'm 11" the space variant, and "I'm agent"
+kept.
+
+| Question | Answer |
+|---|---|
+| Noir at `/`, board at `/board/`, space at `/space/`, agent kept; old page, dino page and preview bar dropped? | Yes |
+| One four-way switch in every header, with `aria-current`? | Yes |
+| Simpler wording on the space page for an 11-year-old? | "no, same content everywhere" |
+| Board and space keep their own-site scripts, each page complete without them; noir and agent script-free? | Yes (amends "no JavaScript") |
+| Motion on the human-side pages only under `prefers-reduced-motion: no-preference`, no flashing over 3 a second? | Yes (amends "no effects while scrolling") |
+| The worked example in noir's `#proof-of-work`, the others linking to it? | Yes |
+| The five required anchors in order on every page, extra sections allowed? | Yes (amends the mirrored five sections) |
+| The art generators in `scripts/website/`, output committed? | Yes |
+| Tickets 01 to 03 close as they are, and new tickets carry this? | Yes |
+| #13's sign-off covers all four pages, still on this story's own deploy? | Yes |
+| Exactly the same text on noir, board and space, themed through art, layout and labels, checked by a test? | Yes |
+| Board's blocks take noir's seven ids and order, in the URL instead of part names? | "yes, and world should be active by default" |
+| Themed prefixes allowed on headings only? | Yes |
+| What board takes from the old page moves into `/board/`? | Yes |
+| One fixed colour scheme per page instead of following the browser? | Yes (amends "follows the browser's light or dark setting") |
+| A link home named botrefugium, wordmark image or themed text, instead of the wordmark image in every header? | Yes |
+| `sitemap.xml` lists all four pages, `/llms.txt` unchanged? | Yes |
