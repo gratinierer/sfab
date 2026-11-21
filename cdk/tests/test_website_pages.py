@@ -16,6 +16,7 @@ REPO_WEBSITE = Path(__file__).resolve().parents[2] / "website"
 
 PAGES = ("index.html", "agents/index.html")
 SECTIONS = ["what", "join", "now-and-next", "proof-of-work", "open-source"]
+CONTACT = "abuse@example.test"
 
 
 class Page(HTMLParser):
@@ -56,7 +57,7 @@ class Page(HTMLParser):
 @pytest.fixture(scope="module")
 def built(tmp_path_factory) -> Path:
     out = tmp_path_factory.mktemp("site")
-    generate_website.generate(REPO_WEBSITE, out, api_host="api.example.test")
+    generate_website.generate(REPO_WEBSITE, out, api_host="api.example.test", contact=CONTACT)
     return out
 
 
@@ -309,3 +310,65 @@ def test_text_colours_are_only_set_through_the_checked_variables(built, pages, n
     css = _css(built, pages[name])
     for value in re.findall(r"(?<![\w-])color\s*:\s*([^;]+);", css):
         assert re.fullmatch(r"var\(--fg-[\w-]+\)", value.strip()), value
+
+
+@pytest.mark.parametrize("name", PAGES)
+def test_each_version_shows_the_contact_as_a_mailto_link_in_its_footer(pages, name):
+    # The same place on both pages: the one link in the <footer> after <main>
+    # (spec.md "Contact").
+    page = pages[name]
+    tags = [tag for tag, _ in page.elements]
+    assert tags.count("footer") == 1
+    assert tags.index("footer") > tags.index("main")
+    mailto = [a["href"] for a in page.all("a") if a.get("href", "").startswith("mailto:")]
+    assert mailto == [f"mailto:{CONTACT}"]
+    footer = tags.index("footer")
+    links_in_footer = [attrs for tag, attrs in page.elements[footer:] if tag == "a"]
+    assert [a["href"] for a in links_in_footer] == [f"mailto:{CONTACT}"]
+    assert CONTACT in page.text_of("footer")
+
+
+@pytest.mark.parametrize("name", PAGES)
+def test_no_committed_page_holds_an_address(name):
+    html = (REPO_WEBSITE / name).read_text(encoding="utf-8")
+    assert re.findall(r"mailto:[^\"]*", html) == ["mailto:{{contact}}"]
+    assert not re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", html)
+
+
+@pytest.mark.parametrize("name", PAGES)
+def test_no_placeholder_text_is_left(pages, name):
+    text = " ".join(pages[name].text[0]).lower()
+    for filler in ("placeholder", "lorem", "ipsum", "todo"):
+        assert filler not in text, filler
+
+
+def test_the_agent_version_gives_each_joining_step_with_curl_in_order(pages):
+    # spec.md "Design and content", "How to join".
+    join = pages["agents/index.html"].text_of("section", id="join")
+    steps = [
+        "curl https://api.example.test/v1/world/genesis-code",
+        "curl https://api.example.test/v1/openapi.yaml",
+        "curl -X POST https://api.example.test/v1/identity/birth",
+        "curl https://api.example.test/v1/identity/self",
+    ]
+    found = [join.find(step) for step in steps]
+    assert -1 not in found, dict(zip(steps, found))
+    assert found == sorted(found)
+    for needed in ("Proof: ", '"genesis_code"', "Authorization: Bearer "):
+        assert needed in join, needed
+
+
+FEDERATION_STEPS = "https://github.com/gratinierer/sfab/blob/main/docs/federation.md"
+REPO = "https://github.com/gratinierer/sfab"
+
+
+def test_the_agent_version_links_the_federation_steps(pages):
+    hrefs = [a["href"] for a in pages["agents/index.html"].all("a")]
+    assert FEDERATION_STEPS in hrefs
+
+
+@pytest.mark.parametrize("name", PAGES)
+def test_open_source_links_the_repo_and_names_the_mit_license(pages, name):
+    hrefs = [a["href"] for a in pages[name].all("a")]
+    assert REPO in hrefs
+    assert "MIT" in pages[name].text_of("section", id="open-source")

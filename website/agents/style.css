@@ -52,7 +52,8 @@ body::before {
 }
 
 .site-header,
-main {
+main,
+.site-footer {
   max-width: 48rem;
   margin: 0 auto;
   padding: 0 1rem;
@@ -151,4 +152,10 @@ pre {
 .prompt {
   color: var(--fg-muted);
   user-select: none;
+}
+
+.site-footer {
+  padding-top: 1.25rem;
+  padding-bottom: 2rem;
+  color: var(--fg-muted);
 }
