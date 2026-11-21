@@ -16,12 +16,13 @@ issue 05).
 import re
 from pathlib import Path
 
+from pixel import rect as R
+
 REPO = Path(__file__).resolve().parents[2]
 PAGE = REPO / "website" / "board" / "index.html"
 NOIR = REPO / "website" / "index.html"
 API = REPO / "openapi" / "sfab.yaml"
 
-R = lambda x,y,w,h,f,extra="": f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{f}"{extra}/>'
 PIN, DARK, SILVER, GOLD = "#b9b4c7", "#23202e", "#c9c4d6", "#e9c46a"
 TEXT = lambda x,y,size,fill,t,anchor="middle",extra="": (f'<text{extra} x="{x}" y="{y}" text-anchor="{anchor}" '
     f'font-family="Silkscreen, monospace" font-size="{size}" fill="{fill}">{t}</text>')

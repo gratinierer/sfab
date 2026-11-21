@@ -13,16 +13,9 @@ import random
 import re
 from pathlib import Path
 
-PAGE = Path(__file__).resolve().parents[2] / "website" / "index.html"
-R = lambda x,y,w,h,f,extra="": f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{f}"{extra}/>'
+from pixel import grid_rects, rect as R
 
-def grid_rects(grid, colours, ox=0, oy=0):
-    out = []
-    for y, row in enumerate(grid.strip("\n").splitlines()):
-        for x, c in enumerate(row):
-            if c in colours:
-                out.append(R(ox + x, oy + y, 1, 1, colours[c]))
-    return "".join(out)
+PAGE = Path(__file__).resolve().parents[2] / "website" / "index.html"
 
 # --- the city -------------------------------------------------------------------------
 W, H = 256, 112
