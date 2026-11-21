@@ -11,8 +11,9 @@ Blocked by: 01
    shows.
 2. Compare them with `spec.md` "Design"'s table. If any differs, fix the table and ticket 01's code before going
    on.
-3. Put the `apple-domain=` value, without its prefix, into `sfab/config` as `icloud_domain_verification`, and
-   deploy with `scripts/deploy`.
+3. Once ticket 01 is on the `production` branch, put the `apple-domain=` value, without its prefix, into
+   `sfab/config` as `icloud_domain_verification`, and start the `sfab-deploy` build (ADR 0009). Not before: until
+   01's code is deployed, the loader refuses the key as unknown and the build fails.
 4. Let iCloud verify the domain.
 5. Create `watchdog@`, `dmarc@`, `abuse@` and `info@`, with no catch-all. Note the real address limit here
    under `## Comments`, and in `spec.md` if it's lower than four.

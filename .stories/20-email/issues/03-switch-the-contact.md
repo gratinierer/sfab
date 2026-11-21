@@ -8,7 +8,8 @@ receives mail.
 
 ## Scope
 
-- The owner sets `abuse_contact` to `watchdog@<domain_name>` in `sfab/config` and deploys, which changes
+- The owner sets `abuse_contact` to `watchdog@<domain_name>` in `sfab/config` and starts the `sfab-deploy`
+  build (ADR 0009), which changes
   `info.contact` in the public description and the API Lambda's `ABUSE_CONTACT`, and with it `contact` at
   `GET /v1/federation/world`.
 - No website file: story 10's ticket 02 puts `abuse_contact` on the site (`.stories/10-website/spec.md`
