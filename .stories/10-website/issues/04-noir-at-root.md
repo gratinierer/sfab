@@ -30,7 +30,8 @@ pixel-art human page at `/` with the noir page, which holds the text the other h
   reads each page's section ids that way, and `lambda/core/tests/worked_example.rs` slices noir's
   `#proof-of-work` panel by its id up to its matching `</details>`, counting nested `<details>` so the example's
   own closing tag doesn't end the slice, and finds exactly one `<details>` nested in the panel, the example,
-  instead of `find("<section id=\"proof-of-work\"")` and one `<details>` per section.
+  instead of `find("<section id=\"proof-of-work\"")` and one `<details>` per section. The agent page keeps its
+  `<section id="proof-of-work">`, so the slice goes by the element that carries the id on each page.
 - `cdk/tests/test_website_pages.py` changes these tests: `test_the_header_holds_the_wordmark_and_one_switch_link_to_the_other_version`
   takes a link home named botrefugium, the wordmark image or text, and until 07 noir keeps one switch link,
   "I'm an agent →", in its header, so `/` is never without a way to the agent version;
