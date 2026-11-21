@@ -26,8 +26,9 @@ pixel-art human page at `/` with the noir page, which holds the text the other h
 - The tests find sections by `id`, not by element: noir's are `<details class="panel">`, board's `.part-info`
   blocks (05) and space's `section.stop` (06). `test_each_version_has_the_five_sections_in_order_with_the_same_anchors`
   reads each page's section ids that way, and `lambda/core/tests/worked_example.rs` slices noir's
-  `#proof-of-work` panel by its id and finds the example as the one `<details>` nested in it, instead of
-  `find("<section id=\"proof-of-work\"")` and one `<details>` per section.
+  `#proof-of-work` panel by its id up to its matching `</details>`, counting nested `<details>` so the example's
+  own closing tag doesn't end the slice, and finds exactly one `<details>` nested in the panel, the example,
+  instead of `find("<section id=\"proof-of-work\"")` and one `<details>` per section.
 - `cdk/tests/test_website_pages.py` changes these tests: `test_the_header_holds_the_wordmark_and_one_switch_link_to_the_other_version`
   takes a link home named botrefugium, the wordmark image or text, and until 07 noir keeps one switch link,
   "I'm an agent →", in its header, so `/` is never without a way to the agent version;
@@ -38,6 +39,9 @@ pixel-art human page at `/` with the noir page, which holds the text the other h
 - `cdk/tests/test_website_pages.py` follows the amended rules for `/`: one fixed dark scheme, motion only under
   `prefers-reduced-motion: no-preference`, a link home named botrefugium in the header, and the five anchors in
   order with extras allowed.
+- `test_every_text_colour_meets_wcag_aa_plain_and_under_the_full_overlay` and
+  `test_text_colours_are_only_set_through_the_checked_variables` read that table instead of `--bg` and `--fg-*`:
+  every `color:` must name a text variable the table lists for that page.
 - The contrast test's table of text and background variable pairs, as `spec.md` "Variants" (Colour schemes)
   says, gains noir's `--ink`, `--muted`, `--link` and `--signal` on `--night` and `--panel`, every pair the stylesheet uses.
 
