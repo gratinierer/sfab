@@ -74,7 +74,9 @@ def test_the_distribution_serves_the_apex_domain_over_https_with_the_base_certif
     assert behavior["CachePolicyId"] == CACHING_OPTIMIZED
     acl_id, _ = only(website, "AWS::WAFv2::WebACL")
     assert dist["WebACLId"] == {"Fn::GetAtt": [acl_id, "Arn"]}
-    function_id, _ = only(website, "AWS::CloudFront::Function")
+    (association,) = behavior["FunctionAssociations"]
+    function_id = association["FunctionARN"]["Fn::GetAtt"][0]
+    assert function_id in website.find_resources("AWS::CloudFront::Function")
     assert behavior["FunctionAssociations"] == [
         {"EventType": "viewer-request", "FunctionARN": {"Fn::GetAtt": [function_id, "FunctionARN"]}}
     ]
@@ -153,8 +155,16 @@ def run_viewer_function(code: str, uri: str) -> dict:
     return json.loads(out.stdout)
 
 
+def function_by_event(website: Template, behavior: dict, event: str) -> dict:
+    (association,) = [a for a in behavior["FunctionAssociations"] if a["EventType"] == event]
+    function_id = association["FunctionARN"]["Fn::GetAtt"][0]
+    return website.find_resources("AWS::CloudFront::Function")[function_id]["Properties"]
+
+
 def viewer_code(website: Template) -> str:
-    _, props = only(website, "AWS::CloudFront::Function")
+    _, dist = only(website, "AWS::CloudFront::Distribution")
+    behavior = dist["DistributionConfig"]["DefaultCacheBehavior"]
+    props = function_by_event(website, behavior, "viewer-request")
     assert props["FunctionConfig"]["Runtime"] == "cloudfront-js-2.0"
     return props["FunctionCode"]
 
@@ -186,3 +196,56 @@ def test_an_extensionless_path_without_a_slash_is_redirected_to_its_folder(websi
 )
 def test_every_other_path_is_left_alone(website, uri):
     assert run_viewer_function(viewer_code(website), uri) == {"uri": uri, "method": "GET"}
+
+
+# The API catalog's cache behaviour, from .stories/10-website/ issue 03
+
+CATALOG_TYPE = 'application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"'
+
+
+def catalog_behavior(website: Template) -> dict:
+    _, props = only(website, "AWS::CloudFront::Distribution")
+    behaviors = props["DistributionConfig"]["CacheBehaviors"]
+    (behavior,) = [b for b in behaviors if b["PathPattern"] == "/.well-known/api-catalog"]
+    return behavior
+
+
+def run_response_function(code: str, method: str) -> dict:
+    event = {
+        "request": {"uri": "/.well-known/api-catalog", "method": method},
+        "response": {
+            "statusCode": 200,
+            "headers": {"content-type": {"value": "binary/octet-stream"}, "etag": {"value": '"x"'}},
+        },
+    }
+    script = code + "\nconsole.log(JSON.stringify(handler(%s)));" % json.dumps(event)
+    out = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=True)
+    return json.loads(out.stdout)
+
+
+def test_the_api_catalog_has_its_own_cached_behaviour_from_the_same_bucket(website):
+    _, props = only(website, "AWS::CloudFront::Distribution")
+    dist = props["DistributionConfig"]
+    assert [b["PathPattern"] for b in dist["CacheBehaviors"]] == ["/.well-known/api-catalog"]
+    behavior = catalog_behavior(website)
+    # The managed policy, since Free allows no custom one.
+    assert behavior["CachePolicyId"] == CACHING_OPTIMIZED
+    assert behavior["ViewerProtocolPolicy"] == "redirect-to-https"
+    assert sorted(behavior.get("AllowedMethods", ["GET", "HEAD"])) == ["GET", "HEAD"]
+    # The file deploys with the rest of the site, so it comes from the pages' origin.
+    assert behavior["TargetOriginId"] == dist["DefaultCacheBehavior"]["TargetOriginId"]
+    assert [a["EventType"] for a in behavior["FunctionAssociations"]] == ["viewer-response"]
+
+
+@pytest.mark.parametrize("method", ["GET", "HEAD"])
+def test_the_catalog_response_gets_its_linkset_type_and_link_header(website, config, method):
+    props = function_by_event(website, catalog_behavior(website), "viewer-response")
+    assert props["FunctionConfig"]["Runtime"] == "cloudfront-js-2.0"
+    response = run_response_function(props["FunctionCode"], method)
+    assert response["statusCode"] == 200
+    assert response["headers"]["content-type"] == {"value": CATALOG_TYPE}
+    assert response["headers"]["link"] == {
+        "value": f'<https://{config.domain_name}/.well-known/api-catalog>; rel="api-catalog"'
+    }
+    # Other headers pass through.
+    assert response["headers"]["etag"] == {"value": '"x"'}

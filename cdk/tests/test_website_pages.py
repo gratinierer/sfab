@@ -57,7 +57,7 @@ class Page(HTMLParser):
 @pytest.fixture(scope="module")
 def built(tmp_path_factory) -> Path:
     out = tmp_path_factory.mktemp("site")
-    generate_website.generate(REPO_WEBSITE, out, api_host="api.example.test", contact=CONTACT)
+    generate_website.generate(REPO_WEBSITE, out, api_host="api.example.test", site_host="example.test", contact=CONTACT)
     return out
 
 
