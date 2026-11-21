@@ -1,6 +1,6 @@
 # Publish `watchdog@` as the contact
 
-Label: ready-for-agent
+Label: ready-for-human
 Blocked by: 02
 
 `spec.md` "Design", "The new contact". Replaces the iCloud address everywhere it's published, once `watchdog@`
@@ -8,19 +8,15 @@ receives mail.
 
 ## Scope
 
-- `cdk/generate_website.py`: a new placeholder, `{{contact}}`, filled from `abuse_contact`, as `{{api_host}}` is filled from the
-  API's host, with tests.
-- `website/index.html` and `website/agents/index.html`: both show the address through that placeholder, as a
-  `mailto:` link, in the same place, as `.stories/10-website/spec.md` "Contact" says.
 - The owner sets `abuse_contact` to `watchdog@<domain_name>` in `sfab/config` and deploys, which changes
   `info.contact` in the public description and the API Lambda's `ABUSE_CONTACT`, and with it `contact` at
   `GET /v1/federation/world`.
+- No website file: story 10's ticket 02 puts `abuse_contact` on the site (`.stories/10-website/spec.md`
+  "Contact"), so the site follows this switch on the next deploy.
 - No `CHANGELOG.md` line (`spec.md` "Clarifications", Q8).
 
 ## Done when
 
-- `scripts/check` passes, and no committed file contains the owner's address.
-- After the deploy, `https://api.<domain_name>/v1/openapi.yaml`'s `info.contact.email`,
-  `https://api.<domain_name>/v1/federation/world`'s `contact` and both website versions show
-  `watchdog@<domain_name>`, and the iCloud address appears in neither.
-- A code review (`/review-code`) has no open finding.
+- After the deploy, `https://api.<domain_name>/v1/openapi.yaml`'s `info.contact.email` and
+  `https://api.<domain_name>/v1/federation/world`'s `contact` show `watchdog@<domain_name>`, and the iCloud
+  address appears in neither, nor on the website once `10-website#02` has landed.

@@ -88,8 +88,9 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
   place on each page, through a `{{contact}}` placeholder that the generate step fills from `abuse_contact`, so no
   committed page holds an address. The human version can say it's for questions, abuse and takedown reports; the
   agent version names it the address to report abuse to, as the API description's `info.contact` does.
-  `.stories/20-email/` makes the address receive mail and adds the placeholder in `20-email#03`, so this story
-  only records it; the owner chose the name on 2026-11-21.
+  This story's ticket 02 adds the placeholder to `cdk/generate_website.py` and the link to both pages.
+  `.stories/20-email/` only makes the address receive mail and switches `abuse_contact` to it (`20-email#03`),
+  and changes no website file; the owner chose the name on 2026-11-21.
 - **Mobile and access:** one column that works on a phone, WCAG AA contrast in both versions, scan lines and grain
   purely decorative and capped at 8 % opacity in one CSS variable, with each text colour checked against the plain
   background and against it under the full overlay, since checkers can't measure through CSS overlays, `alt` text on the logo, and the switch link and `<details>` usable
@@ -97,7 +98,7 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
 - **Text and sign-off:** the implementing agent writes the text from the stories, and the owner signs it off in
   [gratinierer/sfab#13](https://github.com/gratinierer/sfab/issues/13) at `.stories/4-life-in-the-world/`'s launch step 6,
   so "Now and next" is current, and step 7's deploy carries any changes.
-- **Placeholders:** besides `{{api_host}}` and, from `20-email#03`, `{{contact}}`, the generate step fills in `{{site_host}}` from `domain_name`, so
+- **Placeholders:** besides `{{api_host}}` and, from ticket 02, `{{contact}}`, the generate step fills in `{{site_host}}` from `domain_name`, so
   `sitemap.xml`, the `Sitemap:` line in `robots.txt`, `/llms.txt` and the catalog hold absolute URLs. The sitemap
   lists `/` and `/agents/`.
 - **Boundary with story 2:** the hosting stays in `.stories/2-identity-api/`'s issue 12, including the stack, the
@@ -153,4 +154,4 @@ From the owner's notes: "a simple and clean website, more in a classic way but m
 | A `{{site_host}}` placeholder and a two-URL sitemap? | Yes |
 | The hosting stays in story 2's issue 12? | Yes |
 | Title, description and favicon, no preview image? | Yes |
-| The world's contact, `watchdog@<domain_name>`, on both versions, delivered by `20-email#03`? (2026-11-21, from story 20's grilling) | Yes |
+| The world's contact, `watchdog@<domain_name>`, on both versions, through a `{{contact}}` placeholder? (2026-11-21, from story 20's grilling) | Yes; this story's ticket 02 adds both, and story 20 changes no website file (owner, 2026-11-21, on `20-email` R6) |

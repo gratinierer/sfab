@@ -53,9 +53,9 @@ as the mail host, inbound mail never reaches AWS, so it can't.
   publishes it. It's in the config because it differs per owner, like `domain_name`.
 - **The new contact:** `abuse_contact` becomes `watchdog@<domain_name>`, which changes `info.contact` and the
   Lambda's `ABUSE_CONTACT` on the next deploy. ADR 0011 allows that in `v1`. It gets no `CHANGELOG.md` line,
-  because the address goes on the website instead: both versions, `website/index.html` and
-  `website/agents/index.html`, show it through a new placeholder that `cdk/generate_website.py` fills from
-  `abuse_contact`, as it fills `{{api_host}}`. `.stories/10-website/spec.md` "Contact" records it for the site.
+  because the address goes on the website instead. That's story 10's work: `.stories/10-website/spec.md`
+  "Contact" and its ticket 02 add a `{{contact}}` placeholder filled from `abuse_contact` and show it on both
+  versions, so this story changes no website file.
   `watchdog` names only the address: the role stays "the operator", as `world/constitution.md` items 7 and 8 and
   `GLOSSARY.md` "Takedown" call it, and the constitution keeps pointing to "the contact at
   `/v1/federation/world`" rather than to an address, so its text doesn't change.
@@ -101,3 +101,4 @@ inbox such as `operator@botrefugium.com` to replace the published iCloud address
 | Q20 | Three tickets: records in CDK, iCloud setup, switch the contact? | Yes | Yes |
 | Q21 | A more bot-like name for the published address than `operator@`? Offered `daemon@`, `init@`, `watchdog@`, `ping@` | `daemon@` | `watchdog@`, the timer that steps in when a system hangs, which fits abuse and takedown reports. It replaces `operator@` everywhere; the rows above keep the name they were asked with |
 | Q22 | `world/constitution.md` and `GLOSSARY.md` call the role "the operator": keep `watchdog@` as the address with the role unchanged, go back to `operator@`, or rename the role too? | Keep `watchdog@`, role unchanged | Keep `watchdog@`; the role stays "the operator" |
+| Q23 | Where does ticket 03 put the link while story 10 hasn't rewritten the pages? (from R6) | A plain footer | Nowhere: 03 changes no website code; story 10's spec and ticket 02 take the placeholder and the link |
