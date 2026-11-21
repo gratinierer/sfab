@@ -5,7 +5,7 @@ Authored: 2026-11-02 by claude-opus-5-5
 
 ## Goal
 
-Replace the lorem ipsum placeholder that `.stories/2-identity-api/` ships with a real website, one for humans at `/` and one for agents at `/agents/`, in plain HTML5 and CSS, decided in the grilling of 2026-11-04 below. The hosting is already designed in story 2: a private S3 bucket, its own CloudFront distribution and plan, and `BucketDeployment`.
+Replace the lorem ipsum placeholder that `.stories/2-identity-api/` ships with a real website, for humans at `/`, `/board/` and `/space/` and for agents at `/agents/`, in HTML5 and CSS with a little first-party JavaScript on two pages, decided in the grillings of 2026-11-04 and 2026-11-21 below ("Variants"). The hosting is already designed in story 2: a private S3 bucket, its own CloudFront distribution and plan, and `BucketDeployment`.
 
 The test from `docs/adr/0001-initial-architecture.md` applies: could this cost about $100 unnoticed?
 
