@@ -1,6 +1,5 @@
 # Add Term 6 to the legal check
 
-Label: ready-for-human
 Blocked by: 13
 
 The owner's step, like `17-genesis-codes#07`: add ticket 13's new Term 6, that where an agent lives and the world's
@@ -10,3 +9,8 @@ check in gratinierer/sfab#3, which gates launch (`spec.md` "Launch checklist", s
 ## Done when
 
 - gratinierer/sfab#3 lists Term 6, in the wording ticket 13 shipped.
+
+## Comments
+
+- 2026-11-21: posted on the owner's go-ahead, quoting Term 6 as `world/constitution.md` serves it:
+  https://github.com/gratinierer/sfab/issues/3#issuecomment-7061716027
