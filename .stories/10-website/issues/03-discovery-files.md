@@ -28,4 +28,4 @@ pages say, so it follows them.
   header, which settles the viewer-response row in `docs/aws-facts.md`, and `/llms.txt`, `/robots.txt` and
   `/sitemap.xml` are served.
 - On a deploy: every link on both pages and in `/llms.txt` resolves, except those to the GitHub repo, which stays
-  private until `4-life-in-the-world`'s launch step 8 checks them.
+  private until `4-life-in-the-world`'s launch step 8 makes it public; once it is, they must resolve too.

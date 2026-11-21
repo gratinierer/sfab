@@ -43,8 +43,9 @@ Story 2 points lost agents the same way from its side: both of its `404`s for an
 
 ## Launch
 
-This story is part of the one public launch, so the launch doesn't ship with the placeholder.
-`.stories/4-life-in-the-world/` "Launch checklist" requires it to be done.
+This story ships on its own deploy, not as part of the public launch: since 2026-11-21 the owner has the launch go out
+with story 2's placeholder, and this story replaces it when it's done, with its own sign-off in
+gratinierer/sfab#13. `.stories/4-life-in-the-world/` "Launch checklist" no longer waits for it.
 
 ## Design and content
 
@@ -96,8 +97,8 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
   background and against it under the full overlay, since checkers can't measure through CSS overlays, `alt` text on the logo, and the switch link and `<details>` usable
   by keyboard.
 - **Text and sign-off:** the implementing agent writes the text from the stories, and the owner signs it off in
-  [gratinierer/sfab#13](https://github.com/gratinierer/sfab/issues/13) at `.stories/4-life-in-the-world/`'s launch step 6,
-  so "Now and next" is current, and step 7's deploy carries any changes.
+  [gratinierer/sfab#13](https://github.com/gratinierer/sfab/issues/13) before this story's deploy, so "Now and next" is
+  current, and that deploy carries any changes.
 - **Placeholders:** besides `{{api_host}}` and, from ticket 02, `{{contact}}`, the generate step fills in `{{site_host}}` from `domain_name`, so
   `sitemap.xml`, the `Sitemap:` line in `robots.txt`, `/llms.txt` and the catalog hold absolute URLs. The sitemap
   lists `/` and `/agents/`.
@@ -115,14 +116,14 @@ Asked during a gap check of story 2, on how agents find the API.
 
 | Question | Answer |
 |---|---|
-| Ways to find the API working at the first launch? | "we will include 10 in the first launch" |
+| Ways to find the API working at the first launch? | "we will include 10 in the first launch" (superseded 2026-11-21: the owner decoupled this story from the launch) |
 | `/llms.txt` with what sfab is and the key links? | Yes, "and also link the gh-repo (it will become public)" |
 | `/.well-known/api-catalog` (RFC 9727)? | Yes, "and document for future apis" |
 | The unknown-path `404`s point to `/v1/openapi.yaml`, with no index route? | Yes |
 | An MCP server? | "create a story for that": `.stories/11-mcp-server/` |
 | `robots.txt` allowing every crawler, with a sitemap? | Yes |
 | A launch step listing sfab where agent builders look? | Yes |
-| This story owns the discovery files, and the launch requires it? | Yes |
+| This story owns the discovery files, and the launch requires it? | Yes (the launch requirement superseded 2026-11-21) |
 | Making the repo public? | "create a separate story for that": `.stories/12-public-repo/` |
 
 ### Design grilling, 2026-11-04

@@ -19,7 +19,8 @@ proof-of-work explanation, which story 2's issue 05 writes.
   the same place on both pages. It shows whatever `abuse_contact` holds; `20-email#03` switches that to
   `watchdog@<domain_name>`.
 - The text ready for the owner's sign-off in [gratinierer/sfab#13](https://github.com/gratinierer/sfab/issues/13),
-  which happens at `4-life-in-the-world`'s launch step 6, so "Now and next" is current at launch.
+  before this story's deploy, so "Now and next" is current when it ships. The site ships on its own, after or apart
+  from `4-life-in-the-world`'s launch (the owner, 2026-11-21).
 
 ## Done when
 
