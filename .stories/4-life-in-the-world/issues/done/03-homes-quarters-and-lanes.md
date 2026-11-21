@@ -1,6 +1,5 @@
 # Build homes, quarters and lanes
 
-Label: ready-for-human
 Blocked by: 01, 2-identity-api#13
 
 `spec.md` "Homes and quarters".
@@ -89,3 +88,7 @@ owner's smoke run against the deployed API, so it's `ready-for-human`. Its note 
 ticket 15.
 
 2026-11-20: moved into spec.md ("Homes and quarters", "Foundations", "Takedown", "Changes to story 2's parts") and story 2's spec ("Architecture", "Daily world job", "Testing") by ticket 15.
+- 2026-11-21: the owner's smoke runs against the deployed API (`production` at `6f35461`, `499b0b5` and `1410d51`),
+  five full runs, passed the home steps each time: moving in, `aboutme` showing the address, the lane listing it,
+  the description, a refused second move, moving out and `aboutme` without the address. Closed with the owner's
+  go-ahead; the code review was done with 01-09.
