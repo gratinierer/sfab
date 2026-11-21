@@ -90,6 +90,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-20T18:49:39+00:00 | check | @ c48c828 | scripts/check | — | green (the loop's check of the fixes) |
 | 2026-11-21T10:30:00+00:00 | check | @ a616bcb | scripts/check | — | green |
 | 2026-11-21T10:30:00+00:00 | code-review | 21 @ f067c1b..a616bcb | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5) | 5 new: 2 standards, 3 spec, 0 security | reviewers on another model of the author's family (Sonnet for Opus); `/review-code f067c1b auto 2` round 1 |
+| 2026-11-21T10:50:00+00:00 | walkthrough | 21 @ a616bcb..HEAD | claude-opus-5-5 (address-code-review-findings auto) | 0 new, 5 resolved, 0 still open | auto walkthrough, not a review pass; edited spec.md |
 
 ## Findings
 
