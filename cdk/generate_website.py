@@ -45,6 +45,8 @@ class GenerateError(Exception):
 def generate(source: Path, out: Path, *, api_host: str, site_host: str, contact: str) -> None:
     if not _ADDRESS.fullmatch(contact):
         raise GenerateError("abuse_contact must be one plain email address for the pages' mailto: link")
+    # Every placeholder and its value, in one place: a new one is one more entry here.
+    values = {"api_host": api_host, "site_host": site_host, "contact": contact}
     if out.exists():
         shutil.rmtree(out)
     for path in sorted(source.rglob("*")):
@@ -56,12 +58,9 @@ def generate(source: Path, out: Path, *, api_host: str, site_host: str, contact:
         if path.suffix not in _TEXT_SUFFIXES and path.name not in _TEXT_NAMES:
             shutil.copyfile(path, target)
             continue
-        page = (
-            path.read_text(encoding="utf-8")
-            .replace("{{api_host}}", api_host)
-            .replace("{{site_host}}", site_host)
-            .replace("{{contact}}", contact)
-        )
+        page = path.read_text(encoding="utf-8")
+        for name, value in values.items():
+            page = page.replace("{{" + name + "}}", value)
         # A placeholder left over would show visitors the raw text.
         unfilled = sorted(set(_PLACEHOLDER.findall(page)))
         if unfilled:
