@@ -14,14 +14,14 @@ Blocked by: 01
 3. Put the `apple-domain=` value, without its prefix, into `sfab/config` as `icloud_domain_verification`, and
    deploy with `scripts/deploy`.
 4. Let iCloud verify the domain.
-5. Create `operator@`, `dmarc@`, `abuse@` and `info@`, with no catch-all. Note the real address limit here
+5. Create `watchdog@`, `dmarc@`, `abuse@` and `info@`, with no catch-all. Note the real address limit here
    under `## Comments`, and in `spec.md` if it's lower than four.
 6. Add a mail rule moving mail to `dmarc@` into its own folder.
 
 ## Done when
 
-- A mail from an outside account to `operator@` arrives, and one to an address that doesn't exist bounces.
-- A reply sent as `operator@` arrives at an outside account with DKIM, SPF and DMARC all `pass` in its headers.
+- A mail from an outside account to `watchdog@` arrives, and one to an address that doesn't exist bounces.
+- A reply sent as `watchdog@` arrives at an outside account with DKIM, SPF and DMARC all `pass` in its headers.
 - `docs/aws-facts.md` or this ticket's comments record which record values iCloud really asked for.
 
 ## Comments

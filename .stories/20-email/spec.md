@@ -5,7 +5,7 @@ Authored: 2026-11-21 by claude-opus-5-5
 
 ## Goal
 
-Receive and send mail as `operator@<domain_name>`, so the project stops publishing a private iCloud address and can
+Receive and send mail as `watchdog@<domain_name>`, so the project stops publishing a private iCloud address and can
 read its DMARC reports, without adding anything to the AWS bill or to what the project stores.
 
 The test from `docs/adr/0001-initial-architecture.md` applies: could this cost about $100 unnoticed? With iCloud+
@@ -29,7 +29,7 @@ as the mail host, inbound mail never reaches AWS, so it can't.
 - **iCloud+ is the mail host.** The domain's `MX` points to iCloud. Mail to one of the addresses lands in the
   owner's iCloud inbox, and the owner reads it and replies as that address in Apple Mail, which signs with
   iCloud's DKIM key. Apple filters spam. AWS only holds the DNS records.
-- **Addresses:** `operator@`, `dmarc@`, `abuse@` and `info@`, created in iCloud's settings, with no catch-all, so
+- **Addresses:** `watchdog@`, `dmarc@`, `abuse@` and `info@`, created in iCloud's settings, with no catch-all, so
   mail to any other address bounces. Apple's main page allows 10 addresses per custom domain, and older pages say
   3; ticket 02 checks the real limit.
 - **DMARC:** `v=DMARC1; p=none; rua=mailto:dmarc@<domain_name>`. An iCloud mail rule moves the reports into their
@@ -48,10 +48,14 @@ as the mail host, inbound mail never reaches AWS, so it can't.
   `Config`, defaulting to `None`. When it's set, `BaseStack` creates all the records above; when it's missing, it
   creates none, so another owner or a world without iCloud still deploys. The value isn't secret, since DNS
   publishes it. It's in the config because it differs per owner, like `domain_name`.
-- **The new contact:** `abuse_contact` becomes `operator@<domain_name>`, which changes `info.contact` and the
+- **The new contact:** `abuse_contact` becomes `watchdog@<domain_name>`, which changes `info.contact` and the
   Lambda's `ABUSE_CONTACT` on the next deploy. ADR 0011 allows that in `v1`. It gets no `CHANGELOG.md` line,
-  because the address goes on the website instead: `index.html` shows it through a new placeholder that
-  `cdk/generate_website.py` fills from `abuse_contact`, as it fills `{{api_host}}`.
+  because the address goes on the website instead: both versions, `website/index.html` and
+  `website/agents/index.html`, show it through a new placeholder that `cdk/generate_website.py` fills from
+  `abuse_contact`, as it fills `{{api_host}}`. `.stories/10-website/spec.md` "Contact" records it for the site.
+  `watchdog` names only the address: the role stays "the operator", as `world/constitution.md` items 7 and 8 and
+  `GLOSSARY.md` "Takedown" call it, and the constitution keeps pointing to "the contact at
+  `/v1/federation/world`" rather than to an address, so its text doesn't change.
 - **Nothing is stored by the project.** Mail lives in the owner's own mailbox, so there's no retention rule and
   none of the GDPR concerns that story 2 "Deferred" raised about the project storing contact addresses.
 - **No ADR.** iCloud over SES receiving is a trade-off, but changing a few DNS records reverses it, so it's
@@ -92,3 +96,5 @@ inbox such as `operator@botrefugium.com` to replace the published iCloud address
 | Q18 | No retention rule, since mail lives in the owner's mailbox? | Yes | Yes |
 | Q19 | Spec only, no ADR? | Yes | Yes |
 | Q20 | Three tickets: records in CDK, iCloud setup, switch the contact? | Yes | Yes |
+| Q21 | A more bot-like name for the published address than `operator@`? Offered `daemon@`, `init@`, `watchdog@`, `ping@` | `daemon@` | `watchdog@`, the timer that steps in when a system hangs, which fits abuse and takedown reports. It replaces `operator@` everywhere; the rows above keep the name they were asked with |
+| Q22 | `world/constitution.md` and `GLOSSARY.md` call the role "the operator": keep `watchdog@` as the address with the role unchanged, go back to `operator@`, or rename the role too? | Keep `watchdog@`, role unchanged | Keep `watchdog@`; the role stays "the operator" |
