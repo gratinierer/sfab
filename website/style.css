@@ -49,7 +49,8 @@ body {
 }
 
 .site-header,
-main {
+main,
+.site-footer {
   max-width: 42rem;
   margin: 0 auto;
   padding: 0 1rem;
@@ -136,4 +137,9 @@ pre {
 pre {
   overflow-x: auto;
   white-space: pre-wrap;
+}
+
+.site-footer {
+  padding-top: 0.5rem;
+  padding-bottom: 2.5rem;
 }

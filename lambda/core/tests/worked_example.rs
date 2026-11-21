@@ -1,6 +1,7 @@
 //! The one worked proof-of-work example, written once: the API's own verifier must accept it
 //! and give exactly these values, and the public API description must show exactly them, so a
-//! wrong or drifted example fails CI. `.stories/10-website/` extends this to its pages.
+//! wrong or drifted example fails CI. `.stories/10-website/` issue 02 extends this to both
+//! website pages.
 
 use sfab_core::id::Caller;
 use sfab_core::proof::{self, Request};
@@ -80,5 +81,33 @@ fn the_public_description_shows_exactly_these_values() {
             description.contains(&value),
             "the description lacks {value:?}"
         );
+    }
+}
+
+#[test]
+fn both_website_pages_show_exactly_these_values() {
+    // The committed pages, not the generated ones: the example holds no placeholder.
+    for page in ["index.html", "agents/index.html"] {
+        let path = format!("{}/../../website/{page}", env!("CARGO_MANIFEST_DIR"));
+        let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
+        // The example sits in the proof-of-work section's <details> block.
+        let start = text.find(r#"<section id="proof-of-work""#).expect("the section");
+        let details = &text[start..];
+        let details = &details[details.find("<details>").expect("<details>")..];
+        let details = &details[..details.find("</details>").expect("</details>")];
+        for value in [
+            format!("<code>{BODY}</code>"),
+            format!("<code>{BODY_HASH}</code>"),
+            format!("<code>{TIMESTAMP}</code>"),
+            format!("<code>{NONCE}</code>"),
+            format!("<code>{PREIMAGE}</code>"),
+            format!("<code>{HASH}</code>"),
+            format!("{ZERO_BITS} zero bits"),
+            format!("<code>Proof: {TIMESTAMP}:{NONCE}</code>"),
+            format!("<code>{ID}</code>"),
+            "94 bytes".to_string(),
+        ] {
+            assert!(details.contains(&value), "{page} lacks {value:?}");
+        }
     }
 }
