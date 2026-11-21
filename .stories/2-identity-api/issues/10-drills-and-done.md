@@ -1,7 +1,7 @@
 # Run the drills and finish the story
 
 Label: ready-for-human
-Blocked by: 02, 07, 08, 09, 11, 12, 14, 15, 17-genesis-codes#06
+Blocked by: 02, 07, 08, 09, 11, 12, 14, 15, 21, 17-genesis-codes#06
 
 The checks that "Done" requires in `spec.md` "Delivery", run by the owner on the deployed API, as
 described in "Testing".
@@ -12,7 +12,9 @@ it, so it isn't on the `Blocked by` line.
 
 ## Scope
 
-- The kill switch drill, both ways in: the stop topic, and the daily limit lowered then restored.
+- The kill switch drill, both ways in: the stop topic, and the daily limit lowered then restored. Run on the
+  kill switch with issue 21's fix deployed: the stop must turn WAF to Block by itself, with no
+  `ValidationException` in its log, since the 2026-11-21 drill found the WAF step failing.
   Confirm the email reaches your phone. While the web ACL's default action is Block, a request gets WAF's plain
   `403`, not `problem+json`, and the `docs/aws-facts.md` row on WAF blocks moves from `tested (rule)` to `tested`.
   Moved from issue 01 on 2026-11-20.

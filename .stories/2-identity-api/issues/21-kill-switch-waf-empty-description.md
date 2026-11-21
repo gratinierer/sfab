@@ -33,5 +33,5 @@ The drill also showed that a disabled `execute-api` endpoint answers the keyed r
 ## Done when
 
 - The unit test fails before the fix and passes after it.
-- After the deploy that carries it, issue 10's drill 1 stops WAF through the kill switch itself, with no
-  `ValidationException` in its log.
+- The docs and spec lines above say what the drill showed. Proving the fix on the deployed API is issue 10's
+  drill, which waits on this issue.
