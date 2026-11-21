@@ -140,8 +140,11 @@ holds for every page.
   flashing more than 3 times a second (WCAG 2.3.1) and the content readable from the first frame. The agent
   version stays still.
 - **Colour schemes:** each page has one fixed scheme, and none follows the browser: noir dark, board light lilac,
-  space dark, agent dark. The WCAG AA contrast check runs against each page's own scheme, plain and under any
-  overlay.
+  space dark, agent dark. The WCAG AA contrast check runs against each page's own scheme. Each page's stylesheet
+  keeps its colours in variables, and the test holds a table per page of which text variable sits on which
+  background variable, such as noir's `--ink` on `--night` and `--panel`. On noir, board and space, text sits only
+  on solid fills, and the SVG art and tiles behind them are decorative, so only the agent version's scan lines and
+  grain need the check under the full overlay.
 - **Board:** clicking a part shows its info. Its blocks use the seven section ids, in that order, and `board.js`
   puts the id in the URL, so `/board/#join` works with or without the script; with no hash it shows `#world`.
   Without the script every block is listed. What it took from the old page (rules from `style.css`, `assemble.js`,

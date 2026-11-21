@@ -16,9 +16,11 @@ Blocked by: 04
 - Its `#proof-of-work` links to `/#proof-of-work` for the worked example.
 - The section helpers from 04 find this page's sections by `id`.
 - `scripts/website/genspace.py`, with its output committed.
+- The contrast test's table of text and background variable pairs, as `spec.md` "Variants" (Colour schemes)
+  says, gains space's `--ink` and `--muted` on `--card` and `--space`, every pair the stylesheet uses.
 
 ## Done when
 
 - The page tests pass for `/space/`: scripts only from `/space/`, the seven anchors in order, WCAG AA contrast
-  against its dark scheme plain and under the nebula and stars, and motion only under the reduced-motion guard.
+  against its dark scheme, with text only on solid fills over the nebula and stars, and motion only under the reduced-motion guard.
 - With scripts off, every section is readable and nothing is hidden.

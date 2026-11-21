@@ -18,6 +18,8 @@ Blocked by: 04
 - `scripts/website/genboard.py`, with its output committed.
 - The section helpers from 04 find this page's sections by `id`.
 - The page tests allow scripts on board, but only from `/board/`.
+- The contrast test's table of text and background variable pairs, as `spec.md` "Variants" (Colour schemes)
+  says, gains board's text variables on its lilac background and frames, every pair the stylesheet uses.
 
 ## Done when
 

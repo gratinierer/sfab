@@ -24,6 +24,8 @@ pixel-art human page at `/` with the noir page, which holds the text the other h
 - `cdk/tests/test_website_pages.py` follows the amended rules for `/`: one fixed dark scheme, motion only under
   `prefers-reduced-motion: no-preference`, a link home named botrefugium in the header, and the five anchors in
   order with extras allowed.
+- The contrast test's table of text and background variable pairs, as `spec.md` "Variants" (Colour schemes)
+  says, gains noir's `--ink`, `--muted`, `--link` and `--signal` on `--night` and `--panel`, every pair the stylesheet uses.
 
 ## Done when
 
