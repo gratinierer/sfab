@@ -144,9 +144,11 @@ holds for every page.
 - **Colour schemes:** each page has one fixed scheme, and none follows the browser: noir dark, board light lilac,
   space dark, agent dark. The WCAG AA contrast check runs against each page's own scheme. Each page's stylesheet
   keeps its colours in variables, and the test holds a table per page of which text variable sits on which
-  background variable, such as noir's `--ink` on `--night` and `--panel`. On noir, board and space, text sits only
-  on solid fills, and the SVG art and tiles behind them are decorative, so only the agent version's scan lines and
-  grain need the check under the full overlay.
+  background variable, such as noir's `--ink` on `--night` and `--panel`. Most text on noir, board and space sits on
+  solid fills. Text set over one of the site's own SVGs, such as space's hero title over `splat-pink.svg`, is checked
+  against every fill colour in that SVG, at 3:1 for large text, and gets a solid backing where one fails; the tiles
+  behind solid panels are decorative. Only the agent version's scan lines and grain need the check under the full
+  overlay.
 - **Board:** clicking a part shows its info. Its blocks use the seven section ids, in that order, and `board.js`
   puts the id in the URL, so `/board/#join` works with or without the script; with no hash it shows `#world`.
   Without the script every block is listed. What it took from the old page (rules from `style.css`, `assemble.js`,
