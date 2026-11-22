@@ -58,6 +58,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-22T16:35:00Z | code-review | 01, 02, 03, 04, 05, 06, 07, 08 @ 087e91a..4faea24 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 0 new: 0 standards, 0 spec, 0 security | auto round 2, the fix commits; loop stopped clean; same-family reviewers, per AGENTS.local.md |
 | 2026-11-22T17:00:00Z | check | @ 6bd0c37 | scripts/check | — | green |
 | 2026-11-22T17:00:00Z | code-review | 01, 02, 03, 04, 05, 06, 07, 08 @ 1dc60c4..6bd0c37 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 1 new: 0 standards, 1 spec, 0 security | auto round 1 of up to 5; the range after 4faea24 holds only 6bd0c37 for story 10 (the rest is story 12's), so it is reviewed against its parent; same-family reviewers, per AGENTS.local.md |
+| 2026-11-22T17:10:00Z | walkthrough | 01, 02, 03, 04, 05, 06, 07, 08 @ 9617adc..HEAD | claude-opus-5-5, auto | 0 new, 1 resolved, 0 still open | auto walkthrough, not a review pass; edited issue 04 |
 
 ## Findings
 
