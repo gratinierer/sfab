@@ -26,6 +26,7 @@ skills from agentic_containers are the owner's.
 | `tdd` | mattpocock/skills, `skills/engineering/tdd/` | | |
 | `to-spec` | mattpocock/skills, `skills/engineering/to-spec/` | | |
 | `decision-form` | the owner's | | |
+| `deploy-on-aws` | the owner's, written in this repo (`.stories/23-deploy-on-aws-skill/`) | | |
 
 Matt Pocock's nine were identical to mattpocock/skills at `4ae2317` (2026-10-31) when copied; the hash is the first 12
 characters of each one's `computedHash` in the devcontainer's `skills-lock.json`.

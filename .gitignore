@@ -16,3 +16,6 @@ __pycache__/
 
 # Personal agent rules, imported by AGENTS.md (never commit).
 /AGENTS.local.md
+
+# The AWS profile /deploy-on-aws reads (AWS_PROFILE only, never commit).
+/.env
