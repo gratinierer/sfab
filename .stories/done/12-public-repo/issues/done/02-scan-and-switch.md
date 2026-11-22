@@ -1,6 +1,5 @@
 # Scan the history and make the repo public
 
-Label: ready-for-human
 Blocked by: 01, 03
 
 `spec.md` "Before and at the switch". It runs on its own, whenever this story's other tickets are done; since 2026-11-21 it's no longer a step of
@@ -13,7 +12,7 @@ Blocked by: 01, 03
   as `spec.md` "The personal data scan" describes. Real findings stop the switch too.
 - Decide with the owner whether to rewrite history to drop the account ID that
   `.stories/done/19-deploy-build-cache/spec.md` quoted until 2026-11-22 (review R1): HEAD has `<account>` instead, but
-  the commit that added it still holds it, and the scan reports it.
+  the commit that added it still holds it, and the scan reports it. Decided 2026-11-22: it stays (see Comments).
 - Turn on private vulnerability reporting, secret scanning and push protection.
 - Switch the repo to public.
 - Protect `production` with a branch ruleset: restrict deletions, block force pushes. It couldn't be done earlier,
@@ -22,7 +21,8 @@ Blocked by: 01, 03
 ## Done when
 
 - The scan reports no real secret, and the result is noted under `## Comments` below.
-- The personal data scan reports no real finding, and its result is noted there too, without the values.
+- The personal data scan reports no real finding other than the account ID the owner accepted on 2026-11-22 (Comments),
+  and its result is noted there too, without the values.
 - The repo is public, with the three settings on.
 - `production` has an active ruleset that restricts deletions and blocks force pushes.
 
@@ -33,3 +33,19 @@ Blocked by: 01, 03
   `cdk/tests/test_sfab_config.py:154` at `678f267` (`ICLOUD_TOKEN`, a dummy domain verification value) and
   `lambda/world/federation/tests/daily.rs:180` at `e0b913f` (a hex token in a matcher test). Rerun at the switch,
   since 01 and 03 add commits. The personal data scan waits for `scripts/pii-scan` (03).
+- 2026-11-22, early `scripts/pii-scan` run with the owner's list (6 literals), before 01 was done: 2 real findings,
+  so the switch stays stopped until the owner decides.
+  - The owner's name as the author of GitHub's web merges `0bfe291` (PR #21) and `22ca5d5` (PR #22, `production`'s
+    tip): no longer a finding, since the owner decided on 2026-11-22 that the name isn't private data to them and
+    dropped it from the list of literals.
+  - The account ID of R1 in `.stories/done/19-deploy-build-cache/spec.md`, first in `6c218cf`, and in 9 later
+    commits until HEAD replaced it on 2026-11-22: only a history rewrite of `main` removes it.
+    Accepted by the owner on 2026-11-22: no rewrite (it would also leave the ID in PR #21's and #22's refs, which only
+    GitHub Support removes). A rerun still reports this one line, and it stays out of `pii-allowlist.txt`, which
+    would publish it again in HEAD.
+- 2026-11-22, the switch, run by an agent on the owner's say-so:
+  - `main` pushed (`0a148c2`), then both scans over all 15 refs and 1749 commits: `gitleaks` 8.30.1 found only the 2
+    test fixtures above, no real secret; `scripts/pii-scan` with the owner's list (7 literals) reported only the
+    account ID the owner accepted.
+  - The repo is public, with private vulnerability reporting, secret scanning and push protection on.
+  - `production` has the active ruleset "Protect production" (id 27837740): restrict deletions, block force pushes.

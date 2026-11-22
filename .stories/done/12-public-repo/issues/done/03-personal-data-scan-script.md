@@ -1,6 +1,5 @@
 # Write the personal data scan script
 
-Label: ready-for-agent
 
 `spec.md` "The personal data scan". Issue 02 runs it before the switch.
 
@@ -23,3 +22,13 @@ Label: ready-for-agent
   are noted under `## Comments` below, without any finding's value.
 
 ## Comments
+
+- 2026-11-22: written. The first run over this repo's 1700-odd commits takes about 15 s and, with the owner's list of 6
+  literals, prints 2 lines (both real, recorded in issue 02's Comments); a planted public literal was found in 83
+  places first. Before the allowlist got the harmless values it reported, the run printed 6 pattern findings:
+  the spec's own `<id>+…` noreply wording, the Copilot co-author, story 20's planned `operator@` address and an old
+  sequential zone ID placeholder, now all in `pii-allowlist.txt`. The phone pattern found nothing in the history.
+- 2026-11-22: `scripts/check` passed at `204af55` with the 7 new tests (594 passed). The issue waits only for its
+  code review before it moves to `done/`.
+- 2026-11-22: closed by the owner without a `/review-code`, which the repo asks for before an issue that
+  changed code closes (`docs/agents/issue-tracker.md` "Closing an issue or story").

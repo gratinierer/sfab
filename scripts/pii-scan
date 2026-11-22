@@ -1,0 +1,218 @@
+#!/usr/bin/env python3
+"""Scan the full git history for personal data, without an LLM: every blob reachable from any
+ref, each read once however many commits hold it, every commit's message, author and committer,
+every annotated tag's message and tagger, and every ref name. See
+.stories/done/12-public-repo/spec.md "The personal data scan".
+
+  scripts/pii-scan <list-of-literals> [--repo <path>]
+
+The list lives outside the repo: one literal per line, matched case-insensitively as a
+substring. Blank lines, `#` comments and a leading `* ` or `- ` bullet are ignored. A literal is
+reported by its line number in the list only, never by its value, and the allowlist never
+applies to it.
+
+Prints one line per distinct finding (pattern, value and place), sorted: the first commit that
+introduced it, where it is (a path and line, or `commit message`, `commit author`, `commit
+committer`, `tag` or `ref name`), the pattern's name and the value masked but for its first and
+last characters, plus how many later commits hold it again. Values that pii-allowlist.txt
+matches are left out. Binary blobs are skipped.
+
+Exit status: 0 when nothing is left, 1 when there are findings, 2 on an error.
+"""
+
+import argparse
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+ALLOWLIST = ROOT / "pii-allowlist.txt"
+NULL_SHA = "0" * 40
+BINARY_PROBE = 8000
+
+# Letters and digits next to a match end it, so hashes and longer numbers don't count.
+PATTERNS = {
+    "email": re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}"),
+    "account-id": re.compile(r"(?<![0-9A-Za-z])\d{12}(?![0-9A-Za-z])"),
+    # International (+49 …, 0049 …) and German national (an area code, then the number; 015x mobiles) forms.
+    "phone": re.compile(
+        r"(?<![\w+.])(?:\+|00)[1-9]\d{0,2}[ ./-]?(?:\(0\) ?)?\d{2,5}(?:[ ./-]?\d{2,8}){1,3}(?![\w.])"
+        r"|(?<![\w.:/-])0[1-9]\d{1,4}[ /-]\d{3,8}(?:[ -]\d{1,5})?(?![\w.:-])"
+        r"|(?<![\w.])01[5-7]\d[ /-]?\d{7,8}(?![\w.])"
+    ),
+    # Route 53 IDs: Z, then uppercase letters and digits, with at least one of each.
+    "hosted-zone-id": re.compile(
+        r"(?<![0-9A-Za-z])Z(?=[0-9A-Z]*\d)(?=[0-9A-Z]*[A-Z])[0-9A-Z]{12,31}(?![0-9A-Za-z])"
+    ),
+}
+
+
+class ScanError(Exception):
+    pass
+
+
+def git(repo: Path, *args: str, stdin: bytes | None = None) -> bytes:
+    result = subprocess.run(["git", "-C", str(repo), *args], input=stdin, capture_output=True)
+    if result.returncode != 0:
+        message = result.stderr.decode(errors="replace").strip()
+        raise ScanError(f"git {args[0]} failed: {message}")
+    return result.stdout
+
+
+def read_literals(path: Path) -> list[tuple[int, str]]:
+    try:
+        text = path.read_text()
+    except OSError as e:
+        raise ScanError(f"can't read the list of literals: {e}") from e
+    literals = []
+    for number, line in enumerate(text.splitlines(), 1):
+        value = re.sub(r"^\s*[*-]\s+", "", line).strip()
+        if value and not value.startswith("#"):
+            literals.append((number, value.lower()))
+    if not literals:
+        raise ScanError("the list of literals is empty")
+    return literals
+
+
+def read_allowlist(path: Path) -> list[re.Pattern]:
+    """One regex per line, against a whole value, case-insensitively; `#` after whitespace, or
+    at the start of a line, starts a comment."""
+    entries = []
+    for number, line in enumerate(path.read_text().splitlines(), 1):
+        entry = re.split(r"(?:^|\s)#", line, maxsplit=1)[0].strip()
+        if not entry:
+            continue
+        try:
+            entries.append(re.compile(entry, re.IGNORECASE))
+        except re.error as e:
+            raise ScanError(f"{path.name}:{number}: bad regex: {e}") from e
+    return entries
+
+
+def history(repo: Path) -> tuple[dict[str, tuple[str, str]], dict[str, int]]:
+    """Every blob reachable from any ref, as {blob: (commit, path)} for the first commit that
+    added it, and every commit's rank, oldest first."""
+    out = git(
+        repo, "log", "--all", "--reverse", "--topo-order", "--root", "-m", "--raw",
+        "--no-abbrev", "--no-renames", "-z", "--format=%x01%H",
+    )
+    blobs: dict[str, tuple[str, str]] = {}
+    rank: dict[str, int] = {}
+    commit = ""
+    fields = out.split(b"\0")
+    i = 0
+    while i < len(fields):
+        field = fields[i].decode(errors="replace")
+        i += 1
+        if "\x01" in field:
+            commit = field.split("\x01", 1)[1].strip()
+            rank.setdefault(commit, len(rank))
+        elif field.lstrip("\n").startswith(":"):
+            _, new_mode, _, new_sha, _ = field.lstrip("\n")[1:].split(" ", 4)
+            path = fields[i].decode(errors="replace")
+            i += 1
+            if new_sha != NULL_SHA and not new_mode.startswith("160") and new_sha not in blobs:
+                blobs[new_sha] = (commit, path)
+    return blobs, rank
+
+
+def blob_contents(repo: Path, shas: list[str]):
+    """Yields (sha, bytes) for each blob, through one `git cat-file --batch`."""
+    out = git(repo, "cat-file", "--batch", stdin="".join(f"{s}\n" for s in shas).encode())
+    pos = 0
+    for _ in shas:
+        end = out.index(b"\n", pos)
+        sha, _, size = out[pos:end].decode().split(" ")
+        start = end + 1
+        yield sha, out[start : start + int(size)]
+        pos = start + int(size) + 1
+
+
+def matches(text: str, literals: list[tuple[int, str]]):
+    """Yields (line number, pattern name, value) for every match in the text."""
+    for number, line in enumerate(text.splitlines(), 1):
+        lowered = line.lower()
+        for literal_number, value in literals:
+            if value in lowered:
+                yield number, f"literal {literal_number}", value
+        for name, pattern in PATTERNS.items():
+            for m in pattern.finditer(line):
+                yield number, name, m.group(0)
+
+
+def mask(value: str) -> str:
+    if len(value) <= 2:
+        return "*" * len(value)
+    return value[0] + "*" * (len(value) - 2) + value[-1]
+
+
+def scan(repo: Path, literals: list[tuple[int, str]], allowlist: list[re.Pattern]) -> list[str]:
+    blobs, rank = history(repo)
+    # {(pattern, value lowered, place): [(rank, commit, line, value as found)]}
+    found: dict[tuple[str, str, str], list[tuple[int, str, int, str]]] = {}
+
+    def record(text: str, commit: str, where: str) -> None:
+        for line, name, value in matches(text, literals):
+            if name.startswith("literal") or not any(a.fullmatch(value) for a in allowlist):
+                key = (name, value.lower(), where)
+                found.setdefault(key, []).append((rank.get(commit, len(rank)), commit, line, value))
+
+    for sha, data in blob_contents(repo, list(blobs)):
+        if b"\0" in data[:BINARY_PROBE]:
+            continue
+        commit, path = blobs[sha]
+        record(data.decode(errors="replace"), commit, path)
+
+    log = git(repo, "log", "--all", "-z", "--format=%H%x1f%an <%ae>%x1f%cn <%ce>%x1f%B")
+    for entry in log.decode(errors="replace").split("\0"):
+        parts = entry.strip("\n").split("\x1f")
+        if len(parts) != 4:
+            continue
+        commit, author, committer, message = parts
+        record(author, commit, "commit author")
+        record(committer, commit, "commit committer")
+        record(message, commit, "commit message")
+
+    refs = git(
+        repo, "for-each-ref", "--format=%(objectname)%1f%(refname)%1f%(objecttype)%1f"
+        "%(taggername) %(taggeremail)%1f%(*objectname)%1f%(contents)%00",
+    )
+    for entry in refs.decode(errors="replace").split("\0"):
+        parts = entry.strip("\n").split("\x1f")
+        if len(parts) != 6:
+            continue
+        target, refname, kind, tagger, tagged, message = parts
+        record(refname, target, "ref name")
+        if kind == "tag":
+            record(f"{tagger}\n{message}", tagged or target, "tag")
+
+    lines = []
+    for (name, _, where), places in found.items():
+        places = sorted(set(places))
+        _, commit, line, value = places[0]
+        shown = "" if name.startswith("literal") else f" {mask(value)}"
+        commits = len({c for _, c, _, _ in places})
+        more = f" (+{commits - 1} more commits)" if commits > 1 else ""
+        lines.append(f"{commit[:12]} {where}:{line} {name}{shown}{more}")
+    return sorted(lines)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("literals", type=Path, help="the owner's list, kept outside the repo")
+    parser.add_argument("--repo", type=Path, default=ROOT, help="the repo to scan (default: this one)")
+    args = parser.parse_args()
+    try:
+        report = scan(args.repo, read_literals(args.literals), read_allowlist(ALLOWLIST))
+    except ScanError as e:
+        print(f"pii-scan: {e}", file=sys.stderr)
+        return 2
+    for line in report:
+        print(line)
+    print(f"pii-scan: {len(report)} finding(s)", file=sys.stderr)
+    return 1 if report else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

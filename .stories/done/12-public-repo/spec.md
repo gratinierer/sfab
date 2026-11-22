@@ -21,9 +21,13 @@ AWS secret could, which is why the scan comes first.
 - **Never:** the owner's private values, `origin_key`, `ip_hash_key` and, after launch, `smoke_claim`. They live in
   the Secrets Manager secret `sfab/config`, not in the repo (`.stories/done/18-deploy-from-codebuild/`), and no template
   holds them. `smoke-genesis-codes.txt` stays gitignored.
-- **Never, either:** the owner's personal data, such as their name, postal address, phone number and private email
+- **Never, either:** the owner's personal data, such as their postal address, phone number and private email
   addresses, nor the AWS account ID, hosted zone ID or support case IDs. Stories and docs describe such values
-  ("the alert address", "the account") instead of copying them.
+  ("the alert address", "the account") instead of copying them. The owner's name isn't private data to them
+  (owner, 2026-11-22).
+- **Accepted in history (owner, 2026-11-22):** the account ID in the history of a story 19 document, which HEAD no
+  longer holds. Removing it means rewriting `main`, and PR refs only GitHub Support can delete, so it stays (issue
+  02's Comments).
 
 ## New files
 
@@ -64,7 +68,7 @@ only its report, so the tokens spent grow with the findings, not with the histor
 - **What it looks for:**
   - the owner's literal values, one per line, from a list outside the repo, so the list itself can't leak. Its
     path is an argument, and there's no default inside the repo. It holds what no generic pattern finds
-    reliably: the owner's name and private usernames (not the GitHub handle `gratinierer`, which the repo's URLs
+    reliably: the owner's private usernames (not the GitHub handle `gratinierer`, which the repo's URLs
     and every commit publish anyway), the parts of their postal address (street, city, postcode), their
     private email addresses and phone numbers, and the support case IDs, so "Never, either" is covered.
   - generic patterns: email addresses, 12-digit numbers (account IDs), phone numbers and Route 53 hosted zone IDs.
@@ -74,7 +78,10 @@ only its report, so the tokens spent grow with the findings, not with the histor
   `noreply@github.com` and the handle's own `<id>+gratinierer@users.noreply.github.com`, each exactly, so a
   private mailbox at the domain or a name-based noreply address is still reported, the test fixtures' made-up account IDs (`000000000000`, `123456789012`, `210987654321`,
   `777777777777`) and hosted zone ID (`Z00000000000000000000`), the AI co-author address in commit trailers, and
-  the owner's relay author address, which is fine to publish (above). The allowlist is
+  the owner's relay author address, which is fine to publish (above). Harmless values the first run found were
+  added: `operator@botrefugium.com`, the name story 20 planned before `watchdog@`, the GitHub Copilot bot's noreply
+  address in one co-author trailer, and the sequential zone ID placeholder `Z0123456789ABCDEFGHIJ` of an old
+  example config. The allowlist is
   `pii-allowlist.txt` at the repo root, beside `audit-ignore.toml`, always read: one regular expression per line,
   matched case-insensitively against a whole matched value, each followed by a `# reason`. It never applies to
   the owner's literals.
@@ -85,7 +92,8 @@ only its report, so the tokens spent grow with the findings, not with the histor
 - **Exit status:** 0 when nothing is left, 1 when there are findings, 2 on an error.
 - **The agent's part:** read the report raw, not through any output filter (in a session that condenses command
   output, `rtk bypass scripts/pii-scan …`), and first check that it finds a known planted value. Mark each finding
-  real or harmless. Harmless ones go into the allowlist, so a rerun ends clean.
+  real or harmless. Harmless ones go into the allowlist, so a rerun reports only the real findings the owner
+  accepted (issue 02's Comments), which can't go there: literals bypass it, and an entry would publish the value.
 
 ## Clarifications
 
