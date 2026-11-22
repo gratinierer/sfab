@@ -15,13 +15,13 @@ class _NoirCounts(HTMLParser):
     """Counts what is out now and what comes next on noir, by the page tests' rules
     (`_now_and_total`, `_items`): any element with a `data-live` attribute, whatever its value,
     and the <li> items of the one `<ul class="next">` inside the element with `id="next"`,
-    whatever its tag. The results are `live`, `coming` and `next_lists`; the underscored
+    whatever its tag. The results are `live`, `misplaced`, `coming` and `next_lists`; the underscored
     fields are the walk's own state."""
 
     def __init__(self) -> None:
         super().__init__()
         self.live = 0
-        self.unnamed = 0        # `data-live` markers without a section id of their own
+        self.misplaced = 0      # `data-live` markers off a section: no id, or on #next
         self.coming = 0
         self.next_lists = 0     # the `<ul class="next">` lists found inside #next
         self._next_tag = None   # #next's own tag, once it opens
@@ -33,7 +33,7 @@ class _NoirCounts(HTMLParser):
         if "data-live" in attrs:
             self.live += 1
             if attrs.get("id") in (None, "", "next"):
-                self.unnamed += 1
+                self.misplaced += 1
         if self._next_depth and tag == self._next_tag:
             self._next_depth += 1
         elif not self._next_depth and attrs.get("id") == "next":
@@ -59,8 +59,8 @@ def count_live_and_next(html: str) -> tuple[int, int]:
     counts.close()
     if counts.next_lists != 1:
         raise SystemExit(f'noircounts: noir\'s #next needs one <ul class="next">, found {counts.next_lists}')
-    if counts.unnamed:
-        raise SystemExit(f"noircounts: a data-live marker needs a section id, found {counts.unnamed} without")
+    if counts.misplaced:
+        raise SystemExit(f"noircounts: a data-live marker must sit on a live section, found {counts.misplaced} that don't")
     if not counts.live:
         raise SystemExit("noircounts: found no data-live panel on noir")
     return counts.live, counts.coming
