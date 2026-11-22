@@ -60,7 +60,8 @@ def count_live_and_next(html: str) -> tuple[int, int]:
     if counts.next_lists != 1:
         raise SystemExit(f'noircounts: noir\'s #next needs one <ul class="next">, found {counts.next_lists}')
     if counts.misplaced:
-        raise SystemExit(f"noircounts: a data-live marker must sit on a live section, found {counts.misplaced} that don't")
+        raise SystemExit(f"noircounts: a data-live marker needs a section id of its own, other than #next; "
+                         f"found {counts.misplaced} that don't")
     if not counts.live:
         raise SystemExit("noircounts: found no data-live panel on noir")
     return counts.live, counts.coming

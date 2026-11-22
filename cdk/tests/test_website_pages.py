@@ -1020,8 +1020,8 @@ NOIR_PROBES = {
 
 # The probes both copies refuse, each with the phrase naming the check that refuses it; the rest they count.
 PROBE_REFUSALS = {
-    "a marker without an id": "must sit on a live section",
-    "a marker on #next itself": "must sit on a live section",
+    "a marker without an id": "needs a section id of its own",
+    "a marker on #next itself": "needs a section id of its own",
     "no marker at all": "found no data-live panel",
     "two lists in #next": 'needs one <ul class="next">',
     "a list nested in the list": 'needs one <ul class="next">',
