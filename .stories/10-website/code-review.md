@@ -50,6 +50,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-22T14:30:00Z | walkthrough | 01, 02, 03, 04, 05, 06, 07, 08 @ fb94993..HEAD | claude-opus-5-5, auto | 0 new, 7 resolved, 8 still open | auto walkthrough, not a review pass; C64 needs the owner, C39, C40, C41, C50, C51, C52 and C55 skipped as still waiting |
 | 2026-11-22T14:45:00Z | check | @ 726146f | scripts/check | — | green, the loop's check of the round 5 fixes |
 | 2026-11-22T14:45:00Z | code-review | 01, 02, 03, 04, 05, 06, 07, 08 @ f82055d..726146f | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 5 new: 3 standards, 2 spec, 0 security | auto round 6, the fix commits; loop stopped at its limit of 5 address passes; same-family reviewers, per AGENTS.local.md |
+| 2026-11-22T15:30:00Z | walkthrough | 01, 02, 03, 04, 05, 06, 07, 08 @ 942b5f7..HEAD | claude-opus-5-5 | 0 new, 7 resolved, 5 waived, 1 superseded, 0 still open | walkthrough, not a review pass; also dropped the internal daily limit from every page on the owner's say-so (0ed134d) |
 
 ## Findings
 
