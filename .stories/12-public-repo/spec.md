@@ -31,7 +31,8 @@ AWS secret could, which is why the scan comes first.
   devcontainer, and where the stories and ADRs are, with a "Third-party" line for the Silkscreen font, which is under the SIL OFL 1.1 rather than MIT, and for the
   agent skills vendored from Matt Pocock in `.claude/skills/`, which keep his MIT notice in
   `.claude/skills/LICENSE-mattpocock`. It's the first thing people and agents read here.
-- **`LICENSE`:** plain MIT for everything but that font and the vendored skills, which keep their own notices, the simplest fit for a small, non-critical project. Anyone may run a closed fork.
+- **`LICENSE`:** plain MIT for everything but that font and the vendored skills, which keep their own notices, the simplest fit for a small, non-critical project. Anyone may run a closed fork. The copyright holder is the GitHub
+  handle, `Copyright (c) 2026 gratinierer`, never the owner's name (owner, 2026-11-22).
 - **`SECURITY.md`:** report security problems through GitHub's private vulnerability reporting, and report
   content through the abuse contact in the API description's `info.contact`. There's no response deadline,
   which fits the owner's manual reactions.
