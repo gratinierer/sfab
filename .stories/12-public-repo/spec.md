@@ -85,7 +85,8 @@ only its report, so the tokens spent grow with the findings, not with the histor
 - **Exit status:** 0 when nothing is left, 1 when there are findings, 2 on an error.
 - **The agent's part:** read the report raw, not through any output filter (in a session that condenses command
   output, `rtk bypass scripts/pii-scan …`), and first check that it finds a known planted value. Mark each finding
-  real or harmless. Harmless ones go into the allowlist, so a rerun ends clean.
+  real or harmless. Harmless ones go into the allowlist, so a rerun reports only the real findings the owner
+  accepted (issue 02's Comments), which can't go there: literals bypass it, and an entry would publish the value.
 
 ## Clarifications
 
