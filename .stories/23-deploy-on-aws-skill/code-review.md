@@ -18,6 +18,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-22T17:46Z | walkthrough | - | claude-opus-5-5 (auto, inside /review-code auto) | 0 new, 2 resolved, 2 still open | auto walkthrough, not a review pass |
 | 2026-11-22T18:01Z | check | @ 55b7da810b | scripts/check | — | green (loop check after auto pass 1, 597 passed) |
 | 2026-11-22T18:01Z | code-review | 01 @ b2672bb859..55b7da810b | claude-sonnet-5-5 (dispatched; code and fixes by claude-opus-5-5) | 0 new: 0 standards, 0 spec, 0 security | auto round 2, fix commits only; C2, C3 fixes hold; cosmetic wrap notes not recorded; two reviewers resumed after a usage-limit stop |
+| 2026-11-22T18:01Z | walkthrough | - | claude-opus-5-5 (auto, inside /review-code auto) | 0 new, 0 resolved, 2 still open | auto walkthrough, not a review pass; no progress, loop stops |
 
 ## Findings
 
