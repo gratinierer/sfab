@@ -22,7 +22,8 @@ Blocked by: 01, 03
 ## Done when
 
 - The scan reports no real secret, and the result is noted under `## Comments` below.
-- The personal data scan reports no real finding, and its result is noted there too, without the values.
+- The personal data scan reports no real finding other than the two the owner accepted on 2026-11-22 (Comments),
+  and its result is noted there too, without the values.
 - The repo is public, with the three settings on.
 - `production` has an active ruleset that restricts deletions and blocks force pushes.
 
