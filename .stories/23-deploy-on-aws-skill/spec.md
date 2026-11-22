@@ -89,7 +89,8 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
      - A production run paces each request by `PACE_SECONDS` (`cdk/smoke.py`) and takes minutes, so it runs in the
        background and the skill waits for it to finish, without polling, rather than under a short command timeout
        that would cut it off and look like a failure.
-     There is no override. The production smoke run births nothing and cleans up its friend, block, vouch and
+     The URL is built rather than read because the `Endpoint` output that `cdk/smoke.py` names has a key CDK
+     derives from the construct (`<Api…>Endpoint<hash>`), while `RestApiId`'s key is fixed. There is no override. The production smoke run births nothing and cleans up its friend, block, vouch and
      message; it rewrites only the smoke identity's `whoiam` to a fixed text.
      - `scripts/smoke` runs `cdk/.venv/bin/python`, which step 5 made if it was missing.
      - It reads the test fixture instead of `sfab/config` when `SFAB_CONFIG` is set; the secret read names its
