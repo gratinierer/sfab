@@ -996,18 +996,26 @@ NOIR_PROBES = {
 }
 
 
+# The probes both copies refuse, each with the reason noircounts gives; the rest they count.
+PROBE_REFUSALS = {
+    "two lists in #next": 'needs one <ul class="next">, found 2',
+    "a list nested in the list": 'needs one <ul class="next">, found 2',
+}
+
+
 @pytest.mark.parametrize("probe", NOIR_PROBES)
 def test_the_board_counts_noir_by_the_page_tests_rule(probe):
     # genboard.py draws the lights with noircounts, a second copy of `_now_and_total`'s rule:
     # run both on the same pages, and they agree or both refuse.
     html = NOIR_PROBES[probe]
-    try:
-        expected = _now_and_total(Page(html))
-    except AssertionError:
-        with pytest.raises(SystemExit):
+    refusal = PROBE_REFUSALS.get(probe)
+    if refusal:
+        with pytest.raises(AssertionError):
+            _now_and_total(Page(html))
+        with pytest.raises(SystemExit, match=re.escape(refusal)):
             noircounts.count_live_and_next(html)
         return
-    now, total = expected
+    now, total = _now_and_total(Page(html))
     # noircounts gives (live, coming), the tests (now, total): compare like with like.
     assert noircounts.count_live_and_next(html) == (now, total - now)
 
