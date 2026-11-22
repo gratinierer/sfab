@@ -51,7 +51,11 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
   6. **Smoke test:** after a successful build, offer `scripts/smoke --execute-api <url> --production`. The URL is
      `https://<RestApiId>.execute-api.us-east-1.amazonaws.com/v1/`, with `RestApiId` read from the `SfabApi` stack's
      CloudFormation output each time (`aws cloudformation describe-stacks --stack-name SfabApi --region us-east-1
-     --query "Stacks[0].Outputs[?OutputKey=='RestApiId'].OutputValue" --output text`) (`cdk/kill_switch.py`, the outputs `docs/restart-after-a-stop.md` uses).
+     --query "Stacks[0].Outputs[?OutputKey=='RestApiId'].OutputValue" --output text`; `cdk/kill_switch.py`, the
+     outputs `docs/restart-after-a-stop.md` uses).
+     - A production run paces each request by `PACE_SECONDS` (`cdk/smoke.py`) and takes minutes, so it runs in the
+       background and the skill waits for it to finish, without polling, rather than under a short command timeout
+       that would cut it off and look like a failure.
      There is no override. The production smoke run births nothing and cleans up its friend, block, vouch and
      message; it rewrites only the smoke identity's `whoiam` to a fixed text.
      - `scripts/smoke` runs `cdk/.venv/bin/python`, which step 5 made if it was missing.
