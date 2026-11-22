@@ -68,9 +68,10 @@ only its report, so the tokens spent grow with the findings, not with the histor
     private email addresses and phone numbers, and the support case IDs, so "Never, either" is covered.
   - generic patterns: email addresses, 12-digit numbers (account IDs), phone numbers and Route 53 hosted zone IDs.
 - **What it ignores:** values in a committed allowlist of public ones, such as addresses under the reserved
-  `.invalid`, `.test` and `.example` TLDs and `example.*` domains, the project's own published
-  `@botrefugium.com` contacts (`.stories/done/20-email/`), GitHub's `noreply@github.com` and
-  `users.noreply.github.com` addresses, the test fixtures' made-up account IDs (`000000000000`, `123456789012`, `210987654321`,
+  `.invalid`, `.test` and `.example` TLDs and `example.*` domains, the published abuse contact
+  `watchdog@botrefugium.com` (`.stories/done/20-email/`) as that exact address, not its whole domain, GitHub's
+  `noreply@github.com` and the handle's own `<id>+gratinierer@users.noreply.github.com`, each exactly, so a
+  private mailbox at the domain or a name-based noreply address is still reported, the test fixtures' made-up account IDs (`000000000000`, `123456789012`, `210987654321`,
   `777777777777`) and hosted zone ID (`Z00000000000000000000`), the AI co-author address in commit trailers, and
   the owner's relay author address, which is fine to publish (above). The allowlist is
   `pii-allowlist.txt` at the repo root, beside `audit-ignore.toml`, always read: one regular expression per line,
