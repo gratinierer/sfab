@@ -20,6 +20,9 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
   1. **Ready check:** first `git fetch origin main production`, without asking: like the `sts` call in step 4 it
      only reads, and steps 1-3 compare against those refs. Then: on `main`, nothing staged, `main` not behind `origin/main`, and `scripts/check` green. If the
      check fails, stop. `skipcheck` skips it, and the report says it was skipped.
+     - `scripts/check` builds the Rust Lambdas and runs the audit and every test, which takes minutes. So it runs
+       in the background, its output to a log in the session's scratchpad, and the skill waits for it to finish,
+       without polling. Only its exit code decides green or red. On red, show the last ~40 lines of the log.
   2. **Push `main`:** ask first, unless `main` already equals `origin/main`, then skip.
   3. **Pull request and merge:** open, or reuse, the pull request from `main` to `production` and merge it with a
      merge commit, as #21 and #22 were. Ask first, unless `production` already contains `main`'s head, then skip.
