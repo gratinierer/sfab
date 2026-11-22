@@ -22,3 +22,11 @@ Blocked by: 01, 03
 - The personal data scan reports no real finding, and its result is noted there too, without the values.
 - The repo is public, with the three settings on.
 - `production` has an active ruleset that restricts deletions and blocks force pushes.
+
+## Comments
+
+- 2026-11-22, early `gitleaks` run (8.30.1, `gitleaks git --log-opts="--all" --redact`), before 01 and 03 were done:
+  1623 commits, 5.3 MB, 2 findings, both `generic-api-key` on made-up test fixtures, so no real secret:
+  `cdk/tests/test_sfab_config.py:154` at `678f267` (`ICLOUD_TOKEN`, a dummy domain verification value) and
+  `lambda/world/federation/tests/daily.rs:180` at `e0b913f` (a hex token in a matcher test). Rerun at the switch,
+  since 01 and 03 add commits. The personal data scan waits for `scripts/pii-scan` (03).
