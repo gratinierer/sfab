@@ -33,11 +33,15 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
      merge commit, as #21 and #22 were. Ask first, unless `production` already contains `main`'s head, then skip.
      - **Title:** the story numbers from the `(#n)` endings of the commits in `origin/production..main`. One story:
        "Deploy story <n>: <its spec.md title> (#n)"; several: "Deploy stories <a> and <b> (#a) (#b)". None: stop
-       and ask, and `auto` stops. The merge commit takes this title, so it carries the numbers the policy wants.
+       and ask, and `auto` stops. The repo's merge commits default to "Merge pull request #N from …" (its
+       `merge_commit_title` is `MERGE_MESSAGE`, as #22 and #24 show), so the merge passes the title as the subject:
+       `gh pr merge <n> --merge --subject "<title>"`, and the commit carries the numbers the policy wants.
      - **Body:** "Moves `production` forward from `main` for a deploy, so `sfab-deploy` builds …", then the commit
        subjects. No `Closes #n`: `production` isn't the default branch, and closing issues is out of scope.
-     - **Checks:** when the pull request has checks, wait for them (`gh pr checks --watch`) and stop if one fails;
-       with none (the `production` ruleset requires none), merge straight away.
+     - **Checks:** read them with `gh pr view <n> --json statusCheckRollup`. An empty list means none (the
+       `production` ruleset requires none, and CI runs only on `workflow_dispatch`): merge straight away, because
+       `gh pr checks` exits 1 with "no checks reported" then. Otherwise wait with `gh pr checks <n> --watch` and
+       stop if one fails.
   4. **AWS login, checked just before the first AWS call:**
      - If a `.env` exists at the repo root, check `git check-ignore .env` first and stop if it isn't ignored; then
        take `AWS_PROFILE` from it. It holds nothing else. Without a `.env`, use the default credentials and say in
