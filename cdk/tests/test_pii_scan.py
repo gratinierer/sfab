@@ -1,4 +1,4 @@
-"""scripts/pii-scan on a throwaway repo built in each test: .stories/12-public-repo/spec.md "The
+"""scripts/pii-scan on a throwaway repo built in each test: .stories/done/12-public-repo/spec.md "The
 personal data scan" and issue 03. The values planted here are made up."""
 
 import os

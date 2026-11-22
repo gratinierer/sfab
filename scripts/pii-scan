@@ -2,7 +2,7 @@
 """Scan the full git history for personal data, without an LLM: every blob reachable from any
 ref, each read once however many commits hold it, every commit's message, author and committer,
 every annotated tag's message and tagger, and every ref name. See
-.stories/12-public-repo/spec.md "The personal data scan".
+.stories/done/12-public-repo/spec.md "The personal data scan".
 
   scripts/pii-scan <list-of-literals> [--repo <path>]
 

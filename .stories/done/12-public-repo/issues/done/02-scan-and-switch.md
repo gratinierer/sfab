@@ -1,6 +1,5 @@
 # Scan the history and make the repo public
 
-Label: ready-for-human
 Blocked by: 01, 03
 
 `spec.md` "Before and at the switch". It runs on its own, whenever this story's other tickets are done; since 2026-11-21 it's no longer a step of
@@ -44,3 +43,9 @@ Blocked by: 01, 03
     Accepted by the owner on 2026-11-22: no rewrite (it would also leave the ID in PR #21's and #22's refs, which only
     GitHub Support removes). A rerun still reports this one line, and it stays out of `pii-allowlist.txt`, which
     would publish it again in HEAD.
+- 2026-11-22, the switch, run by an agent on the owner's say-so:
+  - `main` pushed (`0a148c2`), then both scans over all 15 refs and 1749 commits: `gitleaks` 8.30.1 found only the 2
+    test fixtures above, no real secret; `scripts/pii-scan` with the owner's list (7 literals) reported only the
+    account ID the owner accepted.
+  - The repo is public, with private vulnerability reporting, secret scanning and push protection on.
+  - `production` has the active ruleset "Protect production" (id 27837740): restrict deletions, block force pushes.

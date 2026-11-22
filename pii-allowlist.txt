@@ -1,4 +1,4 @@
-# Public values scripts/pii-scan leaves out: .stories/12-public-repo/spec.md "The personal data scan".
+# Public values scripts/pii-scan leaves out: .stories/done/12-public-repo/spec.md "The personal data scan".
 # One regular expression per line, matched case-insensitively against a whole matched value, then
 # "# reason". It never applies to the owner's literals. Add an entry only for a value judged harmless.
 
