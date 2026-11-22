@@ -85,26 +85,27 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
        `--no-start-from-head --limit 40`. CodeBuild and CDK print the account ID and ARNs, so the masking rule in
        "No account-specific data" applies to these lines before they are shown.
   6. **Smoke test:** after a successful build, offer `scripts/smoke --execute-api <url> --production`; with the
-     `smoke` argument, run it without offering, in either mode. The URL is
-     `https://<RestApiId>.execute-api.us-east-1.amazonaws.com/v1/`, with `RestApiId` read from the `SfabApi` stack's
-     CloudFormation output each time (`aws cloudformation describe-stacks --stack-name SfabApi --region us-east-1
-     --query "Stacks[0].Outputs[?OutputKey=='RestApiId'].OutputValue" --output text`; `cdk/kill_switch.py`, the
-     outputs `docs/restart-after-a-stop.md` uses).
-     - A production run paces each request by `PACE_SECONDS` (`cdk/smoke.py`) and takes minutes, so it runs in the
-       background and the skill waits for it to finish, without polling, rather than under a short command timeout
-       that would cut it off and look like a failure.
-     The URL is built rather than read because the `Endpoint` output that `cdk/smoke.py` names has a key CDK
-     derives from the construct (`<Api…>Endpoint<hash>`), while `RestApiId`'s key is fixed. There is no override. The production smoke run births nothing and cleans up its friend, block, vouch and
-     message; it rewrites only the smoke identity's `whoiam` to a fixed text.
-     - `scripts/smoke` runs `cdk/.venv/bin/python`, which step 5 made if it was missing.
-     - It reads the test fixture instead of `sfab/config` when `SFAB_CONFIG` is set; the secret read names its
-       region itself (`SECRET_REGION` in `cdk/sfab_config.py`). So the call is `env -u SFAB_CONFIG
-       AWS_PROFILE=<value> scripts/smoke …`, or `env -u SFAB_CONFIG scripts/smoke …` when step 4 found no
-       profile value.
-     - Its exit codes: 0 pass; 1 a failed smoke test; 2 a usage or config problem, such as no `smoke_claim` in
+     `smoke` argument, run it without offering, in either mode. The production smoke run births nothing and cleans
+     up its friend, block, vouch and message; it rewrites only the smoke identity's `whoiam` to a fixed text.
+     - **The URL** is `https://<RestApiId>.execute-api.us-east-1.amazonaws.com/v1/`, with `RestApiId` read from
+       the `SfabApi` stack's CloudFormation output each time (`aws cloudformation describe-stacks --stack-name
+       SfabApi --region us-east-1 --query "Stacks[0].Outputs[?OutputKey=='RestApiId'].OutputValue" --output
+       text`; `cdk/kill_switch.py`, the outputs `docs/restart-after-a-stop.md` uses). No argument overrides it.
+       It is built rather than read because the `Endpoint` output that `cdk/smoke.py` names has a key CDK
+       derives from the construct (`<Api…>Endpoint<hash>`), while `RestApiId`'s key is fixed.
+     - **Running it:** a production run paces each request by `PACE_SECONDS` (`cdk/smoke.py`) and takes minutes,
+       so it runs in the background and the skill waits for it to finish, without polling, rather than under a
+       short command timeout that would cut it off and look like a failure. It runs `cdk/.venv/bin/python`,
+       which step 5 made if it was missing.
+     - **The call:** it reads the test fixture instead of `sfab/config` when `SFAB_CONFIG` is set; the secret
+       read names its region itself (`SECRET_REGION` in `cdk/sfab_config.py`). So the call is `env -u
+       SFAB_CONFIG AWS_PROFILE=<value> scripts/smoke …`, or `env -u SFAB_CONFIG scripts/smoke …` when step 4
+       found no profile value.
+     - **Exit codes:** 0 pass; 1 a failed smoke test; 2 a usage or config problem, such as no `smoke_claim` in
        `sfab/config`, shown with its message; 3 a plain `403`, which means WAF blocked this IP or the API is
-       stopped, reported as "wait at least 5 minutes and rerun", not as a failed deploy; if a rerun exits 3 again,
-       the report points to `docs/restart-after-a-stop.md`. The build already succeeded in every case, and the report says so.
+       stopped, reported as "wait at least 5 minutes and rerun", not as a failed deploy; if a rerun exits 3
+       again, the report points to `docs/restart-after-a-stop.md`. The build already succeeded in every case,
+       and the report says so.
   7. **Report in chat only:** the commits, the pull request, the build ID and result, and what was skipped. No
      deploy log in the repo; GitHub and CodeBuild keep the history.
 - **Asking:** interactive by default, as above. **`auto`** (`/deploy-on-aws auto`) asks nothing and runs push, merge,
