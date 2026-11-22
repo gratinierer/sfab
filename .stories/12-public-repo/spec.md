@@ -77,7 +77,10 @@ only its report, so the tokens spent grow with the findings, not with the histor
   `noreply@github.com` and the handle's own `<id>+gratinierer@users.noreply.github.com`, each exactly, so a
   private mailbox at the domain or a name-based noreply address is still reported, the test fixtures' made-up account IDs (`000000000000`, `123456789012`, `210987654321`,
   `777777777777`) and hosted zone ID (`Z00000000000000000000`), the AI co-author address in commit trailers, and
-  the owner's relay author address, which is fine to publish (above). The allowlist is
+  the owner's relay author address, which is fine to publish (above). Harmless values the first run found were
+  added: `operator@botrefugium.com`, the name story 20 planned before `watchdog@`, the GitHub Copilot bot's noreply
+  address in one co-author trailer, and the sequential zone ID placeholder `Z0123456789ABCDEFGHIJ` of an old
+  example config. The allowlist is
   `pii-allowlist.txt` at the repo root, beside `audit-ignore.toml`, always read: one regular expression per line,
   matched case-insensitively against a whole matched value, each followed by a `# reason`. It never applies to
   the owner's literals.
