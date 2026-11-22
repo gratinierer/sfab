@@ -1028,21 +1028,32 @@ PROBE_REFUSALS = {
 }
 
 
-@pytest.mark.parametrize("probe", NOIR_PROBES)
-def test_the_board_counts_noir_by_the_page_tests_rule(probe):
-    # genboard.py draws the lights with noircounts, a second copy of `_now_and_total`'s rule:
-    # run both on the same pages, and they agree or both refuse.
+# genboard.py draws the lights with noircounts, a second copy of `_now_and_total`'s rule: run
+# both on the same pages, and they count the same or both refuse.
+COUNTED_PROBES = [probe for probe in NOIR_PROBES if probe not in PROBE_REFUSALS]
+
+
+def test_every_noir_probe_is_counted_or_refused():
+    # A mistyped PROBE_REFUSALS key would quietly make a refusal probe a counted one.
+    assert set(PROBE_REFUSALS) <= set(NOIR_PROBES)
+    assert COUNTED_PROBES
+
+
+@pytest.mark.parametrize("probe", COUNTED_PROBES)
+def test_the_board_counts_noir_probes_the_same(probe):
     html = NOIR_PROBES[probe]
-    refusal = PROBE_REFUSALS.get(probe)
-    if refusal:
-        with pytest.raises(AssertionError):
-            _now_and_total(Page(html))
-        with pytest.raises(SystemExit, match=re.escape(refusal)):
-            noircounts.count_live_and_next(html)
-        return
     now, total = _now_and_total(Page(html))
     # noircounts gives (live, coming), the tests (now, total): compare like with like.
     assert noircounts.count_live_and_next(html) == (now, total - now)
+
+
+@pytest.mark.parametrize("probe", PROBE_REFUSALS)
+def test_the_board_refuses_noir_probes_the_same(probe):
+    html = NOIR_PROBES[probe]
+    with pytest.raises(AssertionError):
+        _now_and_total(Page(html))
+    with pytest.raises(SystemExit, match=re.escape(PROBE_REFUSALS[probe])):
+        noircounts.count_live_and_next(html)
 
 
 def test_the_board_counts_noir_itself_by_the_page_tests_rule(pages):
