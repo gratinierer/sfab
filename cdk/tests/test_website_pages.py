@@ -979,6 +979,7 @@ def _now_and_total(noir: Page) -> tuple[int, int]:
 
 
 NOIR_PROBES = {
+    "noir itself": (REPO_WEBSITE / NOIR).read_text(encoding="utf-8"),
     "a marker of any value, on any tag": "".join([
         '<details id="identity" data-live="true"></details>',
         '<div id="homes" data-live></div>',
@@ -1054,12 +1055,6 @@ def test_the_board_refuses_noir_probes_the_same(probe):
         _now_and_total(Page(html))
     with pytest.raises(SystemExit, match=re.escape(PROBE_REFUSALS[probe])):
         noircounts.count_live_and_next(html)
-
-
-def test_the_board_counts_noir_itself_by_the_page_tests_rule(pages):
-    html = (REPO_WEBSITE / NOIR).read_text(encoding="utf-8")
-    now, total = _now_and_total(Page(html))
-    assert noircounts.count_live_and_next(html) == (now, total - now)
 
 
 def test_noir_meter_counts_the_live_panels_and_next_items(pages):
