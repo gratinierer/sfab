@@ -14,6 +14,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | Date | Kind | Reviewed | By | Findings | Notes |
 |---|---|---|---|---|---|
 | 2026-11-22T16:11Z | review | 950a64a6a962 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 6 new | full: no prior review; auto round 1; same vendor family as the author, so independence is weaker |
+| 2026-11-22T16:13Z | walkthrough | - | claude-opus-5-5 (auto, inside /review-story auto) | 0 new, 4 resolved, 2 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
