@@ -998,7 +998,8 @@ def test_open_source_links_the_repo_and_names_the_mit_license(pages, name):
 @pytest.mark.parametrize("name", PAGES)
 def test_no_page_speaks_of_cost(built, name):
     # issue 08: the world runs free for as long as we can afford it; "cost" in any form is out.
-    assert not re.search(r"cost", (built / name).read_text(encoding="utf-8"), re.I)
+    # The word in its forms, not a substring, so "costume" or a class name wouldn't trip it.
+    assert not re.search(r"\bcost(?:s|ed|ing|ly|lier|liest)?\b", (built / name).read_text(encoding="utf-8"), re.I)
 
 
 def test_noir_uses_no_game_words(built):
