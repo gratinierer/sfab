@@ -74,6 +74,12 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
      it is missing, make it first as `scripts/deploy` does (`uv venv` and `uv pip sync` of
      `cdk/requirements.txt`). Wait for the build without fast polling. On failure, show the failed phase and the
      last ~40 lines of the build log.
+     - **Waiting:** `aws codebuild batch-get-builds --ids <id>` about once a minute, for the status and phases.
+       Give up after 65 minutes (the project's `BUILD_TIMEOUT_MINUTES` of 60 plus a margin), reporting the build ID
+       and its last status.
+     - **The log lines:** `aws logs get-log-events` on the build's `logs.groupName` and `logs.streamName`, with
+       `--no-start-from-head --limit 40`. CodeBuild and CDK print the account ID and ARNs, so the masking rule in
+       "No account-specific data" applies to these lines before they are shown.
   6. **Smoke test:** after a successful build, offer `scripts/smoke --execute-api <url> --production`; with the
      `smoke` argument, run it without offering, in either mode. The URL is
      `https://<RestApiId>.execute-api.us-east-1.amazonaws.com/v1/`, with `RestApiId` read from the `SfabApi` stack's
