@@ -28,7 +28,8 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
        take `AWS_PROFILE` from it. It holds nothing else. Without a `.env`, use the default credentials and say in
        one line how to add one with `AWS_PROFILE` for readers with several accounts.
      - Shell state doesn't carry between the agent's commands, so every `aws` and `scripts/smoke` call carries
-       the profile itself (`AWS_PROFILE=<value> aws …`), not an earlier `export`.
+       the profile itself (`AWS_PROFILE=<value> aws …`), not an earlier `export`. Every `aws` call also carries
+       `--region us-east-1`, so a profile without a region still finds the project and the stack.
      - `aws sts get-caller-identity` only has to succeed; its output is never shown. On an expired session, stop
        and ask the owner to type `! aws login`, then check again.
      - **The right account** is recognised by what it holds, not by a stored ID: `us-east-1` has a CodeBuild
@@ -48,8 +49,9 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
      `cdk/requirements.txt`). Wait for the build without fast polling. On failure, show the failed phase and the
      last ~40 lines of the build log.
   6. **Smoke test:** after a successful build, offer `scripts/smoke --execute-api <url> --production`. The URL is
-     `https://<RestApiId>.execute-api.us-east-1.amazonaws.com/v1/`, with `RestApiId` read from the API stack's
-     CloudFormation output each time (`cdk/kill_switch.py`, the outputs `docs/restart-after-a-stop.md` uses).
+     `https://<RestApiId>.execute-api.us-east-1.amazonaws.com/v1/`, with `RestApiId` read from the `SfabApi` stack's
+     CloudFormation output each time (`aws cloudformation describe-stacks --stack-name SfabApi --region us-east-1
+     --query "Stacks[0].Outputs[?OutputKey=='RestApiId'].OutputValue" --output text`) (`cdk/kill_switch.py`, the outputs `docs/restart-after-a-stop.md` uses).
      There is no override. The production smoke run births nothing and cleans up its friend, block, vouch and
      message; it rewrites only the smoke identity's `whoiam` to a fixed text.
      - `scripts/smoke` runs `cdk/.venv/bin/python`, which step 5 made if it was missing.
