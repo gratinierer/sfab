@@ -38,6 +38,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-22T12:00:00Z | walkthrough | 01, 02, 03, 04, 05, 06, 07, 08 @ 6e52b3d..HEAD | claude-opus-5-5, auto | 0 new, 6 resolved, 3 still open | auto walkthrough, not a review pass; C39, C40 and C41 need the owner |
 | 2026-11-22T12:15:00Z | check | @ 852e8e7 | scripts/check | — | green, the loop's check of the round 1 fixes |
 | 2026-11-22T12:15:00Z | code-review | 01, 02, 03, 04, 05, 06, 07, 08 @ 2915900..852e8e7 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 6 new: 2 standards, 4 spec, 0 security | auto round 2, the fix commits; same-family reviewers, per AGENTS.local.md |
+| 2026-11-22T12:40:00Z | walkthrough | 01, 02, 03, 04, 05, 06, 07, 08 @ 3873ab9..HEAD | claude-opus-5-5, auto | 0 new, 5 resolved, 1 superseded, 3 still open | auto walkthrough, not a review pass; C39, C40 and C41 skipped as still waiting for the owner |
 
 ## Findings
 
