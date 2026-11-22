@@ -24,9 +24,6 @@ pixel-art human page at `/` with the noir page, which holds the text the other h
   item counts in its `#now-and-next`, so the owner's hand edits there keep the meter true.
   It also checks that the header's `hud-version` ("World v1 · 2026-11-21") matches the major and `info.version`
   in `openapi/sfab.yaml`, as 05's test does for the board.
-  (Amended 2026-11-22 by issue 08: the owner removed the meter and the version from noir's header, and both
-  tests with them; `#now-and-next` became `#next`, and board's lights and space's moons count noir's
-  `data-live` panels.)
 - `scripts/website/gennoir.py`, rewritten to write into `website/index.html`, with its output committed.
 - The tests find sections by `id`, not by element: noir's are `<details class="panel">`, board's `.part-info`
   blocks (05) and space's `section.stop` (06). `test_each_version_has_the_five_sections_in_order_with_the_same_anchors`
@@ -60,3 +57,9 @@ pixel-art human page at `/` with the noir page, which holds the text the other h
   dark scheme, and no animation outside the reduced-motion guard. No animation flashes more than 3 times a
   second.
 - No `{{` or lorem ipsum is left after the generate step, and no committed page holds an address.
+
+## Comments
+
+- 2026-11-22: amended by issue 08. The owner removed the meter and the version from noir's header, and both
+  tests with them; `#now-and-next` became `#next`, and board's lights and space's moons count noir's
+  `data-live` panels.
