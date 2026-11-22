@@ -963,6 +963,13 @@ def _now_and_total(noir: Page) -> tuple[int, int]:
     return len(live), len(live) + _items(noir, "next", "next")
 
 
+def test_noir_marks_the_four_live_features(pages):
+    # issue 08 "What's live": noir's four live panels carry `data-live`. The markers stay the
+    # one source the meter, moons and lights count; this pins which panels they are today.
+    live = [attrs["id"] for _, attrs in pages[NOIR].elements if "data-live" in attrs]
+    assert live == ["identity", "friends", "homes", "academy"]
+
+
 def test_noir_meter_counts_the_live_panels_and_next_items(pages):
     # The owner edits noir by hand, so the meter must follow its live panels and #next.
     page = pages["index.html"]
