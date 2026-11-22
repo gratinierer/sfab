@@ -1,6 +1,5 @@
 # Add the README, LICENSE and SECURITY.md
 
-Label: ready-for-agent
 Blocked by: 14-agent-skills#02
 
 `spec.md` "New files".
@@ -28,3 +27,5 @@ Blocked by: 14-agent-skills#02
   work. `.github/readme-banner.svg` puts `website/shelter-wordmark.svg`'s pixels, unchanged, on the site's night
   colour with stars and a skyline, since GitHub strips a README's CSS; "How we work" sums up stories, reviews, code
   reviews and closing, and links the tracker and commit policy.
+- 2026-11-22: closed by the owner without a `/review-code`, which the repo asks for before an issue that
+  changed code closes (`docs/agents/issue-tracker.md` "Closing an issue or story").

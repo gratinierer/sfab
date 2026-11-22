@@ -1,6 +1,5 @@
 # Write the personal data scan script
 
-Label: ready-for-agent
 
 `spec.md` "The personal data scan". Issue 02 runs it before the switch.
 
@@ -31,3 +30,5 @@ Label: ready-for-agent
   sequential zone ID placeholder, now all in `pii-allowlist.txt`. The phone pattern found nothing in the history.
 - 2026-11-22: `scripts/check` passed at `204af55` with the 7 new tests (594 passed). The issue waits only for its
   code review before it moves to `done/`.
+- 2026-11-22: closed by the owner without a `/review-code`, which the repo asks for before an issue that
+  changed code closes (`docs/agents/issue-tracker.md` "Closing an issue or story").
