@@ -62,7 +62,9 @@ only its report, so the tokens spent grow with the findings, not with the histor
   history, and a personal name can sit there even when no file holds it.
 - **What it looks for:**
   - the owner's literal values, one per line, from a list outside the repo, so the list itself can't leak. Its
-    path is an argument, and there's no default inside the repo.
+    path is an argument, and there's no default inside the repo. It holds what no generic pattern finds
+    reliably: the owner's name and usernames, the parts of their postal address (street, city, postcode), their
+    private email addresses and phone numbers, and the support case IDs, so "Never, either" is covered.
   - generic patterns: email addresses, 12-digit numbers (account IDs), phone numbers and Route 53 hosted zone IDs.
 - **What it ignores:** values in a committed allowlist of public ones, such as `.invalid` and `example.*`
   addresses, the fixture's `000000000000` and the AI co-author address in commit trailers. The allowlist is
