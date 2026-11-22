@@ -97,4 +97,4 @@ Asked while grilling how agents find the API, after the owner said `/llms.txt` s
 | Publish `.stories/` and the reviews as they are? | Yes |
 | This story holds the scan, README, LICENSE, SECURITY.md and the switch, and the launch checklist requires it? | Yes (the launch requirement superseded 2026-11-21: the owner decoupled this story) |
 | GitHub push protection afterwards, rather than `gitleaks` in CI? | Yes |
-| A normal story with two tickets, files first, then the owner's steps? | Yes |
+| A normal story with two tickets, files first, then the owner's steps? | Yes (three since the personal data scan's script became issue 03) |
