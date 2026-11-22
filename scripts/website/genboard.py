@@ -30,30 +30,39 @@ TEXT = lambda x,y,size,fill,t,anchor="middle",extra="": (f'<text{extra} x="{x}" 
 
 class _NoirCounts(HTMLParser):
     """Counts what is out now and what comes next on noir, by the page tests' rules
-    (`_now_and_total`): any element with a `data-live` attribute, whatever its value, and the
-    <li> items of the `<ul class="next">` inside the element with `id="next"`."""
+    (`_now_and_total`, `_items`): any element with a `data-live` attribute, whatever its value,
+    and the <li> items of the one `<ul class="next">` inside the element with `id="next"`,
+    whatever its tag."""
 
     def __init__(self) -> None:
         super().__init__()
-        self.live = self.coming = 0
-        self._next_depth = 0    # open <details> inside #next, #next itself included
-        self._list_depth = 0    # open <ul> inside #next's <ul class="next">, itself included
+        self.live = 0
+        self.coming = 0
+        self.next_lists = 0     # the `<ul class="next">` lists found inside #next
+        self._next_tag = None   # #next's own tag, once it opens
+        self._next_depth = 0    # open elements of that tag inside #next, #next itself included
+        self._list_depth = 0    # open <ul> inside a `<ul class="next">`, itself included
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         if "data-live" in attrs:
             self.live += 1
-        if tag == "details" and (self._next_depth or attrs.get("id") == "next"):
+        if self._next_depth and tag == self._next_tag:
             self._next_depth += 1
-        if tag == "ul" and (self._list_depth or (self._next_depth and attrs.get("class") == "next")):
+        elif not self._next_depth and attrs.get("id") == "next":
+            self._next_tag, self._next_depth = tag, 1
+        if tag == "ul" and self._list_depth:
             self._list_depth += 1
+        elif tag == "ul" and self._next_depth and attrs.get("class") == "next":
+            self._list_depth = 1
+            self.next_lists += 1
         if tag == "li" and self._list_depth:
             self.coming += 1
 
     def handle_endtag(self, tag):
         if tag == "ul" and self._list_depth:
             self._list_depth -= 1
-        if tag == "details" and self._next_depth:
+        if tag == self._next_tag and self._next_depth:
             self._next_depth -= 1
 
 
@@ -61,6 +70,9 @@ def count_live_and_next(html: str) -> tuple[int, int]:
     """Noir's panels marked `data-live`, and the items of its #next list."""
     counts = _NoirCounts()
     counts.feed(html)
+    counts.close()
+    if counts.next_lists != 1:
+        raise SystemExit(f'genboard: noir\'s #next needs one <ul class="next">, found {counts.next_lists}')
     if not counts.live or not counts.coming:
         raise SystemExit("genboard: found no data-live panel or no #next item on noir")
     return counts.live, counts.coming
