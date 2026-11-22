@@ -26,6 +26,8 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
      - If a `.env` exists at the repo root, check `git check-ignore .env` first and stop if it isn't ignored; then
        take `AWS_PROFILE` from it. It holds nothing else. Without a `.env`, use the default credentials and say in
        one line how to add one with `AWS_PROFILE` for readers with several accounts.
+     - Shell state doesn't carry between the agent's commands, so every `aws` and `scripts/smoke` call carries
+       the profile itself (`AWS_PROFILE=<value> aws …`), not an earlier `export`.
      - `aws sts get-caller-identity` only has to succeed; its output is never shown. On an expired session, stop
        and ask the owner to type `! aws login`, then check again.
      - **The right account** is recognised by what it holds, not by a stored ID: `us-east-1` has a CodeBuild
