@@ -970,16 +970,29 @@ def _now_and_total(noir: Page) -> tuple[int, int]:
 
 
 NOIR_PROBES = {
-    "a marker of any value, on any tag":
-        '<details id="identity" data-live="true"></details><div id="homes" data-live></div>'
+    "a marker of any value, on any tag": "".join([
+        '<details id="identity" data-live="true"></details>',
+        '<div id="homes" data-live></div>',
         '<section id="next"><div><ul class="next"><li>a</li><li>b</li></ul></div></section>',
-    "a list outside #next doesn't count":
-        '<div id="friends" data-live></div><details id="next"><ul class="next"><li>a</li></ul></details>'
+    ]),
+    "a list outside #next doesn't count": "".join([
+        '<div id="friends" data-live></div>',
+        '<details id="next"><ul class="next"><li>a</li></ul></details>',
         '<ul class="next"><li>z</li></ul>',
-    "two lists in #next": '<div id="friends" data-live></div><section id="next"><ul class="next"><li>a</li></ul>'
-                          '<ul class="next"><li>b</li></ul></section>',
-    "a list nested in the list": '<div id="friends" data-live></div><section id="next"><ul class="next"><li>a'
-                                 '<ul class="next"><li>b</li></ul></li></ul></section>',
+    ]),
+    "two lists in #next": "".join([
+        '<div id="friends" data-live></div>',
+        '<section id="next">',
+        '<ul class="next"><li>a</li></ul>',
+        '<ul class="next"><li>b</li></ul>',
+        '</section>',
+    ]),
+    "a list nested in the list": "".join([
+        '<div id="friends" data-live></div>',
+        '<section id="next">',
+        '<ul class="next"><li>a<ul class="next"><li>b</li></ul></li></ul>',
+        '</section>',
+    ]),
 }
 
 
