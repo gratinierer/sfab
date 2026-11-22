@@ -972,7 +972,7 @@ def _items(page: Page, section_id: str, list_class: str) -> int:
 
 def _now_and_total(noir: Page) -> tuple[int, int]:
     """What is out now, noir's panels marked `data-live`, and that plus the items of #next."""
-    live = [attrs["id"] for _, attrs in noir.elements if "data-live" in attrs]
+    live = [attrs.get("id") for _, attrs in noir.elements if "data-live" in attrs]
     # The markers are the one source; they only have to sit on real sections.
     assert live and set(live) <= set(HUMAN_SECTIONS) - {"next"}
     return len(live), len(live) + _items(noir, "next", "next")
@@ -989,6 +989,19 @@ NOIR_PROBES = {
         '<details id="next"><ul class="next"><li>a</li></ul></details>',
         '<ul class="next"><li>z</li></ul>',
     ]),
+    "an empty #next list": "".join([
+        '<div id="friends" data-live></div>',
+        '<section id="next"><ul class="next"></ul></section>',
+    ]),
+    "a marker without an id": "".join([
+        '<div id="friends" data-live></div><p data-live></p>',
+        '<section id="next"><ul class="next"><li>a</li></ul></section>',
+    ]),
+    "a marker on #next itself": "".join([
+        '<div id="friends" data-live></div>',
+        '<section id="next" data-live><ul class="next"><li>a</li></ul></section>',
+    ]),
+    "no marker at all": '<section id="next"><ul class="next"><li>a</li></ul></section>',
     "two lists in #next": "".join([
         '<div id="friends" data-live></div>',
         '<section id="next">',
@@ -1007,6 +1020,9 @@ NOIR_PROBES = {
 
 # The probes both copies refuse, each with the reason noircounts gives; the rest they count.
 PROBE_REFUSALS = {
+    "a marker without an id": "a data-live marker needs a section id, found 1 without",
+    "a marker on #next itself": "a data-live marker needs a section id, found 1 without",
+    "no marker at all": "found no data-live panel",
     "two lists in #next": 'needs one <ul class="next">, found 2',
     "a list nested in the list": 'needs one <ul class="next">, found 2',
 }

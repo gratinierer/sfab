@@ -2,7 +2,9 @@
 
 The board's lights (`genboard.py`) are drawn from these counts. They follow the page tests'
 rules, `_now_and_total` and `_items` in `cdk/tests/test_website_pages.py`, and a test there
-runs this module against them, so the two copies of the rule can't drift apart. No side
+runs this module against them, on noir and on probe pages, so the two copies agree on what
+they count and what they refuse. One check stays the page's alone: the tests also want each
+marked id to be one of the human-side sections, a list this module doesn't hold. No side
 effects: importing it reads and writes nothing (.stories/10-website/spec.md "Variants"
 (Sections, Board) and issue 08 "What's live").
 """
@@ -19,6 +21,7 @@ class _NoirCounts(HTMLParser):
     def __init__(self) -> None:
         super().__init__()
         self.live = 0
+        self.unnamed = 0        # `data-live` markers without a section id of their own
         self.coming = 0
         self.next_lists = 0     # the `<ul class="next">` lists found inside #next
         self._next_tag = None   # #next's own tag, once it opens
@@ -29,6 +32,8 @@ class _NoirCounts(HTMLParser):
         attrs = dict(attrs)
         if "data-live" in attrs:
             self.live += 1
+            if attrs.get("id") in (None, "", "next"):
+                self.unnamed += 1
         if self._next_depth and tag == self._next_tag:
             self._next_depth += 1
         elif not self._next_depth and attrs.get("id") == "next":
@@ -54,6 +59,8 @@ def count_live_and_next(html: str) -> tuple[int, int]:
     counts.close()
     if counts.next_lists != 1:
         raise SystemExit(f'noircounts: noir\'s #next needs one <ul class="next">, found {counts.next_lists}')
-    if not counts.live or not counts.coming:
-        raise SystemExit("noircounts: found no data-live panel or no #next item on noir")
+    if counts.unnamed:
+        raise SystemExit(f"noircounts: a data-live marker needs a section id, found {counts.unnamed} without")
+    if not counts.live:
+        raise SystemExit("noircounts: found no data-live panel on noir")
     return counts.live, counts.coming
