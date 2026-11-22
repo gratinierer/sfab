@@ -27,12 +27,12 @@ TEXT = lambda x,y,size,fill,t,anchor="middle",extra="": (f'<text{extra} x="{x}" 
     f'font-family="Silkscreen, monospace" font-size="{size}" fill="{fill}">{t}</text>')
 
 
-def live(html: str) -> int:
+def count_live(html: str) -> int:
     """Noir's panels for what is out now, each marked `data-live`."""
     return len(re.findall(r'<details\b[^>]*\sdata-live(?:=""|\s|>)', html))
 
 
-def coming(html: str) -> int:
+def count_next(html: str) -> int:
     """The <li> items of the `<ul class="next">` in noir's #next."""
     section = re.search(r'id="next".*?</details>', html, re.S).group(0)
     (found,) = re.findall(r'<ul class="next">(.*?)</ul>', section, re.S)
@@ -54,8 +54,8 @@ board.append(TEXT(117,78,3.5,"#eef9f0",f"botrefugium {MAJOR} {version}","end",' 
 
 # The lights: lit for what is out now, dark for what comes next.
 noir = NOIR.read_text(encoding="utf-8")
-LIT = live(noir)
-N_LEDS = LIT + coming(noir)
+LIT = count_live(noir)
+N_LEDS = LIT + count_next(noir)
 LED_X = [72 + i*5 for i in range(N_LEDS)]
 if LED_X[-1] + 6 > 124:
     raise SystemExit(f"genboard: {N_LEDS} lights don't fit on the board; make the row smaller")

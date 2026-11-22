@@ -1004,8 +1004,8 @@ def test_no_page_speaks_of_cost(built, name):
 def test_noir_uses_no_game_words(built):
     # issue 08: noir is not a game.
     text = (built / NOIR).read_text(encoding="utf-8").lower()
-    for words in ("Choose your mission", "Press start", "Continue?"):
-        assert words.lower() not in text, words
+    for phrase in ("Choose your mission", "Press start", "Continue?"):
+        assert phrase.lower() not in text, phrase
 
 
 @pytest.mark.parametrize("name", PAGES)
