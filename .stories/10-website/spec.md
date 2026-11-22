@@ -164,7 +164,9 @@ holds for every page.
   Without the script every block is listed. What it took from the old page (rules from `style.css`, `assemble.js`,
   the bot tiles) moves into `/board/`, so it's self-contained.
 - **Art generators:** `gennoir.py`, `genboard.py`, `genspace.py` and `genbot.py`, which draws noir's and board's bots, come over to `scripts/website/`, outside
-  `website/`, so they never deploy. Their output is committed, and CI doesn't rerun them.
+  `website/`, so they never deploy. Their output is committed, and CI doesn't rerun them. The page tests load
+  `noircounts.py`, the one generator module without side effects, to check that the board counts noir by their
+  rule (2026-11-22, issue 08).
 - **Discovery files:** `sitemap.xml` lists `/`, `/board/`, `/space/` and `/agents/`. `/llms.txt` still points
   agents only to `/agents/`.
 - **Sign-off:** gratinierer/sfab#13 covers all four pages, and this story still ships on its own deploy.
