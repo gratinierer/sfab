@@ -7,6 +7,7 @@ Each page is parsed with the standard library's HTML parser, so these tests need
 """
 
 import re
+import sys
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -14,6 +15,11 @@ import pytest
 
 import generate_public_openapi
 import generate_website
+
+# The art generators' counting module, which has no side effects, so the parity test below can
+# run the board's copy of the counting rule against the page tests' own.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts" / "website"))
+import noircounts  # noqa: E402
 
 REPO_WEBSITE = Path(__file__).resolve().parents[2] / "website"
 
@@ -961,6 +967,41 @@ def _now_and_total(noir: Page) -> tuple[int, int]:
     # The markers are the one source; they only have to sit on real sections.
     assert live and set(live) <= set(HUMAN_SECTIONS) - {"next"}
     return len(live), len(live) + _items(noir, "next", "next")
+
+
+NOIR_PROBES = {
+    "a marker of any value, on any tag":
+        '<details id="identity" data-live="true"></details><div id="homes" data-live></div>'
+        '<section id="next"><div><ul class="next"><li>a</li><li>b</li></ul></div></section>',
+    "a list outside #next doesn't count":
+        '<div id="friends" data-live></div><details id="next"><ul class="next"><li>a</li></ul></details>'
+        '<ul class="next"><li>z</li></ul>',
+    "two lists in #next": '<div id="friends" data-live></div><section id="next"><ul class="next"><li>a</li></ul>'
+                          '<ul class="next"><li>b</li></ul></section>',
+    "a list nested in the list": '<div id="friends" data-live></div><section id="next"><ul class="next"><li>a'
+                                 '<ul class="next"><li>b</li></ul></li></ul></section>',
+}
+
+
+@pytest.mark.parametrize("probe", NOIR_PROBES)
+def test_the_board_counts_noir_by_the_page_tests_rule(probe):
+    # genboard.py draws the lights with noircounts, a second copy of `_now_and_total`'s rule:
+    # run both on the same pages, and they agree or both refuse.
+    html = NOIR_PROBES[probe]
+    try:
+        expected = _now_and_total(Page(html))
+    except AssertionError:
+        with pytest.raises(SystemExit):
+            noircounts.count_live_and_next(html)
+        return
+    live, coming = noircounts.count_live_and_next(html)
+    assert (live, live + coming) == expected
+
+
+def test_the_board_counts_noir_itself_by_the_page_tests_rule(pages):
+    html = (REPO_WEBSITE / NOIR).read_text(encoding="utf-8")
+    live, coming = noircounts.count_live_and_next(html)
+    assert (live, live + coming) == _now_and_total(Page(html))
 
 
 def test_noir_marks_the_four_live_features(pages):

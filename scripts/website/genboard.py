@@ -13,9 +13,9 @@ outside `website/`, so they never deploy; the output is committed and CI doesn't
 (.stories/10-website/spec.md "Variants" (Board, Art generators) and issue 05).
 """
 import re
-from html.parser import HTMLParser
 from pathlib import Path
 
+from noircounts import count_live_and_next
 from pixel import rect
 
 REPO = Path(__file__).resolve().parents[2]
@@ -26,56 +26,6 @@ API = REPO / "openapi" / "sfab.yaml"
 PIN, DARK, SILVER, GOLD = "#b9b4c7", "#23202e", "#c9c4d6", "#e9c46a"
 TEXT = lambda x,y,size,fill,t,anchor="middle",extra="": (f'<text{extra} x="{x}" y="{y}" text-anchor="{anchor}" '
     f'font-family="Silkscreen, monospace" font-size="{size}" fill="{fill}">{t}</text>')
-
-
-class _NoirCounts(HTMLParser):
-    """Counts what is out now and what comes next on noir, by the page tests' rules
-    (`_now_and_total`, `_items`): any element with a `data-live` attribute, whatever its value,
-    and the <li> items of the one `<ul class="next">` inside the element with `id="next"`,
-    whatever its tag."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.live = 0
-        self.coming = 0
-        self.next_lists = 0     # the `<ul class="next">` lists found inside #next
-        self._next_tag = None   # #next's own tag, once it opens
-        self._next_depth = 0    # open elements of that tag inside #next, #next itself included
-        self._list_depth = 0    # open <ul> inside a `<ul class="next">`, itself included
-
-    def handle_starttag(self, tag, attrs):
-        attrs = dict(attrs)
-        if "data-live" in attrs:
-            self.live += 1
-        if self._next_depth and tag == self._next_tag:
-            self._next_depth += 1
-        elif not self._next_depth and attrs.get("id") == "next":
-            self._next_tag, self._next_depth = tag, 1
-        if tag == "ul" and self._list_depth:
-            self._list_depth += 1
-        elif tag == "ul" and self._next_depth and attrs.get("class") == "next":
-            self._list_depth = 1
-            self.next_lists += 1
-        if tag == "li" and self._list_depth:
-            self.coming += 1
-
-    def handle_endtag(self, tag):
-        if tag == "ul" and self._list_depth:
-            self._list_depth -= 1
-        if tag == self._next_tag and self._next_depth:
-            self._next_depth -= 1
-
-
-def count_live_and_next(html: str) -> tuple[int, int]:
-    """Noir's panels marked `data-live`, and the items of its #next list."""
-    counts = _NoirCounts()
-    counts.feed(html)
-    counts.close()
-    if counts.next_lists != 1:
-        raise SystemExit(f'genboard: noir\'s #next needs one <ul class="next">, found {counts.next_lists}')
-    if not counts.live or not counts.coming:
-        raise SystemExit("genboard: found no data-live panel or no #next item on noir")
-    return counts.live, counts.coming
 
 
 board = ['<path d="M2 0H126V2H128V78H126V80H2V78H0V2H2Z" fill="#2f7a4b"/>']
