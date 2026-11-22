@@ -131,7 +131,9 @@ Checked just before the first AWS call.
   `sfab-deploy` whose source is this repo's GitHub remote (`gratinierer/sfab`):
   `aws codebuild batch-get-projects --names sfab-deploy --region us-east-1 --query 'projects[0].source.location'
   --output text` is `https://github.com/<owner>/<name>.git` (`cdk/deployer_stack.py`), with `<owner>/<name>` the
-  one `git remote get-url origin` names. If not, or there is no such project, stop: "this isn't the sfab
+  one `git remote get-url origin` names. Compare the two as `<owner>/<name>`: strip a leading
+  `https://github.com/`, `git@github.com:` or `ssh://git@github.com/` and a trailing `.git` from each, so an SSH
+  remote or one without `.git` still matches. If not, or there is no such project, stop: "this isn't the sfab
   account".
 - **No stop in force:** a kill switch stop sets the API Lambda's reserved concurrency to 0, and
   `docs/restart-after-a-stop.md` step 2 puts it back to 5.
