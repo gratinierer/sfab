@@ -16,7 +16,8 @@ out of the repo and out of its output.
 From the grilling of 2026-11-22. Each answer below is the owner's.
 
 - **One skill, `/deploy-on-aws`,** in `.claude/skills/deploy-on-aws/`, running in order:
-  1. **Ready check:** on `main`, nothing staged, `main` not behind `origin/main`, and `scripts/check` green. If the
+  1. **Ready check:** first `git fetch origin main production`, without asking: like the `sts` call in step 4 it
+     only reads, and steps 1-3 compare against those refs. Then: on `main`, nothing staged, `main` not behind `origin/main`, and `scripts/check` green. If the
      check fails, stop. `skipcheck` skips it, and the report says it was skipped.
   2. **Push `main`:** ask first, unless `main` already equals `origin/main`, then skip.
   3. **Pull request and merge:** open, or reuse, the pull request from `main` to `production` and merge it with a
