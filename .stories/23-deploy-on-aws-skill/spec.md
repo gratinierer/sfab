@@ -38,6 +38,11 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
      - **The right account** is recognised by what it holds, not by a stored ID: `us-east-1` has a CodeBuild
        project `sfab-deploy` whose source is this repo's GitHub remote (`gratinierer/sfab`). If not, stop:
        "this isn't the sfab account".
+     - **No stop in force:** a kill switch stop sets the API Lambda's reserved concurrency to 0, and
+       `docs/restart-after-a-stop.md` step 2 puts it back to 5. So read `ApiFunctionName` from the `SfabApi`
+       outputs and run `aws lambda get-function-concurrency` on it; 0 means a stop is in force, and a deploy
+       now can reopen part of the API. Interactive mode stops and asks, pointing to the restart doc; if the
+       owner deploys anyway, the report ends with "run `docs/restart-after-a-stop.md` from step 2 now".
   5. **Build:** start `sfab-deploy` (`aws codebuild start-build --project-name sfab-deploy --region us-east-1`).
      Running the skill is the go-ahead, so there is no separate question; the skill says what it starts. Stack
      names given as arguments, such as `/deploy-on-aws SfabApi SfabWebsite`, go through
@@ -68,13 +73,14 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
        AWS_PROFILE=<value> scripts/smoke …`, or `env -u SFAB_CONFIG scripts/smoke …` when step 4 found no
        profile value.
      - Its exit codes: 0 pass; 1 a failed smoke test; 2 a usage or config problem, such as no `smoke_claim` in
-       `sfab/config`, shown with its message; 3 WAF blocked it, reported as "wait at least 5 minutes and rerun",
-       not as a failed deploy. The build already succeeded in every case, and the report says so.
+       `sfab/config`, shown with its message; 3 a plain `403`, which means WAF blocked this IP or the API is
+       stopped, reported as "wait at least 5 minutes and rerun", not as a failed deploy; if a rerun exits 3 again,
+       the report points to `docs/restart-after-a-stop.md`. The build already succeeded in every case, and the report says so.
   7. **Report in chat only:** the commits, the pull request, the build ID and result, and what was skipped. No
      deploy log in the repo; GitHub and CodeBuild keep the history.
 - **Asking:** interactive by default, as above. **`auto`** (`/deploy-on-aws auto`) asks nothing and runs push, merge,
   build and watch. It stops and reports only on what it can't fix: an expired login, the wrong account, a red
-  check, `main` behind `origin/main`, a pull request that can't merge or whose checks fail, a failed build. It never
+  check, `main` behind `origin/main`, a pull request that can't merge or whose checks fail, a stop in force, a failed build. It never
   force-pushes, skips the check only with `skipcheck`, and runs the smoke test only with `smoke`.
 - **No account-specific data:** nothing account-specific goes into the repo. Every 12-digit number, ARN and email in
   what the skill shows is masked. The project name and the region are already public in the repo.
