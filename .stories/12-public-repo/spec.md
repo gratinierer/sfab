@@ -63,7 +63,10 @@ only its report, so the tokens spent grow with the findings, not with the histor
     path is an argument, and there's no default inside the repo.
   - generic patterns: email addresses, 12-digit numbers (account IDs), phone numbers and Route 53 hosted zone IDs.
 - **What it ignores:** values in a committed allowlist of public ones, such as `.invalid` and `example.*`
-  addresses, the fixture's `000000000000` and the AI co-author address in commit trailers.
+  addresses, the fixture's `000000000000` and the AI co-author address in commit trailers. The allowlist is
+  `pii-allowlist.txt` at the repo root, beside `audit-ignore.toml`, always read: one regular expression per line,
+  matched case-insensitively against a whole matched value, each followed by a `# reason`. It never applies to
+  the owner's literals.
 - **What it prints:** one line per distinct finding, sorted and deduplicated: the first commit that introduced it,
   the path or "commit message", the line number, the pattern's name, and the match masked except for its first and
   last characters. A literal is named only by its line number in the list. Nothing is printed in full, so the
