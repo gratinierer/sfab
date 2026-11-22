@@ -9,8 +9,8 @@ explains it and lights up with it (`website/board/board.js`). The version printe
 right comes from `openapi/sfab.yaml`, and the lights from the noir page, `website/index.html`:
 one lit light per panel marked `data-live`, one dark one per item of its #next list. Rerun
 it after a release or a launch, or the page tests fail. The art generators live here,
-outside `website/`, so they never deploy; the output is committed and CI doesn't rerun them (.stories/10-website/spec.md "Variants" (Board, Art generators) and
-issue 05).
+outside `website/`, so they never deploy; the output is committed and CI doesn't rerun them
+(.stories/10-website/spec.md "Variants" (Board, Art generators) and issue 05).
 """
 import re
 from pathlib import Path
