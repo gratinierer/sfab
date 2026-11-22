@@ -60,6 +60,10 @@ pixel-art human page at `/` with the noir page, which holds the text the other h
 
 ## Comments
 
-- 2026-11-22: amended by issue 08. The owner removed the meter and the version from noir's header, and both
-  tests with them; `#now-and-next` became `#next`, and board's lights and space's moons count noir's
-  `data-live` panels.
+- 2026-11-22: amended by issue 08, which wins where the text above disagrees:
+  - Noir has ten sections, not seven, so the section test checks ten for `/` and the agent version's five.
+  - `#now-and-next` became `#next`, at the bottom, with only `<ul class="next">`: there is no `<ul class="now">`.
+    What is out now is noir's four panels marked `data-live`.
+  - The owner removed the meter and the version from noir's header, and both tests with them.
+  - Board's lights and space's moons count noir's `data-live` panels as "now" and the items of `#next` as
+    "next".
