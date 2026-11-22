@@ -53,7 +53,7 @@ def count_live_and_next(html: str) -> tuple[int, int]:
     counts.feed(html)
     counts.close()
     if counts.next_lists != 1:
-        raise SystemExit(f'genboard: noir\'s #next needs one <ul class="next">, found {counts.next_lists}')
+        raise SystemExit(f'noircounts: noir\'s #next needs one <ul class="next">, found {counts.next_lists}')
     if not counts.live or not counts.coming:
-        raise SystemExit("genboard: found no data-live panel or no #next item on noir")
+        raise SystemExit("noircounts: found no data-live panel or no #next item on noir")
     return counts.live, counts.coming
