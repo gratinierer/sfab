@@ -13,7 +13,7 @@ Blocked by: 01, 03
   as `spec.md` "The personal data scan" describes. Real findings stop the switch too.
 - Decide with the owner whether to rewrite history to drop the account ID that
   `.stories/done/19-deploy-build-cache/spec.md` quoted until 2026-11-22 (review R1): HEAD has `<account>` instead, but
-  the commit that added it still holds it, and the scan reports it.
+  the commit that added it still holds it, and the scan reports it. Decided 2026-11-22: it stays (see Comments).
 - Turn on private vulnerability reporting, secret scanning and push protection.
 - Switch the repo to public.
 - Protect `production` with a branch ruleset: restrict deletions, block force pushes. It couldn't be done earlier,
@@ -38,5 +38,10 @@ Blocked by: 01, 03
   - The owner's name as the author of `0bfe291`, GitHub's web merge of PR #21, which is `production`'s tip. GitHub
     writes the account's display name into web merges, so a fix needs both a new `production` tip without it
     (force push, before the ruleset) and a display name or merge habit that doesn't bring it back.
+    Accepted by the owner on 2026-11-22: it stays, so a rerun still reports this one line (`commit author`, literal 1),
+    since literals bypass the allowlist.
   - The account ID of R1 in `.stories/19-deploy-build-cache/spec.md`, first in `6c218cf`, and in 9 later
     commits until HEAD replaced it on 2026-11-22: only a history rewrite of `main` removes it.
+    Accepted by the owner on 2026-11-22: no rewrite (it would also leave the ID in PR #21's and #22's refs, which only
+    GitHub Support removes). A rerun still reports this one line, and it stays out of `pii-allowlist.txt`, which
+    would publish it again in HEAD.
