@@ -8,7 +8,8 @@ Authored: 2026-11-22 by claude-opus-5-5, from a grilling with the owner the same
 Deploying today is a hand-run sequence: push `main`, open and merge a pull request from `main` to `production`, sign
 in to AWS, find the `sfab-deploy` CodeBuild project, start it, and watch it (story 18, "A build"). Story 10's deploy
 on 2026-11-22 went that way, and stalled once on an expired AWS session. A repo skill, `/deploy-on-aws`, runs the
-sequence the same way each time, asks before every step that reaches outside the machine, and keeps account details
+sequence the same way each time, asks before the push and the merge (reads outside the machine aren't asked
+about, and running the skill is the go-ahead for the build), and keeps account details
 out of the repo and out of its output.
 
 ## Decisions
