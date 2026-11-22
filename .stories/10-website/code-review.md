@@ -47,6 +47,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-22T13:45:00Z | walkthrough | 01, 02, 03, 04, 05, 06, 07, 08 @ 7f8d5a1..HEAD | claude-opus-5-5, auto | 0 new, 2 resolved, 7 still open | auto walkthrough, not a review pass; C55 needs the owner, C39, C40, C41, C50, C51 and C52 skipped as still waiting |
 | 2026-11-22T14:00:00Z | check | @ f82055d | scripts/check | — | green, the loop's check of the round 4 fixes |
 | 2026-11-22T14:00:00Z | code-review | 01, 02, 03, 04, 05, 06, 07, 08 @ 88d2622..f82055d | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 8 new: 6 standards, 2 spec, 0 security | auto round 5, the fix commits; same-family reviewers, per AGENTS.local.md |
+| 2026-11-22T14:30:00Z | walkthrough | 01, 02, 03, 04, 05, 06, 07, 08 @ fb94993..HEAD | claude-opus-5-5, auto | 0 new, 7 resolved, 8 still open | auto walkthrough, not a review pass; C64 needs the owner, C39, C40, C41, C50, C51, C52 and C55 skipped as still waiting |
 
 ## Findings
 
