@@ -56,8 +56,10 @@ AWS secret could, which is why the scan comes first.
 `scripts/pii-scan` is deterministic and makes no LLM calls. It walks the full history, and an agent then checks
 only its report, so the tokens spent grow with the findings, not with the history.
 
-- **What it reads:** every blob reachable from any ref, each scanned once however many commits contain it, and every
-  commit message. Binary files are skipped.
+- **What it reads:** every blob reachable from any ref, each scanned once however many commits contain it, every
+  commit message, every commit's author and committer name and email, every annotated tag's message and tagger,
+  and every branch and tag name, local and remote. Binary files are skipped. Commit metadata goes public with the
+  history, and a personal name can sit there even when no file holds it.
 - **What it looks for:**
   - the owner's literal values, one per line, from a list outside the repo, so the list itself can't leak. Its
     path is an argument, and there's no default inside the repo.
@@ -68,7 +70,7 @@ only its report, so the tokens spent grow with the findings, not with the histor
   matched case-insensitively against a whole matched value, each followed by a `# reason`. It never applies to
   the owner's literals.
 - **What it prints:** one line per distinct finding, sorted and deduplicated: the first commit that introduced it,
-  the path or "commit message", the line number, the pattern's name, and the match masked except for its first and
+  the path, or "commit message", "commit author", "commit committer", "tag" or "ref name", the line number, the pattern's name, and the match masked except for its first and
   last characters. A literal is named only by its line number in the list. Nothing is printed in full, so the
   report holds no personal data itself.
 - **Exit status:** 0 when nothing is left, 1 when there are findings, 2 on an error.
