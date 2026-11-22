@@ -29,7 +29,7 @@ TEXT = lambda x,y,size,fill,t,anchor="middle",extra="": (f'<text{extra} x="{x}" 
 
 def live(html: str) -> int:
     """Noir's panels for what is out now, each marked `data-live`."""
-    return len(re.findall(r'<details class="[^"]*" id="[\w-]+" data-live=""', html))
+    return len(re.findall(r'<details\b[^>]*\sdata-live(?:=""|\s|>)', html))
 
 
 def coming(html: str) -> int:
