@@ -20,6 +20,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-22T16:17Z | review | ebdb215a695d | claude-sonnet-5-5 (dispatched; story authored and fixed by claude-opus-5-5, orchestrated by claude-opus-5-5) | 1 new, 0 resolved, 1 reopened, 6 still open | full: delta exceeded half the story's bytes (spec.md); auto round 3; closures of R9, R11 hold, R7 reopened |
 | 2026-11-22T16:18Z | walkthrough | - | claude-opus-5-5 (auto, inside /review-story auto) | 0 new, 2 resolved, 4 still open | auto walkthrough, not a review pass |
 | 2026-11-22T16:19Z | review | 7f0285c9df67 | claude-sonnet-5-5 (dispatched; story authored and fixed by claude-opus-5-5, orchestrated by claude-opus-5-5) | 2 new, 0 resolved, 6 still open | full: delta exceeded half the story's bytes (spec.md); auto round 4; closures of R7, R12 hold |
+| 2026-11-22T16:20Z | walkthrough | - | claude-opus-5-5 (auto, inside /review-story auto) | 0 new, 2 resolved, 4 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
