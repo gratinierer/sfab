@@ -1,7 +1,7 @@
 /* The space version (/space/): neon ink meets outer space. A trail of ink runs down the
    page past seven planets; each is splatted with ink as it comes into view (space.js) and
    carries a card dripping with the same ink, shown at once. Behind it all swim the
-   salminis, little space salmon in glass helmets (shoal.js). Images and salminis from
+   salminis, little astronaut bots in glass helmets (shoal.js). Images and salminis from
    scripts/website/genspace.py. Dark is the one scheme, and things move only for readers
    with no motion preference.
    Text sits on solid fills: the cards on --card, the hero and the footer on --space, so the
@@ -344,8 +344,8 @@ button:focus-visible {
     animation: swim 90s linear infinite;
   }
 
-  /* Each salmini wags its tail at its own pace (--wag, from salminis.js), twice as fast
-     while it flees. */
+  /* Each salmini's jetpack flame flickers at its own pace (--wag, from salminis.js), twice as
+     fast while it flees. */
   .salmini .tail {
     transform-box: fill-box;
     transform-origin: 100% 50%;

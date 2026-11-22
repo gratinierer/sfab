@@ -6,7 +6,7 @@ Usage, from the repo root: `python3 scripts/website/genspace.py`.
 Writes into `website/space/img/` splat-{colour}.svg (an ink splat with rays and droplets,
 one shape per colour, fixed seeds), stars.svg (a tile of stars in a few sizes and colours),
 nebula.svg (soft blobs of colour for behind the stars) and salminis.svg, a still tile of the
-salminis, little space salmon in glass helmets (an original design), for readers without
+salminis, little astronaut bots in glass helmets (an original design), for readers without
 JavaScript or who ask for less motion; and `website/space/salminis.js`, their species for
 the swimming shoal. The hero title is set over splat-pink.svg, so a change of its colour is
 checked by cdk/tests/test_website_pages.py. The art generators live here, outside
@@ -82,98 +82,87 @@ open(f"{out}/nebula.svg", "w").write(
     '<defs><filter id="f" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="50"/></filter></defs>'
     f'<g filter="url(#f)">{"".join(blobs)}</g></svg>\n')
 
-# Salminis: little space salmon in glass helmets, in a bold cartoon style. An original
-# design: five species with ragged fins and cheeky faces. The markup goes to
+# Salminis: little astronaut bots in glass helmets, in a bold cartoon style. An original
+# design: five species in soft colours with friendly faces on their screens and a
+# jetpack flame behind. (They were space salmon once; the shoal kept the name.) The markup goes to
 # salminis.js for the shoal that swims about (shoal.js), and into salminis.svg, a still
 # tile for readers without JavaScript or who ask for less motion.
 import json
 LINE = 'stroke="#1a0b2e" stroke-width="2.2" stroke-linejoin="round"'
 INK = "#1a0b2e"
 
-def eye_open(cx=42, cy=16, r=4.6):
-    return (f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="#ffffff" {LINE}/>'
-            f'<circle cx="{cx+1.4}" cy="{cy+0.6}" r="{r/2}" fill="{INK}"/>'
-            f'<circle cx="{cx+2.2}" cy="{cy-0.4}" r="0.8" fill="#ffffff"/>')
+def eye_open(cx, cy, r=2.6):
+    return (f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="#9ff6ff"/>'
+            f'<circle cx="{cx+0.9}" cy="{cy-0.9}" r="0.9" fill="#ffffff"/>')
 
+def eye_happy(cx, cy):
+    return f'<path d="M{cx-2.6} {cy+1}Q{cx} {cy-2.6} {cx+2.6} {cy+1}" stroke="#9ff6ff" stroke-width="1.8" fill="none" stroke-linecap="round"/>'
+
+def heart(cx, cy):
+    return (f'<path d="M{cx} {cy+2.4}L{cx-2.6} {cy-0.2}Q{cx-3.2} {cy-2.8} {cx-1.2} {cy-2.8}Q{cx} {cy-2.8} {cx} {cy-1.4}'
+            f'Q{cx} {cy-2.8} {cx+1.2} {cy-2.8}Q{cx+3.2} {cy-2.8} {cx+2.6} {cy-0.2}Z" fill="#ff7ac0"/>')
+
+SMILE = '<path d="M34 13.5Q37.5 16.5 41 13.5" stroke="#9ff6ff" stroke-width="1.6" fill="none" stroke-linecap="round"/>'
+
+# The faces on each bot's screen, all friendly: eyes at (33, 9) and (42, 9).
 FACES = {
-    # a grumpy brow and a row of little teeth
-    "grumpy": lambda body: eye_open() +
-        f'<path d="M36.5 10.5L47 12.5" stroke="{INK}" stroke-width="2.6" stroke-linecap="round"/>'
-        f'<path d="M41 24.5Q47 22.5 53 24.5L52 27Q47 26 42 27Z" fill="{INK}"/>'
-        '<path d="M43 25L44.2 26.6L45.4 24.9L46.6 26.4L47.8 24.8L49 26.3L50.2 24.9L51.2 26.1" '
-        'stroke="#ffffff" stroke-width="1" fill="none" stroke-linejoin="round"/>',
-    # a wink and a tongue stuck out
-    "wink": lambda body:
-        f'<path d="M37.5 17Q42 12 46.5 17" stroke="{INK}" stroke-width="2.4" fill="none" stroke-linecap="round"/>'
-        f'<path d="M38 10Q42 7.5 46 9.5" stroke="{INK}" stroke-width="2" fill="none" stroke-linecap="round"/>'
-        f'<path d="M40 23Q47 30 54 22.5Q47 25.5 40 23Z" fill="{INK}"/>'
-        f'<path d="M45 25.5Q47 31 50 26Z" fill="#ff7aa8" {LINE.replace("2.2", "1.4")}/>',
-    # a half-shut, scheming eye and a wide grin
-    "grin": lambda body: eye_open() +
-        f'<path d="M37 16.5Q37 10.5 42 10.5Q47 10.5 47 16.5Z" fill="{body}" {LINE.replace("2.2", "1.8")}/>'
-        f'<path d="M39 23Q47 29 55 22" stroke="{INK}" stroke-width="2.2" fill="none" stroke-linecap="round"/>'
-        f'<path d="M44 24.6L45 26.6L46.2 25L47.4 27L48.6 25.2L49.6 26.8L50.6 24.6" '
-        f'stroke="#ffffff" stroke-width="1" fill="none"/>',
-    # a scar across the eye, a heavy brow and an underbite with tusks
-    "brute": lambda body: eye_open(r=4) +
-        f'<path d="M37 9L49 13" stroke="{INK}" stroke-width="3.2" stroke-linecap="round"/>'
-        f'<path d="M39 12L45 21M41 12L47 21" stroke="#ffffff" stroke-width="1.1" stroke-opacity="0.8"/>'
-        f'<path d="M40 24Q47 21 54 23L53 28Q47 29 41 27Z" fill="{INK}"/>'
-        '<path d="M43 26.5L44.2 22.5L45.4 26.5ZM50 26L51 22.2L52 26Z" fill="#ffffff"/>',
-    # an eyepatch on a strap and a jaw full of fangs
-    "boss": lambda body:
-        f'<path d="M30 6L52 24" stroke="{INK}" stroke-width="1.6"/>'
-        f'<ellipse cx="42" cy="16" rx="5.4" ry="4.8" fill="{INK}"/>'
-        f'<path d="M35.5 9.5L48.5 11" stroke="{INK}" stroke-width="3" stroke-linecap="round"/>'
-        f'<path d="M38 23Q47 19.5 56 22.5L54.5 29.5Q47 31 39.5 28Z" fill="{INK}"/>'
-        '<path d="M40.5 23.6L42 27.4L43.5 23L45 27.8L46.5 22.6L48 27.8L49.5 22.6L51 27.4L52.5 23L54 26.6" '
-        'stroke="#ffffff" stroke-width="1.2" fill="none" stroke-linejoin="round"/>',
+    "wink":   eye_open(33, 9) + eye_happy(42, 9.5) + SMILE,
+    "happy":  eye_happy(33, 9.5) + eye_happy(42, 9.5) + SMILE,
+    "heart":  heart(33, 9) + heart(42, 9) + SMILE,
+    "sleepy": ('<path d="M30.6 9.5H35.4M39.6 9.5H44.4" stroke="#9ff6ff" stroke-width="1.8" stroke-linecap="round"/>'
+               '<circle cx="37.5" cy="14.4" r="1.4" fill="#9ff6ff"/>'),
+    "star":   eye_open(33, 9, 2.9) + eye_open(42, 9, 2.9) + SMILE,
 }
 
-def salmini(body, belly, dark, face, extras="", armour=False, helmet="plain"):
-    """One salmini, viewBox 0 0 74 52. The tail is its own group (class "tail") so it can
-    wag."""
-    tail = (f'<g class="tail"><path d="M12 19L0 4L4 11L1 14L5 19L1 24L4 27L0 34Z" fill="{dark}" {LINE}/></g>')
-    fin = f'<path d="M18 9L21 0L24 5L28 -1L31 4L35 1L36 9Z" fill="{dark}" {LINE}/>'
-    torso = (f'<path d="M10 19Q12 6 31 6Q52 6 54 19Q52 32 31 32Q12 32 10 19Z" fill="{body}" {LINE}/>'
-             f'<path d="M18 25Q31 31 47 25Q42 30 31 30.5Q22 30.5 18 25Z" fill="{belly}"/>'
-             '<path d="M16 12Q24 8 34 9" stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-opacity="0.7"/>'
-             f'<circle cx="19" cy="16" r="1.8" fill="{dark}"/><circle cx="25" cy="13" r="1.5" fill="{dark}"/>'
-             f'<circle cx="23" cy="20" r="1.4" fill="{dark}"/>')
-    plates = ""
-    if armour:   # riveted plates over the back
-        plates = (f'<path d="M14 15Q20 7 30 7L31 15Q22 15 14 15Z" fill="#8a8fb0" {LINE}/>'
-                  f'<path d="M31 7Q40 7 45 11L40 16L31 15Z" fill="#a3a8c8" {LINE}/>'
-                  '<circle cx="19" cy="12" r="1" fill="#1a0b2e"/><circle cx="26" cy="10.5" r="1" fill="#1a0b2e"/>'
-                  '<circle cx="35" cy="10.5" r="1" fill="#1a0b2e"/>')
-    side = f'<path d="M27 21L34 25L30 26L32 29L25 29Z" fill="{dark}" {LINE}/>'
-    glass = ('<circle cx="42" cy="18" r="13" fill="#29e6ff" fill-opacity="0.12" stroke="#29e6ff" stroke-width="2"/>'
-             '<path d="M34 8.5Q38 5.5 43 5.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-opacity="0.85"/>')
+def bot(body, light, dark, face, extras="", helmet="plain"):
+    """One astronaut bot, viewBox 0 0 74 52, facing right like the shoal swims. Its jetpack
+    flame is its own group (class "tail"), so it flickers the way the salmon's tail wagged."""
+    flame = ('<g class="tail"><path d="M12 25Q2 21 -2 27Q2 33 12 29Z" fill="#ffb347" '
+             f'{LINE.replace("2.2", "1.4")}/><path d="M12 26Q6 25 3 27Q6 29 12 28Z" fill="#fff3a0"/></g>')
+    pack = f'<rect x="10" y="17" width="8" height="16" rx="2.5" fill="#a9b3d6" {LINE}/>'
+    legs = (f'<rect x="22" y="33" width="5" height="6" rx="2" fill="{dark}" {LINE}/>'
+            f'<rect x="31" y="33" width="5" height="6" rx="2" fill="{dark}" {LINE}/>')
+    torso = (f'<rect x="17" y="18" width="24" height="17" rx="7" fill="{body}" {LINE}/>'
+             f'<rect x="23" y="22" width="12" height="7" rx="3" fill="{light}"/>'
+             '<circle cx="26.5" cy="25.5" r="1.4" fill="#ff7ac0"/><circle cx="31.5" cy="25.5" r="1.4" fill="#29e6ff"/>')
+    arm = (f'<path d="M39 26Q45 27 49 23" stroke="{INK}" stroke-width="5.2" fill="none" stroke-linecap="round"/>'
+           f'<path d="M39 26Q45 27 49 23" stroke="{body}" stroke-width="2.6" fill="none" stroke-linecap="round"/>'
+           f'<circle cx="50" cy="22" r="2.8" fill="{light}" {LINE.replace("2.2", "1.6")}/>')
+    head = (f'<rect x="27" y="1" width="21" height="18" rx="7" fill="{body}" {LINE}/>'
+            f'<rect x="29.5" y="3.5" width="16" height="13" rx="5" fill="{INK}"/>'
+            '<circle cx="30" cy="16.5" r="1.6" fill="#ff9ac8" fill-opacity="0.9"/>'
+            '<circle cx="45" cy="16.5" r="1.6" fill="#ff9ac8" fill-opacity="0.9"/>')
+    glass = ('<circle cx="37.5" cy="10" r="14" fill="#29e6ff" fill-opacity="0.12" stroke="#29e6ff" stroke-width="2"/>'
+             '<path d="M28 3Q32 -1.5 38 -2" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-opacity="0.85"/>')
     if helmet == "cracked":
-        glass += '<path d="M50 9L47 13L50 15L46 19" stroke="#ffffff" stroke-width="1" fill="none" stroke-opacity="0.9"/>'
+        glass += '<path d="M47 0L44.5 4L47 6L44 9" stroke="#ffffff" stroke-width="1" fill="none" stroke-opacity="0.9"/>'
     if helmet == "antenna":
-        glass += ('<path d="M42 5L44 -3" stroke="#1a0b2e" stroke-width="1.6"/>'
-                  '<circle cx="44.3" cy="-4" r="2" fill="#ff2fa0" stroke="#1a0b2e" stroke-width="1.2"/>')
-    return ('<g transform="translate(4 8)">' + tail + fin + torso + plates + side
-            + FACES[face](body) + extras + glass + '</g>')
+        glass += ('<path d="M37.5 -4L39.5 -11" stroke="#1a0b2e" stroke-width="1.6"/>'
+                  '<path d="M39.8 -15.5L41 -12.7L44 -12.5L41.7 -10.6L42.4 -7.7L39.8 -9.3L37.2 -7.7L37.9 -10.6L35.6 -12.5L38.6 -12.7Z" '
+                  'fill="#ffd23f" stroke="#1a0b2e" stroke-width="1"/>')
+    # The head and its helmet sit centred over the body.
+    return ('<g transform="translate(4 8)">' + flame + pack + legs + torso + arm
+            + '<g transform="translate(-8.5 0)">' + head + FACES[face] + glass + '</g>' + extras + '</g>')
 
-BANDAID = ('<g transform="rotate(-25 34.5 22)"><rect x="31" y="20.5" width="7" height="3" rx="1" '
-           f'fill="#ffd8a8" {LINE.replace("2.2", "1")}/><circle cx="33.3" cy="22" r="0.45" fill="#c8553d"/>'
-           '<circle cx="35.7" cy="22" r="0.45" fill="#c8553d"/></g>')
-SCARS = '<path d="M20 22L26 18M21 18.5L23.5 21.5" stroke="#1a0b2e" stroke-width="1.2" stroke-linecap="round"/>'
+# A sticker on the chest, and a star badge on the shoulder.
+BANDAID = ('<g transform="rotate(-20 37 30)"><rect x="33.5" y="28.5" width="7" height="3" rx="1" '
+           f'fill="#ffd8a8" {LINE.replace("2.2", "1")}/><circle cx="35.8" cy="30" r="0.45" fill="#c8553d"/>'
+           '<circle cx="38.2" cy="30" r="0.45" fill="#c8553d"/></g>')
+BADGE = '<path d="M20.5 19L21.5 21.2L23.9 21.4L22 23L22.6 25.3L20.5 24L18.4 25.3L19 23L17.1 21.4L19.5 21.2Z" fill="#ffd23f" stroke="#1a0b2e" stroke-width="0.8"/>'
 
 # Each species: its look, its size (times 74 px), how fast it cruises (px/s), how fast its
-# tail wags (s per swing), how many swim at once.
+# flame flickers (s per swing), how many fly at once. The names are the shoal's, from when
+# its crew were salmon.
 SPECIES = {
-    "mini":    dict(svg=salmini("#ffb36b", "#ffe2c4", "#d9772f", "wink"),
+    "mini":    dict(svg=bot("#9fe8c8", "#e4fff3", "#4fae8a", "wink"),
                     scale=0.55, speed=70, wag=0.22, count=5),
-    "salmini": dict(svg=salmini("#ff8a6b", "#ffd0bd", "#c8553d", "grumpy", BANDAID),
+    "salmini": dict(svg=bot("#ffb3a1", "#ffe6dc", "#d9776a", "happy", BANDAID),
                     scale=0.9, speed=38, wag=0.42, count=4),
-    "pink":    dict(svg=salmini("#ff6f9e", "#ffc6dc", "#b23a6e", "grin"),
+    "pink":    dict(svg=bot("#ffa6cf", "#ffe1ef", "#d0679a", "heart"),
                     scale=0.9, speed=44, wag=0.38, count=3),
-    "brute":   dict(svg=salmini("#c46a4a", "#f0b89f", "#7e3a26", "brute", SCARS, armour=True, helmet="cracked"),
+    "brute":   dict(svg=bot("#b8b3ff", "#ebe9ff", "#7a72d6", "sleepy", BADGE, helmet="cracked"),
                     scale=1.45, speed=22, wag=0.7, count=2),
-    "boss":    dict(svg=salmini("#d9304f", "#ff9aa8", "#7a1030", "boss", SCARS, helmet="antenna"),
+    "boss":    dict(svg=bot("#ffd27a", "#fff1cf", "#d39a2e", "star", BADGE, helmet="antenna"),
                     scale=3.2, speed=16, wag=1.0, count=1),
 }
 VIEW = "0 0 74 52"
