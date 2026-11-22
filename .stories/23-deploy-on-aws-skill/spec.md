@@ -65,6 +65,9 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
        outputs and run `aws lambda get-function-concurrency` on it; 0 means a stop is in force, and a deploy
        now can reopen part of the API. Interactive mode stops and asks, pointing to the restart doc; if the
        owner deploys anyway, the report ends with "run `docs/restart-after-a-stop.md` from step 2 now".
+       Only a reserved concurrency of exactly 0 is a stop: an empty answer (no reservation set) is not, and
+       neither is a missing `SfabApi` stack, as in a fresh account, where there is no API to reopen; the report
+       says which of the two it found.
   5. **Build:** start `sfab-deploy` (`aws codebuild start-build --project-name sfab-deploy --region us-east-1`).
      Running the skill is the go-ahead, so there is no separate question; the skill says what it starts. Stack
      names given as arguments, such as `/deploy-on-aws SfabApi SfabWebsite`, go through
