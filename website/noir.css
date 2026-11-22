@@ -55,7 +55,7 @@ summary:focus-visible {
   outline-offset: 3px;
 }
 
-/* The HUD: title, a meter of what's live (4 of 10), the world's version. */
+/* The HUD: title, a meter of what's live, the world's version. */
 .hud {
   display: flex;
   flex-wrap: wrap;

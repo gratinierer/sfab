@@ -955,13 +955,11 @@ def _items(page: Page, section_id: str, list_class: str) -> int:
     return sum(1 for _, tag, _ in page.inside(lists[0]) if tag == "li")
 
 
-LIVE_SECTIONS = ["identity", "friends", "homes", "academy"]
-
-
 def _now_and_total(noir: Page) -> tuple[int, int]:
     """What is out now, noir's panels marked `data-live`, and that plus the items of #next."""
     live = [attrs["id"] for _, attrs in noir.elements if "data-live" in attrs]
-    assert live == LIVE_SECTIONS
+    # The markers are the one source; they only have to sit on real sections.
+    assert live and set(live) <= set(HUMAN_SECTIONS) - {"next"}
     return len(live), len(live) + _items(noir, "next", "next")
 
 
