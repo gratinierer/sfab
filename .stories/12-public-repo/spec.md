@@ -21,12 +21,13 @@ AWS secret could, which is why the scan comes first.
 - **Never:** the owner's private values, `origin_key`, `ip_hash_key` and, after launch, `smoke_claim`. They live in
   the Secrets Manager secret `sfab/config`, not in the repo (`.stories/done/18-deploy-from-codebuild/`), and no template
   holds them. `smoke-genesis-codes.txt` stays gitignored.
-- **Never, either:** the owner's personal data, such as their name, postal address, phone number and private email
+- **Never, either:** the owner's personal data, such as their postal address, phone number and private email
   addresses, nor the AWS account ID, hosted zone ID or support case IDs. Stories and docs describe such values
-  ("the alert address", "the account") instead of copying them.
-- **Accepted in history (owner, 2026-11-22):** the owner's name as the author of one GitHub web merge, and the
-  account ID in the history of a story 19 document, which HEAD no longer holds. Removing either means rewriting
-  `main` and `production`, and PR refs only GitHub Support can delete, so both stay (issue 02's Comments).
+  ("the alert address", "the account") instead of copying them. The owner's name isn't private data to them
+  (owner, 2026-11-22).
+- **Accepted in history (owner, 2026-11-22):** the account ID in the history of a story 19 document, which HEAD no
+  longer holds. Removing it means rewriting `main`, and PR refs only GitHub Support can delete, so it stays (issue
+  02's Comments).
 
 ## New files
 
@@ -67,7 +68,7 @@ only its report, so the tokens spent grow with the findings, not with the histor
 - **What it looks for:**
   - the owner's literal values, one per line, from a list outside the repo, so the list itself can't leak. Its
     path is an argument, and there's no default inside the repo. It holds what no generic pattern finds
-    reliably: the owner's name and private usernames (not the GitHub handle `gratinierer`, which the repo's URLs
+    reliably: the owner's private usernames (not the GitHub handle `gratinierer`, which the repo's URLs
     and every commit publish anyway), the parts of their postal address (street, city, postcode), their
     private email addresses and phone numbers, and the support case IDs, so "Never, either" is covered.
   - generic patterns: email addresses, 12-digit numbers (account IDs), phone numbers and Route 53 hosted zone IDs.

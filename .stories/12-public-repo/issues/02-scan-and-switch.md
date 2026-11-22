@@ -22,7 +22,7 @@ Blocked by: 01, 03
 ## Done when
 
 - The scan reports no real secret, and the result is noted under `## Comments` below.
-- The personal data scan reports no real finding other than the two the owner accepted on 2026-11-22 (Comments),
+- The personal data scan reports no real finding other than the account ID the owner accepted on 2026-11-22 (Comments),
   and its result is noted there too, without the values.
 - The repo is public, with the three settings on.
 - `production` has an active ruleset that restricts deletions and blocks force pushes.
@@ -36,13 +36,9 @@ Blocked by: 01, 03
   since 01 and 03 add commits. The personal data scan waits for `scripts/pii-scan` (03).
 - 2026-11-22, early `scripts/pii-scan` run with the owner's list (6 literals), before 01 was done: 2 real findings,
   so the switch stays stopped until the owner decides.
-  - The owner's name as the author of `0bfe291`, GitHub's web merge of PR #21, which is `production`'s tip. GitHub
-    writes the account's display name into web merges, so a fix needs both a new `production` tip without it
-    (force push, before the ruleset) and a display name or merge habit that doesn't bring it back.
-    Accepted by the owner on 2026-11-22: it stays, so a rerun still reports this one line (`commit author`, literal 1),
-    since literals bypass the allowlist.
-    Superseded by the owner on 2026-11-22: the name isn't private data to them, so it left the list of literals, and
-    the scan no longer reports any web-merge author line.
+  - The owner's name as the author of GitHub's web merges `0bfe291` (PR #21) and `22ca5d5` (PR #22, `production`'s
+    tip): no longer a finding, since the owner decided on 2026-11-22 that the name isn't private data to them and
+    dropped it from the list of literals.
   - The account ID of R1 in `.stories/done/19-deploy-build-cache/spec.md`, first in `6c218cf`, and in 9 later
     commits until HEAD replaced it on 2026-11-22: only a history rewrite of `main` removes it.
     Accepted by the owner on 2026-11-22: no rewrite (it would also leave the ID in PR #21's and #22's refs, which only
