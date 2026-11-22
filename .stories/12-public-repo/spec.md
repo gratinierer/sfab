@@ -19,7 +19,7 @@ AWS secret could, which is why the scan comes first.
   accepted: the design is safe because of its limits, not because it's secret, and a stop is a valid outcome.
 - **The author email:** every commit carries the owner's iCloud relay address, which is fine to publish.
 - **Never:** the owner's private values, `origin_key`, `ip_hash_key` and, after launch, `smoke_claim`. They live in
-  the Secrets Manager secret `sfab/config`, not in the repo (`.stories/18-deploy-from-codebuild/`), and no template
+  the Secrets Manager secret `sfab/config`, not in the repo (`.stories/done/18-deploy-from-codebuild/`), and no template
   holds them. `smoke-genesis-codes.txt` stays gitignored.
 - **Never, either:** the owner's personal data, such as their name, postal address, phone number and private email
   addresses, nor the AWS account ID, hosted zone ID or support case IDs. Stories and docs describe such values
