@@ -16,6 +16,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-22T16:11Z | review | 950a64a6a962 | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5, orchestrated by claude-opus-5-5) | 6 new | full: no prior review; auto round 1; same vendor family as the author, so independence is weaker |
 | 2026-11-22T16:13Z | walkthrough | - | claude-opus-5-5 (auto, inside /review-story auto) | 0 new, 4 resolved, 2 still open | auto walkthrough, not a review pass |
 | 2026-11-22T16:15Z | review | 94836cb344e9 | claude-sonnet-5-5 (dispatched; story authored and fixed by claude-opus-5-5, orchestrated by claude-opus-5-5) | 5 new, 0 resolved, 2 still open | full: delta exceeded half the story's bytes (spec.md); auto round 2; closures of R2, R3, R4, R6 audited and hold; reviewer's "a newer deploy than #22" dropped: the newest sfab-deploy build is the one 01 names |
+| 2026-11-22T16:16Z | walkthrough | - | claude-opus-5-5 (auto, inside /review-story auto) | 0 new, 3 resolved, 5 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
