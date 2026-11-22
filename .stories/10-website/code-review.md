@@ -54,6 +54,8 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-22T16:00:00Z | check | @ 087e91a | scripts/check | — | green |
 | 2026-11-22T16:00:00Z | code-review | 01, 02, 03, 04, 05, 06, 07, 08 @ 726146f..087e91a | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 4 new: 4 standards, 0 spec, 0 security | auto round 1 of up to 5, the interactive walkthrough's fixes; same-family reviewers, per AGENTS.local.md |
 | 2026-11-22T16:20:00Z | walkthrough | 01, 02, 03, 04, 05, 06, 07, 08 @ 0df0de8..HEAD | claude-opus-5-5, auto | 0 new, 4 resolved, 0 still open | auto walkthrough, not a review pass |
+| 2026-11-22T16:35:00Z | check | @ 4faea24 | scripts/check | — | green, the loop's check of the round 1 fixes |
+| 2026-11-22T16:35:00Z | code-review | 01, 02, 03, 04, 05, 06, 07, 08 @ 087e91a..4faea24 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 0 new: 0 standards, 0 spec, 0 security | auto round 2, the fix commits; loop stopped clean; same-family reviewers, per AGENTS.local.md |
 
 ## Findings
 
