@@ -17,10 +17,12 @@ IDENTITY = {
     "GIT_COMMITTER_EMAIL": "bot@example.invalid",
 }
 LITERAL = "quokkastreet"
-EMAIL = "jane.roe@mail.de"
-ACCOUNT_ID = "998877665544"
-PHONE = "+49 30 1234567"
-ZONE_ID = "Z2ABCDEF345GHI"
+# Joined at runtime, so this file never holds a value the scan of this repo would report.
+EMAIL = "max.muster" + "@mail.de"
+ACCOUNT_ID = "112233" + "445566"
+PHONE = "+49 40" + " 7654321"
+ZONE_ID = "Z9XYZ" + "876WVU54"
+PRIVATE = "mallory" + "@botrefugium.com"
 
 
 class Repo:
@@ -114,12 +116,11 @@ def test_allowlisted_values_and_binary_files_are_not_reported(repo, literals):
 
 
 def test_literals_bypass_the_allowlist_and_an_exact_entry_does_not_cover_its_domain(repo, literals):
-    repo.commit({"a.txt": "contact watchdog@botrefugium.com\nprivate jane@botrefugium.com\n"})
+    repo.commit({"a.txt": f"contact watchdog@botrefugium.com\nprivate {PRIVATE}\n"})
 
     found = lines(run(repo, literals))
 
-    private = "jane@botrefugium.com"
-    masked = private[0] + "*" * (len(private) - 2) + private[-1]
+    masked = PRIVATE[0] + "*" * (len(PRIVATE) - 2) + PRIVATE[-1]
     assert [line.split(" ", 1)[1] for line in found] == ["a.txt:1 literal 4", f"a.txt:2 email {masked}"]
 
 

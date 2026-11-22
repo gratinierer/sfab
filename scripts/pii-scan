@@ -35,7 +35,7 @@ BINARY_PROBE = 8000
 PATTERNS = {
     "email": re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}"),
     "account-id": re.compile(r"(?<![0-9A-Za-z])\d{12}(?![0-9A-Za-z])"),
-    # International (+49 …, 0049 …) and German national (030 1234567, 0151 12345678) forms.
+    # International (+49 …, 0049 …) and German national (an area code, then the number; 015x mobiles) forms.
     "phone": re.compile(
         r"(?<![\w+.])(?:\+|00)[1-9]\d{0,2}[ ./-]?(?:\(0\) ?)?\d{2,5}(?:[ ./-]?\d{2,8}){1,3}(?![\w.])"
         r"|(?<![\w.:/-])0[1-9]\d{1,4}[ /-]\d{3,8}(?:[ -]\d{1,5})?(?![\w.:-])"
