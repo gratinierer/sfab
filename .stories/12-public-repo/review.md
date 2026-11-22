@@ -26,6 +26,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-22 | walkthrough | 588e454 | claude-opus-5-5 | 0 new, 5 resolved, 1 still open | auto walkthrough, not a review pass; auto round 1 |
 | 2026-11-22 | review | 802d567a8651 | claude-sonnet-5-5 (dispatched; story and fixes by claude-opus-5-5), compiled by claude-opus-5-5 | 2 new, 0 resolved, 3 still open | full: 3 of 5 story files changed; closure audit of R17-R20, R22: all hold; auto round 2 |
 | 2026-11-22 | walkthrough | 7d57e80 | claude-opus-5-5 | 0 new, 1 resolved, 2 still open | auto walkthrough, not a review pass; auto round 2; R21 skipped as still waiting |
+| 2026-11-22 | review | de6c5750a321 | claude-sonnet-5-5 (dispatched; story and fixes by claude-opus-5-5), compiled by claude-opus-5-5 | 0 new, 0 resolved, 2 still open | delta: issue 02 only; closure audit of R24: holds; auto round 3 |
 
 ## Findings
 
