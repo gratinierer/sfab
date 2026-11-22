@@ -1,6 +1,6 @@
 # Skills whose process commits may commit
 
-Status: accepted. Amends ADR 0006.
+Status: accepted. Amends ADR 0006. Amended by ADR-0012.
 
 ADR 0006 let the four review skills commit their own work without asking. The rule now covers any skill whose
 process includes commits: running it is the explicit ask for that skill's own commits, and for the short-lived

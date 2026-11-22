@@ -14,6 +14,9 @@ record file after a review, and one commit per treated finding) and `/implement-
 branches, merges and closing moves). They stage only the paths they touched, follow the rest of this policy for the
 number and trailers, and never push. `nocommit` in a review skill's arguments turns this off. See
 `docs/adr/0006-review-skills-commit-by-default.md` and `docs/adr/0010-skills-that-commit-may-commit.md`.
+`/deploy-on-aws` is the one skill that may push and merge: running it is the explicit instruction to push `main` and
+to merge it into `production` through a pull request, after asking in interactive mode and without asking in
+`auto`, and never with a force-push. See `docs/adr/0012-deploy-on-aws-may-push.md`.
 
 ## Whenever a new GitHub issue is created
 
