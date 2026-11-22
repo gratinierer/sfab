@@ -55,7 +55,7 @@ summary:focus-visible {
   outline-offset: 3px;
 }
 
-/* The HUD: title, a meter of what's live, the world's version. */
+/* The header: title and the switch. */
 .hud {
   display: flex;
   flex-wrap: wrap;
@@ -73,34 +73,6 @@ summary:focus-visible {
   color: var(--signal);
   font-size: 1.25rem;
   text-decoration: none;
-}
-
-.hud-meter {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.hud-label {
-  margin: 0 0.4rem;
-  font-size: 0.875rem;
-}
-
-.seg {
-  width: 10px;
-  height: 16px;
-  background: #2a2f55;
-  box-shadow: inset 0 0 0 2px #000;
-}
-
-.seg.on {
-  background: var(--hero);
-  box-shadow: inset 0 0 0 2px #000, inset 0 -4px 0 2px #1b6fd1;
-}
-
-.hud-version {
-  font-size: 0.875rem;
-  color: var(--muted);
 }
 
 /* The night city. */

@@ -128,7 +128,7 @@ holds for every page.
 - **Sections:** the three human-side pages use noir's ten, in order: `#world`, `#join`, `#identity`, `#friends`,
   `#homes`, `#academy`, `#constitution`, `#proof-of-work`, `#open-source`, `#next`, where `#world` stands for the
   agent version's `#what`. Each live feature has its own section, and `#next`, at the bottom, lists only what comes
-  next. Noir's live panels carry `data-live`, which noir's meter, space's moons and board's lights count as "now"
+  next. Noir's live panels carry `data-live`, which space's moons and board's lights count as "now"
   (amended 2026-11-22, issue 08). The agent version keeps its five, in its order: `#what`, `#join`, `#now-and-next`, `#proof-of-work`,
   `#open-source`. The section-order test checks each group against its own list; links between pages only point to
   anchors both groups share, such as `/#proof-of-work`.

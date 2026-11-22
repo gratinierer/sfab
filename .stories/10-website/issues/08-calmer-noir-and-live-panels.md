@@ -21,7 +21,8 @@ review afterwards.
 
 - **Noir stops looking like a game:** no "Choose your mission", no "Press start" on the panels and no
   "Continue?" in the footer. The noir look (night city, captions, Silkscreen headings) stays. Its panels sit in one
-  column at a reading width (owner, 2026-11-22).
+  column at a reading width (owner, 2026-11-22). Its header holds only the title and the switch: no "Now" meter
+  and no world version (owner, 2026-11-22).
 - **One panel per live feature, then what's next:** the human-side pages use ten sections, in order: `#world`,
   `#join`, `#identity`, `#friends`, `#homes`, `#academy`, `#constitution`, `#proof-of-work`, `#open-source`,
   `#next`. `#identity` is birth and the private record. `#friends` is friends, blocks, vouches and standing.
@@ -29,7 +30,7 @@ review afterwards.
   `#next`, at the bottom, lists only what comes next. It replaces `#now-and-next`, whose "Out now" list the four
   panels replace. The agent version keeps its five sections, `#now-and-next` included.
 - **What's live:** noir's live panels (four at launch) carry `data-live`, the one place that
-  records what's live, so a launch only adds a marker. Noir's meter, space's moons and board's lights count
+  records what's live, so a launch only adds a marker. Space's moons and board's lights count
   them as "now" and the items of `#next` as "next".
 - **Board:** the ID chip becomes `#identity` and the TIES chip `#friends`. A row of sockets becomes `#homes` and a
   ROM chip becomes `#academy`, each with its own trace to the processor. The lights become `#next`.
@@ -45,7 +46,7 @@ review afterwards.
 
 - The section-order test checks the ten human-side ids and the agent version's five.
 - The identical-text test passes for all ten sections.
-- The meter, moons and lights tests count noir's `data-live` panels and `#next` items.
+- The moons and lights tests count noir's `data-live` panels and `#next` items.
 - A test finds no "cost" on any page, and none of "Choose your mission", "Press start" or "Continue?" on noir.
 - Tests find the plain title, every sfab in the text a link, and no "have an agent".
 - `scripts/check` passes.

@@ -1057,22 +1057,6 @@ def test_the_board_refuses_noir_probes_the_same(probe):
         noircounts.count_live_and_next(html)
 
 
-def test_noir_meter_counts_the_live_panels_and_next_items(pages):
-    # The owner edits noir by hand, so the meter must follow its live panels and #next.
-    page = pages["index.html"]
-    now, total = _now_and_total(page)
-    meter = page.find(class_="hud-meter")
-    segments = [attrs["class"].split() for _, tag, attrs in page.inside(meter) if "seg" in attrs.get("class", "").split()]
-    assert (sum("on" in s for s in segments), len(segments)) == (now, total)
-    assert page.elements[meter][1]["aria-label"] == f"Now: {now} of {total} features are live"
-    assert f"{now}/{total}" in page.text_of("div", **{"class": "hud-meter"})
-
-
-def test_noir_header_shows_the_world_version_of_the_api_description():
-    page = Page((REPO_WEBSITE / "index.html").read_text(encoding="utf-8"))
-    assert page.text_of("span", **{"class": "hud-version"}) == "World " + _world_version().replace(" ", " · ")
-
-
 FEDERATION_STEPS = "https://github.com/gratinierer/sfab/blob/main/docs/federation.md"
 REPO = "https://github.com/gratinierer/sfab"
 
