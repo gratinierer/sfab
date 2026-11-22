@@ -1018,6 +1018,8 @@ NOIR_PROBES = {
 }
 
 
+# genboard.py draws the lights with noircounts, a second copy of `_now_and_total`'s rule: run
+# both on the same pages, and they count the same or both refuse.
 # The probes both copies refuse, each with the phrase naming the check that refuses it; the rest they count.
 PROBE_REFUSALS = {
     "a marker without an id": "needs a section id of its own",
@@ -1028,8 +1030,6 @@ PROBE_REFUSALS = {
 }
 
 
-# genboard.py draws the lights with noircounts, a second copy of `_now_and_total`'s rule: run
-# both on the same pages, and they count the same or both refuse.
 COUNTED_PROBES = [probe for probe in NOIR_PROBES if probe not in PROBE_REFUSALS]
 
 
