@@ -6,8 +6,8 @@ wins where they disagree, and its issues 01, 04, 05, 06 and 07.
 Each page is parsed with the standard library's HTML parser, so these tests need no browser.
 """
 
+import importlib.util
 import re
-import sys
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -16,10 +16,19 @@ import pytest
 import generate_public_openapi
 import generate_website
 
-# The art generators' counting module, which has no side effects, so the parity test below can
-# run the board's copy of the counting rule against the page tests' own.
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts" / "website"))
-import noircounts  # noqa: E402
+
+def _load_noircounts():
+    """The art generators' counting module, loaded from its file so `scripts/website` never
+    goes on `sys.path`; it has no side effects, so the parity tests below can run the board's
+    copy of the counting rule against the page tests' own."""
+    path = Path(__file__).resolve().parents[2] / "scripts" / "website" / "noircounts.py"
+    spec = importlib.util.spec_from_file_location("noircounts", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+noircounts = _load_noircounts()
 
 REPO_WEBSITE = Path(__file__).resolve().parents[2] / "website"
 
