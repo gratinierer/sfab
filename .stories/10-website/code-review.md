@@ -35,6 +35,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-22T10:00:00Z | walkthrough | 01, 02, 03, 04, 05, 06, 07 @ 3eecb4e..HEAD | claude-opus-5-5 | 0 new, 1 resolved, 3 waived, 0 still open | walkthrough, not a review pass; C19 fixed, C17, C22 and C31 waived by the owner |
 | 2026-11-22T11:30:00Z | check | @ 2915900 | scripts/check | — | green |
 | 2026-11-22T11:30:00Z | code-review | 01, 02, 03, 04, 05, 06, 07, 08 @ 3eecb4e..2915900 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 9 new: 5 standards, 4 spec, 0 security | auto round 1 of up to 5; same-family reviewers, per AGENTS.local.md |
+| 2026-11-22T12:00:00Z | walkthrough | 01, 02, 03, 04, 05, 06, 07, 08 @ 6e52b3d..HEAD | claude-opus-5-5, auto | 0 new, 6 resolved, 3 still open | auto walkthrough, not a review pass; C39, C40 and C41 need the owner |
 
 ## Findings
 
