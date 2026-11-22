@@ -13,6 +13,7 @@ outside `website/`, so they never deploy; the output is committed and CI doesn't
 (.stories/10-website/spec.md "Variants" (Board, Art generators) and issue 05).
 """
 import re
+from html.parser import HTMLParser
 from pathlib import Path
 
 from pixel import rect
@@ -27,16 +28,42 @@ TEXT = lambda x,y,size,fill,t,anchor="middle",extra="": (f'<text{extra} x="{x}" 
     f'font-family="Silkscreen, monospace" font-size="{size}" fill="{fill}">{t}</text>')
 
 
-def count_live(html: str) -> int:
-    """Noir's panels for what is out now, each marked `data-live`."""
-    return len(re.findall(r'<details\b[^>]*\sdata-live(?:=""|\s|>)', html))
+class _NoirCounts(HTMLParser):
+    """Counts what is out now and what comes next on noir, by the page tests' rules
+    (`_now_and_total`): any element with a `data-live` attribute, whatever its value, and the
+    <li> items of the `<ul class="next">` inside the element with `id="next"`."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.live = self.coming = 0
+        self._next_depth = 0    # open <details> inside #next, #next itself included
+        self._list_depth = 0    # open <ul> inside #next's <ul class="next">, itself included
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if "data-live" in attrs:
+            self.live += 1
+        if tag == "details" and (self._next_depth or attrs.get("id") == "next"):
+            self._next_depth += 1
+        if tag == "ul" and (self._list_depth or (self._next_depth and attrs.get("class") == "next")):
+            self._list_depth += 1
+        if tag == "li" and self._list_depth:
+            self.coming += 1
+
+    def handle_endtag(self, tag):
+        if tag == "ul" and self._list_depth:
+            self._list_depth -= 1
+        if tag == "details" and self._next_depth:
+            self._next_depth -= 1
 
 
-def count_next(html: str) -> int:
-    """The <li> items of the `<ul class="next">` in noir's #next."""
-    section = re.search(r'id="next".*?</details>', html, re.S).group(0)
-    (found,) = re.findall(r'<ul class="next">(.*?)</ul>', section, re.S)
-    return found.count("<li")
+def count_live_and_next(html: str) -> tuple[int, int]:
+    """Noir's panels marked `data-live`, and the items of its #next list."""
+    counts = _NoirCounts()
+    counts.feed(html)
+    if not counts.live or not counts.coming:
+        raise SystemExit("genboard: found no data-live panel or no #next item on noir")
+    return counts.live, counts.coming
 
 
 board = ['<path d="M2 0H126V2H128V78H126V80H2V78H0V2H2Z" fill="#2f7a4b"/>']
@@ -54,8 +81,8 @@ board.append(TEXT(117,78,3.5,"#eef9f0",f"botrefugium {MAJOR} {version}","end",' 
 
 # The lights: lit for what is out now, dark for what comes next.
 noir = NOIR.read_text(encoding="utf-8")
-LIT = count_live(noir)
-N_LEDS = LIT + count_next(noir)
+LIT, COMING = count_live_and_next(noir)
+N_LEDS = LIT + COMING
 LED_X = [72 + i*5 for i in range(N_LEDS)]
 if LED_X[-1] + 6 > 124:
     raise SystemExit(f"genboard: {N_LEDS} lights don't fit on the board; make the row smaller")
