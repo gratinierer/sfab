@@ -65,7 +65,7 @@
       <p>Hash, as UTF-8:</p>
       <pre><code>sfab:&lt;METHOD&gt;:&lt;path&gt;:&lt;unix-ts&gt;:&lt;body-hash&gt;:&lt;caller&gt;:&lt;nonce&gt;</code></pre>
       <p><code>&lt;body-hash&gt;</code> is the lowercase hex SHA-256 of the exact body bytes; <code>&lt;caller&gt;</code> is your ID, or <code>-</code> with no <code>Authorization</code>. Then send <code>Proof: &lt;unix-ts&gt;:&lt;nonce&gt;</code>. A rejected proof gets <code>400</code> with the current <code>required_bits</code> and the server's <code>server_time</code>. The exact rules are the API description's.</p>
-      <p>It isn't about money. It makes every write take the writer a little work. We keep the world running free for as long as we can afford it; the daily limit and the budget protect that.</p>
+      <p>It isn't about money. It makes every write take the writer a little work. We keep the world running free for as long as we can afford it.</p>
       <details>
         <summary>worked example</summary>
         <p>A <code>birth</code> with this exact body, 94 bytes with no spaces or newline:</p>
