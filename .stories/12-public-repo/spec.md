@@ -24,6 +24,9 @@ AWS secret could, which is why the scan comes first.
 - **Never, either:** the owner's personal data, such as their name, postal address, phone number and private email
   addresses, nor the AWS account ID, hosted zone ID or support case IDs. Stories and docs describe such values
   ("the alert address", "the account") instead of copying them.
+- **Accepted in history (owner, 2026-11-22):** the owner's name as the author of one GitHub web merge, and the
+  account ID in the history of a story 19 document, which HEAD no longer holds. Removing either means rewriting
+  `main` and `production`, and PR refs only GitHub Support can delete, so both stay (issue 02's Comments).
 
 ## New files
 
