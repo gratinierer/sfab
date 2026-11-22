@@ -23,6 +23,11 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
      - `scripts/check` builds the Rust Lambdas and runs the audit and every test, which takes minutes. So it runs
        in the background, its output to a log in the session's scratchpad, and the skill waits for it to finish,
        without polling. Only its exit code decides green or red. On red, show the last ~40 lines of the log.
+     - It is a code check only: it runs before the login and without the profile, so `sfab_config.load_for_check`
+       may fall back to the committed fixture, which is fine here. The build checks the real config itself
+       (`scripts/deploy` runs `cdk/deploy_plan.py`, which loads `sfab/config`, then `scripts/build --require-secret`).
+       When the log holds the "using the fixture" warning, the report says so in one line, so a green check isn't
+       read as "config checked".
   2. **Push `main`:** ask first, unless `main` already equals `origin/main`, then skip.
   3. **Pull request and merge:** open, or reuse, the pull request from `main` to `production` and merge it with a
      merge commit, as #21 and #22 were. Ask first, unless `production` already contains `main`'s head, then skip.
