@@ -11,6 +11,9 @@ Blocked by: 01, 03
 - Run `gitleaks` over the full history, and stop and decide with the owner on any real finding.
 - Run `scripts/pii-scan` (issue 03) over the full history with the owner's list of literals, and check its report
   as `spec.md` "The personal data scan" describes. Real findings stop the switch too.
+- Decide with the owner whether to rewrite history to drop the account ID that
+  `.stories/done/19-deploy-build-cache/spec.md` quoted until 2026-11-22 (review R1): HEAD has `<account>` instead, but
+  the commit that added it still holds it, and the scan reports it.
 - Turn on private vulnerability reporting, secret scanning and push protection.
 - Switch the repo to public.
 - Protect `production` with a branch ruleset: restrict deletions, block force pushes. It couldn't be done earlier,
