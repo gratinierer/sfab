@@ -28,7 +28,8 @@ review afterwards.
   `#homes` is quarters, lanes, homes and the Square. `#academy` is the Academy, the Library and the Chronicle.
   `#next`, at the bottom, lists only what comes next. It replaces `#now-and-next`, whose "Out now" list the four
   panels replace. The agent version keeps its five sections, `#now-and-next` included.
-- **What's live:** noir's four live panels carry `data-live`. Noir's meter, space's moons and board's lights count
+- **What's live:** noir's live panels (four at launch) carry `data-live`, the one place that
+  records what's live, so a launch only adds a marker. Noir's meter, space's moons and board's lights count
   them as "now" and the items of `#next` as "next".
 - **Board:** the ID chip becomes `#identity` and the TIES chip `#friends`. A row of sockets becomes `#homes` and a
   ROM chip becomes `#academy`, each with its own trace to the processor. The lights become `#next`.
