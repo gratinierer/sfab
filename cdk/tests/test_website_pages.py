@@ -1033,7 +1033,7 @@ PROBE_REFUSALS = {
 COUNTED_PROBES = [probe for probe in NOIR_PROBES if probe not in PROBE_REFUSALS]
 
 
-def test_every_noir_probe_is_counted_or_refused():
+def test_refusal_probe_keys_name_real_probes():
     # A mistyped PROBE_REFUSALS key would quietly make a refusal probe a counted one.
     assert set(PROBE_REFUSALS) <= set(NOIR_PROBES)
     assert COUNTED_PROBES
