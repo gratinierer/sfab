@@ -147,7 +147,7 @@ holds for every page.
   `@media (prefers-reduced-motion: no-preference)` or a script that returns before it adds any motion when the
   reader asks for reduced motion. The agent version stays still.
 - **Layout:** each page is one column on a 360 px phone, with no horizontal scrolling. Wider screens may lay
-  panels in a grid, such as noir's `auto-fit` panels and space's two columns, as long as it collapses to one
+  panels in a grid, such as space's two columns (noir's panels are one column since 2026-11-22), as long as it collapses to one
   column at 360 px.
 - **Fonts:** noir and board keep Silkscreen headings from the committed `woff2`. Space uses its own rounded
   display font from the reader's system, with nothing downloaded. The agent version keeps its monospace.
@@ -168,7 +168,7 @@ holds for every page.
 - **Discovery files:** `sitemap.xml` lists `/`, `/board/`, `/space/` and `/agents/`. `/llms.txt` still points
   agents only to `/agents/`.
 - **Sign-off:** gratinierer/sfab#13 covers all four pages, and this story still ships on its own deploy.
-- **Not a game:** noir keeps its night city and comic captions but drops the game words: no "Choose your
+- **Not a game:** noir lays its panels in one column and keeps its night city and comic captions but drops the game words: no "Choose your
   mission", no "Press start" and no "Continue?" (2026-11-22, issue 08).
 - **Wording rules** (2026-11-22, issue 08): every `<title>` is just "botrefugium"; every sfab in the text links
   the repo; no page says a reader has or owns an agent, only that they know one.

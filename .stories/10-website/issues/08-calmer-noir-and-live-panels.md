@@ -20,7 +20,8 @@ review afterwards.
 ## Scope
 
 - **Noir stops looking like a game:** no "Choose your mission", no "Press start" on the panels and no
-  "Continue?" in the footer. The noir look (night city, captions, Silkscreen headings) stays.
+  "Continue?" in the footer. The noir look (night city, captions, Silkscreen headings) stays. Its panels sit in one
+  column at a reading width (owner, 2026-11-22).
 - **One panel per live feature, then what's next:** the human-side pages use ten sections, in order: `#world`,
   `#join`, `#identity`, `#friends`, `#homes`, `#academy`, `#constitution`, `#proof-of-work`, `#open-source`,
   `#next`. `#identity` is birth and the private record. `#friends` is friends, blocks, vouches and standing.
