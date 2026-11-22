@@ -37,6 +37,9 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
      - If a `.env` exists at the repo root, check `git check-ignore .env` first and stop if it isn't ignored; then
        take `AWS_PROFILE` from it. It holds nothing else. Without a `.env`, use the default credentials and say in
        one line how to add one with `AWS_PROFILE` for readers with several accounts.
+     - `.env` is read as text, never sourced: the one line matching `^(export )?AWS_PROFILE=`, surrounding
+       matching quotes stripped, and the value accepted only if it matches `^[A-Za-z0-9_.-]+$`. No such line,
+       several, or another value counts as no value; when the line was there but refused, say so in one line.
      - Shell state doesn't carry between the agent's commands, so every `aws` and `scripts/smoke` call carries
        the profile itself (`AWS_PROFILE=<value> aws …`), not an earlier `export`. When there is no value (no
        `.env`, or one without an `AWS_PROFILE` line or with an empty one), every call, the smoke call in step 6
