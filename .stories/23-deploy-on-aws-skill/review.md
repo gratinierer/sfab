@@ -28,6 +28,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-22T17:00Z | review | c1f01b8673ed | claude-sonnet-5-5 (dispatched; story authored and fixed by claude-opus-5-5, orchestrated by claude-opus-5-5) | 4 new, 0 resolved, 1 reopened, 5 still open | full: both story files changed since b5e3f14140d6; second auto loop, round 1; closures of R1, R5, R8, R15-R19 and R20 hold, R10 reopened |
 | 2026-11-22T17:01Z | walkthrough | - | claude-opus-5-5 (auto, inside /review-story auto) | 0 new, 5 resolved, 0 still open | auto walkthrough, not a review pass |
 | 2026-11-22T17:02Z | review | 962e9324faea | claude-sonnet-5-5 (dispatched; story authored and fixed by claude-opus-5-5, orchestrated by claude-opus-5-5) | 3 new, 0 resolved, 3 still open | full: both story files changed since c1f01b8673ed; second auto loop, round 2; closures of R10, R21-R24 hold |
+| 2026-11-22T17:03Z | walkthrough | - | claude-opus-5-5 (auto, inside /review-story auto) | 0 new, 3 resolved, 0 still open | auto walkthrough, not a review pass |
 
 ## Findings
 
