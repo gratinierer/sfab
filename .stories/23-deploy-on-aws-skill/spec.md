@@ -28,9 +28,11 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
        take `AWS_PROFILE` from it. It holds nothing else. Without a `.env`, use the default credentials and say in
        one line how to add one with `AWS_PROFILE` for readers with several accounts.
      - Shell state doesn't carry between the agent's commands, so every `aws` and `scripts/smoke` call carries
-       the profile itself (`AWS_PROFILE=<value> aws …`), not an earlier `export`. Without a `.env` there is no
-       prefix at all: an empty `AWS_PROFILE=` fails ("config profile () could not be found"). Every `aws` call also carries
-       `--region us-east-1`, so a profile without a region still finds the project and the stack.
+       the profile itself (`AWS_PROFILE=<value> aws …`), not an earlier `export`. When there is no value (no
+       `.env`, or one without an `AWS_PROFILE` line or with an empty one), every call, the smoke call in step 6
+       included, drops the prefix entirely: an empty `AWS_PROFILE=` fails ("config profile () could not be
+       found"). Every `aws` call also carries `--region us-east-1`, so a profile without a region still finds the
+       project and the stack.
      - `aws sts get-caller-identity` only has to succeed; its output is never shown. On an expired session, stop
        and ask the owner to type `! aws login`, then check again.
      - **The right account** is recognised by what it holds, not by a stored ID: `us-east-1` has a CodeBuild
@@ -62,7 +64,8 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
      - `scripts/smoke` runs `cdk/.venv/bin/python`, which step 5 made if it was missing.
      - It reads the test fixture instead of `sfab/config` when `SFAB_CONFIG` is set; the secret read names its
        region itself (`SECRET_REGION` in `cdk/sfab_config.py`). So the call is `env -u SFAB_CONFIG
-       AWS_PROFILE=<value> scripts/smoke …`.
+       AWS_PROFILE=<value> scripts/smoke …`, or `env -u SFAB_CONFIG scripts/smoke …` when step 4 found no
+       profile value.
      - Its exit codes: 0 pass; 1 a failed smoke test; 2 a usage or config problem, such as no `smoke_claim` in
        `sfab/config`, shown with its message; 3 WAF blocked it, reported as "wait at least 5 minutes and rerun",
        not as a failed deploy. The build already succeeded in every case, and the report says so.
