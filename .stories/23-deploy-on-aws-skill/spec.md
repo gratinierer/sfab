@@ -34,7 +34,10 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
      Running the skill is the go-ahead, so there is no separate question; the skill says what it starts. Stack
      names given as arguments, such as `/deploy-on-aws SfabApi SfabWebsite`, go through
      `--environment-variables-override name=DEPLOY_STACKS,value=...`; `scripts/deploy` already refuses anything
-     else. Wait for the build without fast polling. On failure, show the failed phase and the last ~40 lines of the
+     else. Several names are space-separated, so the shorthand value is quoted
+     (`'name=DEPLOY_STACKS,value=SfabApi SfabWebsite'`), as `buildspec.yml` splits it unquoted. Before starting a
+     build, check each name against `STACKS` and `ALL` in `cdk/deploy_plan.py`, read from the file rather than
+     copied, so a typo stops on the machine instead of in a build. Wait for the build without fast polling. On failure, show the failed phase and the last ~40 lines of the
      build log.
   6. **Smoke test:** after a successful build, offer `scripts/smoke --execute-api <url> --production`. The URL is
      `https://<RestApiId>.execute-api.us-east-1.amazonaws.com/v1/`, with `RestApiId` read from the API stack's
