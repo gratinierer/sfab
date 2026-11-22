@@ -3,7 +3,8 @@
 The board's lights (`genboard.py`) are drawn from these counts. They follow the page tests'
 rules, `_now_and_total` and `_items` in `cdk/tests/test_website_pages.py`, and a test there
 runs this module against them, so the two copies of the rule can't drift apart. No side
-effects: importing it reads and writes nothing.
+effects: importing it reads and writes nothing (.stories/10-website/spec.md "Variants"
+(Sections, Board) and issue 08 "What's live").
 """
 from html.parser import HTMLParser
 
