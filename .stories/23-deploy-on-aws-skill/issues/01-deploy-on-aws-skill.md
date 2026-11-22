@@ -10,8 +10,10 @@ Label: ready-for-agent
   optional stack names, the asking rules, and the masking of 12-digit numbers, ARNs and emails, as `spec.md`
   "Decisions" lists them.
 - `.gitignore` gains `.env`.
-- `docs/agents/commit-policy.md` gains the one line that running `/deploy-on-aws` is the explicit instruction to
-  push `main` and merge into `production`.
+- `docs/adr/0012-deploy-on-aws-may-push.md`: running `/deploy-on-aws` is the explicit instruction to push `main`
+  and merge into `production`, amending ADR 0010; ADR 0010's Status line gains "Amended by ADR-0012".
+- `docs/agents/commit-policy.md`'s "Exception, skills that commit" paragraph names `/deploy-on-aws` as the one
+  skill that may push and merge, citing ADR 0012, instead of saying all such skills "never push".
 - `.claude/skills/VENDORED.md` lists `deploy-on-aws` as the owner's.
 - `AGENTS.md` "Skills" needs no change: it already points to `.claude/skills/`.
 

@@ -78,9 +78,12 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
 - **No account-specific data:** nothing account-specific goes into the repo. Every 12-digit number, ARN and email in
   what the skill shows is masked. The project name and the region are already public in the repo.
 - **`.env`:** added to `.gitignore`. No `.env.example`; the skill itself says what `.env` may hold.
-- **Commit policy:** `docs/agents/commit-policy.md` gets one line: running `/deploy-on-aws` is the explicit
-  instruction to push `main` and merge into `production`, after asking in interactive mode and without asking in
-  `auto`, as the review skills' right to commit is written there (ADR 0010).
+- **Commit policy:** running `/deploy-on-aws` is the explicit instruction to push `main` and merge into
+  `production`, after asking in interactive mode and without asking in `auto`. That is a deliberate exception to
+  ADR 0010, which says "Pushing still always needs an explicit request", so it gets its own ADR,
+  `docs/adr/0012-deploy-on-aws-may-push.md`, amending ADR 0010. ADR 0010's Status line then reads "Amended by
+  ADR-0012", and `docs/agents/commit-policy.md`'s "Exception, skills that commit" paragraph names `/deploy-on-aws`
+  as the one skill that may push, where it now says those skills "never push".
 
 ## Out of scope
 
