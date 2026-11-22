@@ -23,6 +23,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-22 | walkthrough | 2759c14 | claude-opus-5-5 | 0 new, 0 resolved, 2 still open | auto walkthrough, not a review pass; auto round 3, no progress |
 | 2026-11-22 | walkthrough | 14beb76 | claude-opus-5-5 with the owner | 0 new, 2 resolved, 0 still open | walkthrough, not a review pass |
 | 2026-11-22 | review | e7cc93131ad3 | claude-sonnet-5-5 (dispatched; story and fixes by claude-opus-5-5), compiled by claude-opus-5-5 | 6 new, 0 resolved, 6 still open | full: 4 of 5 story files changed; closure audit of R1, R8: hold; mixed commits 204af55 (scripts/pii-scan, pii-allowlist.txt, cdk/tests/test_pii_scan.py) and 4da352d (story 19 spec); auto round 1 |
+| 2026-11-22 | walkthrough | 588e454 | claude-opus-5-5 | 0 new, 5 resolved, 1 still open | auto walkthrough, not a review pass; auto round 1 |
 
 ## Findings
 
