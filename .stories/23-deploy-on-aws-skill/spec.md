@@ -32,7 +32,8 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
   3. **Pull request and merge:** open, or reuse, the pull request from `main` to `production` and merge it with a
      merge commit, as #21 and #22 were. Ask first, unless `production` already contains `main`'s head, then skip.
      - **Title:** the story numbers from the `(#n)` endings of the commits in `origin/production..main`. One story:
-       "Deploy story <n>: <its spec.md title> (#n)"; several: "Deploy stories <a> and <b> (#a) (#b)". None: stop
+       "Deploy story <n>: <its spec.md title> (#n)", the title being the `# ` line of `.stories/<n>-*/spec.md` or, for
+       a closed story, `.stories/done/<n>-*/spec.md`; several: "Deploy stories <a> and <b> (#a) (#b)". None: stop
        and ask, and `auto` stops. The repo's merge commits default to "Merge pull request #N from …" (its
        `merge_commit_title` is `MERGE_MESSAGE`, as #22 and #24 show), so the merge passes the title as the subject:
        `gh pr merge <n> --merge --subject "<title>"`, and the commit carries the numbers the policy wants.
