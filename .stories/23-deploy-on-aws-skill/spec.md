@@ -39,17 +39,19 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
      `--environment-variables-override name=DEPLOY_STACKS,value=...`; `scripts/deploy` already refuses anything
      else. Several names are space-separated, so the shorthand value is quoted
      (`'name=DEPLOY_STACKS,value=SfabApi SfabWebsite'`), as `buildspec.yml` splits it unquoted. Before starting a
-     build, check each name against `STACKS` and `ALL` in `cdk/deploy_plan.py`, read from the file rather than
-     copied, so a typo stops on the machine instead of in a build. Wait for the build without fast polling. On failure, show the failed phase and the last ~40 lines of the
-     build log.
+     build, check each name against `STACKS` and `ALL` in `cdk/deploy_plan.py`, so a typo stops on the machine
+     instead of in a build. `STACKS` ends with `deployer_stack.STACK_NAME`, so the names come from importing the
+     module, not from reading its text: `cd cdk && .venv/bin/python -c 'import deploy_plan as d;
+     print(d.ALL, *d.STACKS)'`. That needs `cdk/.venv`, which a `skipcheck` run on a fresh clone hasn't made: if
+     it is missing, make it first as `scripts/deploy` does (`uv venv` and `uv pip sync` of
+     `cdk/requirements.txt`). Wait for the build without fast polling. On failure, show the failed phase and the
+     last ~40 lines of the build log.
   6. **Smoke test:** after a successful build, offer `scripts/smoke --execute-api <url> --production`. The URL is
      `https://<RestApiId>.execute-api.us-east-1.amazonaws.com/v1/`, with `RestApiId` read from the API stack's
      CloudFormation output each time (`cdk/kill_switch.py`, the outputs `docs/restart-after-a-stop.md` uses).
      There is no override. The production smoke run births nothing and cleans up its friend, block, vouch and
      message; it rewrites only the smoke identity's `whoiam` to a fixed text.
-     - `scripts/smoke` runs `cdk/.venv/bin/python`, which a `skipcheck` run on a fresh clone hasn't made: if
-       `cdk/.venv` is missing, make it first as `scripts/deploy` does (`uv venv` and `uv pip sync` of
-       `cdk/requirements.txt`).
+     - `scripts/smoke` runs `cdk/.venv/bin/python`, which step 5 made if it was missing.
      - It reads `sfab/config` through boto3, which takes its region from `AWS_DEFAULT_REGION` or the profile and
        ignores `AWS_REGION`, and reads the test fixture instead when `SFAB_CONFIG` is set (`cdk/sfab_config.py`).
        So the call is `env -u SFAB_CONFIG AWS_DEFAULT_REGION=us-east-1 AWS_PROFILE=<value> scripts/smoke …`.
