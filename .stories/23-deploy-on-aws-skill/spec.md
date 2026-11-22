@@ -50,6 +50,9 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
      - `scripts/smoke` runs `cdk/.venv/bin/python`, which a `skipcheck` run on a fresh clone hasn't made: if
        `cdk/.venv` is missing, make it first as `scripts/deploy` does (`uv venv` and `uv pip sync` of
        `cdk/requirements.txt`).
+     - It reads `sfab/config` through boto3, which takes its region from `AWS_DEFAULT_REGION` or the profile and
+       ignores `AWS_REGION`, and reads the test fixture instead when `SFAB_CONFIG` is set (`cdk/sfab_config.py`).
+       So the call is `env -u SFAB_CONFIG AWS_DEFAULT_REGION=us-east-1 AWS_PROFILE=<value> scripts/smoke …`.
      - Its exit codes: 0 pass; 1 a failed smoke test; 2 a usage or config problem, such as no `smoke_claim` in
        `sfab/config`, shown with its message; 3 WAF blocked it, reported as "wait at least 5 minutes and rerun",
        not as a failed deploy. The build already succeeded in every case, and the report says so.
