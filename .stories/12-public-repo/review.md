@@ -15,6 +15,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 |---|---|---|---|---|---|
 | 2026-11-22 | review | 928ceff1f60e | claude-sonnet-5-5 (dispatched; story authored by claude-opus-5-5), compiled by claude-opus-5-5 | 10 new | full: first review; same vendor family, so weaker independence |
 | 2026-11-22 | walkthrough | 1996724 | claude-opus-5-5 | 0 new, 8 resolved, 2 still open | auto walkthrough, not a review pass |
+| 2026-11-22 | review | b0dacc69ef3f | claude-sonnet-5-5 (dispatched; story and fixes by claude-opus-5-5), compiled by claude-opus-5-5 | 3 new, 0 resolved, 2 still open | full: 4 of 5 story files changed; closure audit of R2-R7, R9, R10: all hold; auto round 1 |
 
 ## Findings
 
@@ -30,3 +31,6 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | R8 | open | consistency | 01, spec.md | LICENSE's "owner as copyright holder" doesn't say name or GitHub handle, while "Never, either" forbids publishing the owner's name. | 2026-11-22 needs the user (9a1bdd8): whether LICENSE names the owner or the handle `gratinierer` is the owner's decision, and the spec forbids publishing the name. |
 | R9 | resolved | factual | 01 | Issue 01 credits the Silkscreen font to Jason Kottke; `website/fonts/OFL.txt:1` says "The Silkscreen Project Authors". | 2026-11-22: issue 01 now credits "The Silkscreen Project Authors", as `website/fonts/OFL.txt:1` does. |
 | R10 | resolved | staleness | spec.md, 02 | Goal and issue 02 cite `.stories/4-life-in-the-world/` and its "step 8"; the story is in `.stories/done/4-life-in-the-world/`, where step 8 is now "List sfab where agent builders look". | 2026-11-22: spec Goal and issue 02 now cite `.stories/done/4-life-in-the-world/`, and 02 points at its checklist's step 1 instead of the old step 8. |
+| R11 | open | consistency | spec.md, 03 | "What it looks for" puts the owner's usernames on the literal list, but the handle `gratinierer` is public (repo URLs in `openapi/sfab.yaml`, `website/llms.txt`, nearly every commit's author) and literals bypass the allowlist, so the spec must say which usernames are public and stay off the list. | |
+| R12 | open | completeness | spec.md, 03 | "What it ignores" covers only `.invalid`/`example.*` and the co-author address, but the tree also holds `.test` and `.example` addresses (`abuse@example.test`, `abuse@sfab.example`), the public site's `@botrefugium.com` contacts, and history has GitHub's noreply addresses, so 03's first run still won't be short. | |
+| R13 | open | staleness | spec.md | "What gets published" cites `.stories/18-deploy-from-codebuild/`, which now lives in `.stories/done/18-deploy-from-codebuild/` (step 4 of the same spec already uses that path). | |
