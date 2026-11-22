@@ -13,7 +13,8 @@ Label: ready-for-agent
 - Tests in `cdk/tests/test_pii_scan.py`, which `scripts/check`'s cdk pytest already runs, as it does
   `test_build_scripts.py` for the other scripts. They run the script on a throwaway repo built in the test: a planted literal (also in a commit author's name and a branch name), an email address, an account ID, a phone number
   and a hosted zone ID are each found once, even when the line appears in many commits; an allowlisted value
-  and a binary file aren't reported; the report never contains a full match; and a clean repo exits 0.
+  and a binary file aren't reported, but a literal that an allowlist entry also matches, and another address at the
+  domain of an allowlisted address, are; the report never contains a full match; and a clean repo exits 0.
 
 ## Done when
 
