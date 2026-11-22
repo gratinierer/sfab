@@ -61,6 +61,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-22T17:10:00Z | walkthrough | 01, 02, 03, 04, 05, 06, 07, 08 @ 9617adc..HEAD | claude-opus-5-5, auto | 0 new, 1 resolved, 0 still open | auto walkthrough, not a review pass; edited issue 04 |
 | 2026-11-22T17:25:00Z | check | @ b0dacc6 | scripts/check | — | green on a rerun: the first run failed one Rust test, `a_contacts_write_without_a_valid_proof_gets_400_with_nothing_stored` (`lambda/identity/tests/profile.rs:643`), outside this range and passing on five reruns |
 | 2026-11-22T17:25:00Z | code-review | 01, 02, 03, 04, 05, 06, 07, 08 @ 9617adc..b0dacc6 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 2 new: 1 standards, 1 spec, 0 security | auto round 2, the fix commit 8867eab; same-family reviewers, per AGENTS.local.md |
+| 2026-11-22T17:35:00Z | walkthrough | 01, 02, 03, 04, 05, 06, 07, 08 @ b62a44f..HEAD | claude-opus-5-5, auto | 0 new, 2 resolved, 0 still open | auto walkthrough, not a review pass; edited issue 04 |
 
 ## Findings
 
