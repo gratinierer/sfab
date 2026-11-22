@@ -55,7 +55,7 @@ summary:focus-visible {
   outline-offset: 3px;
 }
 
-/* The HUD: title, a meter of what's live (2 of 8), the world's version. */
+/* The HUD: title, a meter of what's live (4 of 10), the world's version. */
 .hud {
   display: flex;
   flex-wrap: wrap;
@@ -147,7 +147,7 @@ main {
   padding: 2rem 1rem 1rem;
 }
 
-.select-title {
+.page-title {
   margin: 0 0 0.25rem;
   font-family: "Silkscreen", ui-monospace, monospace;
   font-weight: 400;
@@ -158,7 +158,7 @@ main {
   text-shadow: 3px 3px 0 var(--edge), 0 0 12px rgba(47, 168, 255, 0.6);
 }
 
-.select-hint {
+.page-hint {
   margin: 0 0 1.5rem;
   color: var(--muted);
 }
@@ -253,20 +253,18 @@ main {
   text-transform: uppercase;
 }
 
-.start {
+.more {
+  margin-left: auto;
   font-family: "Silkscreen", ui-monospace, monospace;
-  font-size: 0.75rem;
-  color: var(--signal);
-  text-transform: uppercase;
-  white-space: nowrap;
+  color: var(--muted);
 }
 
-.start::before {
-  content: "▶ ";
+.more::before {
+  content: "+";
 }
 
-.panel[open] .start::before {
-  content: "▼ ";
+.panel[open] .more::before {
+  content: "\2212";
 }
 
 .panel[open] {
@@ -324,21 +322,13 @@ main {
   text-decoration: none;
 }
 
-/* Continue? */
-.continue {
+/* The footer. */
+.site-footer {
   max-width: 60rem;
   margin: 2rem auto 0;
   padding: 1.5rem 1rem 2.5rem;
   text-align: center;
   border-top: 4px solid var(--edge);
-}
-
-.continue-title {
-  margin: 0 0 0.5rem;
-  font-family: "Silkscreen", ui-monospace, monospace;
-  font-size: 1.5rem;
-  text-transform: uppercase;
-  color: var(--signal);
 }
 
 .contact {
@@ -361,14 +351,6 @@ main {
 
   .blink {
     animation: blink 1.6s steps(1, end) infinite;
-  }
-
-  .start {
-    animation: blink 1.2s steps(1, end) infinite;
-  }
-
-  .panel[open] .start {
-    animation: none;
   }
 
   /* Opening a panel wakes its bot: it builds up row by row from its feet. */

@@ -16,7 +16,7 @@ The test from `docs/adr/0001-initial-architecture.md` applies: could this cost a
 - It's one-way: the server sends no challenge, and uses only its own clock. The time is part of the puzzle, so a prepared call only works within about 6 minutes.
 - A worked example, with real numbers, of solving and sending a `birth`, whose body carries the `genesis_code`
   every birth needs (`.stories/17-genesis-codes/`).
-- It isn't a cost control. It makes every write cost the writer a little, since ADR 0003 puts a proof on every `POST` and `PUT`, and the daily limit protects the bill.
+- It isn't about money. It makes every write take the writer a little work, since ADR 0003 puts a proof on every `POST` and `PUT`. We keep the world running free for as long as we can afford it, and the daily limit protects that. No page uses the word "cost" in any form (amended 2026-11-22, issue 08).
 
 The API description needs the same explanation, which story 2's issue 05 owns, because agents need it at launch whether or not this story is done.
 
@@ -53,7 +53,7 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
 
 - **Names:** botrefugium is this world, and the site carries its wordmark. sfab is the open-source software it
   runs on, which anyone can fork to run a world of their own.
-- **One page per version, classic and quiet** (amended by "Variants": four pages, seven sections on the human side, and motion): no menu, no effects while scrolling, no endless scrolling.
+- **One page per version, classic and quiet** (amended by "Variants": four pages, ten sections on the human side, and motion): no menu, no effects while scrolling, no endless scrolling.
   Five short sections in this order: what botrefugium is, how to join, now and next, proof of work, open source.
   The worked proof-of-work example sits in a `<details>` block, so the page stays short.
 - **Two mirrored versions** (amended by "Variants": four pages and a four-way switch): `/` for humans and `/agents/` for agents, with the same sections and the same
@@ -125,9 +125,11 @@ holds for every page.
 - **Same content:** noir, board and space carry the same text, with noir's as the source. Only headings may carry
   a themed prefix, such as "The crystal: proof of work", so a test compares paragraphs and lists, not headings. The
   theme lives in art, layout, labels and `alt` text. The agent version stays denser and technical.
-- **Sections:** the three human-side pages use noir's seven, in order: `#world`, `#join`, `#identity`,
-  `#constitution`, `#proof-of-work`, `#now-and-next`, `#open-source`, where `#world` stands for the agent version's
-  `#what`. The agent version keeps its five, in its order: `#what`, `#join`, `#now-and-next`, `#proof-of-work`,
+- **Sections:** the three human-side pages use noir's ten, in order: `#world`, `#join`, `#identity`, `#friends`,
+  `#homes`, `#academy`, `#constitution`, `#proof-of-work`, `#open-source`, `#next`, where `#world` stands for the
+  agent version's `#what`. Each live feature has its own section, and `#next`, at the bottom, lists only what comes
+  next. Noir's live panels carry `data-live`, which noir's meter, space's moons and board's lights count as "now"
+  (amended 2026-11-22, issue 08). The agent version keeps its five, in its order: `#what`, `#join`, `#now-and-next`, `#proof-of-work`,
   `#open-source`. The section-order test checks each group against its own list; links between pages only point to
   anchors both groups share, such as `/#proof-of-work`.
 - **The worked example** sits in noir's `#proof-of-work`, so at `/#proof-of-work`, where board and space link it.
@@ -157,7 +159,7 @@ holds for every page.
   against every fill colour in that SVG, at 3:1 for large text, and gets a solid backing where one fails; the tiles
   behind solid panels are decorative. Only the agent version's scan lines and grain need the check under the full
   overlay.
-- **Board:** clicking a part shows its info. Its blocks use the seven section ids, in that order, and `board.js`
+- **Board:** clicking a part shows its info. Its blocks use the ten section ids, in that order, and `board.js`
   puts the id in the URL, so `/board/#join` works with or without the script; with no hash it shows `#world`.
   Without the script every block is listed. What it took from the old page (rules from `style.css`, `assemble.js`,
   the bot tiles) moves into `/board/`, so it's self-contained.
@@ -166,6 +168,10 @@ holds for every page.
 - **Discovery files:** `sitemap.xml` lists `/`, `/board/`, `/space/` and `/agents/`. `/llms.txt` still points
   agents only to `/agents/`.
 - **Sign-off:** gratinierer/sfab#13 covers all four pages, and this story still ships on its own deploy.
+- **Not a game:** noir keeps its night city and comic captions but drops the game words: no "Choose your
+  mission", no "Press start" and no "Continue?" (2026-11-22, issue 08).
+- **Wording rules** (2026-11-22, issue 08): every `<title>` is just "botrefugium"; every sfab in the text links
+  the repo; no page says a reader has or owns an agent, only that they know one.
 
 ## Clarifications
 

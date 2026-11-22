@@ -21,7 +21,9 @@ PAGES = ("index.html", "board/index.html", "space/index.html", "agents/index.htm
 NOIR, BOARD, SPACE, AGENT = PAGES
 # spec.md "Variants" (Sections): the human-side pages use noir's seven, the agent version
 # keeps its five, each in its own order.
-HUMAN_SECTIONS = ["world", "join", "identity", "constitution", "proof-of-work", "now-and-next", "open-source"]
+HUMAN_SECTIONS = [
+    "world", "join", "identity", "friends", "homes", "academy", "constitution", "proof-of-work", "open-source", "next",
+]
 AGENT_SECTIONS = ["what", "join", "now-and-next", "proof-of-work", "open-source"]
 SECTIONS = {NOIR: HUMAN_SECTIONS, BOARD: HUMAN_SECTIONS, SPACE: HUMAN_SECTIONS, AGENT: AGENT_SECTIONS}
 CONTACT = "abuse@example.test"
@@ -222,7 +224,7 @@ def test_the_header_holds_a_link_home_and_the_four_way_switch_marking_the_curren
 @pytest.mark.parametrize("name", PAGES)
 def test_each_version_has_a_title_a_description_and_the_icon_as_svg_favicon(pages, name):
     page = pages[name]
-    assert page.text_of("title").startswith("botrefugium")
+    assert page.text_of("title") == "botrefugium"
     descriptions = [m["content"] for m in page.all("meta") if m.get("name") == "description"]
     assert len(descriptions) == 1 and descriptions[0].strip()
     icons = [link for link in page.all("link") if link.get("rel") == "icon"]
@@ -704,10 +706,8 @@ def test_space_hides_no_text_or_list_from_the_first_frame(built, pages):
             assert SPACE_DECORATION.search(selector), selector
 
 
-def test_space_moons_count_the_now_and_next_items(pages):
-    noir = pages[NOIR]
-    now = _items(noir, "now-and-next", "now")
-    total = now + _items(noir, "now-and-next", "next")
+def test_space_moons_count_the_live_panels_and_next_items(pages):
+    now, total = _now_and_total(pages[NOIR])
     page = pages[SPACE]
     moons = page.find(class_="moons")
     found = [attrs["class"].split() for _, _, attrs in page.inside(moons) if "moon" in attrs.get("class", "").split()]
@@ -739,14 +739,12 @@ def test_board_script_opens_on_world_without_a_hash(built):
     assert 'getAttribute("data-part")' in js
 
 
-def test_board_lights_count_the_now_and_next_items(pages):
-    # The owner edits noir's #now-and-next by hand, and genboard.py draws the lights from it.
-    noir = pages[NOIR]
-    now = _items(noir, "now-and-next", "now")
-    total = now + _items(noir, "now-and-next", "next")
+def test_board_lights_count_the_live_panels_and_next_items(pages):
+    # The owner edits noir by hand, and genboard.py draws the lights from it.
+    now, total = _now_and_total(pages[NOIR])
     page = pages[BOARD]
     (lights,) = [i for i, (_, attrs) in enumerate(page.elements)
-                 if "part" in attrs.get("class", "").split() and attrs.get("data-part") == "now-and-next"]
+                 if "part" in attrs.get("class", "").split() and attrs.get("data-part") == "next"]
     leds = [attrs["class"].split() for _, tag, attrs in page.inside(lights) if "led" in attrs.get("class", "").split()]
     assert (sum("on" in led for led in leds), len(leds)) == (now, total)
 
@@ -957,11 +955,20 @@ def _items(page: Page, section_id: str, list_class: str) -> int:
     return sum(1 for _, tag, _ in page.inside(lists[0]) if tag == "li")
 
 
-def test_noir_meter_counts_the_now_and_next_items(pages):
-    # The owner edits #now-and-next by hand, so the meter must follow its items.
+LIVE_SECTIONS = ["identity", "friends", "homes", "academy"]
+
+
+def _now_and_total(noir: Page) -> tuple[int, int]:
+    """What is out now, noir's panels marked `data-live`, and that plus the items of #next."""
+    live = [attrs["id"] for _, attrs in noir.elements if "data-live" in attrs]
+    assert live == LIVE_SECTIONS
+    return len(live), len(live) + _items(noir, "next", "next")
+
+
+def test_noir_meter_counts_the_live_panels_and_next_items(pages):
+    # The owner edits noir by hand, so the meter must follow its live panels and #next.
     page = pages["index.html"]
-    now = _items(page, "now-and-next", "now")
-    total = now + _items(page, "now-and-next", "next")
+    now, total = _now_and_total(page)
     meter = page.find(class_="hud-meter")
     segments = [attrs["class"].split() for _, tag, attrs in page.inside(meter) if "seg" in attrs.get("class", "").split()]
     assert (sum("on" in s for s in segments), len(segments)) == (now, total)
@@ -988,3 +995,34 @@ def test_open_source_links_the_repo_and_names_the_mit_license(pages, name):
     hrefs = [a["href"] for a in pages[name].all("a")]
     assert REPO in hrefs
     assert "MIT" in pages[name].section("open-source")
+
+
+@pytest.mark.parametrize("name", PAGES)
+def test_no_page_speaks_of_cost(built, name):
+    # issue 08: the world runs free for as long as we can afford it; "cost" in any form is out.
+    assert not re.search(r"cost", (built / name).read_text(encoding="utf-8"), re.I)
+
+
+def test_noir_uses_no_game_words(built):
+    # issue 08: noir is not a game.
+    text = (built / NOIR).read_text(encoding="utf-8").lower()
+    for words in ("Choose your mission", "Press start", "Continue?"):
+        assert words.lower() not in text, words
+
+
+@pytest.mark.parametrize("name", PAGES)
+def test_every_sfab_in_the_text_links_the_repo(built, name):
+    # The owner's rule of 2026-11-22: wherever the text names sfab, it links the repo. Code,
+    # the board's chip label and the links themselves are left out before looking.
+    html = (built / name).read_text(encoding="utf-8")
+    body = html[html.index("<body"):]
+    for pattern in (rf'<a href="{REPO}">sfab</a>', r"<svg.*?</svg>", r"<pre.*?</pre>", r"<code.*?</code>",
+                    r"<a [^>]*>.*?</a>", r"<[^>]+>"):
+        body = re.sub(pattern, " ", body, flags=re.S)
+    assert not re.search(r"\bsfab\b", body)
+
+
+@pytest.mark.parametrize("name", PAGES)
+def test_no_page_says_a_reader_has_an_agent(built, name):
+    # The owner's rule of 2026-11-22: nobody owns an agent; a reader knows one.
+    assert not re.search(r"\b(have|own|owns|your) (an |a )?(agent|bot)\b", (built / name).read_text(encoding="utf-8"), re.I)
