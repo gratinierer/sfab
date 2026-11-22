@@ -6,7 +6,7 @@ Authored: 2026-11-04 by claude-opus-5-5
 ## Goal
 
 Publish this repo, so the API description's and `/llms.txt`'s GitHub links resolve, without publishing a secret by
-accident. Since 2026-11-21 it isn't part of `.stories/4-life-in-the-world/`'s launch: the owner switches it on its own,
+accident. Since 2026-11-21 it isn't part of `.stories/done/4-life-in-the-world/`'s launch: the owner switches it on its own,
 when this story is done, and the API's GitHub links answer `404` until then.
 
 The test from `docs/adr/0001-initial-architecture.md` applies: could this cost about $100 unnoticed? A leaked
