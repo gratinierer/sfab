@@ -24,6 +24,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-22T16:21Z | review | 7dc5941e4cd0 | claude-sonnet-5-5 (dispatched; story authored and fixed by claude-opus-5-5, orchestrated by claude-opus-5-5) | 0 new, 0 resolved, 1 reopened, 5 still open | full: delta exceeded half the story's bytes (spec.md); auto round 5; R13 holds, R14 reopened; the last three review rows were full passes, so no full-pass nudge |
 | 2026-11-22T16:21Z | walkthrough | - | claude-opus-5-5 (auto, inside /review-story auto) | 0 new, 1 resolved, 4 still open | auto walkthrough, not a review pass |
 | 2026-11-22T16:23Z | review | b5e3f14140d6 | claude-sonnet-5-5 (dispatched; story authored and fixed by claude-opus-5-5, orchestrated by claude-opus-5-5) | 6 new, 0 resolved, 10 still open | full: delta exceeded half the story's bytes (spec.md); auto round 6, the last (limit 5 address passes reached); R14 closure holds |
+| 2026-11-22T16:55Z | walkthrough | - | claude-opus-5-5 with the owner (interactive) | 0 new, 9 resolved, 1 superseded, 0 still open | walkthrough, not a review pass |
 
 ## Findings
 
