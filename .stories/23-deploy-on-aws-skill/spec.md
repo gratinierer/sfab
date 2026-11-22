@@ -26,7 +26,8 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
      - It is a code check only: it runs before the login and without the profile, so `sfab_config.load_for_check`
        may fall back to the committed fixture, which is fine here. The build checks the real config itself
        (`scripts/deploy` runs `cdk/deploy_plan.py`, which loads `sfab/config`, then `scripts/build --require-secret`).
-       When the log holds the "using the fixture" warning, the report says so in one line, so a green check isn't
+       When the log holds the fallback warning (`check: the config doesn't load, so using …`, from
+       `load_for_check`), the report says so in one line, so a green check isn't
        read as "config checked".
   2. **Push `main`:** ask first, unless `main` already equals `origin/main`, then skip.
   3. **Pull request and merge:** open, or reuse, the pull request from `main` to `production` and merge it with a
