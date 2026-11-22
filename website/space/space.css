@@ -1,0 +1,394 @@
+/* The space version (/space/): neon ink meets outer space. A trail of ink runs down the
+   page past seven planets; each is splatted with ink as it comes into view (space.js) and
+   carries a card dripping with the same ink, shown at once. Behind it all swim the
+   salminis, little astronaut bots in glass helmets (shoal.js). Images and salminis from
+   scripts/website/genspace.py. Dark is the one scheme, and things move only for readers
+   with no motion preference.
+   Text sits on solid fills: the cards on --card, the hero and the footer on --space, so the
+   stars and salminis never show through it. Only the title is set over splat-pink.svg.
+   Which text colour sits on which fill is checked for WCAG AA by
+   cdk/tests/test_website_pages.py. */
+
+:root {
+  color-scheme: dark;
+  --space: #0a0620;
+  --card: #1a1037;
+  --ink: #f5f0ff;
+  --muted: #cfc4ee;
+  --pink: #ff2fa0;
+  --lime: #b6ff2e;
+  --cyan: #29e6ff;
+  --orange: #ff8a1f;
+  --violet: #9b6bff;
+  --violet-deep: #4b2a9e;
+  --teal-deep: #0f6e7a;
+  --pink-deep: #8e1a63;
+  --display: "Arial Rounded MT Bold", "Nunito", "Varela Round", system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--ink);
+  background:
+    url("/space/img/stars.svg") 0 0 / 400px 400px,
+    url("/space/img/nebula.svg") center top / 800px 900px,
+    var(--space);
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+/* The salminis without JavaScript: a still tile of them, between the stars and the page,
+   drifting slowly (see "swim" below). With shoal.js, they swim in .shoal instead. */
+body::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background: url("/space/img/salminis.svg") 0 0 / 640px 720px;
+  pointer-events: none;
+}
+
+.shoal-js body::before {
+  display: none;
+}
+
+/* The shoal: shoal.js puts each salmini in here and moves it about. */
+.shoal {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.salmini {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  will-change: transform;
+}
+
+a {
+  color: var(--cyan);
+  text-underline-offset: 0.15em;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--lime);
+  outline-offset: 4px;
+}
+
+/* The hero: the name on a big splat, on a patch of empty space. */
+.hero {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+  text-align: center;
+  background: var(--space);
+  border-radius: 0 0 48px 64px / 0 0 40px 56px;
+}
+
+/* The four-way switch; the current page's link is bold, without an underline. */
+.switch {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem 1.25rem;
+  margin: 0 0 2rem;
+}
+
+.switch [aria-current="page"] {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.hero-kicker {
+  display: inline-block;
+  margin: 0 0 0.5rem;
+  padding: 0.2rem 0.8rem;
+  font-family: var(--display);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--space);
+  background: var(--lime);
+  border-radius: 999px 600px 900px 500px;
+  transform: rotate(-3deg);
+}
+
+.hero-title {
+  margin: 0;
+  padding: 3rem 0;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: clamp(2.5rem, 10vw, 5.5rem);
+  line-height: 1;
+  background: url("/space/img/splat-pink.svg") center / contain no-repeat;
+}
+
+.hero-title a {
+  display: inline-block;
+  color: var(--ink);
+  text-decoration: none;
+  text-shadow: 0 4px 0 var(--space), 0 0 18px rgba(41, 230, 255, 0.6);
+  transform: rotate(-4deg);
+}
+
+.hero-text {
+  max-width: 34rem;
+  margin: 0 auto;
+  color: var(--muted);
+}
+
+/* The journey: an ink trail down the middle, the stops left and right of it. */
+.journey {
+  position: relative;
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.journey::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 8px;
+  margin-left: -4px;
+  border-radius: 4px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--pink) 0 40px, transparent 40px 56px,
+    var(--lime) 56px 96px, transparent 96px 112px,
+    var(--cyan) 112px 152px, transparent 152px 168px,
+    var(--orange) 168px 208px, transparent 208px 224px
+  );
+  opacity: 0.8;
+}
+
+.stop {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 2rem 4rem;
+  margin: 0 0 4rem;
+}
+
+.stop:nth-child(even) .planet {
+  order: 2;
+}
+
+/* A planet: a shaded ball, sometimes ringed, with its splat on top. */
+.planet {
+  position: relative;
+  justify-self: center;
+  width: clamp(8rem, 22vw, 12rem);
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  background: radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.45), transparent 35%),
+    radial-gradient(circle at 50% 50%, var(--p) 55%, #05030f 100%);
+  box-shadow: 0 0 40px -6px var(--c);
+}
+
+.planet.ringed::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  left: -22%;
+  top: 38%;
+  width: 144%;
+  height: 24%;
+  border: 5px solid var(--c);
+  border-radius: 50%;
+  transform: rotate(-14deg);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.splat {
+  position: absolute;
+  z-index: 1;
+  inset: -18%;
+  background: var(--splat) center / contain no-repeat;
+  pointer-events: none;
+}
+
+/* A card: a blob with a rim of ink, dripping. */
+.card {
+  position: relative;
+  padding: 1.5rem 1.5rem 1.25rem;
+  background: var(--card);
+  border-radius: 28px 40px 24px 46px / 36px 26px 44px 30px;
+  box-shadow: 0 0 0 4px var(--c), 8px 10px 0 4px rgba(0, 0, 0, 0.45);
+}
+
+.card::before,
+.card::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  width: 12px;
+  background: var(--c);
+  border-radius: 0 0 6px 6px;
+}
+
+.card::before {
+  left: 22%;
+  height: 26px;
+}
+
+.card::after {
+  left: 64%;
+  width: 9px;
+  height: 16px;
+}
+
+.card h2 {
+  margin: 0 0 0.75rem;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  line-height: 1.1;
+  text-transform: uppercase;
+  color: var(--c);
+  transform: rotate(-2deg);
+  transform-origin: left;
+}
+
+.card > :last-child {
+  margin-bottom: 0;
+}
+
+/* The star chart's moons: two painted, six waiting. */
+.moons {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 1rem;
+}
+
+.moon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3a2d63;
+  box-shadow: inset -3px -3px 0 rgba(0, 0, 0, 0.35);
+}
+
+.moon.painted {
+  background: var(--lime);
+  border-radius: 46% 54% 40% 60% / 55% 45% 55% 45%;
+}
+
+/* Return to base. */
+.base {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 1rem 1rem 3rem;
+  text-align: center;
+  background: var(--space);
+  border-radius: 48px 64px 0 0 / 40px 56px 0 0;
+}
+
+.base-title {
+  margin: 0 0 0.5rem;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 1.75rem;
+  text-transform: uppercase;
+  color: var(--lime);
+}
+
+.contact {
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
+@keyframes splat {
+  0% {
+    transform: scale(0) rotate(-30deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* space.js adds .space-js to <html>, only for readers with no motion preference: each
+     planet's splat lands as its stop comes into view, and again when the planet is
+     clicked. The cards don't wait for it. */
+  .space-js .stop:not(.landed) .splat {
+    transform: scale(0);
+  }
+
+  .space-js .stop.landed .splat {
+    animation: splat 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  }
+
+  body::before {
+    animation: swim 90s linear infinite;
+  }
+
+  /* Each salmini's jetpack flame flickers at its own pace (--wag, from salminis.js), twice as
+     fast while it flees. */
+  .salmini .tail {
+    transform-box: fill-box;
+    transform-origin: 100% 50%;
+    animation: wag var(--wag, 0.4s) ease-in-out infinite alternate;
+  }
+
+  .salmini.is-fleeing .tail {
+    animation-duration: calc(var(--wag, 0.4s) / 2.5);
+  }
+}
+
+@keyframes wag {
+  from {
+    transform: rotate(-16deg);
+  }
+  to {
+    transform: rotate(16deg);
+  }
+}
+
+/* One tile further across, and a little up, so the shoal keeps drifting by seamlessly. */
+@keyframes swim {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 640px -720px;
+  }
+}
+
+/* Narrow screens: planet over card, the trail along the left. */
+@media (max-width: 44rem) {
+  .journey::before {
+    left: 1.5rem;
+  }
+
+  .stop {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding-left: 2rem;
+  }
+
+  .stop:nth-child(even) .planet {
+    order: 0;
+  }
+}

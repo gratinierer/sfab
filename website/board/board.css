@@ -1,0 +1,265 @@
+/* The board page (/board/): a pixel circuit board whose parts show their info below, in pixel
+   frames on light lilac, its one fixed scheme, with Silkscreen headings and a system body font.
+   .stories/10-website/spec.md "Variants" (Board, Colour schemes, Motion) and issue 05.
+   board.js does the switching; without it, every part's info is listed. assemble.js draws
+   each frame's border and bots as it scrolls into view; without it, or for readers who ask
+   for less motion, frames are simply shown finished.
+   Colours: --bg is the page background; every --fg-* is a text colour on it and on the bots
+   behind the text, checked for WCAG AA by cdk/tests/test_website_pages.py. Other colours draw
+   frames and highlights, not text. */
+
+@font-face {
+  font-family: "Silkscreen";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/silkscreen-latin-400-normal.woff2") format("woff2");
+}
+
+:root {
+  color-scheme: light;
+  --bg: #efe6fa;
+  --fg-text: #2d2440;
+  --fg-heading: #6b2fa3;
+  --fg-link: #6b2fa3;
+  --frame: #2d2440;
+  --frame-shade: #a77bd6;
+  --hit-hover: rgba(239, 230, 250, 0.25);
+  --hit-chosen: rgba(167, 123, 214, 0.35);
+  --hit-edge: #efe6fa;
+  --trace: #4f9e68;
+  --trace-on: #b8f5c8;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--fg-text);
+  background: var(--bg) url("/board/bot-tile.svg") repeat;
+  background-size: 240px 200px;
+  image-rendering: pixelated;
+  overflow-x: hidden; /* the bots around the frames may reach past the screen edge */
+  overflow-x: clip;
+}
+
+/* With assemble.js, the bots sit around the frames and appear with them instead of
+   covering the whole page. */
+.bots-around body {
+  background-image: none;
+}
+
+.site-header,
+main,
+.site-footer {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+
+.wordmark {
+  margin: 0;
+}
+
+.wordmark img {
+  display: block;
+  width: 100%;
+  max-width: 255px;
+  height: auto;
+  image-rendering: pixelated;
+}
+
+/* The four-way switch: framed links, the current page's underlined. */
+.switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+a {
+  color: var(--fg-link);
+  text-underline-offset: 0.15em;
+}
+
+a:focus-visible {
+  outline: 3px solid var(--fg-link);
+  outline-offset: 3px;
+}
+
+.switch a {
+  font-family: "Silkscreen", ui-monospace, monospace;
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  box-shadow: 0 -3px 0 0 var(--frame), 0 3px 0 0 var(--frame), -3px 0 0 0 var(--frame),
+    3px 0 0 0 var(--frame);
+}
+
+.switch [aria-current="page"] {
+  text-decoration: underline;
+}
+
+h2 {
+  margin: 0 0 0.75rem;
+  font-family: "Silkscreen", ui-monospace, monospace;
+  font-weight: 400;
+  font-size: 1.5rem;
+  line-height: 1.3;
+  color: var(--fg-heading);
+}
+
+/* A pixel frame: a stepped border drawn with shadows, no image. */
+.frame {
+  position: relative;
+  isolation: isolate;
+  margin: 0 0 2.5rem;
+  padding: 1.25rem;
+  box-shadow: calc(8px * var(--shade, 1)) calc(8px * var(--shade, 1)) 0 0 var(--frame-shade);
+}
+
+/* The frame's border: four edges and four corner pixels, one background layer each. Each
+   edge stops one pixel short of the corner and the corner pixel sits one pixel in, so the
+   corners are rounded in pixel steps. The frame itself has no background and its shade sits
+   on .frame, under everything else, so the bots are never cut off by the box: only its
+   border lines and its text are drawn over them.
+   Stacking inside a frame: the shade, the bots around it, the border, the bot in it, the
+   text.
+   assemble.js sets --edge-1 to --edge-4, --corner-1 to --corner-4, --bot and --shade on
+   each frame from how far it has scrolled into view, and --bot on each bot around it, all
+   from 0 to 1 and defaulting to 1, a finished frame. The text never depends on them. */
+.frame::before {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  inset: -4px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--frame), var(--frame)) left 8px top 0 /
+      calc((100% - 16px) * var(--edge-1, 1)) 4px,
+    linear-gradient(var(--frame), var(--frame)) right 0 top 8px /
+      4px calc((100% - 16px) * var(--edge-2, 1)),
+    linear-gradient(var(--frame), var(--frame)) right 8px bottom 0 /
+      calc((100% - 16px) * var(--edge-3, 1)) 4px,
+    linear-gradient(var(--frame), var(--frame)) left 0 bottom 8px /
+      4px calc((100% - 16px) * var(--edge-4, 1)),
+    linear-gradient(var(--frame), var(--frame)) left 4px top 4px /
+      calc(4px * var(--corner-1, 1)) 4px,
+    linear-gradient(var(--frame), var(--frame)) right 4px top 4px /
+      calc(4px * var(--corner-2, 1)) 4px,
+    linear-gradient(var(--frame), var(--frame)) right 4px bottom 4px /
+      calc(4px * var(--corner-3, 1)) 4px,
+    linear-gradient(var(--frame), var(--frame)) left 4px bottom 4px /
+      calc(4px * var(--corner-4, 1)) 4px;
+  background-repeat: no-repeat;
+}
+
+/* A hidden bot in every frame, faint and behind the text, built up row by row from its
+   feet. */
+.frame::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  width: 44px;
+  height: 48px;
+  background: url("/board/bot.svg") no-repeat center / contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+  clip-path: inset(calc((1 - var(--bot, 1)) * 100%) 0 0 0);
+}
+
+.frame:nth-of-type(2)::after {
+  right: auto;
+  left: 0.75rem;
+  transform: rotate(-8deg);
+}
+
+.frame > :last-child {
+  margin-bottom: 0;
+}
+
+/* A bot around a frame, added by assemble.js: under the frame's border lines and text. */
+.frame-bot {
+  position: absolute;
+  z-index: -3;
+  background: url("/board/bot-faint.svg") no-repeat center / contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+  clip-path: inset(calc((1 - var(--bot, 1)) * 100%) 0 0 0);
+}
+
+.site-footer {
+  padding-top: 0.5rem;
+  padding-bottom: 2.5rem;
+}
+
+.board-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.part {
+  cursor: pointer;
+  outline: none;
+}
+
+/* A part's hit area: invisible until the part is pointed at, focused or chosen. */
+.part .hit {
+  fill: transparent;
+  stroke: none;
+}
+
+.part:hover .hit,
+.part:focus-visible .hit {
+  fill: var(--hit-hover);
+  stroke: var(--hit-edge);
+  stroke-width: 0.75;
+  stroke-dasharray: 1.5 1;
+}
+
+.part[aria-pressed="true"] .hit {
+  fill: var(--hit-chosen);
+  stroke: var(--hit-edge);
+  stroke-width: 1;
+  stroke-dasharray: none;
+}
+
+.part-info + .part-info {
+  margin-top: 2rem;
+}
+
+.board-js .part-info + .part-info {
+  margin-top: 0;
+}
+
+.part-info > :last-child {
+  margin-bottom: 0;
+}
+
+/* Traces: lit up while the part they belong to is chosen. */
+.trace rect {
+  fill: var(--trace);
+}
+
+.trace.is-on rect {
+  fill: var(--trace-on);
+}

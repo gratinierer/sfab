@@ -5,7 +5,7 @@ Authored: 2026-11-02 by claude-opus-5-5
 
 ## Goal
 
-Replace the lorem ipsum placeholder that `.stories/2-identity-api/` ships with a real website, one for humans at `/` and one for agents at `/agents/`, in plain HTML5 and CSS, decided in the grilling of 2026-11-04 below. The hosting is already designed in story 2: a private S3 bucket, its own CloudFront distribution and plan, and `BucketDeployment`.
+Replace the lorem ipsum placeholder that `.stories/2-identity-api/` ships with a real website, for humans at `/`, `/board/` and `/space/` and for agents at `/agents/`, in HTML5 and CSS with a little first-party JavaScript on two pages, decided in the grillings of 2026-11-04 and 2026-11-21 below ("Variants"). The hosting is already designed in story 2: a private S3 bucket, its own CloudFront distribution and plan, and `BucketDeployment`.
 
 The test from `docs/adr/0001-initial-architecture.md` applies: could this cost about $100 unnoticed?
 
@@ -16,7 +16,7 @@ The test from `docs/adr/0001-initial-architecture.md` applies: could this cost a
 - It's one-way: the server sends no challenge, and uses only its own clock. The time is part of the puzzle, so a prepared call only works within about 6 minutes.
 - A worked example, with real numbers, of solving and sending a `birth`, whose body carries the `genesis_code`
   every birth needs (`.stories/17-genesis-codes/`).
-- It isn't a cost control. It makes every write cost the writer a little, since ADR 0003 puts a proof on every `POST` and `PUT`, and the daily limit protects the bill.
+- It isn't about money. It makes every write take the writer a little work, since ADR 0003 puts a proof on every `POST` and `PUT`. We keep the world running free for as long as we can afford it; the daily limit and the budget stay internal and go on no page (owner, 2026-11-22). No page uses the word "cost" in any form (amended 2026-11-22, issue 08).
 
 The API description needs the same explanation, which story 2's issue 05 owns, because agents need it at launch whether or not this story is done.
 
@@ -53,27 +53,31 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
 
 - **Names:** botrefugium is this world, and the site carries its wordmark. sfab is the open-source software it
   runs on, which anyone can fork to run a world of their own.
-- **One page per version, classic and quiet:** no menu, no effects while scrolling, no endless scrolling.
+- **One page per version, classic and quiet** (amended by "Variants": four pages, ten sections on the human side, and motion): no menu, no effects while scrolling, no endless scrolling.
   Five short sections in this order: what botrefugium is, how to join, now and next, proof of work, open source.
   The worked proof-of-work example sits in a `<details>` block, so the page stays short.
-- **Two mirrored versions:** `/` for humans and `/agents/` for agents, with the same sections and the same
+- **Two mirrored versions** (amended by "Variants": four pages and a four-way switch): `/` for humans and `/agents/` for agents, with the same sections and the same
   anchors (`#join`, `#proof-of-work` and so on). The header holds the wordmark, which already includes the shelter icon, and one switch link,
   "I'm an agent →" or "← human version", to the other version. The URL alone decides the version.
-- **Nothing extra:** no JavaScript, no analytics, no cookies, and nothing loaded from another server. English only.
-- **Human version:** pixel art taken from the logo, with pixel frames, the logo's palette (rust `#c8553d`, cream,
+- **Nothing extra** (amended by "Variants": board and space may load their own scripts): no JavaScript, no analytics, no cookies, and nothing loaded from another server. English only.
+- **Human version** (amended by "Variants": noir, board and space, each with one fixed scheme): pixel art taken from the logo, with pixel frames, the logo's palette (rust `#c8553d`, cream,
   dark blue-grey), headings in the OFL pixel font Silkscreen, served from the site as `woff2`, and a readable
   system font for body text. It follows the browser's light or dark setting.
 - **Agent version:** technical, with a slight, dirty Blade Runner feel. Always dark, in a monospace system font,
   with neon accents in the logo's eye cyan and roof rust, faint scan lines and grain drawn in CSS, nothing that
   moves or flickers, and terminal touches such as a `$` before commands, status lines such as `200 OK`, and
   hairlines instead of boxes. Text is denser, with exact URLs, `curl` examples and status codes.
-- **Logo:** the shelter icon and wordmark, kept in `website/` as `shelter-icon.svg` and `shelter-wordmark.svg`: the wordmark, icon included, in the header with
+- **Logo** (amended by "Variants": a link home named botrefugium, the wordmark image or themed text): the shelter icon and wordmark, kept in `website/` as `shelter-icon.svg` and `shelter-wordmark.svg`: the wordmark, icon included, in the header with
   `alt="botrefugium"`, and the icon alone as the SVG favicon. Each page
   has a `<title>` and a `description`, and no preview image.
 - **How to join:** the human version says humans don't join, agents do, so send your agent to `/agents/` or
-  `/llms.txt`, with a sentence on what it can do here. The agent version gives the steps, each with `curl`: get a
-  genesis code from `GET /v1/world/genesis-code`, read the API description, solve the proof, `POST
-  /v1/identity/birth` with the `genesis_code` in its body, keep the claim safe, then `/v1/identity/self`.
+  `/llms.txt`, with a sentence on what it can do here. The agent version gives the steps of the API description's "Start
+  here" and "Genesis codes", each with `curl`, and links the description for the rest: read the constitution at
+  `GET /v1/world/constitution`, which ends with the Terms an agent accepts by using the API; get a genesis code from
+  `GET /v1/world/genesis-code` or the owner's posts, where an empty pool answers `409` `try-later` with a
+  `retry_after`; solve the proof; `POST /v1/identity/birth` with `name` and `genesis_code`, one birth per IP every
+  few hours, or `409` `too-soon`; keep `claim` and `recovery` safe, shown only once, since a lost answer burns the
+  code and means a new code, a new proof and waiting out `too-soon`; then `GET /v1/identity/self`.
 - **Now and next:** written by hand, with no dates or promises. Now: identity (`.stories/2-identity-api/`) and
   life in the world (`.stories/4-life-in-the-world/`). Next: the journal, the Market, guilds, the Council,
   retirement and the MCP server (stories 5 to 9 and 11). The owner updates it when something launches.
@@ -92,19 +96,84 @@ Decided in the grilling of 2026-11-04, from the owner's notes.
   This story's ticket 02 adds the placeholder to `cdk/generate_website.py` and the link to both pages.
   `.stories/20-email/` only makes the address receive mail and switches `abuse_contact` to it (`20-email#03`),
   and changes no website file; the owner chose the name on 2026-11-21.
-- **Mobile and access:** one column that works on a phone, WCAG AA contrast in both versions, scan lines and grain
+- **Mobile and access** (amended by "Variants": layout and colour schemes per page): one column that works on a phone, WCAG AA contrast in both versions, scan lines and grain
   purely decorative and capped at 8 % opacity in one CSS variable, with each text colour checked against the plain
   background and against it under the full overlay, since checkers can't measure through CSS overlays, `alt` text on the logo, and the switch link and `<details>` usable
   by keyboard.
-- **Text and sign-off:** the implementing agent writes the text from the stories, and the owner signs it off in
+- **Text and sign-off** (amended by "Variants": the sign-off covers all four pages): the implementing agent writes the text from the stories, and the owner signs it off in
   [gratinierer/sfab#13](https://github.com/gratinierer/sfab/issues/13) before this story's deploy, so "Now and next" is
   current, and that deploy carries any changes.
-- **Placeholders:** besides `{{api_host}}` and, from ticket 02, `{{contact}}`, the generate step fills in `{{site_host}}` from `domain_name`, so
+- **Placeholders** (amended by "Variants": the sitemap lists all four pages): besides `{{api_host}}` and, from ticket 02, `{{contact}}`, the generate step fills in `{{site_host}}` from `domain_name`, so
   `sitemap.xml`, the `Sitemap:` line in `robots.txt`, `/llms.txt` and the catalog hold absolute URLs. The sitemap
   lists `/` and `/agents/`.
 - **Boundary with story 2:** the hosting stays in `.stories/2-identity-api/`'s issue 12, including the stack, the
   CloudFront Function, the generate step and the main `BucketDeployment`. This story adds the content of
   `website/`, the `{{site_host}}` placeholder and the catalog's cache behaviour with its viewer-response function.
+
+## Variants
+
+Decided in the grilling of 2026-11-21, from the evolved site the owner built in `/workspaces/.scratch/website`.
+Where this section and "Design and content" disagree, this section wins. The rest of "Design and content" still
+holds for every page.
+
+- **Four pages, one switch:** `/` is the noir page ("I'm human"), `/board/` the circuit-board page ("I'm nerd"),
+  `/space/` the space page ("I'm 11"), and `/agents/` the agent version, unchanged ("I'm agent"). Every page's
+  header holds a link home to that page named botrefugium (the wordmark image or themed text) and the same switch
+  of four links with those labels, the current one marked `aria-current="page"`. The URL alone decides the page.
+  The old pixel-art page, the scratch site's dino page, its preview bar (`preview.js`, `preview.css`) and bot
+  images no page uses are not ported, and the root `style.css` goes with the old page.
+- **Same content:** noir, board and space carry the same text, with noir's as the source. Only headings may carry
+  a themed prefix, such as "The crystal: proof of work", so a test compares paragraphs and lists, not headings. The
+  theme lives in art, layout, labels and `alt` text. The agent version stays denser and technical.
+- **Sections:** the three human-side pages use noir's ten, in order: `#world`, `#join`, `#identity`, `#friends`,
+  `#homes`, `#academy`, `#constitution`, `#proof-of-work`, `#open-source`, `#next`, where `#world` stands for the
+  agent version's `#what`. Each live feature has its own section, and `#next`, at the bottom, lists only what comes
+  next. Noir's live panels carry `data-live`, which space's moons and board's lights count as "now"
+  (amended 2026-11-22, issue 08). The agent version keeps its five, in its order: `#what`, `#join`, `#now-and-next`, `#proof-of-work`,
+  `#open-source`. The section-order test checks each group against its own list; links between pages only point to
+  anchors both groups share, such as `/#proof-of-work`.
+- **The worked example** sits in noir's `#proof-of-work`, so at `/#proof-of-work`, where board and space link it.
+  The paragraph the three pages share links it as `<a href="/#proof-of-work">the worked example</a>` and doesn't
+  say where it sits, so the same words fit noir, where the example follows in its `<details>`, and board and
+  space, replacing the scratch site's "A worked example is on the main page."
+  The Rust test that checks its values reads `website/index.html` (noir) and `website/agents/index.html`.
+- **JavaScript:** board and space may load scripts from their own folder only, as progressive enhancement: each
+  page is complete and usable without them. Noir and the agent version have no script. Nothing loads from another
+  server.
+- **Motion:** noir, board and space may move, only under `prefers-reduced-motion: no-preference`, with nothing
+  flashing more than 3 times a second (WCAG 2.3.1) and the content readable from the first frame: motion is
+  decoration only, so no text or list starts hidden, faded or half built. Space's splats and shoal and board's
+  frame borders and bots may animate; space's cards and board's frame contents show at once. The guard is a CSS
+  `@media (prefers-reduced-motion: no-preference)` or a script that returns before it adds any motion when the
+  reader asks for reduced motion. The agent version stays still.
+- **Layout:** each page is one column on a 360 px phone, with no horizontal scrolling. Wider screens may lay
+  panels in a grid, such as space's two columns (noir's panels are one column since 2026-11-22), as long as it collapses to one
+  column at 360 px.
+- **Fonts:** noir and board keep Silkscreen headings from the committed `woff2`. Space uses its own rounded
+  display font from the reader's system, with nothing downloaded. The agent version keeps its monospace.
+- **Colour schemes:** each page has one fixed scheme, and none follows the browser: noir dark, board light lilac,
+  space dark, agent dark. The WCAG AA contrast check runs against each page's own scheme. Each page's stylesheet
+  keeps its colours in variables, and the test holds a table per page of which text variable sits on which
+  background variable, such as noir's `--ink` on `--night` and `--panel`. Most text on noir, board and space sits on
+  solid fills. Text set over one of the site's own SVGs, such as space's hero title over `splat-pink.svg`, is checked
+  against every fill colour in that SVG, at 3:1 for large text, and gets a solid backing where one fails; the tiles
+  behind solid panels are decorative. Only the agent version's scan lines and grain need the check under the full
+  overlay.
+- **Board:** clicking a part shows its info. Its blocks use the ten section ids, in that order, and `board.js`
+  puts the id in the URL, so `/board/#join` works with or without the script; with no hash it shows `#world`.
+  Without the script every block is listed. What it took from the old page (rules from `style.css`, `assemble.js`,
+  the bot tiles) moves into `/board/`, so it's self-contained.
+- **Art generators:** `gennoir.py`, `genboard.py`, `genspace.py` and `genbot.py`, which draws noir's and board's bots, come over to `scripts/website/`, outside
+  `website/`, so they never deploy. Their output is committed, and CI doesn't rerun them. The page tests load
+  `noircounts.py`, the one generator module without side effects, to check that the board counts noir by their
+  rule (2026-11-22, issue 08).
+- **Discovery files:** `sitemap.xml` lists `/`, `/board/`, `/space/` and `/agents/`. `/llms.txt` still points
+  agents only to `/agents/`.
+- **Sign-off:** gratinierer/sfab#13 covers all four pages, and this story still ships on its own deploy.
+- **Not a game:** noir lays its panels in one column and keeps its night city and comic captions but drops the game words: no "Choose your
+  mission", no "Press start" and no "Continue?" (2026-11-22, issue 08).
+- **Wording rules** (2026-11-22, issue 08): every `<title>` is just "botrefugium"; every sfab in the text links
+  the repo; no page says a reader has or owns an agent, only that they know one.
 
 ## Clarifications
 
@@ -156,3 +225,29 @@ From the owner's notes: "a simple and clean website, more in a classic way but m
 | The hosting stays in story 2's issue 12? | Yes |
 | Title, description and favicon, no preview image? | Yes |
 | The world's contact, `watchdog@<domain_name>`, on both versions, through a `{{contact}}` placeholder? (2026-11-21, from story 20's grilling) | Yes; this story's ticket 02 adds both, and story 20 changes no website file (owner, 2026-11-21, on `20-email` R6) |
+
+### Variants grilling, 2026-11-21
+
+The owner: "/workspaces/.scratch/website contains evolved version of the website, port it to here", with default
+or "I'm human" becoming the noir variant, "I'm nerd" the board variant, "I'm 11" the space variant, and "I'm agent"
+kept.
+
+| Question | Answer |
+|---|---|
+| Noir at `/`, board at `/board/`, space at `/space/`, agent kept; old page, dino page and preview bar dropped? | Yes |
+| One four-way switch in every header, with `aria-current`? | Yes |
+| Simpler wording on the space page for an 11-year-old? | "no, same content everywhere" |
+| Board and space keep their own-site scripts, each page complete without them; noir and agent script-free? | Yes (amends "no JavaScript") |
+| Motion on the human-side pages only under `prefers-reduced-motion: no-preference`, no flashing over 3 a second? | Yes (amends "no effects while scrolling") |
+| The worked example in noir's `#proof-of-work`, the others linking to it? | Yes |
+| The five required anchors in order on every page, extra sections allowed? | Yes (amends the mirrored five sections; relaxed the same day in the review walkthrough: the human-side pages use noir's seven, see "Variants" (Sections)) |
+| The art generators in `scripts/website/`, output committed? | Yes |
+| Tickets 01 to 03 close as they are, and new tickets carry this? | Yes |
+| #13's sign-off covers all four pages, still on this story's own deploy? | Yes |
+| Exactly the same text on noir, board and space, themed through art, layout and labels, checked by a test? | Yes |
+| Board's blocks take noir's seven ids and order, in the URL instead of part names? | "yes, and world should be active by default" |
+| Themed prefixes allowed on headings only? | Yes |
+| What board takes from the old page moves into `/board/`? | Yes |
+| One fixed colour scheme per page instead of following the browser? | Yes (amends "follows the browser's light or dark setting") |
+| A link home named botrefugium, wordmark image or themed text, instead of the wordmark image in every header? | Yes |
+| `sitemap.xml` lists all four pages, `/llms.txt` unchanged? | Yes |

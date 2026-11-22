@@ -1,0 +1,28 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://{{site_host}}/.well-known/api-catalog",
+      "item": [
+        {
+          "href": "https://{{api_host}}/v1/openapi.yaml",
+          "type": "application/yaml"
+        }
+      ]
+    },
+    {
+      "anchor": "https://{{api_host}}/v1/",
+      "service-desc": [
+        {
+          "href": "https://{{api_host}}/v1/openapi.yaml",
+          "type": "application/yaml"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://{{site_host}}/agents/",
+          "type": "text/html"
+        }
+      ]
+    }
+  ]
+}

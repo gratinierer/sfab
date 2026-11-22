@@ -1,0 +1,176 @@
+/* The agent version: always dark, a monospace system font, the logo's eye cyan and roof rust
+   as accents, faint scan lines and grain drawn in CSS, hairlines instead of boxes, and
+   nothing that moves. .stories/10-website/spec.md "Design and content", "Mobile and access".
+   Colours: --bg is the page background; every --fg-* is a text colour on it, checked for
+   WCAG AA by cdk/tests/test_website_pages.py, against --bg plain and under the overlay:
+   --overlay-max caps the opacity of the scan lines (--scan) and grain (--grain). */
+
+:root {
+  color-scheme: dark;
+  --bg: #0c0e14;
+  --fg-text: #c9ced6;
+  --fg-muted: #8a93a3;
+  --fg-cyan: #4cc9f0;
+  --fg-rust: #e0714f;
+  --hairline: #2e3444;
+  --scan: #000000;
+  --grain: #ffffff;
+  --overlay-max: 0.08;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  position: relative;
+  margin: 0;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--fg-text);
+}
+
+/* Scan lines and grain: decorative, behind the text, fixed and still. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--overlay-max);
+  background:
+    repeating-linear-gradient(to bottom, var(--scan) 0 1px, transparent 1px 3px),
+    radial-gradient(circle at 30% 40%, var(--grain) 0 0.5px, transparent 0.8px) 0 0 / 3px 3px,
+    radial-gradient(circle at 70% 80%, var(--grain) 0 0.5px, transparent 0.8px) 1px 2px / 5px 5px;
+}
+
+.site-header,
+main,
+.site-footer {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.wordmark {
+  margin: 0;
+}
+
+.wordmark img {
+  display: block;
+  width: 100%;
+  max-width: 170px;
+  height: auto;
+  image-rendering: pixelated;
+}
+
+a {
+  color: var(--fg-cyan);
+  text-underline-offset: 0.2em;
+}
+
+a:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--fg-cyan);
+  outline-offset: 2px;
+}
+
+/* The four-way switch; the current page's link has a prompt and no underline. */
+.switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+}
+
+.switch a {
+  color: var(--fg-rust);
+}
+
+.switch [aria-current="page"] {
+  text-decoration: none;
+}
+
+.switch [aria-current="page"]::before {
+  content: "$ ";
+}
+
+.status {
+  margin: 1.25rem 0 0;
+  color: var(--fg-muted);
+}
+
+.status::before {
+  content: "HTTP/1.1 ";
+}
+
+section {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--fg-cyan);
+}
+
+h2::before {
+  content: "# ";
+  color: var(--fg-rust);
+}
+
+details {
+  margin-top: 1rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--hairline);
+}
+
+summary {
+  cursor: pointer;
+  color: var(--fg-rust);
+}
+
+pre {
+  margin: 1rem 0;
+  padding: 0.75rem 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+
+code,
+pre {
+  font-family: inherit;
+}
+
+.prompt {
+  color: var(--fg-muted);
+  user-select: none;
+}
+
+.site-footer {
+  padding-top: 1.25rem;
+  padding-bottom: 2rem;
+  color: var(--fg-muted);
+}

@@ -14,7 +14,7 @@ deploy. This story makes three changes:
    DOWNLOAD_SOURCE:
 
    ```
-   Unable to download cache: AccessDenied: User: arn:aws:sts::983314983598:assumed-role/SfabDeployer-Role1ABCC5F0-.../AWSCodeBuild-...
+   Unable to download cache: AccessDenied: User: arn:aws:sts::<account>:assumed-role/SfabDeployer-Role1ABCC5F0-.../AWSCodeBuild-...
    is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::sfabdeployer-cache18f6ee16-stozym8iowuy"
    because no identity-based policy allows the s3:ListBucket action
    ```

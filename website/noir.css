@@ -1,0 +1,375 @@
+/* The noir page at /: an 8-bit action game crossed with a dark comic. A night city on top
+   (scripts/website/gennoir.py), a game HUD, and the content as comic panels to open. Small
+   bots in night colours (scripts/website/genbot.py, suffix -noir) hide in the page below the
+   city and in every panel. .stories/10-website/spec.md "Variants".
+   One fixed dark scheme. Text colours on their backgrounds: --ink, --muted, --link and
+   --signal on --night, --panel and --edge, the icons' --hero on --panel, and --night on
+   --signal, all WCAG AA or better, as the table in cdk/tests/test_website_pages.py checks.
+   Everything that moves sits under prefers-reduced-motion: no-preference. */
+
+@font-face {
+  font-family: "Silkscreen";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/silkscreen-latin-400-normal.woff2") format("woff2");
+}
+
+:root {
+  color-scheme: dark;
+  --night: #0b0d1a;
+  --panel: #161a36;
+  --ink: #e8ecff;
+  --muted: #b7bfe6;
+  --link: #6ad0ff;
+  --hero: #2fa8ff;
+  --signal: #ffd23f;
+  --edge: #000000;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--night) url("/bot-tile-noir.svg") repeat;
+  background-size: 240px 200px;
+  image-rendering: pixelated;
+}
+
+a {
+  color: var(--link);
+  text-underline-offset: 0.15em;
+}
+
+a:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--signal);
+  outline-offset: 3px;
+}
+
+/* The header: title and the switch. */
+.hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--edge);
+  border-bottom: 4px solid var(--hero);
+  font-family: "Silkscreen", ui-monospace, monospace;
+  text-transform: uppercase;
+}
+
+.hud-title {
+  color: var(--signal);
+  font-size: 1.25rem;
+  text-decoration: none;
+}
+
+/* The night city. */
+.scene {
+  position: relative;
+  border-bottom: 4px solid var(--edge);
+}
+
+.city {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  image-rendering: pixelated;
+}
+
+.caption {
+  display: inline-block;
+  margin: 0 0 1rem;
+  padding: 0.35rem 0.6rem;
+  color: var(--night);
+  background: var(--signal);
+  border: 3px solid var(--edge);
+  font-family: "Silkscreen", ui-monospace, monospace;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  text-transform: uppercase;
+  transform: rotate(-1deg);
+}
+
+.caption-scene {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  max-width: 24rem;
+  margin: 0;
+  box-shadow: 4px 4px 0 var(--edge);
+}
+
+/* The panels, in one column at a reading width. */
+main {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 2rem 1rem 1rem;
+}
+
+.page-title {
+  margin: 0 0 0.25rem;
+  font-family: "Silkscreen", ui-monospace, monospace;
+  font-weight: 400;
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--signal);
+  text-shadow: 3px 3px 0 var(--edge), 0 0 12px rgba(47, 168, 255, 0.6);
+}
+
+.page-hint {
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+}
+
+.panels {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+/* A comic panel: heavy black edge, a blue drop, halftone dots. */
+.panel {
+  position: relative;
+  isolation: isolate;
+  padding: 0 1rem;
+  background:
+    radial-gradient(rgba(106, 208, 255, 0.09) 1px, transparent 1.5px) 0 0 / 6px 6px,
+    var(--panel);
+  border: 4px solid var(--edge);
+  box-shadow: 6px 6px 0 var(--hero);
+}
+
+.panel:nth-child(even) {
+  box-shadow: 6px 6px 0 var(--signal);
+}
+
+/* A small bot hiding in every panel, behind the text, in a different spot each time. */
+.panel::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: 0.5rem;
+  bottom: 0.4rem;
+  width: 33px;
+  height: 36px;
+  background: url("/bot-noir.svg") no-repeat center / contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.panel:nth-child(3n + 2)::after {
+  right: 38%;
+  transform: rotate(-8deg);
+}
+
+.panel:nth-child(3n)::after {
+  right: auto;
+  left: 0.5rem;
+  bottom: auto;
+  top: 0.4rem;
+  width: 22px;
+  height: 24px;
+  transform: scaleX(-1);
+}
+
+.panel[open]::after {
+  width: 44px;
+  height: 48px;
+}
+
+.panel summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.panel .icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  color: var(--hero);
+  image-rendering: pixelated;
+}
+
+.panel-title {
+  flex: 1;
+  font-family: "Silkscreen", ui-monospace, monospace;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.more {
+  margin-left: auto;
+  font-family: "Silkscreen", ui-monospace, monospace;
+  color: var(--muted);
+}
+
+.more::before {
+  content: "+";
+}
+
+.panel[open] .more::before {
+  content: "\2212";
+}
+
+.panel[open] {
+  padding-bottom: 1rem;
+}
+
+.panel[open] .icon {
+  color: var(--signal);
+}
+
+.panel > :last-child {
+  margin-bottom: 0;
+}
+
+/* The worked example, a plain <details> inside its panel. */
+.panel .example > summary {
+  display: list-item;
+  padding: 0.25rem 0;
+  list-style: disclosure-closed inside;
+  color: var(--signal);
+  font-family: "Silkscreen", ui-monospace, monospace;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+}
+
+.panel .example[open] > summary {
+  list-style-type: disclosure-open;
+}
+
+.example pre {
+  margin: 0.75rem 0;
+  padding: 0.5rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--night);
+  border: 2px solid var(--edge);
+}
+
+.example code {
+  overflow-wrap: anywhere;
+}
+
+/* The four-way switch; the current page's link is bold, without an underline. */
+.hud .switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.9375rem;
+  text-transform: none;
+}
+
+.switch [aria-current="page"] {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* The footer. */
+.site-footer {
+  max-width: 44rem;
+  margin: 2rem auto 0;
+  padding: 1.5rem 1rem 2.5rem;
+  text-align: center;
+  border-top: 4px solid var(--edge);
+}
+
+.contact {
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
+/* The city lives a little: the searchlight sweeps, a few windows flicker, the antenna
+   lights blink. Not for readers who ask for less motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .beam {
+    transform-box: view-box;
+    transform-origin: 64px 74px;
+    animation: sweep 7s ease-in-out infinite alternate;
+  }
+
+  .flicker {
+    animation: flicker 3s steps(1, end) infinite;
+  }
+
+  .blink {
+    animation: blink 1.6s steps(1, end) infinite;
+  }
+
+  /* Opening a panel wakes its bot: it builds up row by row from its feet. */
+  .panel[open]::after {
+    animation: wake 0.6s steps(12, end) both;
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: rotate(-9deg);
+  }
+  to {
+    transform: rotate(7deg);
+  }
+}
+
+@keyframes flicker {
+  0%, 70%, 80% {
+    opacity: 1;
+  }
+  75%, 85% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes wake {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0.25;
+  }
+}
+
+@media (max-width: 36rem) {
+  .caption-scene {
+    position: static;
+    display: block;
+    max-width: none;
+    margin: 0;
+    transform: none;
+    border-width: 3px 0 0;
+  }
+}

@@ -1,6 +1,5 @@
 # Publish `watchdog@` as the contact
 
-Label: ready-for-human
 Blocked by: 02
 
 `spec.md` "Design", "The new contact". Replaces the iCloud address everywhere it's published, once `watchdog@`
@@ -21,3 +20,10 @@ receives mail.
 - After the deploy, `https://api.<domain_name>/v1/openapi.yaml`'s `info.contact.email` and
   `https://api.<domain_name>/v1/federation/world`'s `contact` show `watchdog@<domain_name>`, and the iCloud
   address appears in neither, nor on the website once `10-website#02` has landed.
+
+## Comments
+
+- 2026-11-21: done. The owner set `abuse_contact` to `watchdog@botrefugium.com` in `sfab/config`, and build
+  `sfab-deploy:c2c38075-2ad5-400c-9e54-ca64bf8e722f` succeeded. `/v1/openapi.yaml`'s `info.contact.email` and
+  `/v1/federation/world`'s `contact` show `watchdog@botrefugium.com`, and neither holds the iCloud address. The
+  website follows with `10-website#02`, which is story 10's to check.

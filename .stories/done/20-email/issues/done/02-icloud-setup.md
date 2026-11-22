@@ -1,6 +1,5 @@
 # Set up the domain in iCloud+
 
-Label: ready-for-human
 Blocked by: 01
 
 `spec.md` "Design". The owner's steps in iCloud's settings and the config, which no agent can do.
@@ -42,3 +41,12 @@ Blocked by: 01
   `sig1.dkim.<domain_name>.at.icloudmailadmin.com.`, matching `spec.md` "Design". The token goes into
   `sfab/config` only, never into the repo. It's 16 letters and digits, so it fits ticket 01's
   `[A-Za-z0-9]{8,64}`.
+- 2026-11-21: step 3 done. The zone held none of the four record sets. `icloud_domain_verification` is in
+  `sfab/config`; PR #21 moved `production` to `0bfe291` (main at `547fbcb`), and build
+  `sfab-deploy:24856b58-11d5-4b17-9c56-9c696f748737` succeeded. Route 53 holds the `MX`, the apex `TXT` (verification and
+  SPF), the `sig1._domainkey` CNAME and the `_dmarc` TXT with the values in `spec.md` "Design", and public DNS
+  (8.8.8.8) answers the `MX` and `_dmarc`.
+- 2026-11-21: steps 4 to 6 done, by the owner's report "everything works": iCloud verified the domain, the four
+  addresses `watchdog@`, `dmarc@`, `abuse@` and `info@` exist with no catch-all, and the `dmarc@` rule is in place.
+  Mail from outside to the addresses arrived, a mail to an unknown address bounced, and a reply as `watchdog@` showed
+  DKIM and DMARC `pass`. iCloud allowed all four, so `spec.md` keeps them; the exact limit it shows wasn't noted.

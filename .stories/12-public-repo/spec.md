@@ -6,7 +6,7 @@ Authored: 2026-11-04 by claude-opus-5-5
 ## Goal
 
 Publish this repo, so the API description's and `/llms.txt`'s GitHub links resolve, without publishing a secret by
-accident. Since 2026-11-21 it isn't part of `.stories/4-life-in-the-world/`'s launch: the owner switches it on its own,
+accident. Since 2026-11-21 it isn't part of `.stories/done/4-life-in-the-world/`'s launch: the owner switches it on its own,
 when this story is done, and the API's GitHub links answer `404` until then.
 
 The test from `docs/adr/0001-initial-architecture.md` applies: could this cost about $100 unnoticed? A leaked
@@ -19,7 +19,7 @@ AWS secret could, which is why the scan comes first.
   accepted: the design is safe because of its limits, not because it's secret, and a stop is a valid outcome.
 - **The author email:** every commit carries the owner's iCloud relay address, which is fine to publish.
 - **Never:** the owner's private values, `origin_key`, `ip_hash_key` and, after launch, `smoke_claim`. They live in
-  the Secrets Manager secret `sfab/config`, not in the repo (`.stories/18-deploy-from-codebuild/`), and no template
+  the Secrets Manager secret `sfab/config`, not in the repo (`.stories/done/18-deploy-from-codebuild/`), and no template
   holds them. `smoke-genesis-codes.txt` stays gitignored.
 - **Never, either:** the owner's personal data, such as their name, postal address, phone number and private email
   addresses, nor the AWS account ID, hosted zone ID or support case IDs. Stories and docs describe such values
@@ -31,7 +31,8 @@ AWS secret could, which is why the scan comes first.
   devcontainer, and where the stories and ADRs are, with a "Third-party" line for the Silkscreen font, which is under the SIL OFL 1.1 rather than MIT, and for the
   agent skills vendored from Matt Pocock in `.claude/skills/`, which keep his MIT notice in
   `.claude/skills/LICENSE-mattpocock`. It's the first thing people and agents read here.
-- **`LICENSE`:** plain MIT for everything but that font and the vendored skills, which keep their own notices, the simplest fit for a small, non-critical project. Anyone may run a closed fork.
+- **`LICENSE`:** plain MIT for everything but that font and the vendored skills, which keep their own notices, the simplest fit for a small, non-critical project. Anyone may run a closed fork. The copyright holder is the GitHub
+  handle, `Copyright (c) 2026 gratinierer`, never the owner's name (owner, 2026-11-22).
 - **`SECURITY.md`:** report security problems through GitHub's private vulnerability reporting, and report
   content through the abuse contact in the API description's `info.contact`. There's no response deadline,
   which fits the owner's manual reactions.
@@ -56,16 +57,29 @@ AWS secret could, which is why the scan comes first.
 `scripts/pii-scan` is deterministic and makes no LLM calls. It walks the full history, and an agent then checks
 only its report, so the tokens spent grow with the findings, not with the history.
 
-- **What it reads:** every blob reachable from any ref, each scanned once however many commits contain it, and every
-  commit message. Binary files are skipped.
+- **What it reads:** every blob reachable from any ref, each scanned once however many commits contain it, every
+  commit message, every commit's author and committer name and email, every annotated tag's message and tagger,
+  and every branch and tag name, local and remote. Binary files are skipped. Commit metadata goes public with the
+  history, and a personal name can sit there even when no file holds it.
 - **What it looks for:**
   - the owner's literal values, one per line, from a list outside the repo, so the list itself can't leak. Its
-    path is an argument, and there's no default inside the repo.
+    path is an argument, and there's no default inside the repo. It holds what no generic pattern finds
+    reliably: the owner's name and private usernames (not the GitHub handle `gratinierer`, which the repo's URLs
+    and every commit publish anyway), the parts of their postal address (street, city, postcode), their
+    private email addresses and phone numbers, and the support case IDs, so "Never, either" is covered.
   - generic patterns: email addresses, 12-digit numbers (account IDs), phone numbers and Route 53 hosted zone IDs.
-- **What it ignores:** values in a committed allowlist of public ones, such as `.invalid` and `example.*`
-  addresses, the fixture's `000000000000` and the AI co-author address in commit trailers.
+- **What it ignores:** values in a committed allowlist of public ones, such as addresses under the reserved
+  `.invalid`, `.test` and `.example` TLDs and `example.*` domains, the published abuse contact
+  `watchdog@botrefugium.com` (`.stories/done/20-email/`) as that exact address, not its whole domain, GitHub's
+  `noreply@github.com` and the handle's own `<id>+gratinierer@users.noreply.github.com`, each exactly, so a
+  private mailbox at the domain or a name-based noreply address is still reported, the test fixtures' made-up account IDs (`000000000000`, `123456789012`, `210987654321`,
+  `777777777777`) and hosted zone ID (`Z00000000000000000000`), the AI co-author address in commit trailers, and
+  the owner's relay author address, which is fine to publish (above). The allowlist is
+  `pii-allowlist.txt` at the repo root, beside `audit-ignore.toml`, always read: one regular expression per line,
+  matched case-insensitively against a whole matched value, each followed by a `# reason`. It never applies to
+  the owner's literals.
 - **What it prints:** one line per distinct finding, sorted and deduplicated: the first commit that introduced it,
-  the path or "commit message", the line number, the pattern's name, and the match masked except for its first and
+  the path, or "commit message", "commit author", "commit committer", "tag" or "ref name", the line number, the pattern's name, and the match masked except for its first and
   last characters. A literal is named only by its line number in the list. Nothing is printed in full, so the
   report holds no personal data itself.
 - **Exit status:** 0 when nothing is left, 1 when there are findings, 2 on an error.
@@ -88,4 +102,4 @@ Asked while grilling how agents find the API, after the owner said `/llms.txt` s
 | Publish `.stories/` and the reviews as they are? | Yes |
 | This story holds the scan, README, LICENSE, SECURITY.md and the switch, and the launch checklist requires it? | Yes (the launch requirement superseded 2026-11-21: the owner decoupled this story) |
 | GitHub push protection afterwards, rather than `gitleaks` in CI? | Yes |
-| A normal story with two tickets, files first, then the owner's steps? | Yes |
+| A normal story with two tickets, files first, then the owner's steps? | Yes (three since the personal data scan's script became issue 03) |

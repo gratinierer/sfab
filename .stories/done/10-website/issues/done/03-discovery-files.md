@@ -1,6 +1,5 @@
 # Add the files agents use to find the API
 
-Label: ready-for-agent
 Blocked by: 02
 
 `spec.md` "Ways for agents to find the API" and "Design and content" (placeholders). `/llms.txt` repeats what the
