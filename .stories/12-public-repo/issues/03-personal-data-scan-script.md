@@ -29,3 +29,5 @@ Label: ready-for-agent
   places first. Before the allowlist got the harmless values it reported, the run printed 6 pattern findings:
   the spec's own `<id>+…` noreply wording, the Copilot co-author, story 20's planned `operator@` address and an old
   sequential zone ID placeholder, now all in `pii-allowlist.txt`. The phone pattern found nothing in the history.
+- 2026-11-22: `scripts/check` passed at `204af55` with the 7 new tests (594 passed). The issue waits only for its
+  code review before it moves to `done/`.
