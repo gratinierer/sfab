@@ -23,6 +23,13 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
   2. **Push `main`:** ask first, unless `main` already equals `origin/main`, then skip.
   3. **Pull request and merge:** open, or reuse, the pull request from `main` to `production` and merge it with a
      merge commit, as #21 and #22 were. Ask first, unless `production` already contains `main`'s head, then skip.
+     - **Title:** the story numbers from the `(#n)` endings of the commits in `origin/production..main`. One story:
+       "Deploy story <n>: <its spec.md title> (#n)"; several: "Deploy stories <a> and <b> (#a) (#b)". None: stop
+       and ask, and `auto` stops. The merge commit takes this title, so it carries the numbers the policy wants.
+     - **Body:** "Moves `production` forward from `main` for a deploy, so `sfab-deploy` builds …", then the commit
+       subjects. No `Closes #n`: `production` isn't the default branch, and closing issues is out of scope.
+     - **Checks:** when the pull request has checks, wait for them (`gh pr checks --watch`) and stop if one fails;
+       with none (the `production` ruleset requires none), merge straight away.
   4. **AWS login, checked just before the first AWS call:**
      - If a `.env` exists at the repo root, check `git check-ignore .env` first and stop if it isn't ignored; then
        take `AWS_PROFILE` from it. It holds nothing else. Without a `.env`, use the default credentials and say in

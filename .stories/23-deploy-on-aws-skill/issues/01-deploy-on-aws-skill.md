@@ -7,7 +7,8 @@ Label: ready-for-agent
 ## Scope
 
 - `.claude/skills/deploy-on-aws/SKILL.md`: the seven steps, the `auto`, `skipcheck` and `smoke` arguments (`smoke`
-  runs the smoke test without offering it, in either mode) and optional stack names, the asking rules, and the masking of 12-digit numbers, ARNs and emails, as `spec.md`
+  runs the smoke test without offering it, in either mode) and optional stack names, the pull request's title,
+  body and checks wait, the asking rules, and the masking of 12-digit numbers, ARNs and emails, as `spec.md`
   "Decisions" lists them.
 - `.gitignore` gains `.env`.
 - `docs/adr/0012-deploy-on-aws-may-push.md`: running `/deploy-on-aws` is the explicit instruction to push `main`
