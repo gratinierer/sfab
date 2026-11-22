@@ -1,0 +1,20 @@
+# Public values scripts/pii-scan leaves out: .stories/12-public-repo/spec.md "The personal data scan".
+# One regular expression per line, matched case-insensitively against a whole matched value, then
+# "# reason". It never applies to the owner's literals. Add an entry only for a value judged harmless.
+
+[^@\s]+@([a-z0-9-]+\.)*(invalid|test|example)  # reserved TLDs for tests and docs (RFC 2606, RFC 6761)
+[^@\s]+@([a-z0-9-]+\.)*example\.(com|net|org)  # reserved example domains (RFC 2606)
+watchdog@botrefugium\.com  # the published abuse contact (.stories/done/20-email/), this address only
+operator@botrefugium\.com  # the name story 20 planned for that contact before choosing watchdog@, on the public domain
+noreply@github\.com  # GitHub's committer for web edits
+\d*\+gratinierer@users\.noreply\.github\.com  # the public handle's own noreply address, also as the spec writes it (<id>+…)
+223556219\+copilot@users\.noreply\.github\.com  # the GitHub Copilot bot, a co-author in one commit trailer
+noreply@anthropic\.com  # the AI co-author in commit trailers
+botanisch_polymer\.0n@icloud\.com  # the owner's relay author address, fine to publish (spec "What gets published")
+
+000000000000  # the fixtures' made-up account ID
+123456789012  # a made-up account ID in tests
+210987654321  # a made-up account ID in tests
+777777777777  # a made-up agent ID in lambda/core/src/id.rs's tests
+Z00000000000000000000  # the fixture's made-up hosted zone ID
+Z0123456789ABCDEFGHIJ  # a sequential placeholder in the first sfab.config.example.toml

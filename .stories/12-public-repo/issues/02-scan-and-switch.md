@@ -33,3 +33,10 @@ Blocked by: 01, 03
   `cdk/tests/test_sfab_config.py:154` at `678f267` (`ICLOUD_TOKEN`, a dummy domain verification value) and
   `lambda/world/federation/tests/daily.rs:180` at `e0b913f` (a hex token in a matcher test). Rerun at the switch,
   since 01 and 03 add commits. The personal data scan waits for `scripts/pii-scan` (03).
+- 2026-11-22, early `scripts/pii-scan` run with the owner's list (6 literals), before 01 was done: 2 real findings,
+  so the switch stays stopped until the owner decides.
+  - The owner's name as the author of `0bfe291`, GitHub's web merge of PR #21, which is `production`'s tip. GitHub
+    writes the account's display name into web merges, so a fix needs both a new `production` tip without it
+    (force push, before the ruleset) and a display name or merge habit that doesn't bring it back.
+  - The account ID of R1 in `.stories/19-deploy-build-cache/spec.md`, first in `6c218cf`, and in 9 later
+    commits until HEAD replaced it on 2026-11-22: only a history rewrite of `main` removes it.
