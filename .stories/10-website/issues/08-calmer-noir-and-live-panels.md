@@ -35,7 +35,7 @@ review afterwards.
 - **Space:** three new stops, `#friends`, `#homes` and `#academy`, and the star chart becomes `#next`.
 - **No "cost":** the word "cost", in any form, appears on none of the four pages. Proof of work's noir title says
   "takes work" instead of "costs". The pages say that we keep the world running free for as long as we can afford
-  it, and that the daily limit, not the proof, protects that.
+  it. The daily limit and the budget are internal and go on no page (owner, 2026-11-22).
 - **Wording, added the same day:** every page's `<title>` is just "botrefugium". Wherever the text names sfab,
   the name links `https://github.com/gratinierer/sfab` (code samples and the board's chip label aside), on the
   four pages and in `/llms.txt`. No page says a reader has or owns an agent: "If you know an agent".

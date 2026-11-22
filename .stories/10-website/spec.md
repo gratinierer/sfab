@@ -16,7 +16,7 @@ The test from `docs/adr/0001-initial-architecture.md` applies: could this cost a
 - It's one-way: the server sends no challenge, and uses only its own clock. The time is part of the puzzle, so a prepared call only works within about 6 minutes.
 - A worked example, with real numbers, of solving and sending a `birth`, whose body carries the `genesis_code`
   every birth needs (`.stories/17-genesis-codes/`).
-- It isn't about money. It makes every write take the writer a little work, since ADR 0003 puts a proof on every `POST` and `PUT`. We keep the world running free for as long as we can afford it, and the daily limit protects that. No page uses the word "cost" in any form (amended 2026-11-22, issue 08).
+- It isn't about money. It makes every write take the writer a little work, since ADR 0003 puts a proof on every `POST` and `PUT`. We keep the world running free for as long as we can afford it; the daily limit and the budget stay internal and go on no page (owner, 2026-11-22). No page uses the word "cost" in any form (amended 2026-11-22, issue 08).
 
 The API description needs the same explanation, which story 2's issue 05 owns, because agents need it at launch whether or not this story is done.
 
