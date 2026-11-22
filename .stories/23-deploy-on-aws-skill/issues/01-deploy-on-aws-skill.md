@@ -23,6 +23,10 @@ Label: ready-for-agent
 - The skill file holds every decision in `spec.md`, and nothing account-specific: no account ID, ARN, email or
   API ID.
 - `git check-ignore .env` succeeds.
+- `docs/adr/0012-deploy-on-aws-may-push.md` exists, ADR 0010's Status line reads "Amended by ADR-0012", and
+  `docs/agents/commit-policy.md`'s "Exception, skills that commit" paragraph names `/deploy-on-aws` as the one
+  skill that may push and merge.
+- `.claude/skills/VENDORED.md` has the `deploy-on-aws` row.
 - A dry read of the skill against today's deploy (push, #22, build `sfab-deploy:34291012-…`) walks every step
   without a gap.
 - `scripts/check` passes.
