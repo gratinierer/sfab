@@ -41,7 +41,7 @@ Blocked by: 01, 03
     (force push, before the ruleset) and a display name or merge habit that doesn't bring it back.
     Accepted by the owner on 2026-11-22: it stays, so a rerun still reports this one line (`commit author`, literal 1),
     since literals bypass the allowlist.
-  - The account ID of R1 in `.stories/19-deploy-build-cache/spec.md`, first in `6c218cf`, and in 9 later
+  - The account ID of R1 in `.stories/done/19-deploy-build-cache/spec.md`, first in `6c218cf`, and in 9 later
     commits until HEAD replaced it on 2026-11-22: only a history rewrite of `main` removes it.
     Accepted by the owner on 2026-11-22: no rewrite (it would also leave the ID in PR #21's and #22's refs, which only
     GitHub Support removes). A rerun still reports this one line, and it stays out of `pii-allowlist.txt`, which
