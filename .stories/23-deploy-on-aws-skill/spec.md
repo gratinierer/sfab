@@ -41,6 +41,12 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
      CloudFormation output each time (`cdk/kill_switch.py`, the outputs `docs/restart-after-a-stop.md` uses).
      There is no override. The production smoke run births nothing and cleans up its friend, block, vouch and
      message; it rewrites only the smoke identity's `whoiam` to a fixed text.
+     - `scripts/smoke` runs `cdk/.venv/bin/python`, which a `skipcheck` run on a fresh clone hasn't made: if
+       `cdk/.venv` is missing, make it first as `scripts/deploy` does (`uv venv` and `uv pip sync` of
+       `cdk/requirements.txt`).
+     - Its exit codes: 0 pass; 1 a failed smoke test; 2 a usage or config problem, such as no `smoke_claim` in
+       `sfab/config`, shown with its message; 3 WAF blocked it, reported as "wait at least 5 minutes and rerun",
+       not as a failed deploy. The build already succeeded in every case, and the report says so.
   7. **Report in chat only:** the commits, the pull request, the build ID and result, and what was skipped. No
      deploy log in the repo; GitHub and CodeBuild keep the history.
 - **Asking:** interactive by default, as above. **`auto`** (`/deploy-on-aws auto`) asks nothing and runs push, merge,
