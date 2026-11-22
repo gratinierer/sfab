@@ -1,6 +1,5 @@
 # Port the noir page to `/`
 
-Label: ready-for-agent
 Blocked by: 03
 
 `spec.md` "Variants". The source is `/workspaces/.scratch/website/noir/` and its assets. This replaces the

@@ -64,6 +64,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Code review file".
 | 2026-11-22T17:35:00Z | walkthrough | 01, 02, 03, 04, 05, 06, 07, 08 @ b62a44f..HEAD | claude-opus-5-5, auto | 0 new, 2 resolved, 0 still open | auto walkthrough, not a review pass; edited issue 04 |
 | 2026-11-22T17:50:00Z | check | @ 76ca425 | scripts/check | — | green, the loop's check of the round 2 fixes |
 | 2026-11-22T17:50:00Z | code-review | 01, 02, 03, 04, 05, 06, 07, 08 @ b62a44f..76ca425 | claude-sonnet-5-5 (dispatched; code by claude-opus-5-5, orchestrated by claude-opus-5-5) | 0 new: 0 standards, 0 spec, 0 security | auto round 3, the fix commits; the spec reviewer's one doubt, issue 04's contrast-table variables, checked: all six still defined in noir.css and unchanged since 3eecb4e; loop stopped clean; same-family reviewers, per AGENTS.local.md |
+| 2026-11-22T18:30:00Z | owner-close | 01, 02, 03, 04, 05, 06, 07, 08 @ 7bd704d | the owner | — | the owner closed story 10 with 7bd704d (astronaut bots on /space/, issue 06) unreviewed and `scripts/check` not run, by their choice ("just adhoc work - i risk it"); no `code-review` row reaches it, so the closing gate is waived for it, not met |
 
 ## Findings
 

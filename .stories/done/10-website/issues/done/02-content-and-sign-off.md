@@ -1,6 +1,5 @@
 # Write both versions' text and get it signed off
 
-Label: ready-for-agent
 Blocked by: 01, 2-identity-api#05, 2-identity-api#11, 17-genesis-codes#01
 
 `spec.md` "Must include" and "Design and content". The agent version cites the API description and its

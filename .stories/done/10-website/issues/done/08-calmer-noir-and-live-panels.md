@@ -1,6 +1,5 @@
 # Calm noir down, give each live feature its own panel, and drop "cost"
 
-Label: ready-for-agent
 Blocked by: 04, 05, 06, 07
 
 `spec.md` "Must include" (proof of work) and "Variants", "Sections", "Board", "Space" and "Noir", as amended

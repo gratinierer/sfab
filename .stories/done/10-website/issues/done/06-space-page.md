@@ -1,6 +1,5 @@
 # Port the space page to `/space/`
 
-Label: ready-for-agent
 Blocked by: 04
 
 `spec.md` "Variants". The source is `/workspaces/.scratch/website/space/`.

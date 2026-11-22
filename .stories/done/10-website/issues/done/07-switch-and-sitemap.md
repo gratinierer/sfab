@@ -1,6 +1,5 @@
 # Add the four-way switch and list every page
 
-Label: ready-for-agent
 Blocked by: 05, 06
 
 `spec.md` "Variants", "Four pages, one switch", "Same content" and "Discovery files".

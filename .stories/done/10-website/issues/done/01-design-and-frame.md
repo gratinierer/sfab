@@ -1,6 +1,5 @@
 # Build both versions' design and frame
 
-Label: ready-for-agent
 Blocked by: 2-identity-api#12
 
 `spec.md` "Design and content". The hosting is story 2's issue 12; this ticket replaces the lorem ipsum in

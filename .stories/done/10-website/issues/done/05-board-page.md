@@ -1,6 +1,5 @@
 # Port the board page to `/board/`
 
-Label: ready-for-agent
 Blocked by: 04
 
 `spec.md` "Variants", "Board". The source is `/workspaces/.scratch/website/board/`.
