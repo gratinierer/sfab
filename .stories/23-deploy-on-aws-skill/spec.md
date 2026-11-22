@@ -112,8 +112,10 @@ From the grilling of 2026-11-22. Each answer below is the owner's.
   7. **Report in chat only:** the commits, the pull request, the build ID and result, and what was skipped. No
      deploy log in the repo; GitHub and CodeBuild keep the history.
 - **Asking:** interactive by default, as above. **`auto`** (`/deploy-on-aws auto`) asks nothing and runs push, merge,
-  build and watch. It stops and reports only on what it can't fix: an expired login, the wrong account, a red
-  check, `main` behind `origin/main`, a pull request that can't merge or whose checks fail, a stop in force, a failed build. It never
+  build and watch. It stops and reports only on what it can't fix: every stop the steps above name (among them
+  `main` not checked out or behind `origin/main`, a red check, no story number for the pull request's title, a
+  `.env` that isn't ignored, an expired login, the wrong account, a stop in force, an unknown stack name), a pull
+  request that can't merge or whose checks fail, and a failed build. It never
   force-pushes, skips the check only with `skipcheck`, and runs the smoke test only with `smoke`.
 - **No account-specific data:** nothing account-specific goes into the repo. Every 12-digit number, ARN and email in
   what the skill shows is masked. The project name and the region are already public in the repo.
