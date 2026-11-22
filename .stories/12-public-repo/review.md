@@ -24,6 +24,7 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | 2026-11-22 | walkthrough | 14beb76 | claude-opus-5-5 with the owner | 0 new, 2 resolved, 0 still open | walkthrough, not a review pass |
 | 2026-11-22 | review | e7cc93131ad3 | claude-sonnet-5-5 (dispatched; story and fixes by claude-opus-5-5), compiled by claude-opus-5-5 | 6 new, 0 resolved, 6 still open | full: 4 of 5 story files changed; closure audit of R1, R8: hold; mixed commits 204af55 (scripts/pii-scan, pii-allowlist.txt, cdk/tests/test_pii_scan.py) and 4da352d (story 19 spec); auto round 1 |
 | 2026-11-22 | walkthrough | 588e454 | claude-opus-5-5 | 0 new, 5 resolved, 1 still open | auto walkthrough, not a review pass; auto round 1 |
+| 2026-11-22 | review | 802d567a8651 | claude-sonnet-5-5 (dispatched; story and fixes by claude-opus-5-5), compiled by claude-opus-5-5 | 2 new, 0 resolved, 3 still open | full: 3 of 5 story files changed; closure audit of R17-R20, R22: all hold; auto round 2 |
 
 ## Findings
 
@@ -51,3 +52,5 @@ Conventions: `docs/agents/issue-tracker.md`, section "Review file".
 | R20 | resolved | completeness | spec.md, 03 | `pii-allowlist.txt` holds entries the spec's "What it ignores" doesn't name (`operator@botrefugium.com`, the Copilot noreply address, the zone ID placeholder `Z0123456789ABCDEFGHIJ`), though issue 03 says "with the entries it names". | 2026-11-22: spec "What it ignores" now names the allowlist's entries from the first run (`operator@`, the Copilot noreply address, the zone ID placeholder). |
 | R21 | open | completeness | 02 | Issue 02 accepts the one web-merge author line, but a web merge of issue 01 before the switch would add another; nothing says how to merge until then or what to do with a new such line. | 2026-11-22 needs the user (0147e26): how to merge until the switch (locally, or after changing the GitHub display name) and what to do with a new web-merge author line is the owner's choice. |
 | R22 | resolved | completeness | 03 | Issue 03's Done-when "tests pass in `scripts/check`" has no evidence in its Comments, though it is otherwise ready to close after a code review. | 2026-11-22: issue 03's Comments now record `scripts/check` passing at `204af55` (594 tests). |
+| R23 | open | factual | spec.md, 02 | Two web merges carry the owner's name as author, not one: `22ca5d5` (PR #22, 2026-11-22) is now `production`'s tip, after `0bfe291`; neither is on `main`, so spec "Accepted in history" and issue 02's Comments state the wrong count, tip and cost, and the owner accepted only `0bfe291`. | |
+| R24 | open | staleness | 02 | Issue 02's Comments cite `.stories/19-deploy-build-cache/spec.md`; the story is in `.stories/done/19-deploy-build-cache/`, as 02's scope already says. | |
