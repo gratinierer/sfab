@@ -994,14 +994,15 @@ def test_the_board_counts_noir_by_the_page_tests_rule(probe):
         with pytest.raises(SystemExit):
             noircounts.count_live_and_next(html)
         return
-    live, coming = noircounts.count_live_and_next(html)
-    assert (live, live + coming) == expected
+    now, total = expected
+    # noircounts gives (live, coming), the tests (now, total): compare like with like.
+    assert noircounts.count_live_and_next(html) == (now, total - now)
 
 
 def test_the_board_counts_noir_itself_by_the_page_tests_rule(pages):
     html = (REPO_WEBSITE / NOIR).read_text(encoding="utf-8")
-    live, coming = noircounts.count_live_and_next(html)
-    assert (live, live + coming) == _now_and_total(Page(html))
+    now, total = _now_and_total(Page(html))
+    assert noircounts.count_live_and_next(html) == (now, total - now)
 
 
 def test_noir_marks_the_four_live_features(pages):
