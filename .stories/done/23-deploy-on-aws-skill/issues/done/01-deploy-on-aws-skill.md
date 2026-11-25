@@ -1,7 +1,5 @@
 # Write the /deploy-on-aws skill
 
-Label: ready-for-agent
-
 `spec.md` "Decisions".
 
 ## Scope
